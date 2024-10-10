@@ -303,7 +303,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 
 			switch (planActionRequest.type) {
 				case 'CREATE':
-					console.log('CreateHit');
+					console.log('create hit');
+					//planResponse = generateMockPlan();
 					planResponse = await this.sidecarClient.createPlanRequest(query, sessionId, event.references, this.editorUrl, false);
 					break;
 				case 'APPEND': // this should be explicit, from button action (or command line)
@@ -384,3 +385,10 @@ function parsePlanActionCommand(command: string): PlanActionRequest {
 
 	return { type: actionType };
 }
+
+//function generateMockPlan(): PlanResponse {
+//	const mockPlan = { plan: { "id": "e032f413-1abd-4c1b-b094-96f9688ec902", "name": "Placeholder Title (to be computed)", "steps": [{ "id": "0", "index": 0, "title": "\nAdd counter element to the status bar in HTML\n", "files_to_edit": ["index.html"], "description": "\nWe'll add a new element to the status bar in the HTML file to display the counter. Assuming there's already a status bar element, we'll add a span for the counter inside it.\n\n```html\n<div id=\"status-bar\">\n  <!-- Existing status bar content -->\n  <span id=\"counter\">0</span>\n</div>\n```\n\nThis change adds a span element with the id \"counter\" inside the status bar div. The initial value is set to 0.\n", "user_context": { "variables": [], "file_content_map": [], "terminal_selection": null, "folder_paths": [], "is_plan_generation": false, "is_plan_execution_until": null, "is_plan_append": false, "is_plan_drop_from": null } }, { "id": "1", "index": 1, "title": "\nStyle the counter in CSS\n", "files_to_edit": ["styles.css"], "description": "\nWe'll add some basic styling for the counter to make it visually distinct within the status bar.\n\n```css\n#counter {\n  font-weight: bold;\n  margin-left: 10px;\n  padding: 2px 5px;\n  background-color: #f0f0f0;\n  border-radius: 3px;\n}\n```\n\nThis CSS gives the counter a bold font, adds some margin and padding, sets a light background color, and applies rounded corners.\n", "user_context": { "variables": [], "file_content_map": [], "terminal_selection": null, "folder_paths": [], "is_plan_generation": false, "is_plan_execution_until": null, "is_plan_append": false, "is_plan_drop_from": null } }, { "id": "2", "index": 2, "title": "\nImplement counter functionality in JavaScript\n", "files_to_edit": ["script.js"], "description": "\nWe'll add JavaScript code to initialize the counter, increment it, and update the display in the status bar.\n\n```javascript\nlet count = 0;\nconst counterElement = document.getElementById('counter');\n\nfunction incrementCounter() {\n  count++;\n  updateCounterDisplay();\n}\n\nfunction updateCounterDisplay() {\n  counterElement.textContent = count;\n}\n\n// Example: Increment counter every second\nsetInterval(incrementCounter, 1000);\n```\n\nThis JavaScript code does the following:\n1. Initializes a count variable and gets a reference to the counter element.\n2. Defines an incrementCounter function to increase the count.\n3. Defines an updateCounterDisplay function to update the counter in the HTML.\n4. Sets up an interval to increment the counter every second (this is just an example; you may want to trigger the increment based on specific events in your application).\n", "user_context": { "variables": [], "file_content_map": [], "terminal_selection": null, "folder_paths": [], "is_plan_generation": false, "is_plan_execution_until": null, "is_plan_append": false, "is_plan_drop_from": null } }], "user_context": { "variables": [], "file_content_map": [], "terminal_selection": null, "folder_paths": [], "is_plan_generation": false, "is_plan_execution_until": null, "is_plan_append": false, "is_plan_drop_from": null }, "user_query": "Add a counter to the status bar", "checkpoint": null, "storage_path": "/Users/guglielmodanna/Library/Application Support/ai.codestory.sidecar/plans/e032f413-1abd-4c1b-b094-96f9688ec902" } } as unknown as PlanResponse;
+//	return mockPlan
+//}
+
+

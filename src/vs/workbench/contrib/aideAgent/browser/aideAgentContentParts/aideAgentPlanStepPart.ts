@@ -5,11 +5,13 @@
 import * as dom from '../../../../../base/browser/dom.js';
 import { Button } from '../../../../../base/browser/ui/button/button.js';
 import { Emitter } from '../../../../../base/common/event.js';
-import { Disposable, IDisposable } from '../../../../../base/common/lifecycle.js';
+import { Disposable, IDisposable, toDisposable } from '../../../../../base/common/lifecycle.js';
 import { URI } from '../../../../../base/common/uri.js';
+import { IContextKey, IContextKeyService } from '../../../../../platform/contextkey/common/contextkey.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { Heroicon } from '../../../../browser/heroicon.js';
 import { Spinner } from '../../../../browser/spinner.js';
+import { CONTEXT_IN_CHAT_PLAN_STEP } from '../../common/aideAgentContextKeys.js';
 import { AgentMode, IChatProgressRenderableResponseContent } from '../../common/aideAgentModel.js';
 import { IAideAgentService, IChatPlanStep } from '../../common/aideAgentService.js';
 import { IChatContentPart } from './aideAgentContentParts.js';
@@ -36,6 +38,11 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 	private readonly _onDidChangeHeight = this._register(new Emitter<void>());
 	public readonly onDidChangeHeight = this._onDidChangeHeight.event;
 
+	private readonly _onDidFocus = this._register(new Emitter<number>());
+	readonly onDidFocus = this._onDidFocus.event;
+
+	private inChatPlanStep: IContextKey<boolean>;
+
 	// private feedbackMode = false;
 	private showDescription = false;
 
@@ -58,7 +65,7 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 		readonly step: IChatPlanStep,
 		readonly descriptionPart: IChatContentPart,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		//@IContextKeyService private readonly contextKeyService: IContextKeyService,
+		@IContextKeyService contextKeyService: IContextKeyService,
 		//@IModelService private readonly modelService: IModelService,
 		//@IConfigurationService private readonly configurationService: IConfigurationService,
 		@IAideAgentService private readonly chatService: IAideAgentService,
@@ -66,7 +73,26 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 		super();
 		this.inputUri = URI.parse(`${ChatPlanStepPart.INPUT_SCHEME}:${step.sessionId}-${step.index}`);
 
+		this.inChatPlanStep = CONTEXT_IN_CHAT_PLAN_STEP.bindTo(contextKeyService);
+
 		this.domNode = $('.plan-step');
+		this.domNode.tabIndex = -1;
+
+		const onDidFocusStep = () => {
+			this._onDidFocus.fire(this.step.index);
+			this.inChatPlanStep.set(true);
+		};
+
+		const onDidBlurStep = () => {
+			this.inChatPlanStep.set(false);
+		};
+
+		this.domNode.addEventListener('focus', onDidFocusStep);
+		this._register(toDisposable(() => this.domNode.removeEventListener('focus', onDidFocusStep)));
+
+		this.domNode.addEventListener('blur', onDidBlurStep);
+		this._register(toDisposable(() => this.domNode.removeEventListener('blur', onDidBlurStep)));
+
 		if (step.isLast) {
 			this.domNode.classList.add('plan-step-last');
 		}
@@ -114,10 +140,7 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 		this._register(this.instantiationService.createInstance(Heroicon, implementButton.element, 'micro/bolt'));
 
 		implementButton.onDidClick(() => {
-			this.chatService.sendRequest(step.sessionId, `@execute ${step.index}`, {
-				agentMode: AgentMode.Plan,
-			});
-			mockEditsService.implementStep(step.index);
+			this._implementStep();
 		});
 
 		const appendButton = this._register(this.instantiationService.createInstance(Button, this.planButtonsElement, { title: 'Append steps' }));
@@ -125,10 +148,7 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 		this._register(this.instantiationService.createInstance(Heroicon, appendButton.element, 'micro/plus'));
 
 		appendButton.onDidClick(() => {
-			this.chatService.sendRequest(step.sessionId, `@append`, {
-				agentMode: AgentMode.Plan,
-			});
-			mockEditsService.implementStep(step.index); // not sure what this needs to be for append
+			this._appendStep();
 		});
 
 		const dropPlanStep = this._register(this.instantiationService.createInstance(Button, this.planButtonsElement, { title: 'Drop plan step' }));
@@ -136,10 +156,7 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 		dropPlanStep.element.classList.add('plan-step-drop-step');
 
 		dropPlanStep.onDidClick(() => {
-			this.chatService.sendRequest(step.sessionId, `@drop ${step.index}`, {
-				agentMode: AgentMode.Plan,
-			});
-			mockPlanService.dropPlanStep(step.index);
+			this._dropStep();
 		});
 
 		this.reviewButtonsElement = $('.plan-step-review-buttons');
@@ -364,6 +381,50 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 	//	dom.hide(this.submitFeedbackButton.element, this.cancelFeedbackButton.element);
 	//}
 
+	private _dropStep() {
+		this.chatService.sendRequest(this.step.sessionId, `@drop ${this.step.index}`, {
+			agentMode: AgentMode.Plan,
+		});
+	}
+
+	dropStep() {
+		this._dropStep();
+	}
+
+	private _implementStep() {
+		this.chatService.sendRequest(this.step.sessionId, `@execute ${this.step.index}`, {
+			agentMode: AgentMode.Plan,
+		});
+	}
+
+	implementStep() {
+		this._implementStep();
+	}
+
+	private _appendStep() {
+		this.chatService.sendRequest(this.step.sessionId, `@append`, {
+			agentMode: AgentMode.Plan,
+		});
+	}
+
+	appendStep() {
+		this._appendStep();
+	}
+
+
+	expandStep() {
+		this.showDescription = !this.showDescription;
+		this.rerender();
+	}
+
+	domFocus() {
+		this.domNode.focus();
+	}
+
+	domBlur() {
+		this.domNode.blur();
+	}
+
 	hasSameContent(other: IChatProgressRenderableResponseContent): boolean {
 		return other.kind === 'planStep' && other.description === this.step.description;
 	}
@@ -376,15 +437,9 @@ const mockPlanService = {
 	feedbackForPlanStep(index: number, feedback?: string) {
 		console.log('feedbackForPlanStep', index, feedback || 'No feedback');
 	},
-	dropPlanStep(index: number) {
-		console.log('dropPlanStep', index);
-	}
 };
 
 const mockEditsService = {
-	implementStep(index: number) {
-		console.log('implementStep', index);
-	},
 	stopGeneretingEdits(index: number) {
 		console.log('stopGeneretingEdits', index);
 	},

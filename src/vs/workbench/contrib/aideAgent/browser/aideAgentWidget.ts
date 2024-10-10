@@ -26,7 +26,7 @@ import { ILogService } from '../../../../platform/log/common/log.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgentData } from '../common/aideAgentAgents.js';
-import { CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_SESSION, CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER, CONTEXT_RESPONSE_FILTERED } from '../common/aideAgentContextKeys.js';
+import { CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_RESPONSE_WITH_PLAN_STEPS, CONTEXT_IN_CHAT_SESSION, CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER, CONTEXT_RESPONSE_FILTERED } from '../common/aideAgentContextKeys.js';
 import { AgentMode, AgentScope, ChatModelInitState, IChatModel, IChatRequestVariableEntry, IChatResponseModel } from '../common/aideAgentModel.js';
 import { ChatRequestAgentPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader, formatChatQuestion } from '../common/aideAgentParserTypes.js';
 import { ChatRequestParser } from '../common/aideAgentRequestParser.js';
@@ -34,7 +34,7 @@ import { IAideAgentService, IChatFollowup, IChatLocationData } from '../common/a
 import { IAideAgentSlashCommandService } from '../common/aideAgentSlashCommands.js';
 import { ChatViewModel, IChatResponseViewModel, isRequestVM, isResponseVM, isWelcomeVM } from '../common/aideAgentViewModel.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
-import { ChatTreeItem, IAideAgentAccessibilityService, IAideAgentWidgetService, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions, IChatWidget, IChatWidgetViewContext, IChatWidgetViewOptions, showChatView } from './aideAgent.js';
+import { ChatTreeItem, IAideAgentAccessibilityService, IAideAgentWidgetService, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions, IChatPlanStepsInfo, IChatWidget, IChatWidgetViewContext, IChatWidgetViewOptions, showChatView } from './aideAgent.js';
 import { ChatAccessibilityProvider } from './aideAgentAccessibilityProvider.js';
 import { ChatInputPart } from './aideAgentInputPart.js';
 import { ChatListDelegate, ChatListItemRenderer, IChatRendererDelegate } from './aideAgentListRenderer.js';
@@ -141,6 +141,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	private requestInProgress: IContextKey<boolean>;
 	private agentInInput: IContextKey<boolean>;
 	private agentSupportsModelPicker: IContextKey<boolean>;
+	private inChatResponseWithPlanSteps: IContextKey<boolean>;
 
 	private _visible = false;
 	public get visible() {
@@ -222,8 +223,10 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET.bindTo(contextKeyService).set('isPassthrough' in this.viewContext && this.viewContext.isPassthrough);
 		CONTEXT_IN_CHAT_SESSION.bindTo(contextKeyService).set(true);
 		CONTEXT_CHAT_LOCATION.bindTo(contextKeyService).set(this._location.location);
+
 		this.agentInInput = CONTEXT_CHAT_INPUT_HAS_AGENT.bindTo(contextKeyService);
 		this.agentSupportsModelPicker = CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER.bindTo(contextKeyService);
+		this.inChatResponseWithPlanSteps = CONTEXT_IN_CHAT_RESPONSE_WITH_PLAN_STEPS.bindTo(this.contextKeyService);
 		this.requestInProgress = CONTEXT_CHAT_REQUEST_IN_PROGRESS.bindTo(contextKeyService);
 
 		this._register((chatWidgetService as ChatWidgetService).register(this));
@@ -553,6 +556,16 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this._register(this.tree.onDidChangeContentHeight(() => {
 			this.onDidChangeTreeContentHeight();
 		}));
+		this._register(this.tree.onDidChangeFocus((event) => {
+			if (event.elements.length === 1) {
+				const [firstElement] = event.elements;
+				if (firstElement && isResponseVM(firstElement)) {
+					const responseContent = firstElement.model.response.value;
+					const hasPlanSteps = responseContent.some(el => el.kind === 'planStep');
+					this.inChatResponseWithPlanSteps.set(hasPlanSteps);
+				}
+			}
+		}));
 		this._register(this.renderer.onDidChangeItemHeight(e => {
 			this.tree.updateElementHeight(e.element, e.height);
 		}));
@@ -874,6 +887,14 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 	getLastFocusedFileTreeForResponse(response: IChatResponseViewModel): IChatFileTreeInfo | undefined {
 		return this.renderer.getLastFocusedFileTreeForResponse(response);
+	}
+
+	getPlanStepsInfoForResponse(response: IChatResponseViewModel): IChatPlanStepsInfo[] {
+		return this.renderer.getPlanStepsInfoForResponse(response);
+	}
+
+	getLastFocusedPlanStepForResponse(response: IChatResponseViewModel): IChatPlanStepsInfo | undefined {
+		return this.renderer.getLastFocusePlanStepForResponse(response);
 	}
 
 	focusLastMessage(): void {
