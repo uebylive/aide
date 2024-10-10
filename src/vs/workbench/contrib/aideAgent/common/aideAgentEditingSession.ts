@@ -80,7 +80,7 @@ export class HunkData {
 		stickiness: TrackedRangeStickiness.AlwaysGrowsWhenTypingAtEdges
 	});
 
-	private static readonly _HUNK_THRESHOLD = 0;
+	private static readonly _HUNK_THRESHOLD = 8;
 
 	private readonly _store = new DisposableStore();
 	private readonly _data = new Map<RawHunk, RawHunkData>();
