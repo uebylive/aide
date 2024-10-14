@@ -207,6 +207,7 @@ export interface EditedCodeStreamingRequest {
 	fs_file_path: string;
 	event: 'Start' | 'End' | EditedCodeStreamingRequestEvent;
 	apply_directly: boolean;
+	session_id: string;
 }
 
 interface SymbolEventEditRequest {

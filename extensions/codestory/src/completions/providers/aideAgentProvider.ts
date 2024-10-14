@@ -123,7 +123,9 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		fs_file_path: String;
 		success: boolean;
 	}> {
-		if (!request.apply_directly && !this.openResponseStream) {
+		// how does the response stream look over here
+		const response = await this.aideAgent.initResponse(request.session_id);
+		if (!request.apply_directly && !this.openResponseStream && !response) {
 			console.log('editing_streamed::no_open_response_stream');
 			return {
 				fs_file_path: '',
@@ -250,7 +252,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			return;
 		}
 
-		const { stream, token } = response;
+		const { stream, token, exchangeId } = response;
+		console.log('exchangeId', exchangeId);
 		await this.generateResponse(this.sessionId, event, stream, token);
 		this.processingEvents.delete(event.id);
 	}
