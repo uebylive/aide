@@ -315,8 +315,6 @@ export const reportAgentEventsToChat = async (
 			continue;
 		}
 
-		// TODO(@ghostwriternr): Remove this before merging to cs-main
-		console.log(event);
 		if (event.event.FrameworkEvent) {
 			if (event.event.FrameworkEvent.InitialSearchSymbols) {
 				// const initialSearchSymbolInformation = event.event.FrameworkEvent.InitialSearchSymbols.symbols.map((item) => {
@@ -531,6 +529,11 @@ export const reportAgentEventsToChat = async (
 			break;
 		} else if (event.event.EditRequestFinished) {
 			break;
+		} else if (event.event.ChatEvent) {
+			const { delta } = event.event.ChatEvent;
+			if (delta !== null) {
+				response.markdown(delta);
+			}
 		}
 	}
 };
