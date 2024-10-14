@@ -74,6 +74,7 @@ interface SideCarAgentKeepAliveEvent {
 
 interface SideCarAgentUIEvent {
 	request_id: string;
+	exchange_id: string;
 	event: UIEvent;
 }
 
@@ -101,6 +102,11 @@ type FrameworkEvent = {
 	AgenticTopLevelThinking: string;
 	AgenticSymbolLevelThinking: StepListItem;
 };
+
+interface ChatMessageEvent {
+	answer_up_until_now: string;
+	delta: string | null;
+}
 
 type StepListItem = {
 	name: string;
@@ -178,6 +184,7 @@ interface UIEvent {
 	RequestEvent: RequestEvents;
 	EditRequestFinished: string;
 	FrameworkEvent: FrameworkEvent;
+	ChatEvent: ChatMessageEvent;
 }
 
 interface SymbolEventSubStepRequest {
