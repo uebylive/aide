@@ -40,6 +40,7 @@ declare module 'vscode' {
 		| (Omit<ChatPromptReference, 'id'> & { id: Exclude<string, 'vscode.file'> });
 
 	export interface AideAgentRequest extends ChatRequest {
+		// this is the exchange id
 		readonly id: string;
 		readonly mode: AideAgentMode;
 		readonly scope: AideAgentScope;
@@ -85,6 +86,7 @@ declare module 'vscode' {
 
 	export interface AideAgentEventSenderResponse {
 		stream: AideAgentResponseStream;
+		exchangeId: string;
 		token: CancellationToken;
 	}
 

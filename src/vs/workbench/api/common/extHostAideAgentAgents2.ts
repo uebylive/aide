@@ -414,7 +414,7 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 		}
 	}
 
-	private async initResponse(sessionId: string): Promise<{ stream: vscode.AideAgentResponseStream; token: CancellationToken } | undefined> {
+	private async initResponse(sessionId: string): Promise<{ stream: vscode.AideAgentResponseStream; token: CancellationToken, exchangeId: string } | undefined> {
 		const sessionDisposables = this._sessionDisposables.get(sessionId);
 		if (!sessionDisposables) {
 			return undefined;
@@ -422,7 +422,7 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 
 		const { responseId, token } = await this._proxy.$initResponse(sessionId);
 		const stream = new AideAgentResponseStream(responseId, this._proxy, this._commands.converter, sessionDisposables);
-		return { stream: stream.apiObject, token };
+		return { stream: stream.apiObject, token, exchangeId: responseId };
 	}
 
 	private async prepareHistoryTurns(agentId: string, context: { history: IChatAgentHistoryEntryDto[] }): Promise<(vscode.ChatRequestTurn | vscode.ChatResponseTurn)[]> {
