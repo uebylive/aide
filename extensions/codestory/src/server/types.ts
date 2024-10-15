@@ -560,6 +560,10 @@ export type SidecarGetOutlineNodesResponse = {
 	outline_nodes: SymbolInformation[] | DocumentSymbol[] | null | undefined;
 };
 
+export type SidecarCreateNewExchangeRequest = {
+	session_id: string;
+}
+
 export type SidecarGoToDefinitionRequest = {
 	fs_file_path: string;
 	position: SidecarRequestPosition;

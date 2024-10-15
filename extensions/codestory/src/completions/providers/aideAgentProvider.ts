@@ -18,6 +18,14 @@ import { ProjectContext } from '../../utilities/workspaceContext';
 import { AidePlanTimer } from '../../utilities/planTimer';
 import { ConversationMessage, PlanResponse } from '../../sidecar/types';
 
+/**
+ * Stores the necessary identifiers required for identifying a response stream
+ */
+interface ResponseStreamIdentifier {
+	sessionId: string;
+	exchangeId: string;
+}
+
 export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	private aideAgent: vscode.AideSessionAgent;
 
@@ -29,6 +37,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	private limiter = new Limiter(1);
 	private openResponseStream: vscode.AideAgentResponseStream | undefined;
 	private processingEvents: Map<string, boolean> = new Map();
+	private responseStreamCollection: Map<ResponseStreamIdentifier, vscode.AideAgentEventSenderResponse> = new Map();
 	private sessionId: string | undefined;
 	private _timer: AidePlanTimer;
 	// this is a hack to test the theory that we can keep snapshots and make
@@ -80,6 +89,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			handleRequest(
 				this.provideEdit.bind(this),
 				this.provideEditStreamed.bind(this),
+				this.newExchangeIdForSession.bind(this),
 				recentEditsRetriever.retrieveSidecar.bind(recentEditsRetriever)
 			)
 		);
@@ -119,8 +129,25 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		await this.sidecarClient.sendContextRecording(events, this.editorUrl);
 	}
 
+	async newExchangeIdForSession(sessionId: string): Promise<{
+		exchangeId: string | undefined;
+	}> {
+		// TODO(skcd): Figure out when the close the exchange? This is not really
+		// well understood but we should have an explicit way to do that
+		const response = await this.aideAgent.initResponse(sessionId);
+		if (response !== undefined) {
+			this.responseStreamCollection.set({
+				sessionId,
+				exchangeId: response.exchangeId,
+			}, response);
+		}
+		return {
+			exchangeId: response?.exchangeId,
+		};
+	}
+
 	async provideEditStreamed(request: EditedCodeStreamingRequest): Promise<{
-		fs_file_path: String;
+		fs_file_path: string;
 		success: boolean;
 	}> {
 		// how does the response stream look over here
@@ -209,7 +236,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	}
 
 	async provideEdit(request: SidecarApplyEditsRequest): Promise<{
-		fs_file_path: String;
+		fs_file_path: string;
 		success: boolean;
 	}> {
 		if (request.apply_directly) {

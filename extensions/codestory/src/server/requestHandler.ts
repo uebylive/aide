@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as http from 'http';
-import { SidecarApplyEditsRequest, LSPDiagnostics, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, LSPQuickFixInvocationRequest, SidecarQuickFixRequest, SidecarSymbolSearchRequest, SidecarInlayHintsRequest, SidecarGetOutlineNodesRequest, SidecarOutlineNodesWithContentRequest, EditedCodeStreamingRequest, SidecarRecentEditsRetrieverRequest, SidecarRecentEditsRetrieverResponse, SidecarCreateFileRequest, LSPFileDiagnostics, SidecarGetPreviousWordRangeRequest, SidecarDiagnosticsResponse } from './types';
+import { SidecarApplyEditsRequest, LSPDiagnostics, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, LSPQuickFixInvocationRequest, SidecarQuickFixRequest, SidecarSymbolSearchRequest, SidecarInlayHintsRequest, SidecarGetOutlineNodesRequest, SidecarOutlineNodesWithContentRequest, EditedCodeStreamingRequest, SidecarRecentEditsRetrieverRequest, SidecarRecentEditsRetrieverResponse, SidecarCreateFileRequest, LSPFileDiagnostics, SidecarGetPreviousWordRangeRequest, SidecarDiagnosticsResponse, SidecarCreateNewExchangeRequest } from './types';
 import { Position, Range } from 'vscode';
 import { getDiagnosticsFromEditor, getEnrichedDiagnostics, getFileDiagnosticsFromEditor, getFullWorkspaceDiagnostics, getHoverInformation } from './diagnostics';
 import { openFileEditor } from './openFile';
@@ -38,12 +38,15 @@ function readRequestBody(req: http.IncomingMessage): Promise<string> {
 // Async handler function to handle incoming requests
 export function handleRequest(
 	provideEdit: (request: SidecarApplyEditsRequest) => Promise<{
-		fs_file_path: String;
+		fs_file_path: string;
 		success: boolean;
 	}>,
 	provideEditState: (request: EditedCodeStreamingRequest) => Promise<{
-		fs_file_path: String;
+		fs_file_path: string;
 		success: boolean;
+	}>,
+	newExchangeId: (sessionId: string) => Promise<{
+		exchangeId: string | undefined;
 	}>,
 	recentEditsRetriever: (request: SidecarRecentEditsRetrieverRequest) => Promise<SidecarRecentEditsRetrieverResponse>,
 ) {
@@ -228,6 +231,12 @@ export function handleRequest(
 				const body = await readRequestBody(req);
 				const request: SidecarGoToDefinitionRequest = JSON.parse(body);
 				const response = await goToTypeDefinition(request);
+				res.writeHead(200, { 'Content-Type': 'application/json' });
+				res.end(JSON.stringify(response));
+			} else if (req.method === 'POST' && req.url === '/new_exchange') {
+				const body = await readRequestBody(req);
+				const request: SidecarCreateNewExchangeRequest = JSON.parse(body);
+				const response = await newExchangeId(request.session_id);
 				res.writeHead(200, { 'Content-Type': 'application/json' });
 				res.end(JSON.stringify(response));
 			} else {
