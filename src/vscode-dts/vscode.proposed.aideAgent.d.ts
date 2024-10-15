@@ -40,7 +40,7 @@ declare module 'vscode' {
 		| (Omit<ChatPromptReference, 'id'> & { id: Exclude<string, 'vscode.file'> });
 
 	export interface AideAgentRequest extends ChatRequest {
-		// this is the exchange id
+		// is this the exchange id, if so it should explicity be named that instead of id :|
 		readonly id: string;
 		readonly mode: AideAgentMode;
 		readonly scope: AideAgentScope;

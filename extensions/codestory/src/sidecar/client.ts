@@ -1053,6 +1053,40 @@ export class SideCarClient {
 		});
 	}
 
+	/**
+	 * Sends a request over to the sidecar and waits for an ack and completes after
+	 * that. The sidecar can create a new exchange or many new exchanges as required
+	 * and keep working on the exchange as and when required
+	 */
+	async agentSession(
+		query: string,
+		sessionId: string,
+		exchangeId: string,
+		editorUrl: string,
+		agentMode: vscode.AideAgentMode,
+		variables: readonly vscode.ChatPromptReference[],
+	) {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/agentic/agent_session';
+		const url = baseUrl.toString();
+		const body = {
+			session_id: sessionId,
+			exchange_id: exchangeId,
+			editor_url: editorUrl,
+			query,
+			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query),
+			agent_mode: agentMode,
+		};
+
+		await fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(body),
+		});
+	}
+
 	async *startAgentProbe(
 		query: string,
 		variables: readonly vscode.ChatPromptReference[],
