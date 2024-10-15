@@ -37,6 +37,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	private limiter = new Limiter(1);
 	private openResponseStream: vscode.AideAgentResponseStream | undefined;
 	private processingEvents: Map<string, boolean> = new Map();
+	// our collection of active response streams for exchanges which are still running
 	private responseStreamCollection: Map<ResponseStreamIdentifier, vscode.AideAgentEventSenderResponse> = new Map();
 	private sessionId: string | undefined;
 	private _timer: AidePlanTimer;
@@ -270,9 +271,17 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	}
 
 	private async processEvent(event: vscode.AideAgentRequest): Promise<void> {
-		if (!this.sessionId) {
+		// We are slowly going to migrate to the new flow, to start with lets check if
+		// the chat flow can be migrated to the new flow
+		if (!this.sessionId || !this.editorUrl) {
 			return;
 		}
+
+		// New flow migration
+		// if (false) {
+		// 	await this.streamResponse(event, this.sessionId, this.editorUrl);
+		// 	return;
+		// }
 
 		const response = await this.aideAgent.initResponse(this.sessionId);
 		if (!response) {
@@ -283,6 +292,19 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		console.log('exchangeId', exchangeId);
 		await this.generateResponse(this.sessionId, event, stream, token);
 		this.processingEvents.delete(event.id);
+	}
+
+	/**
+	 * A uniform reply stream over here which transparently handles any kind of request
+	 * type, since on the sidecar side we are taking care of streaming the right thing
+	 * depending on the agent mode
+	 */
+	private async _streamResponse(event: vscode.AideAgentRequest, sessionId: string, editorUrl: string) {
+		const prompt = event.prompt;
+		const exchangeIdForEvent = event.id;
+		const agentMode = event.mode;
+		const variables = event.references;
+		await this.sidecarClient.agentSession(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables);
 	}
 
 	private async generateResponse(sessionId: string, event: vscode.AideAgentRequest, responseStream: vscode.AideAgentResponseStream, token: vscode.CancellationToken) {

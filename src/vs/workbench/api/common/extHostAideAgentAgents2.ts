@@ -285,6 +285,9 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 		this._proxy.$transferActiveChatSession(newWorkspace);
 	}
 
+	/**
+	 * The id over here is for the chat participant
+	 */
 	createChatAgent(extension: IExtensionDescription, id: string, handler: vscode.AideSessionParticipant): vscode.AideSessionAgent {
 		const handle = ExtHostAideAgentAgents2._idPool++;
 		this._proxy.$registerAgent(handle, extension.identifier, id, {}, undefined);
@@ -414,7 +417,7 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 		}
 	}
 
-	private async initResponse(sessionId: string): Promise<{ stream: vscode.AideAgentResponseStream; token: CancellationToken, exchangeId: string } | undefined> {
+	private async initResponse(sessionId: string): Promise<{ stream: vscode.AideAgentResponseStream; token: CancellationToken; exchangeId: string } | undefined> {
 		const sessionDisposables = this._sessionDisposables.get(sessionId);
 		if (!sessionDisposables) {
 			return undefined;
