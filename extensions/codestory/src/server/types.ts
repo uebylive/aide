@@ -66,10 +66,19 @@ export type AnchorSessionStart = {
 	root_directory: string | undefined;
 };
 
-export type SideCarAgentEvent = SideCarAgentKeepAliveEvent | SideCarAgentUIEvent;
+export type SideCarAgentEvent = SideCarAgentStartStreamingEvent | SideCarAgentKeepAliveEvent | SideCarAgentUIEvent | SideCarAgentDoneEvent;
 
 interface SideCarAgentKeepAliveEvent {
 	keep_alive: 'alive';
+}
+
+interface SideCarAgentDoneEvent {
+	done: '[CODESTORY_DONE]';
+}
+
+interface SideCarAgentStartStreamingEvent {
+	session_id: string;
+	started: boolean;
 }
 
 interface SideCarAgentUIEvent {
@@ -102,6 +111,15 @@ type FrameworkEvent = {
 	AgenticTopLevelThinking: string;
 	AgenticSymbolLevelThinking: StepListItem;
 };
+
+type ExchangeMessageEvent = {
+	FinishedExchange: FinishedExchangeEvent;
+};
+
+interface FinishedExchangeEvent {
+	exchange_id: string;
+	session_id: string;
+}
 
 interface ChatMessageEvent {
 	answer_up_until_now: string;
@@ -185,6 +203,7 @@ interface UIEvent {
 	EditRequestFinished: string;
 	FrameworkEvent: FrameworkEvent;
 	ChatEvent: ChatMessageEvent;
+	ExchangeEvent: ExchangeMessageEvent;
 }
 
 interface SymbolEventSubStepRequest {
