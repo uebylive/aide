@@ -1062,6 +1062,7 @@ export class SideCarClient {
 		variables: readonly vscode.ChatPromptReference[],
 		repoRef: RepoRef,
 		projectLabels: string[],
+		codebaseSearch: boolean,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agentic/agent_session_edit_agentic';
@@ -1076,6 +1077,7 @@ export class SideCarClient {
 			repo_ref: repoRef.getRepresentation(),
 			root_directory: vscode.workspace.rootPath,
 			project_labels: projectLabels,
+			codebase_search: codebaseSearch,
 		};
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);

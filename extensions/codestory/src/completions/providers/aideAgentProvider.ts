@@ -346,7 +346,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				const responseStream = await this.sidecarClient.agentSessionAnchoredEdit(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels);
 				await this.reportAgentEventsToChat(true, responseStream);
 			} else {
-				const responseStream = await this.sidecarClient.agentSessionAgenticEdit(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels);
+				const isWholeCodebase = event.scope === vscode.AideAgentScope.Codebase;
+				const responseStream = await this.sidecarClient.agentSessionAgenticEdit(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, isWholeCodebase);
 				await this.reportAgentEventsToChat(true, responseStream);
 			}
 		}
