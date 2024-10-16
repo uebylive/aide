@@ -742,6 +742,34 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					sessionId,
 					exchangeId,
 				});
+			} else if (event.event.PlanEvent) {
+				const sessionId = event.request_id;
+				const exchangeId = event.exchange_id;
+				const responseStream = this.responseStreamCollection.getResponseStream({
+					sessionId,
+					exchangeId,
+				});
+				if (responseStream === undefined) {
+					console.log('resonseStreamNotFound::ExchangeEvent', exchangeId, sessionId);
+				}
+				if (event.event.PlanEvent.PlanStepTitleAdded) {
+					responseStream?.stream.step({
+						description: '',
+						index: event.event.PlanEvent.PlanStepTitleAdded.index,
+						sessionId,
+						isLast: false,
+						title: event.event.PlanEvent.PlanStepTitleAdded.title,
+					});
+				}
+				if (event.event.PlanEvent.PlanStepCompleteAdded) {
+					responseStream?.stream.step({
+						description: event.event.PlanEvent.PlanStepCompleteAdded.description,
+						index: event.event.PlanEvent.PlanStepCompleteAdded.index,
+						sessionId,
+						isLast: false,
+						title: event.event.PlanEvent.PlanStepCompleteAdded.title,
+					});
+				}
 			}
 		}
 	}
