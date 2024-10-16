@@ -311,14 +311,17 @@ export const reportAgentEventsToChat = async (
 			break;
 		}
 
+		// skip all keep_alive events
 		if ('keep_alive' in event) {
 			continue;
 		}
 
+		// skip the start of streaming event
 		if ('started' in event && 'session_id' in event) {
 			continue;
 		}
 
+		// skip the done event, we are explicitly sending a stop event now
 		if ('done' in event) {
 			continue;
 		}
