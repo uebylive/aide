@@ -1053,6 +1053,47 @@ export class SideCarClient {
 		});
 	}
 
+	async *agentSessionPlanStep(
+		query: string,
+		sessionId: string,
+		exchangeId: string,
+		editorUrl: string,
+		agentMode: vscode.AideAgentMode,
+		variables: readonly vscode.ChatPromptReference[],
+		repoRef: RepoRef,
+		projectLabels: string[],
+		codebaseSearch: boolean,
+	): AsyncIterableIterator<SideCarAgentEvent> {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/agentic/agent_session_plan';
+		const url = baseUrl.toString();
+		const body = {
+			session_id: sessionId,
+			exchange_id: exchangeId,
+			editor_url: editorUrl,
+			query,
+			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query),
+			agent_mode: agentMode.toString(),
+			repo_ref: repoRef.getRepresentation(),
+			root_directory: vscode.workspace.rootPath,
+			project_labels: projectLabels,
+			codebase_search: codebaseSearch,
+		};
+
+		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
+		for await (const line of asyncIterableResponse) {
+			const lineParts = line.split('data:{');
+			for (const lineSinglePart of lineParts) {
+				const lineSinglePartTrimmed = lineSinglePart.trim();
+				if (lineSinglePartTrimmed === '') {
+					continue;
+				}
+				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as SideCarAgentEvent;
+				yield conversationMessage;
+			}
+		}
+	}
+
 	async *agentSessionAgenticEdit(
 		query: string,
 		sessionId: string,
