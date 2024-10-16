@@ -234,6 +234,7 @@ export interface EditedCodeStreamingRequest {
 	event: 'Start' | 'End' | EditedCodeStreamingRequestEvent;
 	apply_directly: boolean;
 	session_id: string;
+	exchange_id: string;
 }
 
 interface SymbolEventEditRequest {
