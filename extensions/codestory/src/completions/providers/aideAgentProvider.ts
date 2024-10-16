@@ -351,6 +351,16 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				await this.reportAgentEventsToChat(true, responseStream);
 			}
 		}
+
+		// For plan generation we have 2 things which can happen:
+		// plan gets generated incrementally or in an instant depending on people using
+		// o1 or not
+		// once we have a step of the plan we should stream it along with the edits of the plan
+		// and keep doing that until we are done completely
+		if (event.mode === vscode.AideAgentMode.Plan) {
+			const responseStream = await this.sidecarClient.agentSessionPlanStep(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, false);
+			await this.reportAgentEventsToChat(true, responseStream);
+		}
 	}
 
 	private async generateResponse(sessionId: string, event: vscode.AideAgentRequest, responseStream: vscode.AideAgentResponseStream, token: vscode.CancellationToken) {
