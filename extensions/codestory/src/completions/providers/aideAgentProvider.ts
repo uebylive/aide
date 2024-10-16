@@ -177,8 +177,11 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		success: boolean;
 	}> {
 		// how does the response stream look over here
-		const response = await this.aideAgent.initResponse(request.session_id);
-		if (!request.apply_directly && !this.openResponseStream && !response) {
+		const responseStream = this.responseStreamCollection.getResponseStream({
+			exchangeId: request.exchange_id,
+			sessionId: request.session_id,
+		});
+		if (!request.apply_directly && !this.openResponseStream && !responseStream) {
 			console.log('editing_streamed::no_open_response_stream');
 			return {
 				fs_file_path: '',
@@ -208,7 +211,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				// edits so we can keep track of it and use it, but for now we go
 				// with the iteration numbers on the aideagentsessionprovider itself
 				streamProcessor: new StreamProcessor(
-					this.openResponseStream!,
+					responseStream?.stream!,
 					documentLines,
 					undefined,
 					vscode.Uri.file(editStreamEvent.fs_file_path),
@@ -302,7 +305,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			return;
 		}
 		// New flow migration
-		if (event.mode === vscode.AideAgentMode.Chat) {
+		if (event.mode === vscode.AideAgentMode.Chat || event.mode === vscode.AideAgentMode.Edit) {
 			await this.streamResponse(event, this.sessionId, this.editorUrl);
 			return;
 		}
@@ -329,8 +332,23 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		const exchangeIdForEvent = event.id;
 		const agentMode = event.mode;
 		const variables = event.references;
-		const responseStream = await this.sidecarClient.agentSession(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels);
-		await this.reportAgentEventsToChat(true, responseStream);
+		if (event.mode === vscode.AideAgentMode.Chat) {
+			const responseStream = await this.sidecarClient.agentSessionChat(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels);
+			await this.reportAgentEventsToChat(true, responseStream);
+		}
+		// Now lets try to handle the edit event first
+		// there are 2 kinds of edit events:
+		// - anchored and agentic events
+		// if its anchored, then we have the sscope as selection
+		// if its selection scope then its agentic
+		if (event.mode === vscode.AideAgentMode.Edit) {
+			if (event.scope === vscode.AideAgentScope.Selection) {
+				const responseStream = await this.sidecarClient.agentSessionAnchoredEdit(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels);
+				await this.reportAgentEventsToChat(true, responseStream);
+			} else {
+
+			}
+		}
 	}
 
 	private async generateResponse(sessionId: string, event: vscode.AideAgentRequest, responseStream: vscode.AideAgentResponseStream, token: vscode.CancellationToken) {
