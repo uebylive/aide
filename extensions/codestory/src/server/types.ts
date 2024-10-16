@@ -116,6 +116,28 @@ type ExchangeMessageEvent = {
 	FinishedExchange: FinishedExchangeEvent;
 };
 
+type PlanMessageEvent = {
+	PlanStepCompleteAdded: PlanStepAddEvent;
+	PlanStepTitleAdded: PlanStepTitleEvent;
+};
+
+interface PlanStepAddEvent {
+	session_id: string;
+	exchange_id: string;
+	files_to_edit: string[];
+	title: string;
+	description: string;
+	index: number;
+}
+
+interface PlanStepTitleEvent {
+	session_id: string;
+	exchange_id: string;
+	files_to_edit: string[];
+	title: string;
+	index: number;
+}
+
 interface FinishedExchangeEvent {
 	exchange_id: string;
 	session_id: string;
@@ -204,6 +226,7 @@ interface UIEvent {
 	FrameworkEvent: FrameworkEvent;
 	ChatEvent: ChatMessageEvent;
 	ExchangeEvent: ExchangeMessageEvent;
+	PlanEvent: PlanMessageEvent;
 }
 
 interface SymbolEventSubStepRequest {
