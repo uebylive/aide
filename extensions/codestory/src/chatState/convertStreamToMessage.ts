@@ -315,6 +315,14 @@ export const reportAgentEventsToChat = async (
 			continue;
 		}
 
+		if ('started' in event && 'session_id' in event) {
+			continue;
+		}
+
+		if ('done' in event) {
+			continue;
+		}
+
 		if (event.event.FrameworkEvent) {
 			if (event.event.FrameworkEvent.InitialSearchSymbols) {
 				// const initialSearchSymbolInformation = event.event.FrameworkEvent.InitialSearchSymbols.symbols.map((item) => {

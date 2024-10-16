@@ -46,7 +46,7 @@ export function handleRequest(
 		success: boolean;
 	}>,
 	newExchangeId: (sessionId: string) => Promise<{
-		exchangeId: string | undefined;
+		exchange_id: string | undefined;
 	}>,
 	recentEditsRetriever: (request: SidecarRecentEditsRetrieverRequest) => Promise<SidecarRecentEditsRetrieverResponse>,
 ) {

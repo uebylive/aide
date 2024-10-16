@@ -1058,14 +1058,16 @@ export class SideCarClient {
 	 * that. The sidecar can create a new exchange or many new exchanges as required
 	 * and keep working on the exchange as and when required
 	 */
-	async agentSession(
+	async *agentSession(
 		query: string,
 		sessionId: string,
 		exchangeId: string,
 		editorUrl: string,
 		agentMode: vscode.AideAgentMode,
 		variables: readonly vscode.ChatPromptReference[],
-	) {
+		repoRef: RepoRef,
+		projectLabels: string[],
+	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agentic/agent_session';
 		const url = baseUrl.toString();
@@ -1075,16 +1077,25 @@ export class SideCarClient {
 			editor_url: editorUrl,
 			query,
 			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query),
-			agent_mode: agentMode,
+			agent_mode: agentMode.toString(),
+			repo_ref: repoRef.getRepresentation(),
+			project_labels: projectLabels,
 		};
 
-		await fetch(url, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify(body),
-		});
+		console.log(JSON.stringify(body));
+
+		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
+		for await (const line of asyncIterableResponse) {
+			const lineParts = line.split('data:{');
+			for (const lineSinglePart of lineParts) {
+				const lineSinglePartTrimmed = lineSinglePart.trim();
+				if (lineSinglePartTrimmed === '') {
+					continue;
+				}
+				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as SideCarAgentEvent;
+				yield conversationMessage;
+			}
+		}
 	}
 
 	async *startAgentProbe(
