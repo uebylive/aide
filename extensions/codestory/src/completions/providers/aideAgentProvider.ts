@@ -699,7 +699,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 
 				// break;
 			} else if (event.event.EditRequestFinished) {
-				break;
+				// break;
 			} else if (event.event.ChatEvent) {
 				const sessionId = event.request_id;
 				const exchangeId = event.exchange_id;

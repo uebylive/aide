@@ -201,7 +201,6 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 		editor.changeDecorations(decorationsAccessor => {
 			const keysNow = new Set(this._hunkDisplayData.keys());
 			for (const hunkData of fileEdits.hunkData.getInfo()) {
-				console.log('fileEdits::hunkInformaiton');
 				keysNow.delete(hunkData);
 
 				const hunkRanges = hunkData.getRangesN();
