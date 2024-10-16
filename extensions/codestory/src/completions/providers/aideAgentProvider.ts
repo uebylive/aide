@@ -346,7 +346,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				const responseStream = await this.sidecarClient.agentSessionAnchoredEdit(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels);
 				await this.reportAgentEventsToChat(true, responseStream);
 			} else {
-
+				const responseStream = await this.sidecarClient.agentSessionAgenticEdit(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels);
+				await this.reportAgentEventsToChat(true, responseStream);
 			}
 		}
 	}
@@ -573,6 +574,9 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					// UX handle for code correction tool usage - consider using
 					if (editEvent.CodeCorrectionTool) { }
 
+					// TODO(skcd): We have to show this properly over here since
+					// even with the search and replace blocks we do want to show it
+					// to the user
 					if (editEvent.ThinkingForEdit) {
 						// TODO(@skcd42): This event currently gets sent multiple times, and doesn't contain the text we'd ideally like to show the user.
 						// It also seems to contain the search/replace block in the text, which we don't want to show.
