@@ -1158,6 +1158,7 @@ export class SideCarClient {
 			repo_ref: repoRef.getRepresentation(),
 			project_labels: projectLabels,
 			root_directory: vscode.workspace.rootPath,
+			codebase_search: false,
 		};
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
@@ -1202,6 +1203,7 @@ export class SideCarClient {
 			repo_ref: repoRef.getRepresentation(),
 			project_labels: projectLabels,
 			root_directory: vscode.workspace.rootPath,
+			codebase_search: false,
 		};
 
 		console.log(JSON.stringify(body));
