@@ -1157,6 +1157,7 @@ export class SideCarClient {
 			agent_mode: agentMode.toString(),
 			repo_ref: repoRef.getRepresentation(),
 			project_labels: projectLabels,
+			root_directory: vscode.workspace.rootPath,
 		};
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
