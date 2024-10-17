@@ -324,20 +324,29 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		this.sessionId = sessionId;
 	}
 
-	handleEvent(event: vscode.AideAgentRequest): void {
+	// We also get the cancellation token over here which we can react to, which we should
+	// so we make sure that we can stop processing the updates as we are making progress
+	handleEvent(event: vscode.AideAgentRequest, token: vscode.CancellationToken): void {
 		this.eventQueue.push(event);
 		if (this.sessionId && !this.processingEvents.has(event.id)) {
 			this.processingEvents.set(event.id, true);
-			this.processEvent(event);
+			this.processEvent(event, token);
 		}
 	}
 
-	private async processEvent(event: vscode.AideAgentRequest): Promise<void> {
+	private async processEvent(event: vscode.AideAgentRequest, token: vscode.CancellationToken): Promise<void> {
 		// We are slowly going to migrate to the new flow, to start with lets check if
 		// the chat flow can be migrated to the new flow
 		if (!this.sessionId || !this.editorUrl) {
 			return;
 		}
+		// on cancellation requested we want to ping the sidecar that we are terminating
+		// the request
+		token.onCancellationRequested(() => {
+			if (this.sessionId !== undefined) {
+				this.sidecarClient.cancelRunningEvent(this.sessionId, event.id);
+			}
+		});
 		// New flow migration
 		if (event.mode === vscode.AideAgentMode.Chat || event.mode === vscode.AideAgentMode.Edit || event.mode === vscode.AideAgentMode.Plan) {
 			await this.streamResponse(event, this.sessionId, this.editorUrl);
