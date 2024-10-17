@@ -34,12 +34,11 @@ import { ServiceCollection } from '../../../../platform/instantiation/common/ser
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { IWorkbenchIssueService } from '../../issue/common/issue.js';
 import { annotateSpecialMarkdownContent } from '../common/annotations.js';
-import { ChatAgentLocation } from '../common/aideAgentAgents.js';
 import { CONTEXT_CHAT_RESPONSE_SUPPORT_ISSUE_REPORTING, CONTEXT_REQUEST, CONTEXT_RESPONSE, CONTEXT_RESPONSE_DETECTED_AGENT_COMMAND, CONTEXT_RESPONSE_ERROR, CONTEXT_RESPONSE_FILTERED, CONTEXT_RESPONSE_VOTE } from '../common/aideAgentContextKeys.js';
 import { IChatRequestVariableEntry, IChatTextEditGroup } from '../common/aideAgentModel.js';
 import { chatSubcommandLeader } from '../common/aideAgentParserTypes.js';
 import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatConfirmation, IChatContentReference, IChatFollowup, IChatPlanStep, IChatTask, IChatTreeData } from '../common/aideAgentService.js';
-import { IChatCodeCitations, IChatReferences, IChatRendererContent, IChatRequestViewModel, IChatResponseViewModel, IChatWelcomeMessageViewModel, isRequestVM, isResponseVM, isWelcomeVM } from '../common/aideAgentViewModel.js';
+import { IChatCodeCitations, IChatReferences, IChatRendererContent, IChatRequestViewModel, IChatResponseViewModel, isRequestVM, isResponseVM, isWelcomeVM } from '../common/aideAgentViewModel.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
 import { MarkUnhelpfulActionId } from './actions/aideAgentTitleActions.js';
 import { ChatTreeItem, GeneratingPhrase, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions, IChatPlanStepsInfo } from './aideAgent.js';
@@ -55,12 +54,13 @@ import { ChatTaskContentPart } from './aideAgentContentParts/aideAgentTaskConten
 import { ChatTextEditContentPart, DiffEditorPool } from './aideAgentContentParts/aideAgentTextEditContentPart.js';
 import { ChatTreeContentPart, TreePool } from './aideAgentContentParts/aideAgentTreeContentPart.js';
 import { ChatWarningContentPart } from './aideAgentContentParts/aideAgentWarningContentPart.js';
-import { ChatFollowups } from './aideAgentFollowups.js';
 import { ChatMarkdownDecorationsRenderer } from './aideAgentMarkdownDecorationsRenderer.js';
 import { ChatMarkdownRenderer } from './aideAgentMarkdownRenderer.js';
 import { ChatEditorOptions } from './aideAgentOptions.js';
 import { ChatCodeBlockContentProvider, CodeBlockPart } from './codeBlockPart.js';
 import { ChatPlanStepPart } from './aideAgentContentParts/aideAgentPlanStepPart.js';
+import { EditsCancelledContentPart, EditsCompletedContentPart, EditsProgressContentPart, EditsReviewContentPart, EditsStartedContentPart } from './aideAgentContentParts/aideAgentEditsContentPart.js';
+import { AideAgentRichItem } from './aideAgentContentParts/aideAgentRichItem.js';
 
 const $ = dom.$;
 
@@ -128,7 +128,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 	constructor(
 		editorOptions: ChatEditorOptions,
-		private readonly location: ChatAgentLocation,
+		//private readonly location: ChatAgentLocation,
 		private readonly rendererOptions: IChatListItemRendererOptions,
 		private readonly delegate: IChatRendererDelegate,
 		private readonly codeBlockModelCollection: CodeBlockModelCollection,
@@ -321,7 +321,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		templateData.rowContainer.classList.toggle('interactive-response', isResponseVM(element));
 		templateData.rowContainer.classList.toggle('interactive-welcome', isWelcomeVM(element));
 		templateData.rowContainer.classList.toggle('show-detail-progress', isResponseVM(element) && !element.isComplete && !element.progressMessages.length);
-		templateData.username.textContent = element.username;
+		templateData.username.textContent = isResponseVM(element) ? element.username : localize('chatUser', "You");
 
 		dom.clearNode(templateData.detail);
 
@@ -361,7 +361,17 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		} else if (isRequestVM(element)) {
 			this.basicRenderElement(element, index, templateData);
 		} else {
-			this.renderWelcomeMessage(element, templateData);
+			// this.renderWelcomeMessage(element, templateData);
+			const partsToTest: AideAgentRichItem[] = [
+				this.instantiationService.createInstance(EditsStartedContentPart),
+				this.instantiationService.createInstance(EditsProgressContentPart),
+				this.instantiationService.createInstance(EditsReviewContentPart),
+				this.instantiationService.createInstance(EditsCompletedContentPart),
+				this.instantiationService.createInstance(EditsCancelledContentPart),
+			];
+			for (const testPart of partsToTest) {
+				templateData.value.appendChild(testPart.domNode);
+			}
 		}
 	}
 
@@ -488,7 +498,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		this._onDidChangeItemHeight.fire({ element: templateData.currentElement, height: newHeight });
 	}
 
-	private renderWelcomeMessage(element: IChatWelcomeMessageViewModel, templateData: IChatListItemTemplate) {
+	/*private renderWelcomeMessage(element: IChatWelcomeMessageViewModel, templateData: IChatListItemTemplate) {
 		dom.clearNode(templateData.value);
 
 		element.content.forEach((item, i) => {
@@ -528,7 +538,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 				this._onDidChangeItemHeight.fire({ element, height: element.currentRenderedHeight });
 			}));
 		}
-	}
+	}*/
 
 	/**
 	 *	@returns true if progressive rendering should be considered complete- the element's data is fully rendered or the view is not visible
@@ -678,7 +688,10 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			return this.renderContentReferencesListData(content, undefined, context, templateData);
 		} else if (content.kind === 'codeCitations') {
 			return this.renderCodeCitationsListData(content, context, templateData);
+		} else if (content.kind === 'richItem') {
+			this.renderRichItem(content, templateData, context);
 		} else if (content.kind === 'planStep') {
+			// @g-danna This will be deprecated soon
 			return this.renderPlanStep(content, templateData, context);
 		}
 
@@ -819,6 +832,15 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		});
 
 		return markdownPart;
+	}
+
+	private renderRichItem(item: any, templateData: IChatListItemTemplate, context: IChatContentPartRenderContext) {
+		// started, progress, canceled, review, completed
+		//if (item.type === 'edits') {
+		//
+		//} else if (item.type === 'plan') {
+		//
+		//}
 	}
 
 	private renderPlanStep(step: IChatPlanStep, templateData: IChatListItemTemplate, context: IChatContentPartRenderContext): IChatContentPart {

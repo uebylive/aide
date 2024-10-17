@@ -26,7 +26,7 @@ import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgen
 import { IAideAgentCodeEditingService, IAideAgentCodeEditingSession } from './aideAgentCodeEditingService.js';
 import { HunkData } from './aideAgentEditingSession.js';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from './aideAgentParserTypes.js';
-import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanStep, IChatPlanUpdate, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
+import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanStep, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatRichItem, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
 import { IChatRequestVariableValue } from './aideAgentVariables.js';
 
 export function isRequestModel(item: unknown): item is IChatRequestModel {
@@ -100,7 +100,7 @@ export type IChatProgressResponseContent =
 	| IChatTask
 	| IChatTextEditGroup
 	| IChatPlanStep
-	| IChatPlanUpdate
+	| IChatRichItem
 	| IChatConfirmation;
 
 export type IChatProgressRenderableResponseContent = Exclude<IChatProgressResponseContent, IChatContentInlineReference | IChatAgentMarkdownContentWithVulnerability | IChatResponseCodeblockUriPart>;
@@ -298,9 +298,6 @@ export class Response extends Disposable implements IResponse {
 				}
 				this._updateRepr(false);
 			});
-		} else if (progress.kind === 'planUpdate') {
-			console.log('planUpdate', progress);
-			this._updateRepr(false);
 		} else {
 			this._responseParts.push(progress);
 			this._updateRepr(quiet);
@@ -318,7 +315,7 @@ export class Response extends Disposable implements IResponse {
 
 		this._responseRepr = this._responseParts.map(part => {
 			// Ignore the representation of planUpdate parts
-			if (part.kind === 'treeData' || part.kind === 'planUpdate') {
+			if (part.kind === 'treeData') {
 				return '';
 			} else if (part.kind === 'inlineReference') {
 				return inlineRefToRepr(part);
