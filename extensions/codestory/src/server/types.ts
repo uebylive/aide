@@ -258,6 +258,8 @@ export interface EditedCodeStreamingRequest {
 	apply_directly: boolean;
 	session_id: string;
 	exchange_id: string;
+	// the plan step which the following edit belongs to
+	plan_step_id: string | null;
 }
 
 interface SymbolEventEditRequest {

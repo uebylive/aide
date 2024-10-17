@@ -174,6 +174,13 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			exchangeId: request.exchange_id,
 			sessionId: request.session_id,
 		});
+
+		// This is our uniqueEditId which we are using to tag the edits and make
+		// sure that we can roll-back if required on the undo-stack
+		let uniqueEditId = request.exchange_id;
+		if (request.plan_step_id) {
+			uniqueEditId = `${uniqueEditId}::${request.plan_step_id}`;
+		}
 		if (!request.apply_directly && !this.openResponseStream && !responseStream) {
 			console.log('editing_streamed::no_open_response_stream');
 			return {
@@ -216,7 +223,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					// over here we want to send the plan-id or a unique reference
 					// which tracks this edit in our system so we can track it as a timeline
 					// for the editor
-					'plan_0',
+					uniqueEditId,
 				),
 			});
 		} else if ('End' === editStreamEvent.event) {
