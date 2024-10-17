@@ -196,6 +196,11 @@ export interface IChatConfirmation {
 	kind: 'confirmation';
 }
 
+export interface IChatRichItem {
+	kind: 'richItem';
+	content: any; // TODO(@g-danna) define type
+}
+
 export interface IChatPlanStep {
 	description: IMarkdownString;
 	sessionId: string;
