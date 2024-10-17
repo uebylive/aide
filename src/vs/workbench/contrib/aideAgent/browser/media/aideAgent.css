@@ -235,17 +235,6 @@
 	overflow: hidden;
 }
 
-.interactive-request {
-	border-bottom: 1px solid var(--vscode-chat-requestBorder);
-	border-top: 1px solid var(--vscode-chat-requestBorder);
-}
-
-.hc-black .interactive-request,
-.hc-light .interactive-request {
-	border-left: 3px solid var(--vscode-chat-requestBorder);
-	border-right: 3px solid var(--vscode-chat-requestBorder);
-}
-
 .aideagent-item-container .value {
 	white-space: normal;
 	overflow-wrap: anywhere;
