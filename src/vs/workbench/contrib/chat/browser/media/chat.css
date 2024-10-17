@@ -594,8 +594,8 @@ have to be updated for changes to the rules above, or to support more deeply nes
 }
 
 .interactive-session .interactive-input-part {
-	margin: 0px 16px;
-	padding: 12px 0px;
+	margin: 0px 10px;
+	padding: 10px 0px;
 	display: flex;
 	flex-direction: column;
 }

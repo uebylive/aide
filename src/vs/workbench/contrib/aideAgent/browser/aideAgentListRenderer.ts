@@ -17,7 +17,6 @@ import { FuzzyScore } from '../../../../base/common/filters.js';
 import { IMarkdownString, MarkdownString } from '../../../../base/common/htmlContent.js';
 import { Disposable, DisposableStore, IDisposable, dispose, toDisposable } from '../../../../base/common/lifecycle.js';
 import { ResourceMap } from '../../../../base/common/map.js';
-import { FileAccess } from '../../../../base/common/network.js';
 import { autorun } from '../../../../base/common/observable.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import { URI } from '../../../../base/common/uri.js';
@@ -33,11 +32,9 @@ import { IContextMenuService } from '../../../../platform/contextview/browser/co
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ServiceCollection } from '../../../../platform/instantiation/common/serviceCollection.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
-import { ColorScheme } from '../../../../platform/theme/common/theme.js';
-import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { IWorkbenchIssueService } from '../../issue/common/issue.js';
 import { annotateSpecialMarkdownContent } from '../common/annotations.js';
-import { ChatAgentLocation, IChatAgentMetadata } from '../common/aideAgentAgents.js';
+import { ChatAgentLocation } from '../common/aideAgentAgents.js';
 import { CONTEXT_CHAT_RESPONSE_SUPPORT_ISSUE_REPORTING, CONTEXT_REQUEST, CONTEXT_RESPONSE, CONTEXT_RESPONSE_DETECTED_AGENT_COMMAND, CONTEXT_RESPONSE_ERROR, CONTEXT_RESPONSE_FILTERED, CONTEXT_RESPONSE_VOTE } from '../common/aideAgentContextKeys.js';
 import { IChatRequestVariableEntry, IChatTextEditGroup } from '../common/aideAgentModel.js';
 import { chatSubcommandLeader } from '../common/aideAgentParserTypes.js';
@@ -72,7 +69,6 @@ interface IChatListItemTemplate {
 	renderedParts?: IChatContentPart[];
 	readonly rowContainer: HTMLElement;
 	readonly titleToolbar?: MenuWorkbenchToolBar;
-	readonly avatarContainer: HTMLElement;
 	readonly username: HTMLElement;
 	readonly detail: HTMLElement;
 	readonly value: HTMLElement;
@@ -141,7 +137,6 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		@IConfigurationService configService: IConfigurationService,
 		@ILogService private readonly logService: ILogService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
-		@IThemeService private readonly themeService: IThemeService,
 	) {
 		super();
 
@@ -259,7 +254,6 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		const user = dom.append(header, $('.user'));
 		user.tabIndex = 0;
 		user.role = 'toolbar';
-		const avatarContainer = dom.append(user, $('.avatar-container'));
 		const username = dom.append(user, $('h3.username'));
 		const detailContainer = dom.append(detailContainerParent ?? user, $('span.detail-container'));
 		const detail = dom.append(detailContainer, $('span.detail'));
@@ -290,7 +284,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			}));
 		}
 
-		const template: IChatListItemTemplate = { avatarContainer, username, detail, value, rowContainer, elementDisposables, templateDisposables, contextKeyService, instantiationService: scopedInstantiationService, titleToolbar };
+		const template: IChatListItemTemplate = { username, detail, value, rowContainer, elementDisposables, templateDisposables, contextKeyService, instantiationService: scopedInstantiationService, titleToolbar };
 		return template;
 	}
 
@@ -328,9 +322,6 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		templateData.rowContainer.classList.toggle('interactive-welcome', isWelcomeVM(element));
 		templateData.rowContainer.classList.toggle('show-detail-progress', isResponseVM(element) && !element.isComplete && !element.progressMessages.length);
 		templateData.username.textContent = element.username;
-		if (!this.rendererOptions.noHeader) {
-			this.renderAvatar(element, templateData);
-		}
 
 		dom.clearNode(templateData.detail);
 
@@ -409,31 +400,6 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		}
 	}
 
-	private renderAvatar(element: ChatTreeItem, templateData: IChatListItemTemplate): void {
-		const icon = isResponseVM(element) ?
-			this.getAgentIcon(element.agent?.metadata) :
-			(element.avatarIcon ?? Codicon.account);
-		if (icon instanceof URI) {
-			const avatarIcon = dom.$<HTMLImageElement>('img.icon');
-			avatarIcon.src = FileAccess.uriToBrowserUri(icon).toString(true);
-			templateData.avatarContainer.replaceChildren(dom.$('.avatar', undefined, avatarIcon));
-		} else {
-			const avatarIcon = dom.$(ThemeIcon.asCSSSelector(icon));
-			templateData.avatarContainer.replaceChildren(dom.$('.avatar.codicon-avatar', undefined, avatarIcon));
-		}
-	}
-
-	private getAgentIcon(agent: IChatAgentMetadata | undefined): URI | ThemeIcon {
-		if (agent?.themeIcon) {
-			return agent.themeIcon;
-		} else if (agent?.iconDark && this.themeService.getColorTheme().type === ColorScheme.DARK) {
-			return agent.iconDark;
-		} else if (agent?.icon) {
-			return agent.icon;
-		} else {
-			return Codicon.copilot;
-		}
-	}
 
 	private basicRenderElement(element: ChatTreeItem, index: number, templateData: IChatListItemTemplate) {
 		let value: IChatRendererContent[] = [];
