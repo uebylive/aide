@@ -305,7 +305,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			return;
 		}
 		// New flow migration
-		if (event.mode === vscode.AideAgentMode.Chat || event.mode === vscode.AideAgentMode.Edit) {
+		if (event.mode === vscode.AideAgentMode.Chat || event.mode === vscode.AideAgentMode.Edit || event.mode === vscode.AideAgentMode.Plan) {
 			await this.streamResponse(event, this.sessionId, this.editorUrl);
 			return;
 		}
