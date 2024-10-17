@@ -978,6 +978,12 @@ export type SidecarRecentEditsFilePreviousContent = {
 	file_content_latest: string;
 };
 
+export type SidecarUndoPlanStep = {
+	exchange_id: string;
+	session_id: string;
+	index: number | null;
+};
+
 export type SidecarRecentEditsRetrieverRequest = {
 	fs_file_paths: string[] | null;
 	diff_file_content: SidecarRecentEditsFilePreviousContent[];

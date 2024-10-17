@@ -11,7 +11,7 @@ import { AnswerSplitOnNewLineAccumulatorStreaming, StreamProcessor } from '../..
 import { applyEdits, applyEditsDirectly, } from '../../server/applyEdits';
 import { RecentEditsRetriever } from '../../server/editedFiles';
 import { handleRequest } from '../../server/requestHandler';
-import { EditedCodeStreamingRequest, SideCarAgentEvent, SidecarApplyEditsRequest, SidecarContextEvent } from '../../server/types';
+import { EditedCodeStreamingRequest, SideCarAgentEvent, SidecarApplyEditsRequest, SidecarContextEvent, SidecarUndoPlanStep } from '../../server/types';
 import { RepoRef, SideCarClient } from '../../sidecar/client';
 import { getUserId } from '../../utilities/uniqueId';
 import { ProjectContext } from '../../utilities/workspaceContext';
@@ -110,7 +110,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				this.provideEdit.bind(this),
 				this.provideEditStreamed.bind(this),
 				this.newExchangeIdForSession.bind(this),
-				recentEditsRetriever.retrieveSidecar.bind(recentEditsRetriever)
+				recentEditsRetriever.retrieveSidecar.bind(recentEditsRetriever),
+				this.undoToCheckpoint.bind(this),
 			)
 		);
 		this.getNextOpenPort().then((port) => {
@@ -146,6 +147,39 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 
 	async sendContextRecording(events: SidecarContextEvent[]) {
 		await this.sidecarClient.sendContextRecording(events, this.editorUrl);
+	}
+
+	async undoToCheckpoint(request: SidecarUndoPlanStep): Promise<{
+		success: boolean;
+	}> {
+		const exchangeId = request.exchange_id;
+		const sessionId = request.session_id;
+		const planStep = request.index;
+		const responseStream = this.responseStreamCollection.getResponseStream({
+			sessionId,
+			exchangeId,
+		});
+		if (responseStream === undefined) {
+			return {
+				success: false,
+			};
+		}
+		let label = exchangeId;
+		if (planStep !== null) {
+			label = `${exchangeId}::${planStep}`;
+		}
+
+		// This creates a very special code edit which is handled by the aideAgentCodeEditingService
+		// where we intercept this edit and instead do a global rollback
+		const edit = new vscode.WorkspaceEdit();
+		edit.delete(vscode.Uri.file('/undoCheck'), new vscode.Range(new vscode.Position(0, 0), new vscode.Position(0, 0)), {
+			label,
+			needsConfirmation: false,
+		});
+		responseStream.stream.codeEdit(edit);
+		return {
+			success: true,
+		};
 	}
 
 	async newExchangeIdForSession(sessionId: string): Promise<{
