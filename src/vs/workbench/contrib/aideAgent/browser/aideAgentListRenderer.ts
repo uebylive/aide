@@ -858,7 +858,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	private renderPlanStep(step: IChatPlanStep, templateData: IChatListItemTemplate, context: IChatContentPartRenderContext): IChatContentPart {
 
 		const descriptionPart = this.renderMarkdown(step.description, templateData, context, true) as ChatMarkdownContentPart;
-		const stepPart = this.instantiationService.createInstance(ChatPlanStepPart, step, descriptionPart);
+		const stepPart = this.instantiationService.createInstance(ChatPlanStepPart, step, descriptionPart, context.element.id);
 
 		stepPart.addDisposable(stepPart.onDidChangeHeight(() => {
 			this.updateItemHeight(templateData);
