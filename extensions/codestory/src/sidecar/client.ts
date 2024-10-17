@@ -1094,6 +1094,30 @@ export class SideCarClient {
 		}
 	}
 
+	/**
+	 * Cancels the running request if its not already terminated on the sidecar
+	 */
+	async cancelRunningEvent(
+		sessionId: string,
+		exchangeId: string,
+	): Promise<boolean> {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/agentic/cancel_running_event';
+		const url = baseUrl.toString();
+		const body = {
+			session_id: sessionId,
+			exchange_id: exchangeId,
+		};
+		await fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(body),
+		});
+		return true;
+	}
+
 	async *agentSessionAgenticEdit(
 		query: string,
 		sessionId: string,
