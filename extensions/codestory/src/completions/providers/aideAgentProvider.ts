@@ -7,16 +7,14 @@ import * as http from 'http';
 import * as net from 'net';
 import * as vscode from 'vscode';
 
-import { AnswerSplitOnNewLineAccumulatorStreaming, reportAgentEventsToChat, reportFromStreamToSearchProgress, StreamProcessor } from '../../chatState/convertStreamToMessage';
-import { applyEdits, applyEditsDirectly, Limiter } from '../../server/applyEdits';
+import { AnswerSplitOnNewLineAccumulatorStreaming, StreamProcessor } from '../../chatState/convertStreamToMessage';
+import { applyEdits, applyEditsDirectly, } from '../../server/applyEdits';
 import { RecentEditsRetriever } from '../../server/editedFiles';
 import { handleRequest } from '../../server/requestHandler';
 import { EditedCodeStreamingRequest, SideCarAgentEvent, SidecarApplyEditsRequest, SidecarContextEvent } from '../../server/types';
 import { RepoRef, SideCarClient } from '../../sidecar/client';
 import { getUserId } from '../../utilities/uniqueId';
 import { ProjectContext } from '../../utilities/workspaceContext';
-import { AidePlanTimer } from '../../utilities/planTimer';
-import { ConversationMessage, PlanResponse } from '../../sidecar/types';
 
 /**
  * Stores the necessary identifiers required for identifying a response stream
@@ -59,13 +57,11 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	private requestHandler: http.Server | null = null;
 	private editsMap = new Map();
 	private eventQueue: vscode.AideAgentRequest[] = [];
-	private limiter = new Limiter(1);
 	private openResponseStream: vscode.AideAgentResponseStream | undefined;
 	private processingEvents: Map<string, boolean> = new Map();
 	// our collection of active response streams for exchanges which are still running
 	private responseStreamCollection: AideResponseStreamCollection = new AideResponseStreamCollection();
 	private sessionId: string | undefined;
-	private _timer: AidePlanTimer;
 	// this is a hack to test the theory that we can keep snapshots and make
 	// that work
 	private editCounter = 0;
@@ -107,8 +103,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		private currentRepoRef: RepoRef,
 		private projectContext: ProjectContext,
 		private sidecarClient: SideCarClient,
-		private workingDirectory: string,
-		timer: AidePlanTimer,
 		recentEditsRetriever: RecentEditsRetriever,
 	) {
 		this.requestHandler = http.createServer(
@@ -131,7 +125,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			this.editorUrl = editorUrl;
 		});
 
-		this._timer = timer;
 		this.aideAgent = vscode.aideAgent.createChatParticipant('aide', {
 			newSession: this.newSession.bind(this),
 			handleEvent: this.handleEvent.bind(this)
@@ -309,17 +302,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			await this.streamResponse(event, this.sessionId, this.editorUrl);
 			return;
 		}
-
-
-		const response = await this.aideAgent.initResponse(this.sessionId);
-		if (!response) {
-			return;
-		}
-
-		const { stream, token, exchangeId } = response;
-		console.log('exchangeId::oldFlow', exchangeId);
-		await this.generateResponse(this.sessionId, event, stream, token);
-		this.processingEvents.delete(event.id);
 	}
 
 	/**
@@ -361,106 +343,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			const responseStream = await this.sidecarClient.agentSessionPlanStep(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, false);
 			await this.reportAgentEventsToChat(true, responseStream);
 		}
-	}
-
-	private async generateResponse(sessionId: string, event: vscode.AideAgentRequest, responseStream: vscode.AideAgentResponseStream, token: vscode.CancellationToken) {
-		if (!this.editorUrl) {
-			responseStream.close();
-			return;
-		}
-
-		// always store the responseStream in the openResponseStream variable so we can
-		// assume that the connection is open for way longer after a session has been started
-		this.openResponseStream = responseStream;
-		const query = event.prompt;
-		if (event.mode === vscode.AideAgentMode.Chat) {
-			const followupResponse = this.sidecarClient.followupQuestion(query, this.currentRepoRef, sessionId, event.references as vscode.AideAgentFileReference[], this.projectContext.labels, this.editorUrl, this._timer);
-			await reportFromStreamToSearchProgress(followupResponse, responseStream, token, this.workingDirectory);
-		} else if (event.mode === vscode.AideAgentMode.Edit) {
-			const isAnchorEditing = event.scope === vscode.AideAgentScope.Selection;
-			const isWholeCodebase = event.scope === vscode.AideAgentScope.Codebase;
-			const probeResponse = this.sidecarClient.startAgentCodeEdit(query, event.references, this.editorUrl, sessionId, isWholeCodebase, isAnchorEditing);
-			await reportAgentEventsToChat(true, probeResponse, responseStream, sessionId, token, this.sidecarClient, this.iterationEdits, this.limiter);
-		} else if (event.mode === vscode.AideAgentMode.Plan) {
-			let planActionRequest: PlanActionRequest;
-			try {
-				planActionRequest = parsePlanActionCommand(event.prompt);
-			} catch (error) {
-				console.error(error);
-				planActionRequest = {
-					type: 'CREATE',
-				};
-			}
-
-			console.log({ planActionRequest });
-
-			// TODO(skcd): Keep track of @references as the variable and make sure
-			// that this works properly on the sidecar so we can show the model going
-			// to different files and following instructions for long
-
-			// we may not receive one back
-			let planResponse: PlanResponse | undefined = undefined;
-
-			if (planActionRequest.type === 'DROP') {
-				const workspaceEdit = new vscode.WorkspaceEdit();
-				workspaceEdit.insert(vscode.Uri.file('undoCheck'), new vscode.Position(0, 0), `plan_${planActionRequest.index}`);
-				responseStream.codeEdit(workspaceEdit);
-			}
-
-			let executionStream: AsyncIterableIterator<ConversationMessage> | undefined = undefined;
-
-			switch (planActionRequest.type) {
-				case 'CREATE':
-					console.log('create hit');
-					//planResponse = generateMockPlan();
-					planResponse = await this.sidecarClient.createPlanRequest(query, sessionId, event.references, this.editorUrl, false);
-					break;
-				case 'APPEND': // this should be explicit, from button action (or command line)
-					console.log('AppendHit');
-					planResponse = await this.sidecarClient.appendPlanRequest(query, sessionId, this.editorUrl, event.references);
-					break;
-				case 'DROP':
-					console.log('DropHit');
-					planResponse = await this.sidecarClient.dropPlanFromRequest(planActionRequest.index, sessionId);
-					break;
-				case 'EXECUTE':
-					console.log('ExecuteHit');
-					// this streams, plan is not updated
-					executionStream = await this.sidecarClient.executePlanUntilRequest(planActionRequest.index, sessionId, this.editorUrl);
-					break;
-				case 'REFERENCES':
-					console.log('ReferencesHit');
-					executionStream = await this.sidecarClient.checkReferencesAtErrors(query, sessionId, this.editorUrl, event.references);
-					break;
-			}
-
-			if ((planActionRequest.type === 'EXECUTE' || planActionRequest.type === 'REFERENCES') && executionStream !== undefined) {
-				// take all lsp signals, pass it to o1 or something and have it stream back a question or information to the user
-				// as feedback for work and help
-				await reportFromStreamToSearchProgress(executionStream, this.openResponseStream, token, this.workingDirectory);
-				// go to files outside the scope and try to see what we can fix (either suggest new plan steps or ask for help)
-			}
-
-			// this logic is not relevant for execute, this is shite code.
-			// we do not pass on the index from the sidecar side, so we can populate that
-			// over here
-			if (planResponse?.plan) {
-				console.log('planResponse::plan');
-				console.log(planResponse.plan);
-				for (const planItem of planResponse.plan.steps.entries()) {
-					const stepIndex = planItem[0];
-					console.log('plan::index', stepIndex);
-					console.log(planItem[1].description);
-					const planItemStep = planItem[1];
-					// populate the index over here
-					planItemStep.index = stepIndex;
-					const { sessionId } = planResponse.plan;
-					const isLast = planItemStep.index === planResponse.plan.steps.length - 1;
-					responseStream.step({ sessionId, isLast, ...planItemStep });
-				}
-			}
-		}
-		// responseStream.close();
 	}
 
 	/**
@@ -778,36 +660,5 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		this.aideAgent.dispose();
 	}
 }
-
-type PlanActionRequest =
-	| { type: 'CREATE' | 'APPEND' | 'REFERENCES' }
-	| { type: 'DROP' | 'EXECUTE'; index: number };
-
-function parsePlanActionCommand(command: string): PlanActionRequest {
-	const match = command.match(/^@(\w+)(?:\s+(\d+))?$/);
-	if (!match) {
-		if (command.startsWith('@REFERENCES')) {
-			return { type: 'REFERENCES' };
-		}
-		return { type: 'CREATE' };  // Default action is explicit now
-	}
-
-	const [, action, indexStr] = match;
-	const actionType = action.toUpperCase() as 'CREATE' | 'APPEND' | 'DROP' | 'EXECUTE' | 'REFERENCES';
-
-	if (actionType === 'DROP' || actionType === 'EXECUTE') {
-		if (indexStr === undefined) {
-			throw new Error(`Index is required for ${actionType} action`);
-		}
-		return { type: actionType, index: parseInt(indexStr, 10) };
-	}
-
-	return { type: actionType };
-}
-
-//function generateMockPlan(): PlanResponse {
-//	const mockPlan = { plan: { "id": "e032f413-1abd-4c1b-b094-96f9688ec902", "name": "Placeholder Title (to be computed)", "steps": [{ "id": "0", "index": 0, "title": "\nAdd counter element to the status bar in HTML\n", "files_to_edit": ["index.html"], "description": "\nWe'll add a new element to the status bar in the HTML file to display the counter. Assuming there's already a status bar element, we'll add a span for the counter inside it.\n\n```html\n<div id=\"status-bar\">\n  <!-- Existing status bar content -->\n  <span id=\"counter\">0</span>\n</div>\n```\n\nThis change adds a span element with the id \"counter\" inside the status bar div. The initial value is set to 0.\n", "user_context": { "variables": [], "file_content_map": [], "terminal_selection": null, "folder_paths": [], "is_plan_generation": false, "is_plan_execution_until": null, "is_plan_append": false, "is_plan_drop_from": null } }, { "id": "1", "index": 1, "title": "\nStyle the counter in CSS\n", "files_to_edit": ["styles.css"], "description": "\nWe'll add some basic styling for the counter to make it visually distinct within the status bar.\n\n```css\n#counter {\n  font-weight: bold;\n  margin-left: 10px;\n  padding: 2px 5px;\n  background-color: #f0f0f0;\n  border-radius: 3px;\n}\n```\n\nThis CSS gives the counter a bold font, adds some margin and padding, sets a light background color, and applies rounded corners.\n", "user_context": { "variables": [], "file_content_map": [], "terminal_selection": null, "folder_paths": [], "is_plan_generation": false, "is_plan_execution_until": null, "is_plan_append": false, "is_plan_drop_from": null } }, { "id": "2", "index": 2, "title": "\nImplement counter functionality in JavaScript\n", "files_to_edit": ["script.js"], "description": "\nWe'll add JavaScript code to initialize the counter, increment it, and update the display in the status bar.\n\n```javascript\nlet count = 0;\nconst counterElement = document.getElementById('counter');\n\nfunction incrementCounter() {\n  count++;\n  updateCounterDisplay();\n}\n\nfunction updateCounterDisplay() {\n  counterElement.textContent = count;\n}\n\n// Example: Increment counter every second\nsetInterval(incrementCounter, 1000);\n```\n\nThis JavaScript code does the following:\n1. Initializes a count variable and gets a reference to the counter element.\n2. Defines an incrementCounter function to increase the count.\n3. Defines an updateCounterDisplay function to update the counter in the HTML.\n4. Sets up an interval to increment the counter every second (this is just an example; you may want to trigger the increment based on specific events in your application).\n", "user_context": { "variables": [], "file_content_map": [], "terminal_selection": null, "folder_paths": [], "is_plan_generation": false, "is_plan_execution_until": null, "is_plan_append": false, "is_plan_drop_from": null } }], "user_context": { "variables": [], "file_content_map": [], "terminal_selection": null, "folder_paths": [], "is_plan_generation": false, "is_plan_execution_until": null, "is_plan_append": false, "is_plan_drop_from": null }, "user_query": "Add a counter to the status bar", "checkpoint": null, "storage_path": "/Users/guglielmodanna/Library/Application Support/ai.codestory.sidecar/plans/e032f413-1abd-4c1b-b094-96f9688ec902" } } as unknown as PlanResponse;
-//	return mockPlan
-//}
 
 
