@@ -59,36 +59,68 @@ interface TextModelSnapshotUntilPoint {
 	textModel: ITextSnapshot;
 }
 
+interface TextModelSnapshotReference {
+	response_idx: number;
+	step_idx: number | null;
+}
+
+function parseLabel(label: string): TextModelSnapshotReference | null {
+	const responsePrefix = 'response_';
+	if (!label.startsWith(responsePrefix)) {
+		return null;
+	}
+
+	const rest = label.slice(responsePrefix.length);
+
+	let response_idx_str: string;
+	let step_idx_str: string | null = null;
+
+	const separator = '::';
+	const separatorIndex = rest.indexOf(separator);
+
+	if (separatorIndex !== -1) {
+		response_idx_str = rest.slice(0, separatorIndex);
+		step_idx_str = rest.slice(separatorIndex + separator.length);
+	} else {
+		response_idx_str = rest;
+	}
+
+	const response_idx = parseInt(response_idx_str, 10);
+	if (isNaN(response_idx)) {
+		return null;
+	}
+
+	let step_idx: number | null = null;
+	if (step_idx_str !== null) {
+		step_idx = parseInt(step_idx_str, 10);
+		if (isNaN(step_idx)) {
+			return null;
+		}
+	}
+
+	return { response_idx, step_idx };
+}
+
 /**
  * Filter by the refernece:
- * we check for the prefix: `plan_` or `step_` and then try to compare them together
- * from there on as `plan_{idx}` and just grab the idx and sort by idx and grab the ones
- * which are greater than or equal to the idx which we have
+ * The label looks like the following: response_{idx}::{step_idx}
+ * Here we want to get access to the {idx} from response and from the step_idx as well
+ * if possible. Both of these are necessary to figure out how far back we want to go
+ * If we do not have a step_idx then its all good, if we do have a step_idx then we have to revert
+ * back all the text models whose labels we have which are greater than or equal to the current {step_idx}
  */
 function filterGreaterThanOrEqualToReference(
 	textModels: TextModelSnapshotUntilPoint[],
 	filterStr: string
 ): Map<string, TextModelSnapshotUntilPoint[]> {
-	const validPrefixes = ['plan_', 'step_'];
-	let filterIndex = NaN;
 
-	// Extract the index from filterStr if it starts with a valid prefix
-	for (const prefix of validPrefixes) {
-		if (filterStr.startsWith(prefix)) {
-			const indexStr = filterStr.slice(prefix.length);
-			filterIndex = parseInt(indexStr, 10);
-			if (isNaN(filterIndex)) {
-				// If the index part is not a valid number, return an empty Map
-				return new Map();
-			}
-			break;
-		}
-	}
-
-	if (isNaN(filterIndex)) {
-		// If filterStr doesn't start with 'plan_' or 'step_', return an empty Map
+	const filterReference = parseLabel(filterStr);
+	if (!filterReference) {
+		// Invalid filterStr format, return empty Map
 		return new Map();
 	}
+
+	const { response_idx: filterResponseIdx, step_idx: filterStepIdx } = filterReference;
 
 	// Create a Map to hold the results
 	const resultMap = new Map<string, TextModelSnapshotUntilPoint[]>();
@@ -96,20 +128,26 @@ function filterGreaterThanOrEqualToReference(
 	// Filter and group the textModels array
 	for (const model of textModels) {
 		const { resourceName, reference } = model;
-		let index = NaN;
+		const modelReference = parseLabel(reference);
+		if (!modelReference) {
+			continue; // Skip invalid references
+		}
 
-		// Check if reference starts with a valid prefix and extract the index
-		for (const prefix of validPrefixes) {
-			if (reference.startsWith(prefix)) {
-				const indexStr = reference.slice(prefix.length);
-				index = parseInt(indexStr, 10);
-				break;
+		const { response_idx: modelResponseIdx, step_idx: modelStepIdx } = modelReference;
+
+		let includeModel = false;
+
+		if (modelResponseIdx > filterResponseIdx) {
+			includeModel = true;
+		} else if (modelResponseIdx === filterResponseIdx) {
+			if (filterStepIdx === null) {
+				includeModel = true;
+			} else if (modelStepIdx !== null && modelStepIdx >= filterStepIdx) {
+				includeModel = true;
 			}
 		}
 
-		// Include the model if the index is valid and greater than or equal to filterIndex
-		if (!isNaN(index) && index >= filterIndex) {
-			// Get the array for this resourceName from the Map, or create it if it doesn't exist
+		if (includeModel) {
 			if (!resultMap.has(resourceName)) {
 				resultMap.set(resourceName, []);
 			}
@@ -117,29 +155,35 @@ function filterGreaterThanOrEqualToReference(
 		}
 	}
 
-	// Sort the edits in each resourceName group by the numerical index
-	const sortedMap = new Map();
-	for (const [resourceName, edits] of resultMap) {
-		const sortedEdits = edits.sort((a, b) => {
-			let indexA = NaN;
-			let indexB = NaN;
-			for (const prefix of validPrefixes) {
-				if (a.reference.startsWith(prefix)) {
-					indexA = parseInt(a.reference.slice(prefix.length), 10);
-				}
-				if (b.reference.startsWith(prefix)) {
-					indexB = parseInt(b.reference.slice(prefix.length), 10);
-				}
-			}
-			if (isNaN(indexA) || isNaN(indexB)) {
+	// Sort the edits in each resourceName group
+	for (const [_resourceName, edits] of resultMap) {
+		edits.sort((a, b) => {
+			const refA = parseLabel(a.reference);
+			const refB = parseLabel(b.reference);
+
+			if (!refA || !refB) {
 				return 0;
 			}
-			return indexA - indexB;
+
+			// Compare by response_idx first
+			if (refA.response_idx !== refB.response_idx) {
+				return refA.response_idx - refB.response_idx;
+			}
+
+			// Then compare by step_idx
+			if (refA.step_idx === null && refB.step_idx === null) {
+				return 0;
+			} else if (refA.step_idx === null) {
+				return -1; // null step_idx comes before non-null
+			} else if (refB.step_idx === null) {
+				return 1;
+			} else {
+				return refA.step_idx - refB.step_idx;
+			}
 		});
-		sortedMap.set(resourceName, sortedEdits);
 	}
 
-	return sortedMap;
+	return resultMap;
 }
 
 
@@ -261,6 +305,9 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 	}
 
 	private async processWorkspaceEdit(workspaceEdit: IWorkspaceTextEdit) {
+		// the workspace label which we get over here is of the form: response_{idx}::Option<{step_idx}>
+		// we can use this as definitive markers to create an increasing order of preference for the ITextModel
+		// which we want to keep in memory
 		const workspaceLabel = workspaceEdit.metadata?.label;
 
 		// the other thing which we want to try is that what happens when
@@ -336,10 +383,16 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 		// passed if there is nothing then we can start by keeping track of the snapshot
 		// which is textModelN over here
 		const textModelAtSnapshot = this._textModelSnapshotUntilPoint.find((textModelSnapshot) => {
-			return textModelSnapshot.resourceName === resource.toString() && textModelSnapshot.reference === workspaceLabel;
+			const textModelSnapshotLabel = parseLabel(textModelSnapshot.reference);
+			if (workspaceLabel === undefined) {
+				return false;
+			}
+			const workspaceLabelParsed = parseLabel(workspaceLabel);
+			return textModelSnapshot.resourceName === resource.toString() && textModelSnapshotLabel?.response_idx === workspaceLabelParsed?.response_idx && textModelSnapshotLabel?.step_idx === workspaceLabelParsed?.step_idx;
 		});
 		// this allows us to keep track of the text model at that reference location
 		if (textModelAtSnapshot === undefined && workspaceLabel !== undefined) {
+			console.log('snapshots::stored', this._textModelSnapshotUntilPoint.length);
 			this._textModelSnapshotUntilPoint.push({
 				resourceName: resource.toString(),
 				textModel: codeEdits.textModelN.createSnapshot(),
@@ -347,7 +400,6 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 			});
 		}
 
-		console.log('snapshots::stored', this._textModelSnapshotUntilPoint.length);
 
 		codeEdits.hunkData.ignoreTextModelNChanges = true;
 		codeEdits.textModelN.pushEditOperations(null, [workspaceEdit.textEdit], () => null);

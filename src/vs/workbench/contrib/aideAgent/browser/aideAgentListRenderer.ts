@@ -811,8 +811,6 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			} else {
 				if (value instanceof ChatMarkdownContentPart) {
 					codeBlockStartIndex = codeBlockStartIndex + value.codeblocks.length;
-				} else {
-					console.log('preceedingContentParts::not_instance_of::ChatMarkdownContentPart::ChatMarkdownContentPart');
 				}
 			}
 		}
