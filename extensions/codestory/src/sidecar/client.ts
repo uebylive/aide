@@ -1206,8 +1206,6 @@ export class SideCarClient {
 			codebase_search: false,
 		};
 
-		console.log(JSON.stringify(body));
-
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
 			const lineParts = line.split('data:{');
