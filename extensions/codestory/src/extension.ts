@@ -28,7 +28,6 @@ import { CSEventHandler } from './csEvents/csEventHandler';
 import { RecentEditsRetriever } from './server/editedFiles';
 // import { GENERATE_PLAN } from './completions/providers/generatePlan';
 // import { OPEN_FILES_VARIABLE } from './completions/providers/openFiles';
-import { AidePlanTimer } from './utilities/planTimer';
 
 export let SIDECAR_CLIENT: SideCarClient | null = null;
 
@@ -181,17 +180,11 @@ export async function activate(context: vscode.ExtensionContext) {
 	const recentEditsRetriever = new RecentEditsRetriever(300 * 1000, vscode.workspace);
 	context.subscriptions.push(recentEditsRetriever);
 
-	// starts the aide timer
-	const aideTimer = new AidePlanTimer();
-	context.subscriptions.push(aideTimer.statusBar());
-
 	// Register the agent session provider
 	const agentSessionProvider = new AideAgentSessionProvider(
 		currentRepo,
 		projectContext,
 		sidecarClient,
-		rootPath,
-		aideTimer,
 		recentEditsRetriever
 	);
 	const editorUrl = agentSessionProvider.editorUrl;
