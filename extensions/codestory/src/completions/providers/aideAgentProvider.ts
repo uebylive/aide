@@ -27,8 +27,8 @@ interface ResponseStreamIdentifier {
 class AideResponseStreamCollection {
 	private responseStreamCollection: Map<string, vscode.AideAgentEventSenderResponse> = new Map();
 
-	constructor() {
-
+	constructor(private extensionContext: vscode.ExtensionContext) {
+		this.extensionContext = extensionContext;
 	}
 
 	getKey(responseStreamIdentifier: ResponseStreamIdentifier): string {
@@ -36,6 +36,9 @@ class AideResponseStreamCollection {
 	}
 
 	addResponseStream(responseStreamIdentifier: ResponseStreamIdentifier, responseStream: vscode.AideAgentEventSenderResponse) {
+		this.extensionContext.subscriptions.push(responseStream.token.onCancellationRequested(() => {
+			console.log('cancellationRequested::exchange');
+		}));
 		this.responseStreamCollection.set(this.getKey(responseStreamIdentifier), responseStream);
 	}
 
@@ -45,6 +48,15 @@ class AideResponseStreamCollection {
 
 	removeResponseStream(responseStreamIdentifer: ResponseStreamIdentifier) {
 		this.responseStreamCollection.delete(this.getKey(responseStreamIdentifer));
+	}
+
+	async isCancelledEvent(responseStreamIdentifier: ResponseStreamIdentifier): Promise<boolean> {
+		const responseStream = this.getResponseStream(responseStreamIdentifier);
+		if (responseStreamIdentifier === undefined) {
+			return true;
+		}
+		const cancellationToken = responseStream?.token;
+		return cancellationToken?.isCancellationRequested ?? true;
 	}
 }
 
@@ -59,8 +71,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	private eventQueue: vscode.AideAgentRequest[] = [];
 	private openResponseStream: vscode.AideAgentResponseStream | undefined;
 	private processingEvents: Map<string, boolean> = new Map();
-	// our collection of active response streams for exchanges which are still running
-	private responseStreamCollection: AideResponseStreamCollection = new AideResponseStreamCollection();
+	private responseStreamCollection: AideResponseStreamCollection;
 	private sessionId: string | undefined;
 	// this is a hack to test the theory that we can keep snapshots and make
 	// that work
@@ -104,6 +115,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		private projectContext: ProjectContext,
 		private sidecarClient: SideCarClient,
 		recentEditsRetriever: RecentEditsRetriever,
+		extensionContext: vscode.ExtensionContext,
 	) {
 		this.requestHandler = http.createServer(
 			handleRequest(
@@ -135,6 +147,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			name: getUserId(),
 			icon: vscode.Uri.joinPath(vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''), 'assets', 'aide-user.png')
 		};
+		// our collection of active response streams for exchanges which are still running
+		this.responseStreamCollection = new AideResponseStreamCollection(extensionContext);
 		this.aideAgent.supportIssueReporting = false;
 		this.aideAgent.welcomeMessageProvider = {
 			provideWelcomeMessage: async () => {
@@ -324,29 +338,18 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		this.sessionId = sessionId;
 	}
 
-	// We also get the cancellation token over here which we can react to, which we should
-	// so we make sure that we can stop processing the updates as we are making progress
-	handleEvent(event: vscode.AideAgentRequest, token: vscode.CancellationToken): void {
+	handleEvent(event: vscode.AideAgentRequest): void {
 		this.eventQueue.push(event);
 		if (this.sessionId && !this.processingEvents.has(event.id)) {
 			this.processingEvents.set(event.id, true);
-			this.processEvent(event, token);
+			this.processEvent(event);
 		}
 	}
 
-	private async processEvent(event: vscode.AideAgentRequest, token: vscode.CancellationToken): Promise<void> {
-		// We are slowly going to migrate to the new flow, to start with lets check if
-		// the chat flow can be migrated to the new flow
+	private async processEvent(event: vscode.AideAgentRequest): Promise<void> {
 		if (!this.sessionId || !this.editorUrl) {
 			return;
 		}
-		// on cancellation requested we want to ping the sidecar that we are terminating
-		// the request
-		token.onCancellationRequested(() => {
-			if (this.sessionId !== undefined) {
-				this.sidecarClient.cancelRunningEvent(this.sessionId, event.id);
-			}
-		});
 		// New flow migration
 		if (event.mode === vscode.AideAgentMode.Chat || event.mode === vscode.AideAgentMode.Edit || event.mode === vscode.AideAgentMode.Plan) {
 			await this.streamResponse(event, this.sessionId, this.editorUrl);
@@ -422,6 +425,11 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			if ('done' in event) {
 				continue;
 			}
+
+			await this.responseStreamCollection.isCancelledEvent({
+				sessionId: event.request_id,
+				exchangeId: event.exchange_id,
+			});
 
 			if (event.event.FrameworkEvent) {
 				if (event.event.FrameworkEvent.InitialSearchSymbols) {

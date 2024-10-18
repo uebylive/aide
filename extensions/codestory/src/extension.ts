@@ -185,7 +185,8 @@ export async function activate(context: vscode.ExtensionContext) {
 		currentRepo,
 		projectContext,
 		sidecarClient,
-		recentEditsRetriever
+		recentEditsRetriever,
+		context,
 	);
 	const editorUrl = agentSessionProvider.editorUrl;
 	context.subscriptions.push(agentSessionProvider);

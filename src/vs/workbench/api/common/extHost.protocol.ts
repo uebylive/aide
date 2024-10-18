@@ -1432,8 +1432,12 @@ export type IChatCodeEditDto = Pick<IChatCodeEdit, 'kind'> & { edits: IWorkspace
 export type IAideAgentProgressDto = IChatProgressDto | IChatCodeEditDto | Dto<IChatPlanStep> | Dto<IChatEndResponse>;
 
 export interface MainThreadAideAgentAgentsShape2 extends MainThreadChatAgentsShape2 {
+	// The cancellation token over here is broken bad, since we are on the server
+	// side, the RPC layer cannot pass us the cancellation token properly
+	// we get this but DO NOT USE IT
 	$initResponse(sessionId: string): Promise<{ responseId: string; token: CancellationToken }>;
 	$handleProgressChunk(responseId: string, chunk: IAideAgentProgressDto, handle?: number): Promise<number | void>;
+	$cancelExchange(sessionId: string, exchangeId: string): Promise<null>;
 }
 
 
