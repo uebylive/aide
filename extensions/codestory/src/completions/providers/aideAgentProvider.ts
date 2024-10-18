@@ -27,17 +27,18 @@ interface ResponseStreamIdentifier {
 class AideResponseStreamCollection {
 	private responseStreamCollection: Map<string, vscode.AideAgentEventSenderResponse> = new Map();
 
-	constructor(private extensionContext: vscode.ExtensionContext) {
+	constructor(private extensionContext: vscode.ExtensionContext, private sidecarClient: SideCarClient) {
 		this.extensionContext = extensionContext;
-	}
+		this.sidecarClient = sidecarClient;
 
+	}
 	getKey(responseStreamIdentifier: ResponseStreamIdentifier): string {
 		return `${responseStreamIdentifier.sessionId}-${responseStreamIdentifier.exchangeId}`;
 	}
 
 	addResponseStream(responseStreamIdentifier: ResponseStreamIdentifier, responseStream: vscode.AideAgentEventSenderResponse) {
 		this.extensionContext.subscriptions.push(responseStream.token.onCancellationRequested(() => {
-			console.log('cancellationRequested::exchange');
+			this.sidecarClient.cancelRunningEvent(responseStreamIdentifier.sessionId, responseStreamIdentifier.exchangeId);
 		}));
 		this.responseStreamCollection.set(this.getKey(responseStreamIdentifier), responseStream);
 	}
@@ -48,15 +49,6 @@ class AideResponseStreamCollection {
 
 	removeResponseStream(responseStreamIdentifer: ResponseStreamIdentifier) {
 		this.responseStreamCollection.delete(this.getKey(responseStreamIdentifer));
-	}
-
-	async isCancelledEvent(responseStreamIdentifier: ResponseStreamIdentifier): Promise<boolean> {
-		const responseStream = this.getResponseStream(responseStreamIdentifier);
-		if (responseStreamIdentifier === undefined) {
-			return true;
-		}
-		const cancellationToken = responseStream?.token;
-		return cancellationToken?.isCancellationRequested ?? true;
 	}
 }
 
@@ -148,7 +140,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			icon: vscode.Uri.joinPath(vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''), 'assets', 'aide-user.png')
 		};
 		// our collection of active response streams for exchanges which are still running
-		this.responseStreamCollection = new AideResponseStreamCollection(extensionContext);
+		this.responseStreamCollection = new AideResponseStreamCollection(extensionContext, sidecarClient);
 		this.aideAgent.supportIssueReporting = false;
 		this.aideAgent.welcomeMessageProvider = {
 			provideWelcomeMessage: async () => {
@@ -425,11 +417,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			if ('done' in event) {
 				continue;
 			}
-
-			await this.responseStreamCollection.isCancelledEvent({
-				sessionId: event.request_id,
-				exchangeId: event.exchange_id,
-			});
 
 			if (event.event.FrameworkEvent) {
 				if (event.event.FrameworkEvent.InitialSearchSymbols) {
