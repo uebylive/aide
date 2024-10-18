@@ -4,86 +4,86 @@
  *--------------------------------------------------------------------------------------------*/
 
 
+import { ActionViewItem } from '../../../../../base/browser/ui/actionbar/actionViewItems.js';
 import { localize } from '../../../../../nls.js';
 import { MenuId } from '../../../../../platform/actions/common/actions.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { IKeybindingService } from '../../../../../platform/keybinding/common/keybinding.js';
-import { AideAgentRichItem } from './aideAgentRichItem.js';
+import { IChatProgressRenderableResponseContent } from '../../common/aideAgentModel.js';
+import { ChatEditsState, IChatEdits } from '../../common/aideAgentService.js';
+import { ChatMarkdownContentPart } from './aideAgentMarkdownContentPart.js';
+import { AideAgentRichItem as AideAgentRichItemContent } from './aideAgentRichItem.js';
 
-export class EditsStartedContentPart extends AideAgentRichItem {
+export class EditsContentPart extends AideAgentRichItemContent {
 	constructor(
+		readonly edits: IChatEdits,
+		descriptionPart: ChatMarkdownContentPart | undefined,
 		@IInstantiationService instantiationService: IInstantiationService,
 		@IKeybindingService keybindingService: IKeybindingService,
 	) {
+
+		const label = assignLabel(edits);
+		const icon = assignIcon(edits);
+		const menuId = assignMenuId(edits);
+
+		const actionsPreview = [
+			this._register(instantiationService.createInstance(ActionViewItem,)
+		]
+
 		super(
-			localize('agent.editing', "Editing"),
-			'micro/bolt',
-			MenuId.AideAgentEditsLoading,
+			label,
+			icon,
+			actionsPreview,
+			menuId,
+			edits.stale,
+			descriptionPart,
 			instantiationService,
 			keybindingService
 		);
 	}
-}
 
-export class EditsProgressContentPart extends AideAgentRichItem {
-	constructor(
-		@IInstantiationService instantiationService: IInstantiationService,
-		@IKeybindingService keybindingService: IKeybindingService,
-	) {
-		super(
-			localize('agent.editing', "Editing"),
-			'micro/bolt',
-			MenuId.AideAgentEditsLoading,
-			instantiationService,
-			keybindingService
-		);
+	override hasSameContent(other: IChatProgressRenderableResponseContent): boolean {
+		return other.kind === 'edits' && other.state === this.edits.state && other.files?.length === this.edits.files?.length;
 	}
 }
 
-export class EditsReviewContentPart extends AideAgentRichItem {
-	constructor(
-		@IInstantiationService instantiationService: IInstantiationService,
-		@IKeybindingService keybindingService: IKeybindingService,
-	) {
-		super(
-			localize('agent.editsMade', "Edits made"),
-			'micro/bolt',
-			MenuId.AideAgentEditsReview,
-			instantiationService,
-			keybindingService
-		);
+function assignLabel(edits: IChatEdits): string {
+	switch (edits.state) {
+		case ChatEditsState.Loading:
+			return localize('agent.editing', "Editing");
+		case ChatEditsState.InReview:
+		case ChatEditsState.MarkedComplete:
+			return localize('agent.editsMade', "Edits made");
+		case ChatEditsState.Cancelled:
+			return localize('agent.editsCancelled', "Edits cancelled");
+		default:
+			throw new Error('Invalid state');
 	}
 }
 
-export class EditsCompletedContentPart extends AideAgentRichItem {
-	constructor(
-		@IInstantiationService instantiationService: IInstantiationService,
-		@IKeybindingService keybindingService: IKeybindingService,
-	) {
-		super(
-			localize('agent.editsMade', "Edits made"),
-			'micro/bolt',
-			MenuId.AideAgentEditsCompleted,
-			instantiationService,
-			keybindingService
-		);
+function assignIcon(edits: IChatEdits): string {
+	switch (edits.state) {
+		case ChatEditsState.Loading:
+		case ChatEditsState.InReview:
+			return 'micro/bolt';
+		case ChatEditsState.MarkedComplete:
+			return 'micro/check-circle';
+		case ChatEditsState.Cancelled:
+			return 'micro/x-mark';
+		default:
+			throw new Error('Invalid state');
 	}
 }
 
-export class EditsCancelledContentPart extends AideAgentRichItem {
-	constructor(
-		@IInstantiationService instantiationService: IInstantiationService,
-		@IKeybindingService keybindingService: IKeybindingService,
-	) {
-		super(
-			localize('agent.editsCancelled', "Edits cancelled"),
-			'micro/x-mark',
-			null,
-			instantiationService,
-			keybindingService
-		);
+function assignMenuId(edits: IChatEdits): MenuId | null {
+	switch (edits.state) {
+		case ChatEditsState.Loading:
+			return MenuId.AideAgentEditsLoading;
+		case ChatEditsState.InReview:
+			return MenuId.AideAgentEditsReview;
+		case ChatEditsState.MarkedComplete:
+			return MenuId.AideAgentEditsCompleted;
+		default:
+			return null;
 	}
 }
-
-
-
