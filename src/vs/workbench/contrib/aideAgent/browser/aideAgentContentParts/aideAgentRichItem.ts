@@ -14,16 +14,22 @@ import { IChatContentPart } from './aideAgentContentParts.js';
 import { IChatProgressRenderableResponseContent } from '../../common/aideAgentModel.js';
 import { Emitter } from '../../../../../base/common/event.js';
 import { ChatMarkdownContentPart } from './aideAgentMarkdownContentPart.js';
-import { ActionViewItem } from '../../../../../base/browser/ui/actionbar/actionViewItems.js';
-
 const $ = dom.$;
+
+export interface IActionsPreviewOptions {
+	start: number;
+	startLabel?: string;
+	end: number;
+}
+
 
 export abstract class AideAgentRichItem extends Disposable implements IChatContentPart {
 	public readonly domNode: HTMLElement;
 
-	protected toolBar: MenuWorkbenchToolBar | undefined;
-	private actionsContainer: HTMLElement | undefined;
+	protected toolbar: MenuWorkbenchToolBar | undefined;
+	private toolbarElement: HTMLElement | undefined;
 	private cachedToolbarWidth: number | undefined;
+	private actionsPreviewElement: HTMLElement | undefined;
 
 	private readonly _onDidChangeHeight = this._register(new Emitter<void>());
 	public readonly onDidChangeHeight = this._onDidChangeHeight.event;
@@ -31,7 +37,7 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 	constructor(
 		headerTitle: string,
 		iconId: string,
-		actionsPreview: ActionViewItem[],
+		readonly previewOptions: IActionsPreviewOptions,
 		menuId: MenuId | null,
 		//readonly currentWidth: number,
 		stale: boolean,
@@ -64,12 +70,13 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 		}
 
 		if (menuId) {
-			const actionsContainer = this.actionsContainer = $('.rich-item-actions');
+
+			const actionsContainer = this.toolbarElement = $('.rich-item-actions');
 			header.appendChild(actionsContainer);
 
-			this.toolBar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, actionsContainer, menuId, {
+			this.toolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, actionsContainer, menuId, {
 				menuOptions: { shouldForwardArgs: true },
-				hiddenItemStrategy: HiddenItemStrategy.Ignore,
+				hiddenItemStrategy: HiddenItemStrategy.NoHide,
 				actionViewItemProvider: (action) => {
 					if (action instanceof MenuItemAction) {
 						return this.instantiationService.createInstance(MenuEntryActionViewItem, action, undefined);
@@ -78,8 +85,12 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 				}
 			}));
 
+			const actionsPreviewElement = this.actionsPreviewElement = $('.rich-item-actions-preview');
+			header.appendChild(actionsPreviewElement);
+			this.updatePreview();
 
-			this._register(this.toolBar.onDidChangeMenuItems(() => {
+			this._register(this.toolbar.onDidChangeMenuItems(() => {
+				this.updatePreview();
 				this.layout();
 			}));
 
@@ -93,11 +104,30 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 
 	abstract hasSameContent(other: IChatProgressRenderableResponseContent): boolean;
 
+	private updatePreview() {
+		if (!this.toolbar || !this.actionsPreviewElement || !this.previewOptions) {
+			return;
+		}
+		const numberOfItems = this.toolbar.getItemsLength();
+		dom.clearNode(this.actionsPreviewElement);
+		for (let i = 0; i < numberOfItems; i++) {
+			if (i >= this.previewOptions.start || i < this.previewOptions.end) {
+				const action = this.toolbar.getItemAction(i);
+				if (!action?.class) {
+					continue;
+				}
+				const actionPlaceholder = $('.rich-item-actions-preview');
+				this.actionsPreviewElement.appendChild(actionPlaceholder);
+				actionPlaceholder.classList.add(...action.class.split(' '));
+			}
+		}
+	}
+
 	layout(): void {
-		if (this.toolBar && this.actionsContainer) {
-			if (!this.cachedToolbarWidth || (typeof this.cachedToolbarWidth === 'number' && this.cachedToolbarWidth !== this.toolBar.getItemsWidth())) {
-				this.cachedToolbarWidth = this.toolBar.getItemsWidth();
-				this.actionsContainer.style.width = `${this.cachedToolbarWidth}px`;
+		if (this.toolbar && this.toolbarElement) {
+			if (!this.cachedToolbarWidth || (typeof this.cachedToolbarWidth === 'number' && this.cachedToolbarWidth !== this.toolbar.getItemsWidth())) {
+				this.cachedToolbarWidth = this.toolbar.getItemsWidth();
+				this.toolbarElement.style.width = `${this.cachedToolbarWidth}px`;
 			}
 		}
 	}

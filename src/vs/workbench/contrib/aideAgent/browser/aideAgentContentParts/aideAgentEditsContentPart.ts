@@ -3,8 +3,6 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-
-import { ActionViewItem } from '../../../../../base/browser/ui/actionbar/actionViewItems.js';
 import { localize } from '../../../../../nls.js';
 import { MenuId } from '../../../../../platform/actions/common/actions.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
@@ -26,14 +24,10 @@ export class EditsContentPart extends AideAgentRichItemContent {
 		const icon = assignIcon(edits);
 		const menuId = assignMenuId(edits);
 
-		const actionsPreview = [
-			this._register(instantiationService.createInstance(ActionViewItem,)
-		]
-
 		super(
 			label,
 			icon,
-			actionsPreview,
+			{ start: 0, end: 0 },
 			menuId,
 			edits.stale,
 			descriptionPart,
@@ -82,6 +76,9 @@ function assignMenuId(edits: IChatEdits): MenuId | null {
 		case ChatEditsState.InReview:
 			return MenuId.AideAgentEditsReview;
 		case ChatEditsState.MarkedComplete:
+			if (edits.stale) {
+				return null;
+			}
 			return MenuId.AideAgentEditsCompleted;
 		default:
 			return null;
