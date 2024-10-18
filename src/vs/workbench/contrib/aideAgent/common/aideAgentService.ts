@@ -196,9 +196,21 @@ export interface IChatConfirmation {
 	kind: 'confirmation';
 }
 
-export interface IChatRichItem {
-	kind: 'richItem';
-	content: any; // TODO(@g-danna) define type
+export enum ChatEditsState {
+	Loading = 'loading',
+	InReview = 'inReview',
+	MarkedComplete = 'markedComplete',
+	Cancelled = 'cancelled',
+}
+
+export type IChatEditsState = `${ChatEditsState}`;
+
+export interface IChatEdits {
+	kind: 'edits';
+	state: IChatEditsState;
+	stale: boolean;
+	files: URI[];
+	description?: IMarkdownString;
 }
 
 export interface IChatPlanStep {

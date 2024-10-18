@@ -37,7 +37,7 @@ import { annotateSpecialMarkdownContent } from '../common/annotations.js';
 import { CONTEXT_CHAT_RESPONSE_SUPPORT_ISSUE_REPORTING, CONTEXT_REQUEST, CONTEXT_RESPONSE, CONTEXT_RESPONSE_DETECTED_AGENT_COMMAND, CONTEXT_RESPONSE_ERROR, CONTEXT_RESPONSE_FILTERED, CONTEXT_RESPONSE_VOTE } from '../common/aideAgentContextKeys.js';
 import { IChatRequestVariableEntry, IChatTextEditGroup } from '../common/aideAgentModel.js';
 import { chatSubcommandLeader } from '../common/aideAgentParserTypes.js';
-import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatConfirmation, IChatContentReference, IChatFollowup, IChatPlanStep, IChatTask, IChatTreeData } from '../common/aideAgentService.js';
+import { ChatAgentVoteDirection, ChatAgentVoteDownReason, ChatEditsState, IChatConfirmation, IChatContentReference, IChatEdits, IChatFollowup, IChatPlanStep, IChatTask, IChatTreeData } from '../common/aideAgentService.js';
 import { IChatCodeCitations, IChatReferences, IChatRendererContent, IChatRequestViewModel, IChatResponseViewModel, isRequestVM, isResponseVM, isWelcomeVM } from '../common/aideAgentViewModel.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
 import { MarkUnhelpfulActionId } from './actions/aideAgentTitleActions.js';
@@ -59,8 +59,9 @@ import { ChatMarkdownRenderer } from './aideAgentMarkdownRenderer.js';
 import { ChatEditorOptions } from './aideAgentOptions.js';
 import { ChatCodeBlockContentProvider, CodeBlockPart } from './codeBlockPart.js';
 import { ChatPlanStepPart } from './aideAgentContentParts/aideAgentPlanStepPart.js';
-import { EditsCancelledContentPart, EditsCompletedContentPart, EditsProgressContentPart, EditsReviewContentPart, EditsStartedContentPart } from './aideAgentContentParts/aideAgentEditsContentPart.js';
+import { EditsContentPart } from './aideAgentContentParts/aideAgentEditsContentPart.js';
 import { AideAgentRichItem } from './aideAgentContentParts/aideAgentRichItem.js';
+import { ChatAgentLocation } from '../common/aideAgentAgents.js';
 
 const $ = dom.$;
 
@@ -128,7 +129,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 	constructor(
 		editorOptions: ChatEditorOptions,
-		//private readonly location: ChatAgentLocation,
+		location: ChatAgentLocation,
 		private readonly rendererOptions: IChatListItemRendererOptions,
 		private readonly delegate: IChatRendererDelegate,
 		private readonly codeBlockModelCollection: CodeBlockModelCollection,
@@ -362,15 +363,18 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			this.basicRenderElement(element, index, templateData);
 		} else {
 			// this.renderWelcomeMessage(element, templateData);
+
 			const partsToTest: AideAgentRichItem[] = [
-				this.instantiationService.createInstance(EditsStartedContentPart),
-				this.instantiationService.createInstance(EditsProgressContentPart),
-				this.instantiationService.createInstance(EditsReviewContentPart),
-				this.instantiationService.createInstance(EditsCompletedContentPart),
-				this.instantiationService.createInstance(EditsCancelledContentPart),
+				this.instantiationService.createInstance(EditsContentPart, { kind: 'edits', state: ChatEditsState.Loading, stale: false, files: [] }, undefined),
+				this.instantiationService.createInstance(EditsContentPart, { kind: 'edits', state: ChatEditsState.InReview, stale: false, files: [] }, undefined),
+				this.instantiationService.createInstance(EditsContentPart, { kind: 'edits', state: ChatEditsState.MarkedComplete, stale: false, files: [] }, undefined),
+				this.instantiationService.createInstance(EditsContentPart, { kind: 'edits', state: ChatEditsState.Cancelled, stale: false, files: [] }, undefined),
+				this.instantiationService.createInstance(EditsContentPart, { kind: 'edits', state: ChatEditsState.MarkedComplete, stale: true, files: [] }, undefined),
 			];
+
 			for (const testPart of partsToTest) {
 				templateData.value.appendChild(testPart.domNode);
+				testPart.layout();
 			}
 		}
 	}
@@ -688,8 +692,8 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			return this.renderContentReferencesListData(content, undefined, context, templateData);
 		} else if (content.kind === 'codeCitations') {
 			return this.renderCodeCitationsListData(content, context, templateData);
-		} else if (content.kind === 'richItem') {
-			this.renderRichItem(content, templateData, context);
+		} else if (content.kind === 'edits') {
+			this.renderEdits(content, templateData, context);
 		} else if (content.kind === 'planStep') {
 			// @g-danna This will be deprecated soon
 			return this.renderPlanStep(content, templateData, context);
@@ -776,7 +780,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		return textEditPart;
 	}
 
-	private renderMarkdown(markdown: IMarkdownString, templateData: IChatListItemTemplate, context: IChatContentPartRenderContext, withinStep = false): IChatContentPart {
+	private renderMarkdown(markdown: IMarkdownString, templateData: IChatListItemTemplate, context: IChatContentPartRenderContext, width = this._currentLayoutWidth): IChatContentPart {
 		const element = context.element;
 		const fillInIncompleteTokens = isResponseVM(element) && (!element.isComplete || element.isCanceled || element.errorDetails?.responseIsFiltered || element.errorDetails?.responseIsIncomplete || !!element.renderData);
 		// we are getting 0 as the codeBlockStartIndex over here which is wrong
@@ -796,11 +800,10 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			}
 		}
 
-		const markdownWidth = this._currentLayoutWidth - (withinStep ? 32 : 0); // Remove timeline width
-		const markdownPart = this.instantiationService.createInstance(ChatMarkdownContentPart, markdown, context, this._editorPool, fillInIncompleteTokens, codeBlockStartIndex, this.renderer, markdownWidth, this.codeBlockModelCollection, this.rendererOptions);
+		const markdownPart = this.instantiationService.createInstance(ChatMarkdownContentPart, markdown, context, this._editorPool, fillInIncompleteTokens, codeBlockStartIndex, this.renderer, width, this.codeBlockModelCollection, this.rendererOptions);
 		const markdownPartId = markdownPart.id;
 		markdownPart.addDisposable(markdownPart.onDidChangeHeight(() => {
-			markdownPart.layout(markdownWidth);
+			markdownPart.layout(width);
 			this.updateItemHeight(templateData);
 		}));
 
@@ -836,23 +839,31 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		return markdownPart;
 	}
 
-	private renderRichItem(item: any, templateData: IChatListItemTemplate, context: IChatContentPartRenderContext) {
-		// started, progress, canceled, review, completed
-		//if (item.type === 'edits') {
-		//
-		//} else if (item.type === 'plan') {
-		//
-		//}
+	private renderEdits(edits: IChatEdits, templateData: IChatListItemTemplate, context: IChatContentPartRenderContext) {
+		let descriptionPart: ChatMarkdownContentPart | undefined;
+		if (edits.description) {
+			descriptionPart = this.renderMarkdown(edits.description, templateData, context,) as ChatMarkdownContentPart;
+		}
+		const editsContentPart = this.instantiationService.createInstance(EditsContentPart, edits, descriptionPart);
+		editsContentPart.addDisposable(editsContentPart.onDidChangeHeight(() => {
+			this.updateItemHeight(templateData);
+			// Should not be needed?
+			// if (descriptionPart) {
+			// 	descriptionPart.layout(this._currentLayoutWidth);
+			// }
+		}));
+		templateData.value.appendChild(editsContentPart.domNode);
+		editsContentPart.layout();
 	}
 
 	private renderPlanStep(step: IChatPlanStep, templateData: IChatListItemTemplate, context: IChatContentPartRenderContext): IChatContentPart {
 
-		const descriptionPart = this.renderMarkdown(step.description, templateData, context, true) as ChatMarkdownContentPart;
+		const descriptionPart = this.renderMarkdown(step.description, templateData, context) as ChatMarkdownContentPart;
 		const stepPart = this.instantiationService.createInstance(ChatPlanStepPart, step, descriptionPart);
 
 		stepPart.addDisposable(stepPart.onDidChangeHeight(() => {
 			this.updateItemHeight(templateData);
-			descriptionPart.layout(this._currentLayoutWidth - 32); // Remove timeline width
+			descriptionPart.layout(this._currentLayoutWidth);
 		}));
 
 		if (isResponseVM(context.element)) {

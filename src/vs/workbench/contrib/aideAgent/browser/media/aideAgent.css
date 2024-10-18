@@ -930,6 +930,10 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	font-weight: 400;
 }
 
+.aideagent-item-description {
+	color: va(--vscode-sideBarSectionHeader-foreground);
+}
+
 .aideagent-item-container .rich-item.stale {
 	opacity: 0.6;
 }

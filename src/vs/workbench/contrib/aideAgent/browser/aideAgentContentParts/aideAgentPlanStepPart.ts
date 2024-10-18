@@ -217,8 +217,6 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 				break;
 		}
 
-		// TODO(@g-danna) Add description element
-
 		contentElement.appendChild(this.descriptionPart.domNode);
 		this.descriptionPart.domNode.classList.add('plan-step-description');
 
