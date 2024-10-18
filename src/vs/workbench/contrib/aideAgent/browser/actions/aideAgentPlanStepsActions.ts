@@ -11,7 +11,7 @@ import { KeybindingWeight } from '../../../../../platform/keybinding/common/keyb
 import { IAideAgentWidgetService } from '../aideAgent.js';
 import { CONTEXT_CHAT_ENABLED, CONTEXT_IN_CHAT_PLAN_STEP, CONTEXT_IN_CHAT_RESPONSE_WITH_PLAN_STEPS } from '../../common/aideAgentContextKeys.js';
 import { IChatResponseViewModel, isResponseVM } from '../../common/aideAgentViewModel.js';
-import { CHAT_CATEGORY } from './aideAgentActions.js';
+import { CHAT_CATEGORY } from './aideAgentChatActions.js';
 
 export function registerChatPlanStepActions() {
 

@@ -10,7 +10,7 @@ import { ServicesAccessor } from '../../../../../platform/instantiation/common/i
 import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { IAideAgentCodeEditingService } from '../../common/aideAgentCodeEditingService.js';
 import { CONTEXT_IN_CHAT_INPUT } from '../../common/aideAgentContextKeys.js';
-import { CHAT_CATEGORY } from './aideAgentActions.js';
+import { CHAT_CATEGORY } from './aideAgentChatActions.js';
 
 export function registerCodeEditActions() {
 	registerAction2(class AcceptAllAction extends Action2 {

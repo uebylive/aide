@@ -36,7 +36,8 @@ import { IAideAgentLMStatsService, LanguageModelStatsService } from '../common/l
 import { IAideAgentLMToolsService, LanguageModelToolsService } from '../common/languageModelToolsService.js';
 import { LanguageModelToolsExtensionPointHandler } from '../common/tools/languageModelToolsContribution.js';
 import { ChatAccessibilityHelp } from './actions/aideAgentAccessibilityHelp.js';
-import { registerChatActions } from './actions/aideAgentActions.js';
+import { registerAgentActions } from './actions/aideAgentActions.js';
+import { registerChatActions } from './actions/aideAgentChatActions.js';
 import { ACTION_ID_NEW_CHAT, registerNewChatActions } from './actions/aideAgentClearActions.js';
 import { registerChatCodeBlockActions, registerChatCodeCompareBlockActions } from './actions/aideAgentCodeblockActions.js';
 import { registerCodeEditActions } from './actions/aideAgentCodeEditActions.js';
@@ -275,6 +276,7 @@ registerChatCodeBlockActions();
 registerChatCodeCompareBlockActions();
 registerChatFileTreeActions();
 registerChatPlanStepActions();
+registerAgentActions();
 registerChatEditsActions();
 registerChatTitleActions();
 registerChatExecuteActions();

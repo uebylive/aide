@@ -14,7 +14,7 @@ import { CONTEXT_AGENT_MODE, CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_IN
 import { AgentMode } from '../../common/aideAgentModel.js';
 import { IAideAgentService } from '../../common/aideAgentService.js';
 import { IAideAgentWidgetService, IChatWidget } from '../aideAgent.js';
-import { CHAT_CATEGORY } from './aideAgentActions.js';
+import { CHAT_CATEGORY } from './aideAgentChatActions.js';
 
 export interface IVoiceChatExecuteActionContext {
 	readonly disableTimeout?: boolean;

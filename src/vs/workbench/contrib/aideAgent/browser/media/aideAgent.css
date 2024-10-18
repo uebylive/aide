@@ -21,7 +21,6 @@
 	padding: 12px 10px;
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
 	color: var(--vscode-interactive-session-foreground);
 	cursor: default;
 	user-select: text;
@@ -913,6 +912,26 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	justify-content: space-between;
 	position: relative;
 }
+
+
+.aideagent-item-container .rich-item .rich-item-header .rich-item-actions {
+	position: absolute;
+	right: 0;
+	top: 0;
+}
+
+.aideagent-item-container .rich-item .rich-item-header .rich-item-actions-preview {
+	display: flex;
+}
+
+.aideagent-item-container .rich-item .rich-item-header .rich-item-actions-preview .rich-item-actions-preview {
+	display: flex;
+	align-items: center;
+	width: 16px;
+	height: 16px;
+	padding: 3px;
+}
+
 
 .aideagent-item-container .rich-item .rich-item-header .rich-item-heading {
 	display: flex;
