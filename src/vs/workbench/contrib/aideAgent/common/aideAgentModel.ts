@@ -26,7 +26,7 @@ import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgen
 import { IAideAgentCodeEditingService, IAideAgentCodeEditingSession } from './aideAgentCodeEditingService.js';
 import { HunkData } from './aideAgentEditingSession.js';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from './aideAgentParserTypes.js';
-import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatEdits, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanStep, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
+import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanStep, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
 import { IChatRequestVariableValue } from './aideAgentVariables.js';
 
 export function isRequestModel(item: unknown): item is IChatRequestModel {
@@ -100,7 +100,7 @@ export type IChatProgressResponseContent =
 	| IChatTask
 	| IChatTextEditGroup
 	| IChatPlanStep
-	| IChatEdits
+	| IChatEditsInfo
 	| IChatConfirmation;
 
 export type IChatProgressRenderableResponseContent = Exclude<IChatProgressResponseContent, IChatContentInlineReference | IChatAgentMarkdownContentWithVulnerability | IChatResponseCodeblockUriPart>;
@@ -129,6 +129,7 @@ export interface IChatResponseModel {
 	readonly agent?: IChatAgentData;
 	readonly usedContext: IChatUsedContext | undefined;
 	readonly contentReferences: ReadonlyArray<IChatContentReference>;
+	readonly editsInfo: IChatEditsInfo | undefined;
 	readonly codeCitations: ReadonlyArray<IChatCodeCitation>;
 	readonly progressMessages: ReadonlyArray<IChatProgressMessage>;
 	readonly slashCommand?: IChatAgentCommand;
@@ -329,9 +330,9 @@ export class Response extends Disposable implements IResponse {
 				return `${part.title}\n${part.message}`;
 			} else if (part.kind === 'planStep') {
 				return part.description.value;
-			} else if (part.kind === 'edits') {
+			} else if (part.kind === 'editsInfo') {
 				const repr = `${part.files?.length || 0} ${part.state}`;
-				if (part.stale) {
+				if (part.isStale) {
 					return repr.concat(` ${localize('stale', "(stale)")}`);
 				}
 				return repr;
@@ -436,6 +437,11 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		return this._contentReferences;
 	}
 
+	private _editsInfo: IChatEditsInfo | undefined;
+	public get editsInfo(): IChatEditsInfo | undefined {
+		return this._editsInfo;
+	}
+
 	private _editingSession: IAideAgentCodeEditingSession | undefined;
 
 	private readonly _codeCitations: IChatCodeCitation[] = [];
@@ -495,6 +501,11 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 			this._contentReferences.push(progress);
 			this._onDidChange.fire();
 		}
+	}
+
+	applyEditsInfo(editsInfo: IChatEditsInfo) {
+		this._editsInfo = editsInfo;
+		this._onDidChange.fire();
 	}
 
 	async applyCodeEdit(codeEdit: IChatCodeEdit) {
@@ -1169,6 +1180,8 @@ export class ChatModel extends Disposable implements IChatModel {
 		} else if (progress.kind === 'codeEdit') {
 			response.applyCodeEdit(progress);
 			this._onDidChange.fire({ kind: 'codeEdit', edits: progress.edits });
+		} else if (progress.kind === 'editsInfo') {
+			response.applyEditsInfo(progress);
 		} else {
 			this.logService.error(`Couldn't handle progress: ${JSON.stringify(progress)}`);
 		}

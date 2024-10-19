@@ -16,6 +16,16 @@ declare module 'vscode' {
 		Codebase = 3
 	}
 
+
+	export enum AideAgentEditsState {
+		Loading = 'loading',
+		InReview = 'inReview',
+		MarkedComplete = 'markedComplete',
+		Cancelled = 'cancelled',
+	}
+
+	export type AideAgentEditsStateType = `${AideAgentEditsState}`;
+
 	export interface AideAgentFileReference extends ChatPromptReference {
 		readonly id: 'vscode.file';
 		readonly value: {
@@ -82,10 +92,38 @@ declare module 'vscode' {
 		readonly exchangeId: string;
 	}
 
+	export interface AideAgentEditsInfo {
+		/*
+		 * State of the edits
+		 */
+		readonly state: AideAgentEditsStateType;
+		/*
+		 * Wether the edits are stale
+		 */
+		readonly isStale: boolean;
+		/*
+		 * Files affected by the change
+		 */
+		readonly files: Uri[];
+		/*
+		 * Description of the edits
+		 */
+		readonly description?: string | MarkdownString;
+		/*
+		 * The session id of the plan
+		 */
+		readonly sessionId: string;
+		/*
+		 * The session id of the plan
+		 */
+		readonly exchangeId: string;
+	}
+
 	export interface AideAgentResponseStream extends ChatResponseStream {
+		editsInfo(edits: AideAgentEditsInfo): void;
 		codeEdit(edits: WorkspaceEdit): void;
-		push(part: AideAgentResponsePart): void;
 		step(step: AideChatStep): void;
+		push(part: AideAgentResponsePart): void;
 		close(): void;
 	}
 

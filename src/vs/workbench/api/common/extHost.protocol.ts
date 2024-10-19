@@ -52,7 +52,7 @@ import { EditSessionIdentityMatch } from '../../../platform/workspace/common/edi
 import { WorkspaceTrustRequestOptions } from '../../../platform/workspace/common/workspaceTrust.js';
 import { SaveReason } from '../../common/editor.js';
 import { IRevealOptions, ITreeItem, IViewBadge } from '../../common/views.js';
-import { IChatCodeEdit, IChatEndResponse, IChatPlanStep } from '../../contrib/aideAgent/common/aideAgentService.js';
+import { IChatCodeEdit, IChatEditsInfo, IChatEndResponse, IChatPlanStep } from '../../contrib/aideAgent/common/aideAgentService.js';
 import { CallHierarchyItem } from '../../contrib/callHierarchy/common/callHierarchy.js';
 import { ChatAgentLocation, IChatAgentMetadata, IChatAgentRequest, IChatAgentResult } from '../../contrib/chat/common/chatAgents.js';
 import { ICodeMapperRequest, ICodeMapperResult } from '../../contrib/chat/common/chatCodeMapperService.js';
@@ -1430,7 +1430,7 @@ export interface ExtHostAideAgentAgentsShape extends ExtHostChatAgentsShape2 {
 }
 
 export type IChatCodeEditDto = Pick<IChatCodeEdit, 'kind'> & { edits: IWorkspaceEditDto };
-export type IAideAgentProgressDto = IChatProgressDto | IChatCodeEditDto | Dto<IChatPlanStep> | Dto<IChatEndResponse>;
+export type IAideAgentProgressDto = IChatProgressDto | IChatCodeEditDto | Dto<IChatEditsInfo> | Dto<IChatPlanStep> | Dto<IChatEndResponse>;
 
 export interface MainThreadAideAgentAgentsShape2 extends MainThreadChatAgentsShape2 {
 	// The cancellation token over here is broken bad, since we are on the server

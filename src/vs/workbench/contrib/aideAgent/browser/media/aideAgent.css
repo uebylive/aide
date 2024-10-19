@@ -898,65 +898,6 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	white-space: normal;
 }
 
-.aideagent-item-container .rich-item {
-	padding-inline: 10px;
-	padding-block: 8px;
-	border-radius: 3px;
-	background-color: var(--vscode-editorPane-background);
-}
-
-.aideagent-item-container .rich-item .rich-item-header {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	justify-content: space-between;
-	position: relative;
-}
-
-
-.aideagent-item-container .rich-item .rich-item-header .rich-item-actions {
-	position: absolute;
-	right: 0;
-	top: 0;
-}
-
-.aideagent-item-container .rich-item .rich-item-header .rich-item-actions-preview {
-	display: flex;
-}
-
-.aideagent-item-container .rich-item .rich-item-header .rich-item-actions-preview .rich-item-actions-preview {
-	display: flex;
-	align-items: center;
-	width: 16px;
-	height: 16px;
-	padding: 3px;
-}
-
-
-.aideagent-item-container .rich-item .rich-item-header .rich-item-heading {
-	display: flex;
-	align-items: start;
-	gap: 8px;
-}
-
-.aideagent-item-container .rich-item .rich-item-header .rich-item-heading .rich-item-icon {
-	flex-shrink: 0;
-}
-
-.aideagent-item-container .rich-item .rich-item-header .rich-item-heading .rich-item-title {
-	font-size: 13px;
-	line-height: 19.5px;
-	font-weight: 400;
-}
-
-.aideagent-item-description {
-	color: va(--vscode-sideBarSectionHeader-foreground);
-}
-
-.aideagent-item-container .rich-item.stale {
-	opacity: 0.6;
-}
-
 .aideagent-item-container .rendered-markdown.progress-step > p {
 	color: var(--vscode-descriptionForeground);
 	font-size: 12px;

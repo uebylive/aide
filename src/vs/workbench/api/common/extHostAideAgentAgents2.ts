@@ -133,6 +133,13 @@ class AideAgentResponseStream {
 					_report(dto, task);
 					return this;
 				},
+				editsInfo(value) {
+					throwIfDone(this.anchor);
+					const part = new extHostTypes.AideAgentResponseEditsInfoPart(value);
+					const dto = typeConvert.AideAgentResponseEditsInfoPart.from(part);
+					_report(dto);
+					return this;
+				},
 				step(value) {
 					throwIfDone(this.anchor);
 					const part = new extHostTypes.AideAgentResponsePlanPart(value);
@@ -201,7 +208,6 @@ class AideAgentResponseStream {
 				},
 				codeEdit(edits) {
 					throwIfDone(this.codeEdit);
-
 					const part = new extHostTypes.ChatResponseCodeEditPart(edits);
 					const dto = typeConvert.ChatResponseCodeEditPart.from(part);
 					_report(dto);
