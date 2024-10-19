@@ -4701,6 +4701,13 @@ export enum AideAgentScope {
 	Codebase = 3
 }
 
+export enum AideAgentEditsState {
+	Loading = 'loading',
+	InReview = 'inReview',
+	MarkedComplete = 'markedComplete',
+	Cancelled = 'cancelled',
+}
+
 export class AideAgentResponsePlanPart {
 	description: string | vscode.MarkdownString;
 	sessionId: string;
@@ -4713,6 +4720,23 @@ export class AideAgentResponsePlanPart {
 		this.index = step.index;
 		this.isLast = step.isLast;
 		this.title = step.title;
+	}
+}
+
+export class AideAgentResponseEditsInfoPart {
+	state: vscode.AideAgentEditsStateType;
+	isStale: boolean;
+	files: URI[];
+	sessionId: string;
+	exchangeId: string;
+	description?: string | vscode.MarkdownString;
+	constructor(step: vscode.AideAgentEditsInfo) {
+		this.state = step.state;
+		this.isStale = step.isStale;
+		this.files = step.files;
+		this.sessionId = step.sessionId;
+		this.exchangeId = step.exchangeId;
+		this.description = step.description;
 	}
 }
 

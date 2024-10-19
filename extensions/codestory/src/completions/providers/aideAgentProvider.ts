@@ -315,7 +315,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		const agentMode = event.mode;
 		const variables = event.references;
 		if (event.mode === vscode.AideAgentMode.Chat) {
-			const responseStream = await this.sidecarClient.agentSessionChat(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels);
+			const responseStream = this.sidecarClient.agentSessionChat(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels);
 			await this.reportAgentEventsToChat(true, responseStream);
 		}
 		// Now lets try to handle the edit event first
@@ -593,13 +593,72 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			} else if (event.event.EditRequestFinished) {
 				// break;
 			} else if (event.event.ChatEvent) {
+				// responses to the chat
 				const sessionId = event.request_id;
 				const exchangeId = event.exchange_id;
 				const responseStream = this.responseStreamCollection.getResponseStream({ sessionId, exchangeId });
 				if (responseStream === undefined) {
 					console.log('responseStreamNotFound::ChatEvent', exchangeId, sessionId);
 				}
-				const { delta } = event.event.ChatEvent;
+				const { delta, answer_up_until_now } = event.event.ChatEvent;
+
+				if (responseStream && answer_up_until_now === '') {
+
+					const mockEdits: Promise<vscode.AideAgentEditsInfo>[] = [
+						{
+							state: 'loading',
+							isStale: false,
+							files: [vscode.Uri.parse('file:///usr/home')],
+							description: 'Thinking...',
+							exchangeId,
+							sessionId
+						},
+						{
+							state: 'loading',
+							isStale: false,
+							files: [vscode.Uri.parse('file:///usr/home'), vscode.Uri.parse('file:///usr/home')],
+							description: 'Add a counter to the status bar',
+							exchangeId,
+							sessionId
+						},
+						{
+							state: 'inReview',
+							isStale: false,
+							files: [vscode.Uri.parse('file:///usr/home'), vscode.Uri.parse('file:///usr/home')],
+							description: 'Add a counter to the status bar',
+							exchangeId,
+							sessionId
+						},
+						{
+							state: 'markedComplete',
+							isStale: false,
+							files: [vscode.Uri.parse('file:///usr/home'), vscode.Uri.parse('file:///usr/home')],
+							description: 'Add a counter to the status bar',
+							exchangeId,
+							sessionId
+						},
+						{
+							state: 'markedComplete',
+							isStale: true,
+							files: [vscode.Uri.parse('file:///usr/home'), vscode.Uri.parse('file:///usr/home')],
+							description: 'Add a counter to the status bar',
+							exchangeId,
+							sessionId
+						}
+					].map((item) => {
+						return new Promise((resolve) => {
+							setTimeout(() => {
+								resolve(item as vscode.AideAgentEditsInfo);
+							}, 10);
+						});
+					});
+
+					for await (const editsInfo of mockEdits) {
+						responseStream.stream.editsInfo(editsInfo);
+					}
+
+				}
+
 				if (delta !== null) {
 					responseStream?.stream.markdown(delta);
 				}

@@ -37,8 +37,8 @@ import { annotateSpecialMarkdownContent } from '../common/annotations.js';
 import { CONTEXT_CHAT_RESPONSE_SUPPORT_ISSUE_REPORTING, CONTEXT_REQUEST, CONTEXT_RESPONSE, CONTEXT_RESPONSE_DETECTED_AGENT_COMMAND, CONTEXT_RESPONSE_ERROR, CONTEXT_RESPONSE_FILTERED, CONTEXT_RESPONSE_VOTE } from '../common/aideAgentContextKeys.js';
 import { IChatRequestVariableEntry, IChatTextEditGroup } from '../common/aideAgentModel.js';
 import { chatSubcommandLeader } from '../common/aideAgentParserTypes.js';
-import { ChatAgentVoteDirection, ChatAgentVoteDownReason, ChatEditsState, IChatConfirmation, IChatContentReference, IChatEdits, IChatFollowup, IChatPlanStep, IChatTask, IChatTreeData } from '../common/aideAgentService.js';
-import { IChatCodeCitations, IChatReferences, IChatRendererContent, IChatRequestViewModel, IChatResponseViewModel, isRequestVM, isResponseVM, isWelcomeVM } from '../common/aideAgentViewModel.js';
+import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatConfirmation, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatPlanStep, IChatTask, IChatTreeData } from '../common/aideAgentService.js';
+import { IChatCodeCitations, IChatReferences, IChatRendererContent, IChatRequestViewModel, IChatResponseViewModel, IChatWelcomeMessageViewModel, isRequestVM, isResponseVM, isWelcomeVM } from '../common/aideAgentViewModel.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
 import { MarkUnhelpfulActionId } from './actions/aideAgentTitleActions.js';
 import { ChatTreeItem, GeneratingPhrase, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions, IChatPlanStepsInfo } from './aideAgent.js';
@@ -60,8 +60,8 @@ import { ChatEditorOptions } from './aideAgentOptions.js';
 import { ChatCodeBlockContentProvider, CodeBlockPart } from './codeBlockPart.js';
 import { ChatPlanStepPart } from './aideAgentContentParts/aideAgentPlanStepPart.js';
 import { EditsContentPart } from './aideAgentContentParts/aideAgentEditsContentPart.js';
-import { AideAgentRichItem } from './aideAgentContentParts/aideAgentRichItem.js';
 import { ChatAgentLocation } from '../common/aideAgentAgents.js';
+import { ChatFollowups } from './aideAgentFollowups.js';
 
 const $ = dom.$;
 
@@ -129,7 +129,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 	constructor(
 		editorOptions: ChatEditorOptions,
-		location: ChatAgentLocation,
+		private readonly location: ChatAgentLocation,
 		private readonly rendererOptions: IChatListItemRendererOptions,
 		private readonly delegate: IChatRendererDelegate,
 		private readonly codeBlockModelCollection: CodeBlockModelCollection,
@@ -323,6 +323,9 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		templateData.rowContainer.classList.toggle('interactive-welcome', isWelcomeVM(element));
 		templateData.rowContainer.classList.toggle('show-detail-progress', isResponseVM(element) && !element.isComplete && !element.progressMessages.length);
 		templateData.username.textContent = isResponseVM(element) ? element.username : localize('chatUser', "You");
+		if (isResponseVM(element)) {
+			templateData.username.classList.add('agent');
+		}
 
 		dom.clearNode(templateData.detail);
 
@@ -362,20 +365,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		} else if (isRequestVM(element)) {
 			this.basicRenderElement(element, index, templateData);
 		} else {
-			// this.renderWelcomeMessage(element, templateData);
-
-			const partsToTest: AideAgentRichItem[] = [
-				this.instantiationService.createInstance(EditsContentPart, { kind: 'edits', state: ChatEditsState.Loading, stale: false, files: [] }, undefined),
-				this.instantiationService.createInstance(EditsContentPart, { kind: 'edits', state: ChatEditsState.InReview, stale: false, files: [] }, undefined),
-				this.instantiationService.createInstance(EditsContentPart, { kind: 'edits', state: ChatEditsState.MarkedComplete, stale: false, files: [] }, undefined),
-				this.instantiationService.createInstance(EditsContentPart, { kind: 'edits', state: ChatEditsState.Cancelled, stale: false, files: [] }, undefined),
-				this.instantiationService.createInstance(EditsContentPart, { kind: 'edits', state: ChatEditsState.MarkedComplete, stale: true, files: [] }, undefined),
-			];
-
-			for (const testPart of partsToTest) {
-				templateData.value.appendChild(testPart.domNode);
-				testPart.layout();
-			}
+			this.renderWelcomeMessage(element, templateData);
 		}
 	}
 
@@ -502,7 +492,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		this._onDidChangeItemHeight.fire({ element: templateData.currentElement, height: newHeight });
 	}
 
-	/*private renderWelcomeMessage(element: IChatWelcomeMessageViewModel, templateData: IChatListItemTemplate) {
+	private renderWelcomeMessage(element: IChatWelcomeMessageViewModel, templateData: IChatListItemTemplate) {
 		dom.clearNode(templateData.value);
 
 		element.content.forEach((item, i) => {
@@ -542,7 +532,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 				this._onDidChangeItemHeight.fire({ element, height: element.currentRenderedHeight });
 			}));
 		}
-	}*/
+	}
 
 	/**
 	 *	@returns true if progressive rendering should be considered complete- the element's data is fully rendered or the view is not visible
@@ -634,6 +624,10 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			partsToRender.push({ kind: 'references', references: element.contentReferences });
 		}
 
+		if (element.editsInfo) {
+			partsToRender.push(element.editsInfo);
+		}
+
 		// Simply add all parts to render
 		partsToRender.push(...renderableResponse);
 
@@ -687,13 +681,14 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		} else if (content.kind === 'warning') {
 			return this.instantiationService.createInstance(ChatWarningContentPart, 'warning', content.content, this.renderer);
 		} else if (content.kind === 'markdownContent') {
+			console.log(content.content.value);
 			return this.renderMarkdown(content.content, templateData, context);
 		} else if (content.kind === 'references') {
 			return this.renderContentReferencesListData(content, undefined, context, templateData);
 		} else if (content.kind === 'codeCitations') {
 			return this.renderCodeCitationsListData(content, context, templateData);
-		} else if (content.kind === 'edits') {
-			this.renderEdits(content, templateData, context);
+		} else if (content.kind === 'editsInfo') {
+			return this.renderEdits(content, templateData, context);
 		} else if (content.kind === 'planStep') {
 			// @g-danna This will be deprecated soon
 			return this.renderPlanStep(content, templateData, context);
@@ -839,21 +834,16 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		return markdownPart;
 	}
 
-	private renderEdits(edits: IChatEdits, templateData: IChatListItemTemplate, context: IChatContentPartRenderContext) {
+	private renderEdits(edits: IChatEditsInfo, templateData: IChatListItemTemplate, context: IChatContentPartRenderContext) {
 		let descriptionPart: ChatMarkdownContentPart | undefined;
 		if (edits.description) {
-			descriptionPart = this.renderMarkdown(edits.description, templateData, context,) as ChatMarkdownContentPart;
+			descriptionPart = this.renderMarkdown(edits.description, templateData, context) as ChatMarkdownContentPart;
 		}
 		const editsContentPart = this.instantiationService.createInstance(EditsContentPart, edits, descriptionPart);
 		editsContentPart.addDisposable(editsContentPart.onDidChangeHeight(() => {
 			this.updateItemHeight(templateData);
-			// Should not be needed?
-			// if (descriptionPart) {
-			// 	descriptionPart.layout(this._currentLayoutWidth);
-			// }
 		}));
-		templateData.value.appendChild(editsContentPart.domNode);
-		editsContentPart.layout();
+		return editsContentPart;
 	}
 
 	private renderPlanStep(step: IChatPlanStep, templateData: IChatListItemTemplate, context: IChatContentPartRenderContext): IChatContentPart {
@@ -1042,3 +1032,18 @@ export class ChatVoteDownButton extends DropdownMenuActionViewItem {
 		};
 	}
 }
+
+/**
+ * const partsToTest: AideAgentRichItem[] = [
+				this.instantiationService.createInstance(EditsContentPart, { kind: 'edits', state: ChatEditsState.Loading, stale: false, files: [URI.parse('file:///usr/home')] }, undefined),
+				this.instantiationService.createInstance(EditsContentPart, { kind: 'edits', state: ChatEditsState.InReview, stale: false, files: [URI.parse('file:///usr/home'), URI.parse('file:///usr/home')] }, undefined),
+				this.instantiationService.createInstance(EditsContentPart, { kind: 'edits', state: ChatEditsState.MarkedComplete, stale: false, files: [] }, undefined),
+				this.instantiationService.createInstance(EditsContentPart, { kind: 'edits', state: ChatEditsState.Cancelled, stale: false, files: [] }, undefined),
+				this.instantiationService.createInstance(EditsContentPart, { kind: 'edits', state: ChatEditsState.MarkedComplete, stale: true, files: [] }, undefined),
+			];
+
+			for (const testPart of partsToTest) {
+				templateData.value.appendChild(testPart.domNode);
+				testPart.layout();
+			}
+ */

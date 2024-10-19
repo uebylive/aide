@@ -205,11 +205,13 @@ export enum ChatEditsState {
 
 export type IChatEditsState = `${ChatEditsState}`;
 
-export interface IChatEdits {
-	kind: 'edits';
+export interface IChatEditsInfo {
+	kind: 'editsInfo';
 	state: IChatEditsState;
-	stale: boolean;
+	isStale: boolean;
 	files: URI[];
+	sessionId: string;
+	exchangeId: string;
 	description?: IMarkdownString;
 }
 
@@ -250,6 +252,7 @@ export type IChatProgress =
 	| IChatMoveMessage
 	| IChatResponseCodeblockUriPart
 	| IChatConfirmation
+	| IChatEditsInfo
 	| IChatPlanStep
 	| IChatEndResponse;
 
