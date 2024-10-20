@@ -208,13 +208,13 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 	private _textModelSnapshotUntilPoint: TextModelSnapshotUntilPoint[] = [];
 
 	constructor(
-		readonly exchangeId: string,
+		readonly sessionId: string,
 		@IEditorService private readonly editorService: IEditorService,
 		@IEditorWorkerService private readonly _editorWorkerService: IEditorWorkerService,
 		@IModelService private readonly _modelService: IModelService,
 		@ITextModelService private readonly _textModelService: ITextModelService,
 	) {
-		console.log('AideAgentCodeEditingSession::created', exchangeId);
+		console.log('AideAgentCodeEditingSession::created', sessionId);
 		super();
 
 		this.registerActiveEditor();
@@ -312,8 +312,7 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 
 		// the other thing which we want to try is that what happens when
 		// we try to send an undo over here after we have a plan
-		if (workspaceEdit.resource.fsPath === '/undoCheck') {
-			const workspaceLabel = workspaceEdit.textEdit.text;
+		if (workspaceEdit.resource.fsPath === '/undoCheck' && workspaceLabel !== undefined) {
 			// now find all the snapshots which we have at this point
 			// and set them to the codeEdits value
 			// find all the text models which are after the workspaceLabel
@@ -483,6 +482,41 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 		}
 
 		this.removeDecorations();
+	}
+
+	/**
+	 * Allows us to reject the changes for an exchange
+	 * This in principle implies that when the edits have been made by an exchange
+	 * clicking on Reject all implies that we are not happy with the edits made and
+	 * want to change back
+	 */
+	async rejectForExchange(sessionId: string, exchangeId: string): Promise<void> {
+		// now over here we want to very carefully revert the changes which have happened
+		// because of the changes we made at a step, this is similar to a rollback
+		// honestly
+		// we use the same logic here of sending an undo request similar to what
+		// we were doing before when talking from the extension layer
+		if (this.sessionId !== sessionId) {
+			return;
+		}
+		const workspaceEditForRevert: IWorkspaceTextEdit = {
+			resource: URI.file('/undoCheck'),
+			versionId: undefined,
+			textEdit: {
+				range: {
+					endColumn: 0,
+					endLineNumber: 0,
+					startColumn: 0,
+					startLineNumber: 0,
+				},
+				text: '',
+			},
+			metadata: {
+				label: `${exchangeId}`,
+				needsConfirmation: false,
+			}
+		};
+		await this.processWorkspaceEdit(workspaceEditForRevert);
 	}
 
 	stop(): Promise<void> {

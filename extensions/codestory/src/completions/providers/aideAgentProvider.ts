@@ -331,6 +331,14 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		this.sessionId = sessionId;
 	}
 
+	/**
+	 * TODO(codestory): We want to get this exchange feedback on each exchange
+	 * either automagically or when the user invokes it
+	 * Its the responsibility of the editor for now to make sure that the feedback
+	 * is give, the sidecar should not close the exchange until we have this feedback
+	 * this also updates the feedback on the sidecar side so we can tell the agent if its
+	 * chagnes were accepted or not
+	 */
 	handleExchangeUserAction(sessionId: string, exchangeId: string, action: vscode.AideSessionExchangeUserAction): void {
 		// we ping the sidecar over here telling it about the state of the edits after
 		// the user has reacted to it appropriately
