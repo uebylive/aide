@@ -1199,6 +1199,36 @@ export class SideCarClient {
 		}
 	}
 
+	async *userFeedbackOnExchange(
+		sessionId: string,
+		exchangeId: string,
+		editorUrl: string,
+		accepted: boolean,
+	): AsyncIterableIterator<SideCarAgentEvent> {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/agentic/user_feedback_on_exchange';
+		const url = baseUrl.toString();
+		const body = {
+			session_id: sessionId,
+			exchange_id: exchangeId,
+			editor_url: editorUrl,
+			accepted,
+		};
+
+		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
+		for await (const line of asyncIterableResponse) {
+			const lineParts = line.split('data:{');
+			for (const lineSinglePart of lineParts) {
+				const lineSinglePartTrimmed = lineSinglePart.trim();
+				if (lineSinglePartTrimmed === '') {
+					continue;
+				}
+				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as SideCarAgentEvent;
+				yield conversationMessage;
+			}
+		}
+	}
+
 	/**
 	 * Sends a request over to the sidecar and waits for an ack and completes after
 	 * that. The sidecar can create a new exchange or many new exchanges as required
