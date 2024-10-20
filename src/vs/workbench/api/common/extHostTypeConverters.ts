@@ -2925,6 +2925,7 @@ export namespace AideAgentResponsePlanPart {
 		return {
 			kind: 'planStep',
 			sessionId: part.sessionId,
+			exchangeId: part.exchangeId,
 			index: part.index,
 			isLast: part.isLast,
 			title: part.title,
