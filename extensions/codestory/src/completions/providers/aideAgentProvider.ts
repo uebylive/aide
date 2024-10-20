@@ -332,7 +332,21 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	}
 
 	handleExchangeUserAction(sessionId: string, exchangeId: string, action: vscode.AideSessionExchangeUserAction): void {
+		// we ping the sidecar over here telling it about the state of the edits after
+		// the user has reacted to it appropriately
 		console.log('handleExchangeUserAction', sessionId, exchangeId, action);
+		const editorUrl = this.editorUrl;
+		let isAccepted = false;
+		if (action === vscode.AideSessionExchangeUserAction.AcceptAll) {
+			isAccepted = true;
+		}
+		if (editorUrl) {
+			// TODO(skcd): Not sure if an async stream like this works, but considering
+			// js/ts this should be okay from what I remember, pending futures do not
+			// get cleaned up via GC
+			const responseStream = this.sidecarClient.userFeedbackOnExchange(sessionId, exchangeId, editorUrl, isAccepted);
+			this.reportAgentEventsToChat(true, responseStream);
+		}
 	}
 
 	handleEvent(event: vscode.AideAgentRequest): void {
