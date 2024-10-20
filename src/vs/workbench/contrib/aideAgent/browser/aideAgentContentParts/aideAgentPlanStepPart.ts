@@ -65,7 +65,6 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 	constructor(
 		readonly step: IChatPlanStep,
 		readonly descriptionPart: IChatContentPart,
-		readonly exchangeId: string,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IContextKeyService contextKeyService: IContextKeyService,
 		//@IModelService private readonly modelService: IModelService,
@@ -391,7 +390,7 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 	//}
 
 	private _dropStep() {
-		this.chatService.sendRequest(this.step.sessionId, `@drop ${this.step.index} ${this.exchangeId}`, {
+		this.chatService.sendRequest(this.step.sessionId, `@drop ${this.step.index} ${this.step.exchangeId}`, {
 			agentMode: AgentMode.Plan,
 		});
 	}

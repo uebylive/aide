@@ -75,6 +75,11 @@ declare module 'vscode' {
 		 * The session id of the plan
 		 */
 		readonly sessionId: string;
+		/**
+		 * The exchange id of the plan (since we can revert and generate the plan a new
+		 * the exchange id might be tied to a previous plan)
+		 */
+		readonly exchangeId: string;
 	}
 
 	export interface AideAgentResponseStream extends ChatResponseStream {

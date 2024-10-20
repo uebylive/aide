@@ -199,6 +199,7 @@ export interface IChatConfirmation {
 export interface IChatPlanStep {
 	description: IMarkdownString;
 	sessionId: string;
+	exchangeId: string;
 	title: string;
 	index: number;
 	isLast: boolean;

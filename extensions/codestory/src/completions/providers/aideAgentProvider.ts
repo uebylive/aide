@@ -344,6 +344,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		// the request
 		token.onCancellationRequested(() => {
 			if (this.sessionId !== undefined) {
+				// promises in js run without an await? 🥲
 				this.sidecarClient.cancelRunningEvent(this.sessionId, event.id);
 			}
 		});
@@ -689,6 +690,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						description: '',
 						index: event.event.PlanEvent.PlanStepTitleAdded.index,
 						sessionId,
+						exchangeId: event.event.PlanEvent.PlanStepTitleAdded.exchange_id,
 						isLast: false,
 						title: event.event.PlanEvent.PlanStepTitleAdded.title,
 					});
@@ -698,6 +700,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						description: event.event.PlanEvent.PlanStepCompleteAdded.description,
 						index: event.event.PlanEvent.PlanStepCompleteAdded.index,
 						sessionId,
+						exchangeId: event.event.PlanEvent.PlanStepCompleteAdded.exchange_id,
 						isLast: false,
 						title: event.event.PlanEvent.PlanStepCompleteAdded.title,
 					});
