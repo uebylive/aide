@@ -295,7 +295,7 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 			extension, id, this._proxy, handle,
 			// Preserve the correct 'this' context
 			(sessionId: string) => this.initResponse(sessionId),
-			handler.newSession, handler.handleEvent
+			handler.newSession, handler.handleEvent, handler.handleExchangeUserAction,
 		);
 		this._agents.set(handle, agent);
 
@@ -365,6 +365,13 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 		}
 
 		return agent.initSession(sessionId);
+	}
+
+	$handleUserFeedbackSession(handle: number, sessionId: string, exchangeId: string, accepted: boolean): void {
+		const agent = this._agents.get(handle);
+		if (agent) {
+			agent.handleUserFeedbackForSession(sessionId, exchangeId, accepted);
+		}
 	}
 
 	async $invokeAgent(handle: number, requestDto: Dto<IChatAgentRequest>, context: { history: IChatAgentHistoryEntryDto[] }, token: CancellationToken): Promise<IChatAgentResult | undefined> {
@@ -437,8 +444,6 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 			// cancel the pending source over here
 			cancellationTokenSource.cancel();
 		});
-		// @ts-ignore
-		console.log('extensionLayer::cancellationToken::initResponse', cancellationToken._id);
 		return { stream: stream.apiObject, token: cancellationToken, exchangeId: responseId };
 	}
 
@@ -614,6 +619,7 @@ class ExtHostChatAgent {
 		private _initResponse: vscode.AideSessionEventSender,
 		private _sessionHandler: vscode.AideSessionHandler,
 		private _requestHandler: vscode.AideSessionEventHandler,
+		private _sessionHandleUserActionHandler: vscode.AideSessionHandleUserAction,
 	) { }
 
 	initSession(sessionId: string): void {
@@ -650,6 +656,14 @@ class ExtHostChatAgent {
 			.filter(f => !(f && 'commandId' in f))
 			// Filter out followups from older providers before 'message' changed to 'prompt'
 			.filter(f => !(f && 'message' in f));
+	}
+
+	handleUserFeedbackForSession(sessionId: string, exchangeId: string, accepted: boolean): void {
+		let action = extHostTypes.AideSessionExchangeUserAction.AcceptAll;
+		if (!accepted) {
+			action = extHostTypes.AideSessionExchangeUserAction.RejectAll;
+		}
+		this._sessionHandleUserActionHandler(sessionId, exchangeId, action);
 	}
 
 	async provideWelcomeMessage(location: vscode.ChatLocation, token: CancellationToken): Promise<(string | IMarkdownString)[] | undefined> {

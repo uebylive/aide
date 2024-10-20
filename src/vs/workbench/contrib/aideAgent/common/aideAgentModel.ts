@@ -543,7 +543,9 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 			command: {
 				id: 'aideAgent.acceptAll',
 				title: localize('acceptEdits', "Accept all"),
-				arguments: [this.id]
+				// passes the exchangeId and the sessionId and the agent id attached
+				// to the command (the agent id almost always present since we register it)
+				arguments: [this.id, this.session.sessionId, this._agent?.id, true]
 			}
 		});
 		this.updateContent({
@@ -551,7 +553,9 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 			command: {
 				id: 'aideAgent.rejectAll',
 				title: localize('rejectEdits', "Reject all"),
-				arguments: [this.id]
+				// passes the exchangeId and the sessionId and the agent id attached
+				// to the command (the agent id almost always present since we register it)
+				arguments: [this.id, this.session.sessionId, this._agent?.id, false]
 			}
 		});
 
@@ -812,6 +816,11 @@ export enum ChatModelInitState {
 	Created,
 	Initializing,
 	Initialized
+}
+
+export enum AgentSessionExchangeUserAction {
+	AcceptAll = 'AcceptAll',
+	RejectAll = 'RejectAll',
 }
 
 export enum AgentMode {
@@ -1197,6 +1206,10 @@ export class ChatModel extends Disposable implements IChatModel {
 		}
 
 		response.complete();
+	}
+
+	handleUserActionForSession(sessionId: string, exchangeId: string, agentId: string | undefined, accepted: boolean): void {
+		this.chatAgentService.handleUserFeedbackForSession(sessionId, exchangeId, agentId, accepted);
 	}
 
 	/* TODO(@ghostwriternr): Honestly, don't care about followups at the moment.
