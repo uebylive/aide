@@ -295,6 +295,10 @@ export class ExtHostChatAgents2 extends Disposable implements ExtHostChatAgentsS
 		this._proxy = mainContext.getProxy(MainContext.MainThreadChatAgents2);
 	}
 
+	$handleUserFeedbackSession(handle: number, sessionId: string, exchangeId: string, accepted: boolean): void {
+		throw new Error('Method not implemented. we implement it for the aide flow');
+	}
+
 	transferActiveChat(newWorkspace: vscode.Uri): void {
 		this._proxy.$transferActiveChatSession(newWorkspace);
 	}

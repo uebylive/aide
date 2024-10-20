@@ -4701,6 +4701,11 @@ export enum AideAgentScope {
 	Codebase = 3
 }
 
+export enum AideSessionExchangeUserAction {
+	AcceptAll = 1,
+	RejectAll = 2,
+}
+
 export class AideAgentResponsePlanPart {
 	description: string | vscode.MarkdownString;
 	sessionId: string;

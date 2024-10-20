@@ -37,7 +37,7 @@ import { ProgressLocation as MainProgressLocation } from '../../../platform/prog
 import { DEFAULT_EDITOR_ASSOCIATION, SaveReason } from '../../common/editor.js';
 import { IViewBadge } from '../../common/views.js';
 import { IChatAgentRequest as IAideAgentRequest } from '../../contrib/aideAgent/common/aideAgentAgents.js';
-import { AgentMode, AgentScope } from '../../contrib/aideAgent/common/aideAgentModel.js';
+import { AgentMode, AgentScope, AgentSessionExchangeUserAction } from '../../contrib/aideAgent/common/aideAgentModel.js';
 import { IChatEndResponse, IChatPlanStep } from '../../contrib/aideAgent/common/aideAgentService.js';
 import { ChatAgentLocation, IChatAgentRequest, IChatAgentResult } from '../../contrib/chat/common/chatAgents.js';
 import { IChatRequestVariableEntry } from '../../contrib/chat/common/chatModel.js';
@@ -2898,6 +2898,22 @@ export namespace AideAgentMode {
 			case types.AideAgentMode.Edit: return AgentMode.Edit;
 			case types.AideAgentMode.Plan: return AgentMode.Plan;
 			case types.AideAgentMode.Chat: return AgentMode.Chat;
+		}
+	}
+}
+
+export namespace AideSessionExchangeUserAction {
+	export function to(mode: AgentSessionExchangeUserAction): types.AideSessionExchangeUserAction {
+		switch (mode) {
+			case AgentSessionExchangeUserAction.AcceptAll: return types.AideSessionExchangeUserAction.AcceptAll;
+			case AgentSessionExchangeUserAction.RejectAll: return types.AideSessionExchangeUserAction.RejectAll;
+		}
+	}
+
+	export function from(mode: types.AideSessionExchangeUserAction): AgentSessionExchangeUserAction {
+		switch (mode) {
+			case types.AideSessionExchangeUserAction.AcceptAll: return AgentSessionExchangeUserAction.AcceptAll;
+			case types.AideSessionExchangeUserAction.RejectAll: return AgentSessionExchangeUserAction.RejectAll;
 		}
 	}
 }

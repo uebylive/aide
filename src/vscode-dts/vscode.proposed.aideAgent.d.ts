@@ -95,13 +95,23 @@ declare module 'vscode' {
 		token: CancellationToken;
 	}
 
+	export enum AideSessionExchangeUserAction {
+		AcceptAll = 1,
+		RejectAll = 2,
+	}
+
 	export type AideSessionHandler = (id: string) => void;
+	export type AideSessionHandleUserAction = (sessionId: string, exchangeId: string, action: AideSessionExchangeUserAction) => void;
 	export type AideSessionEventHandler = (event: AideAgentRequest, token: CancellationToken) => ProviderResult<ChatResult | void>;
 	export type AideSessionEventSender = (sessionId: string) => Thenable<AideAgentEventSenderResponse | undefined>;
 
 	export interface AideSessionParticipant {
 		newSession: AideSessionHandler;
 		handleEvent: AideSessionEventHandler;
+		// Used to handle the exchange which the user has taken on a chat exchange
+		// NOTE: This might not be correct, but we are in a time-crunch and this will work, refrain from doing
+		// changes until necessary
+		handleExchangeUserAction: AideSessionHandleUserAction;
 	}
 
 	interface AideSessionAgent extends Omit<ChatParticipant, 'requestHandler'> {

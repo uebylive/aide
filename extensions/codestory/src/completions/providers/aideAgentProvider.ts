@@ -132,7 +132,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 
 		this.aideAgent = vscode.aideAgent.createChatParticipant('aide', {
 			newSession: this.newSession.bind(this),
-			handleEvent: this.handleEvent.bind(this)
+			handleEvent: this.handleEvent.bind(this),
+			handleExchangeUserAction: this.handleExchangeUserAction.bind(this),
 		});
 		this.aideAgent.iconPath = vscode.Uri.joinPath(vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''), 'assets', 'aide-agent.png');
 		this.aideAgent.requester = {
@@ -328,6 +329,10 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 
 	newSession(sessionId: string): void {
 		this.sessionId = sessionId;
+	}
+
+	handleExchangeUserAction(sessionId: string, exchangeId: string, action: vscode.AideSessionExchangeUserAction): void {
+		console.log('handleExchangeUserAction', sessionId, exchangeId, action);
 	}
 
 	handleEvent(event: vscode.AideAgentRequest): void {

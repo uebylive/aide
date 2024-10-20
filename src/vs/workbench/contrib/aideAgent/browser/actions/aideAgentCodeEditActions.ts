@@ -10,6 +10,7 @@ import { ServicesAccessor } from '../../../../../platform/instantiation/common/i
 import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { IAideAgentCodeEditingService } from '../../common/aideAgentCodeEditingService.js';
 import { CONTEXT_IN_CHAT_INPUT } from '../../common/aideAgentContextKeys.js';
+import { IAideAgentService } from '../../common/aideAgentService.js';
 import { CHAT_CATEGORY } from './aideAgentActions.js';
 
 export function registerCodeEditActions() {
@@ -32,6 +33,13 @@ export function registerCodeEditActions() {
 
 		run(accessor: ServicesAccessor, ...args: any[]) {
 			const exchangeId = args[0];
+
+			try {
+				const aideAgentSession = accessor.get(IAideAgentService);
+				aideAgentSession.handleUserActionForSession(args[1], exchangeId, args[2], args[3]);
+			} catch (exception) {
+				console.error(exception);
+			}
 
 			const aideAgentCodeEditingService = accessor.get(IAideAgentCodeEditingService);
 			const editingSession = aideAgentCodeEditingService.getOrStartCodeEditingSession(exchangeId);
@@ -58,6 +66,13 @@ export function registerCodeEditActions() {
 
 		run(accessor: ServicesAccessor, ...args: any[]) {
 			const exchangeId = args[0];
+
+			try {
+				const aideAgentSession = accessor.get(IAideAgentService);
+				aideAgentSession.handleUserActionForSession(args[1], exchangeId, args[2], args[3]);
+			} catch (exception) {
+				console.error(exception);
+			}
 
 			const aideAgentCodeEditingService = accessor.get(IAideAgentCodeEditingService);
 			const editingSession = aideAgentCodeEditingService.getOrStartCodeEditingSession(exchangeId);
