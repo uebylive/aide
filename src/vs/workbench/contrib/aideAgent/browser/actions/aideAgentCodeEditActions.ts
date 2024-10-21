@@ -49,6 +49,7 @@ export function registerCodeEditActions() {
 
 			const aideAgentCodeEditingService = accessor.get(IAideAgentCodeEditingService);
 			const editingSession = aideAgentCodeEditingService.getOrStartCodeEditingSession(sessionId);
+			editingSession.fileLocationForEditsMade(sessionId, exchangeId);
 			editingSession.accept();
 		}
 	});

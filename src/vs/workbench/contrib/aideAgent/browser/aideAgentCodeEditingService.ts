@@ -518,6 +518,54 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 		await this.processWorkspaceEdit(workspaceEditForRevert);
 	}
 
+	async fileLocationForEditsMade(sessionId: string, exchangeId: string): Promise<Map<URI, Range[]>> {
+		if (sessionId !== this.sessionId) {
+			return new Map();
+		}
+		const filteredTextModelReferneces = this._textModelSnapshotUntilPoint.filter((textModelSnapshot) => {
+			const textModelReference = parseLabel(textModelSnapshot.reference);
+			const exchangeIdParsedReference = parseLabel(exchangeId);
+			return textModelReference?.response_idx === exchangeIdParsedReference?.response_idx;
+		});
+
+		// we only show these locations when this is the last request, so we can use
+		// the codeEdits map we have for getting the hunks which have been edited
+		const resourceChangedLocations = new Map();
+		for (const [resourceName, aideAgentEdits] of this._codeEdits) {
+			if (filteredTextModelReferneces.find((textModelReference) => {
+				return textModelReference.resourceName === resourceName;
+			}) !== undefined) {
+				const hunkInformation = aideAgentEdits.hunkData.getInfo();
+				const changedRanges = hunkInformation.map((hunkInfo) => {
+					return hunkInfo.getRangesN();
+				}).flat();
+				resourceChangedLocations.set(URI.parse(resourceName), changedRanges);
+			}
+		}
+		return resourceChangedLocations;
+	}
+
+	/**
+	 * Returns the set of files which were changed during an exchange and additionally
+	 * for the plan step we are interested in
+	 */
+	async filesChangedForExchange(sessionId: string, exchangeId: string): Promise<URI[]> {
+		if (sessionId !== this.sessionId) {
+			return [];
+		}
+		// we have a store for the edits made over here using the exchangeId as part of the input
+		// so we can keep using that
+		const filteredTextModelReferneces = this._textModelSnapshotUntilPoint.filter((textModelSnapshot) => {
+			const textModelReference = parseLabel(textModelSnapshot.reference);
+			const exchangeIdParsedReference = parseLabel(exchangeId);
+			return textModelReference?.response_idx === exchangeIdParsedReference?.response_idx;
+		});
+		const fileNames = filteredTextModelReferneces.map((textModelReference) => {
+			return URI.parse(textModelReference.resourceName);
+		});
+		return fileNames;
+	}
+
 	stop(): Promise<void> {
 		throw new Error('Method not implemented.');
 	}

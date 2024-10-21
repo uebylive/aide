@@ -3,6 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { URI } from '../../../../base/common/uri.js';
+import { Range } from '../../../../editor/common/core/range.js';
 import { Event } from '../../../../base/common/event.js';
 import { IWorkspaceTextEdit } from '../../../../editor/common/languages.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
@@ -23,6 +25,8 @@ export interface IAideAgentCodeEditingSession {
 	accept(): void;
 	reject(): void;
 	rejectForExchange(sessionId: string, exchangeId: string): Promise<void>;
+	fileLocationForEditsMade(sessionId: string, exchangeId: string): Promise<Map<URI, Range[]>>;
+	filesChangedForExchange(sessionId: string, exchangeId: string): Promise<URI[]>;
 	/**
 	 * Will lead to this object getting disposed
 	 */
