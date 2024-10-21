@@ -1097,10 +1097,10 @@ export class SideCarClient {
 	/**
 	 * Cancels the running request if its not already terminated on the sidecar
 	 */
-	async cancelRunningEvent(
+	async *cancelRunningEvent(
 		sessionId: string,
 		exchangeId: string,
-	): Promise<boolean> {
+	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agentic/cancel_running_event';
 		const url = baseUrl.toString();
@@ -1108,14 +1108,18 @@ export class SideCarClient {
 			session_id: sessionId,
 			exchange_id: exchangeId,
 		};
-		await fetch(url, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify(body),
-		});
-		return true;
+		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
+		for await (const line of asyncIterableResponse) {
+			const lineParts = line.split('data:{');
+			for (const lineSinglePart of lineParts) {
+				const lineSinglePartTrimmed = lineSinglePart.trim();
+				if (lineSinglePartTrimmed === '') {
+					continue;
+				}
+				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as SideCarAgentEvent;
+				yield conversationMessage;
+			}
+		}
 	}
 
 	async *agentSessionAgenticEdit(

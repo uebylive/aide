@@ -27,7 +27,7 @@ interface ResponseStreamIdentifier {
 class AideResponseStreamCollection {
 	private responseStreamCollection: Map<string, vscode.AideAgentEventSenderResponse> = new Map();
 
-	constructor(private extensionContext: vscode.ExtensionContext, private sidecarClient: SideCarClient) {
+	constructor(private extensionContext: vscode.ExtensionContext, private sidecarClient: SideCarClient, private aideAgentSessionProvider: AideAgentSessionProvider) {
 		this.extensionContext = extensionContext;
 		this.sidecarClient = sidecarClient;
 
@@ -38,7 +38,11 @@ class AideResponseStreamCollection {
 
 	addResponseStream(responseStreamIdentifier: ResponseStreamIdentifier, responseStream: vscode.AideAgentEventSenderResponse) {
 		this.extensionContext.subscriptions.push(responseStream.token.onCancellationRequested(() => {
-			this.sidecarClient.cancelRunningEvent(responseStreamIdentifier.sessionId, responseStreamIdentifier.exchangeId);
+			console.log('responseStream::token_cancelled');
+			// over here we get the stream of events from the cancellation
+			// we need to send it over on the stream as usual so we can work on it
+			const responseStreamAnswer = this.sidecarClient.cancelRunningEvent(responseStreamIdentifier.sessionId, responseStreamIdentifier.exchangeId);
+			this.aideAgentSessionProvider.reportAgentEventsToChat(true, responseStreamAnswer);
 		}));
 		this.responseStreamCollection.set(this.getKey(responseStreamIdentifier), responseStream);
 	}
@@ -141,7 +145,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			icon: vscode.Uri.joinPath(vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''), 'assets', 'aide-user.png')
 		};
 		// our collection of active response streams for exchanges which are still running
-		this.responseStreamCollection = new AideResponseStreamCollection(extensionContext, sidecarClient);
+		// apparantaly this also works??? crazy the world of js
+		this.responseStreamCollection = new AideResponseStreamCollection(extensionContext, sidecarClient, this);
 		this.aideAgent.supportIssueReporting = false;
 		this.aideAgent.welcomeMessageProvider = {
 			provideWelcomeMessage: async () => {
@@ -216,7 +221,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			exchangeId: request.exchange_id,
 			sessionId: request.session_id,
 		});
-		console.log('provideEditStreamed', request.exchange_id, request.session_id, responseStream !== undefined);
 
 		// This is our uniqueEditId which we are using to tag the edits and make
 		// sure that we can roll-back if required on the undo-stack
@@ -225,7 +229,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			uniqueEditId = `${uniqueEditId}::${request.plan_step_id}`;
 		}
 		if (!request.apply_directly && !this.openResponseStream && !responseStream) {
-			console.log('editing_streamed::no_open_response_stream', request.exchange_id, request.session_id);
 			return {
 				fs_file_path: '',
 				success: false,
@@ -433,6 +436,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		};
 
 		for await (const event of asyncIterable) {
+			console.log(event);
 			// now we ping the sidecar that the probing needs to stop
 
 			if ('keep_alive' in event) {
