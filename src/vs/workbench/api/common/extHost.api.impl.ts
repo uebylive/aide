@@ -1861,6 +1861,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			AideSessionExchangeUserAction: extHostTypes.AideSessionExchangeUserAction,
 			AideAgentEditsState: extHostTypes.AideAgentEditsState,
 			AideButtonLook: extHostTypes.AideButtonLook,
+			AideAgentStreamingStateEnum: extHostTypes.AideAgentStreamingStateEnum,
 			AideAgentResponsePlanPart: extHostTypes.AideAgentResponsePlanPart,
 			AideAgentResponseCommandButtonPart: extHostTypes.AideAgentResponseCommandButtonPart,
 			AideAgentResponseCommandGroupPart: extHostTypes.AideAgentResponseCommandGroupPart,

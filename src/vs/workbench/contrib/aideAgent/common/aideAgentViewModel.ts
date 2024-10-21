@@ -15,7 +15,7 @@ import { ILogService } from '../../../../platform/log/common/log.js';
 import { getFullyQualifiedId, IAideAgentAgentNameService, IChatAgentCommand, IChatAgentData, IChatAgentResult } from './aideAgentAgents.js';
 import { ChatModelInitState, IChatModel, IChatProgressRenderableResponseContent, IChatRequestModel, IChatRequestVariableEntry, IChatResponseModel, IChatTextEditGroup, IChatWelcomeMessageContent, IResponse } from './aideAgentModel.js';
 import { IParsedChatRequest } from './aideAgentParserTypes.js';
-import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatCodeCitation, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatProgressMessage, IChatResponseErrorDetails, IChatTask, IChatUsedContext } from './aideAgentService.js';
+import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatCodeCitation, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatProgressMessage, IChatResponseErrorDetails, IChatStreamingState, IChatTask, IChatUsedContext } from './aideAgentService.js';
 import { countWords } from './aideAgentWordCounter.js';
 import { annotateVulnerabilitiesInText } from './annotations.js';
 import { CodeBlockModelCollection } from './codeBlockModelCollection.js';
@@ -53,6 +53,7 @@ export interface IChatViewModel {
 	readonly onDidDisposeModel: Event<void>;
 	readonly onDidChange: Event<IChatViewModelChangeEvent>;
 	readonly requestInProgress: boolean;
+	readonly lastStreamingState: IChatStreamingState | undefined;
 	readonly inputPlaceholder?: string;
 	getItems(): (IChatRequestViewModel | IChatResponseViewModel | IChatWelcomeMessageViewModel)[];
 	setInputPlaceholder(text: string): void;
@@ -219,6 +220,10 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 
 	get requestInProgress(): boolean {
 		return this._model.requestInProgress;
+	}
+
+	get lastStreamingState() {
+		return this._model.lastStreamingState;
 	}
 
 	get initState() {
@@ -440,6 +445,10 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 
 	get editsInfo() {
 		return this._model.editsInfo;
+	}
+
+	get streamingState() {
+		return this._model.streamingState;
 	}
 
 	get codeCitations(): ReadonlyArray<IChatCodeCitation> {

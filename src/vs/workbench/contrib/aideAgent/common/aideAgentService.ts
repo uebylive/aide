@@ -217,11 +217,23 @@ export enum ChatEditsState {
 	Cancelled = 'cancelled',
 }
 
-export type IChatEditsState = `${ChatEditsState}`;
+export enum ChatStreamingState {
+	UnderstandingRequest = 'understandingRequest',
+	ExploringCodebase = 'exploringCodebase',
+	Reasoning = 'reasoning',
+	Editing = 'editing',
+}
+
+export interface IChatStreamingState {
+	kind: 'streamingState';
+	state: `${ChatStreamingState}`;
+	isError: boolean;
+	message?: string;
+}
 
 export interface IChatEditsInfo {
 	kind: 'editsInfo';
-	state: IChatEditsState;
+	state: `${ChatEditsState}`;
 	isStale: boolean;
 	files: URI[];
 	sessionId: string;
@@ -263,6 +275,7 @@ export type IChatProgress =
 	| IChatMoveMessage
 	| IChatResponseCodeblockUriPart
 	| IChatConfirmation
+	| IChatStreamingState
 	| IChatEditsInfo
 	| IChatPlanStep
 	| IChatEndResponse;

@@ -678,36 +678,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				const { delta, answer_up_until_now } = event.event.ChatEvent;
 
 				if (answer_up_until_now === '') {
-					responseStream?.stream.button({
-						command: {
-							title: 'hey',
-							command: 'randomId'
-						}
-					});
-
-					responseStream?.stream.buttonGroup([
-						{
-							command: {
-								title: 'reject all',
-								command: 'randomId'
-							},
-							buttonOptions: {
-								look: vscode.AideButtonLook.Secondary,
-								codiconId: 'close-all'
-							}
-						},
-						{
-							command: {
-								title: 'accept all',
-								command: 'randomId'
-							},
-							buttonOptions: {
-								look: vscode.AideButtonLook.Primary,
-								codiconId: 'check-all'
-							}
-						}
-					]);
-
+					responseStream?.stream.streamingState({ state: 'reasoning', isError: false, message: 'Hello' });
 				}
 
 				if (delta !== null) {

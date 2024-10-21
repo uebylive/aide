@@ -54,7 +54,7 @@ import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions, setupSimpleEd
 import { ChatAgentLocation } from '../common/aideAgentAgents.js';
 import { CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_IN_CHAT_INPUT } from '../common/aideAgentContextKeys.js';
 import { AgentScope, IChatRequestVariableEntry } from '../common/aideAgentModel.js';
-import { IChatFollowup } from '../common/aideAgentService.js';
+import { IChatFollowup, IChatStreamingState } from '../common/aideAgentService.js';
 import { IChatResponseViewModel } from '../common/aideAgentViewModel.js';
 import { IAideAgentWidgetHistoryService, IChatHistoryEntry } from '../common/aideAgentWidgetHistoryService.js';
 import { IAideAgentLMService } from '../common/languageModels.js';
@@ -111,7 +111,11 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 
 	private readonly inputEditorMaxHeight: number;
 	private inputEditorHeight = 0;
-	private container!: HTMLElement;
+	private _container!: HTMLElement;
+
+	get container() {
+		return this._container;
+	}
 
 	private inputSideToolbarContainer?: HTMLElement;
 
@@ -266,7 +270,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	}
 
 	get element(): HTMLElement {
-		return this.container;
+		return this._container;
 	}
 
 	showPreviousValue(): void {
@@ -427,9 +431,9 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 				]),
 			]);
 		}
-		this.container = elements.root;
-		container.append(this.container);
-		this.container.classList.toggle('compact', this.options.renderStyle === 'compact');
+		this._container = elements.root;
+		container.append(this._container);
+		this._container.classList.toggle('compact', this.options.renderStyle === 'compact');
 		this.followupsContainer = elements.followupsContainer;
 		const inputAndSideToolbar = elements.inputAndSideToolbar; // The chat input and toolbar to the right
 		const inputContainer = elements.inputContainer; // The chat editor, attachments, and toolbars
@@ -615,6 +619,15 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		};
 		this._register(this._inputEditor.onDidChangeCursorPosition(e => onDidChangeCursorPosition()));
 		onDidChangeCursorPosition();
+	}
+
+
+	showStreamingState(state: IChatStreamingState): void {
+		console.log('showStreamingState', state);
+	}
+
+	hideStreamingState(): void {
+
 	}
 
 	private initAttachedContext(container: HTMLElement, isLayout = false) {

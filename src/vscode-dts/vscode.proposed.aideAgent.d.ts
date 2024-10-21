@@ -26,6 +26,15 @@ declare module 'vscode' {
 
 	export type AideAgentEditsStateType = `${AideAgentEditsState}`;
 
+	export enum AideAgentStreamingStateEnum {
+		UnderstandingRequest = 'understandingRequest',
+		ExploringCodebase = 'exploringCodebase',
+		Reasoning = 'reasoning',
+		Editing = 'editing',
+	}
+
+	export type AideAgentStreamingStateType = `${AideAgentStreamingStateEnum}`;
+
 	export interface AideAgentFileReference extends ChatPromptReference {
 		readonly id: 'vscode.file';
 		readonly value: {
@@ -124,21 +133,33 @@ declare module 'vscode' {
 		readonly exchangeId: string;
 	}
 
-
 	export interface AideCommand {
+		/**
+		 * VSCode command to execute
+		 */
 		readonly command: Command;
+
+		/**
+		 * Visual options for the button
+		 */
 		readonly buttonOptions?: {
-			tile?: string;
+			title?: string;
 			look?: `${AideButtonLook}`;
 			codiconId?: string;
 		};
 	}
 
+	export interface AideAgentStreamingState {
+		state: `${AideAgentStreamingStateEnum}`;
+		isError: boolean;
+		message?: string;
+	}
 
 	export interface AideAgentResponseStream extends Omit<ChatResponseStream, 'button'> {
 		editsInfo(edits: AideAgentEditsInfo): void;
 		button(command: AideCommand): void;
 		buttonGroup(commands: AideCommand[]): void;
+		streamingState(state: AideAgentStreamingState): void;
 		codeEdit(edits: WorkspaceEdit): void;
 		step(step: AideChatStep): void;
 		push(part: AideAgentResponsePart): void;

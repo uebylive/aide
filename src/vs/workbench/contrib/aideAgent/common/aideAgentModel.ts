@@ -26,7 +26,7 @@ import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgen
 import { IAideAgentCodeEditingService, IAideAgentCodeEditingSession } from './aideAgentCodeEditingService.js';
 import { HunkData } from './aideAgentEditingSession.js';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from './aideAgentParserTypes.js';
-import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatCommandGroup, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanStep, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
+import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatCommandGroup, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanStep, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatStreamingState, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
 import { IChatRequestVariableValue } from './aideAgentVariables.js';
 
 export function isRequestModel(item: unknown): item is IChatRequestModel {
@@ -131,6 +131,7 @@ export interface IChatResponseModel {
 	readonly usedContext: IChatUsedContext | undefined;
 	readonly contentReferences: ReadonlyArray<IChatContentReference>;
 	readonly editsInfo: IChatEditsInfo | undefined;
+	readonly streamingState: IChatStreamingState | undefined;
 	readonly codeCitations: ReadonlyArray<IChatCodeCitation>;
 	readonly progressMessages: ReadonlyArray<IChatProgressMessage>;
 	readonly slashCommand?: IChatAgentCommand;
@@ -440,6 +441,11 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		return this._contentReferences;
 	}
 
+	private _streamingState: IChatStreamingState | undefined;
+	public get streamingState(): IChatStreamingState | undefined {
+		return this._streamingState;
+	}
+
 	private _editsInfo: IChatEditsInfo | undefined;
 	public get editsInfo(): IChatEditsInfo | undefined {
 		return this._editsInfo;
@@ -604,6 +610,7 @@ export interface IChatModel {
 	readonly title: string;
 	readonly welcomeMessage: IChatWelcomeMessageModel | undefined;
 	readonly requestInProgress: boolean;
+	readonly lastStreamingState: IChatStreamingState | undefined;
 	readonly inputPlaceholder?: string;
 	getExchanges(): IChatExchangeModel[];
 	toExport(): IExportableChatData;
@@ -874,6 +881,11 @@ export class ChatModel extends Disposable implements IChatModel {
 		return this._exchanges.at(-1);
 	}
 
+	_lastStreamingState: IChatStreamingState | undefined;
+	get lastStreamingState() {
+		return this._lastStreamingState;
+	}
+
 	private _creationDate: number;
 	get creationDate(): number {
 		return this._creationDate;
@@ -1132,6 +1144,12 @@ export class ChatModel extends Disposable implements IChatModel {
 				this.aideAgentCodeEditingService,
 				[], this, undefined, undefined
 			);
+		}
+
+		if (progress.kind === 'streamingState') {
+			this._lastStreamingState = progress;
+		} else if (progress.kind === 'endResponse') {
+			this._lastStreamingState = undefined;
 		}
 
 		if (progress.kind === 'markdownContent' ||

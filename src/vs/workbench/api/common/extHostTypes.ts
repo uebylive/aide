@@ -4713,6 +4713,13 @@ export enum AideAgentEditsState {
 	Cancelled = 'cancelled',
 }
 
+export enum AideAgentStreamingStateEnum {
+	UnderstandingRequest = 'understandingRequest',
+	ExploringCodebase = 'exploringCodebase',
+	Reasoning = 'reasoning',
+	Editing = 'editing',
+}
+
 export enum AideButtonLook {
 	Primary = 'primary',
 	Secondary = 'secondary'
@@ -4763,6 +4770,17 @@ export class AideAgentResponseEditsInfoPart {
 		this.sessionId = step.sessionId;
 		this.exchangeId = step.exchangeId;
 		this.description = step.description;
+	}
+}
+
+export class AideAgentResponseStreamingStatePart {
+	state: vscode.AideAgentStreamingStateType;
+	isError: boolean;
+	message?: string;
+	constructor(step: vscode.AideAgentStreamingState) {
+		this.state = step.state;
+		this.isError = step.isError;
+		this.message = step.message;
 	}
 }
 
