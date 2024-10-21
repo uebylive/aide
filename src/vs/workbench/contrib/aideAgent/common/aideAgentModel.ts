@@ -559,7 +559,7 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 			kind: 'command',
 			buttonOptions: { look: 'primary', icon: Codicon.checkAll },
 			command: {
-				id: 'aideAgent.acceptAll',
+				id: 'workbench.action.aideAgent.acceptAll',
 				title: localize('acceptEdits', "Accept all"),
 				// passes the exchangeId and the sessionId and the agent id attached
 				// to the command (the agent id almost always present since we register it)

@@ -38,6 +38,8 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 		headerTitle: string,
 		iconId: string,
 		stale: boolean,
+		private sessionid: string,
+		private exchangeId: string,
 		readonly menuId: MenuId | null,
 		readonly previewOptions: IActionsPreviewOptions = { start: -1, end: -1 },
 		readonly descriptionPart: ChatMarkdownContentPart | undefined,
@@ -92,6 +94,12 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 					return undefined;
 				}
 			}));
+
+			// pass relevent information to the context over here
+			this.toolbar.context = {
+				'aideAgentSessionId': this.sessionid,
+				'aideAgentExchangeId': this.exchangeId,
+			};
 
 			dom.addDisposableListener(domNode, dom.EventType.FOCUS_IN, () => {
 				//dom.EventHelper.stop(e, true);

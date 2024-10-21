@@ -687,7 +687,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		} else if (content.kind === 'codeCitations') {
 			return this.renderCodeCitationsListData(content, context, templateData);
 		} else if (content.kind === 'editsInfo') {
-			return this.renderEdits(content, templateData, context);
+			return this.renderEdits(content, templateData, context, content.sessionId, content.exchangeId);
 		} else if (content.kind === 'planStep') {
 			// @g-danna This will be deprecated soon
 			return this.renderPlanStep(content, templateData, context);
@@ -831,12 +831,12 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		return markdownPart;
 	}
 
-	private renderEdits(edits: IChatEditsInfo, templateData: IChatListItemTemplate, context: IChatContentPartRenderContext) {
+	private renderEdits(edits: IChatEditsInfo, templateData: IChatListItemTemplate, context: IChatContentPartRenderContext, sessionId: string, exchangeId: string) {
 		let descriptionPart: ChatMarkdownContentPart | undefined;
 		if (edits.description) {
 			descriptionPart = this.renderMarkdown(edits.description, templateData, context) as ChatMarkdownContentPart;
 		}
-		const editsContentPart = this.instantiationService.createInstance(EditsContentPart, edits, descriptionPart);
+		const editsContentPart = this.instantiationService.createInstance(EditsContentPart, edits, sessionId, exchangeId, descriptionPart);
 		editsContentPart.addDisposable(editsContentPart.onDidChangeHeight(() => {
 			this.updateItemHeight(templateData);
 		}));
