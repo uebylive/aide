@@ -38,6 +38,7 @@ export function registerCodeEditActions() {
 		 */
 		run(accessor: ServicesAccessor, ...args: any[]) {
 			const exchangeId = args[0];
+			const sessionId = args[1];
 
 			try {
 				const aideAgentSession = accessor.get(IAideAgentService);
@@ -47,7 +48,7 @@ export function registerCodeEditActions() {
 			}
 
 			const aideAgentCodeEditingService = accessor.get(IAideAgentCodeEditingService);
-			const editingSession = aideAgentCodeEditingService.getOrStartCodeEditingSession(exchangeId);
+			const editingSession = aideAgentCodeEditingService.getOrStartCodeEditingSession(sessionId);
 			editingSession.accept();
 		}
 	});

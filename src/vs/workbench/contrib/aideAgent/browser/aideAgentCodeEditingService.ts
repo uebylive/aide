@@ -214,7 +214,6 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 		@IModelService private readonly _modelService: IModelService,
 		@ITextModelService private readonly _textModelService: ITextModelService,
 	) {
-		console.log('AideAgentCodeEditingSession::created', sessionId);
 		super();
 
 		this.registerActiveEditor();
@@ -279,10 +278,6 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 				} else if (hunkData.getState() !== HunkState.Pending) {
 					data.remove();
 				} else {
-					// should we not remove the data from before if we have it and redo the decorations
-					// or do we really want to keep them around?? looks and feels weird to me
-					data.remove();
-					// ?? what are we doing over here
 					const modifiedRangeNow = hunkRanges[0];
 					data.position = modifiedRangeNow.getStartPosition().delta(-1);
 				}
@@ -391,7 +386,6 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 		});
 		// this allows us to keep track of the text model at that reference location
 		if (textModelAtSnapshot === undefined && workspaceLabel !== undefined) {
-			console.log('snapshots::stored', this._textModelSnapshotUntilPoint.length);
 			this._textModelSnapshotUntilPoint.push({
 				resourceName: resource.toString(),
 				textModel: codeEdits.textModelN.createSnapshot(),
@@ -472,6 +466,11 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 		}
 	}
 
+	/**
+	 * Accept today removes all decorations which are present on the editor
+	 * ideally we want to keep the decorations around for the new changes but
+	 * remove any for which we have acknowleged that we are okay
+	 */
 	accept(): void {
 		this.removeDecorations();
 	}
