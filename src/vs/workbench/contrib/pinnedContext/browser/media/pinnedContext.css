@@ -3,54 +3,68 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-.monaco-workbench .pinned-context-view {
-	position: relative;
+.pinned-context-widget {
+	display: flex;
+	justify-content: space-between;
 }
 
-.monaco-workbench .pinned-context-view .pinned-context-update-button {
+.pinned-context-widget .pinned-context-label {
+	display: flex;
+	gap: 4px;
+	align-items: center;
+}
+
+.pinned-context-widget .pinned-context-label .pinned-context-edit-button a {
+	height: 16px;
+	font-size: 11px;
+	font-weight: bold;
 	border-radius: 0;
 }
 
-.monaco-workbench .pinned-context-view .message.pinned-context-subtle {
+.pinned-context-update-button {
+	border-radius: 0;
+}
+
+.message.pinned-context-subtle {
 	opacity: 0.5;
 	padding: 10px 16px 0 16px;
 	pointer-events: none;
 	z-index: 1;
 }
 
-.monaco-workbench .pinned-context-view .message.pinned-context-subtle.hide {
+.message.pinned-context-subtle.hide {
 	padding: 0px;
 }
 
-.monaco-workbench .pinned-context-view .pinned-context-tree {
+.pinned-context-tree {
 	margin-top: 4px;
 }
 
-.monaco-workbench .pinned-context-view .pinned-context-tree .monaco-tl-twistie {
+.pinned-context-tree .monaco-tl-twistie {
 	width: 0 !important;
 	padding: 0 !important;
 }
 
-.monaco-workbench .pinned-context-view .pinned-context-tree .monaco-tl-row {
+.pinned-context-tree .monaco-tl-row {
 	padding: 0 4px;
 }
 
-.monaco-workbench .pinned-context-view .pinned-context-tree .pinned-context-tree-node-item {
+.pinned-context-tree .pinned-context-tree-node-item {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
 }
 
-.monaco-workbench .pinned-context-view .pinned-context-tree .pinned-context-tree-node-item .codicon {
+.pinned-context-tree .pinned-context-tree-node-item .codicon {
 	display: none;
 	border-radius: 3px;
 	border: 1px solid transparent;
 }
 
-.monaco-workbench .pinned-context-view .pinned-context-tree .pinned-context-tree-node-item:hover .codicon {
+.pinned-context-tree .pinned-context-tree-node-item:hover .codicon {
 	display: inline-block;
 }
 
-.monaco-workbench .pinned-context-view .pinned-context-tree .pinned-context-tree-node-item .codicon.codicon-close:hover {
+.pinned-context-tree .pinned-context-tree-node-item .codicon.codicon-close:hover {
 	background-color: var(--vscode-list-activeSelectionBackground);
 }

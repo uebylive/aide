@@ -10,32 +10,21 @@ import { ITreeNode, ITreeRenderer } from '../../../../base/browser/ui/tree/tree.
 import { Codicon } from '../../../../base/common/codicons.js';
 import { Emitter } from '../../../../base/common/event.js';
 import { FuzzyScore } from '../../../../base/common/filters.js';
-import { IDisposable } from '../../../../base/common/lifecycle.js';
+import { Disposable, IDisposable } from '../../../../base/common/lifecycle.js';
 import { basename } from '../../../../base/common/path.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import { URI } from '../../../../base/common/uri.js';
-import { ILocalizedString, localize, localize2 } from '../../../../nls.js';
-import { MenuId } from '../../../../platform/actions/common/actions.js';
+import { localize } from '../../../../nls.js';
 import { ICommandService } from '../../../../platform/commands/common/commands.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
-import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
-import { IContextMenuService } from '../../../../platform/contextview/browser/contextView.js';
 import { FileKind } from '../../../../platform/files/common/files.js';
-import { IHoverService } from '../../../../platform/hover/browser/hover.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { IKeybindingService } from '../../../../platform/keybinding/common/keybinding.js';
 import { WorkbenchObjectTree } from '../../../../platform/list/browser/listService.js';
 import { IOpenerService } from '../../../../platform/opener/common/opener.js';
-import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
-import { defaultButtonStyles } from '../../../../platform/theme/browser/defaultStyles.js';
-import { buttonBackground } from '../../../../platform/theme/common/colorRegistry.js';
-import { asCssVariable } from '../../../../platform/theme/common/colorUtils.js';
-import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { IResourceLabel, ResourceLabels } from '../../../browser/labels.js';
-import { IViewPaneOptions, ViewPane } from '../../../browser/parts/views/viewPane.js';
-import { IViewDescriptorService } from '../../../common/views.js';
 import { IFilesConfiguration } from '../../files/common/files.js';
-import { IPinnedContextService, MANAGE_PINNED_CONTEXT, PinnedContextItem } from '../common/pinnedContext.js';
+import { IPinnedContextService, IPinnedContextWidget, MANAGE_PINNED_CONTEXT, PinnedContextItem } from '../common/pinnedContext.js';
 import { ManagePinnedContext } from './actions/pinnedContextActions.js';
 import './media/pinnedContext.css';
 
@@ -43,34 +32,34 @@ const ItemHeight = 22;
 
 type TreeElement = PinnedContextItem;
 
-export class PinnedContextPane extends ViewPane {
-	static readonly TITLE: ILocalizedString = localize2('pinnedContext', "Pinned Context");
+export class PinnedContextWidget extends Disposable implements IPinnedContextWidget {
+	private isExpanded = false;
+	private isEditing = false;
+	setEditing(editing: boolean): void {
+		this.isEditing = editing;
+	}
 
-	private $container!: HTMLElement;
+	private container: HTMLElement | undefined;
+	get element(): HTMLElement | undefined {
+		return this.container;
+	}
+
 	private $message!: HTMLDivElement;
 	private $tree!: HTMLDivElement;
 	private tree!: WorkbenchObjectTree<TreeElement, FuzzyScore>;
 	private treeRenderer: PinnedContextTreeRenderer | undefined;
-	private resourceLabels: ResourceLabels;
 
+	private resourceLabels: ResourceLabels;
 	private _onDidChangeVisibility = this._register(new Emitter<boolean>());
 
 	constructor(
-		options: IViewPaneOptions,
-		@IKeybindingService keybindingService: IKeybindingService,
-		@IContextMenuService contextMenuService: IContextMenuService,
-		@IConfigurationService configurationService: IConfigurationService,
-		@IContextKeyService contextKeyService: IContextKeyService,
-		@IViewDescriptorService viewDescriptorService: IViewDescriptorService,
-		@IInstantiationService instantiationService: IInstantiationService,
-		@IOpenerService openerService: IOpenerService,
-		@IThemeService themeService: IThemeService,
-		@ITelemetryService telemetryService: ITelemetryService,
-		@IHoverService hoverService: IHoverService,
 		@ICommandService private readonly commandService: ICommandService,
-		@IPinnedContextService private readonly pinnedContextService: IPinnedContextService
+		@IConfigurationService private readonly configurationService: IConfigurationService,
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IKeybindingService private readonly keybindingService: IKeybindingService,
+		@IPinnedContextService private readonly pinnedContextService: IPinnedContextService,
 	) {
-		super({ ...options, titleMenuId: MenuId.PinnedContextTitle }, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, telemetryService, hoverService);
+		super();
 
 		this.resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this._onDidChangeVisibility.event }));
 		this._register(this.pinnedContextService.onDidChangePinnedContexts(() => this.refresh()));
@@ -133,39 +122,61 @@ export class PinnedContextPane extends ViewPane {
 		dom.clearNode(this.$message);
 	}
 
-	protected override layoutBody(height: number, width: number): void {
-		super.layoutBody(height, width);
-		this.tree?.layout(height, width);
-	}
+	render(parent: HTMLElement): void {
+		const container = this.container = dom.append(parent, dom.$('.pinned-context-widget'));
 
-	protected override renderHeaderTitle(container: HTMLElement): void {
-		super.renderHeaderTitle(container, this.title);
-	}
-
-	protected override renderBody(container: HTMLElement): void {
-		super.renderBody(container);
-
-		this.$container = container;
-		container.classList.add('pinned-context-view');
-
+		const label = dom.append(container, dom.$('.pinned-context-label'));
+		// Icon
+		const icon = dom.$('.pinned-context-icon');
+		icon.classList.add(...ThemeIcon.asClassNameArray(Codicon.pinnedDirty));
+		icon.style.height = '16px';
+		label.appendChild(icon);
+		// Title
 		const manageKbShortcut = this.keybindingService.lookupKeybinding(ManagePinnedContext.ID);
-		const buttonTitle = manageKbShortcut ? localize('managePinnedContextsKb', "$(pinned) Manage ({0})", manageKbShortcut.getLabel()) : localize('managePinnedContextsNoKb', "$(pinned) Manage Pinned Contexts");
-		const button = this._register(new Button(this.$container, {
-			...defaultButtonStyles,
-			buttonBackground: asCssVariable(buttonBackground),
-			supportIcons: true,
-			title: buttonTitle
+		const buttonTitle = manageKbShortcut ? localize('managePinnedContextsKb', "Pinned Context ({0})", manageKbShortcut.getLabel()) : localize('managePinnedContextsNoKb', "Pinned Context");
+		const title = dom.$('.pinned-context-title');
+		title.textContent = buttonTitle;
+		label.appendChild(title);
+		// Edit button
+		const buttonContainer = dom.append(label, dom.$('.pinned-context-edit-button'));
+		const editButton = this._register(new Button(buttonContainer, {
+			buttonBackground: undefined,
+			buttonBorder: undefined,
+			buttonForeground: undefined,
+			buttonHoverBackground: undefined,
+			buttonSecondaryBackground: undefined,
+			buttonSecondaryForeground: undefined,
+			buttonSecondaryHoverBackground: undefined,
+			buttonSeparator: undefined
 		}));
-		button.label = buttonTitle;
-		button.element.classList.add('pinned-context-update-button');
-		button.element.onclick = () => {
+		editButton.label = localize('editPinnedContexts', "Edit");
+		editButton.onDidClick(() => {
 			this.commandService.executeCommand(MANAGE_PINNED_CONTEXT);
-		};
+		});
 
-		this.$message = dom.append(this.$container, dom.$('.message'));
+		const overview = dom.append(container, dom.$('.pinned-context-overview'));
+		const overviewLabel = localize('pinnedContextsOverview', "$(chevron-down) 12 files pinned");
+		const overviewButton = this._register(new Button(overview, {
+			buttonBackground: undefined,
+			buttonBorder: undefined,
+			buttonForeground: undefined,
+			buttonHoverBackground: undefined,
+			buttonSecondaryBackground: undefined,
+			buttonSecondaryForeground: undefined,
+			buttonSecondaryHoverBackground: undefined,
+			buttonSeparator: undefined,
+			title: overviewLabel,
+			supportIcons: true
+		}));
+		overviewButton.label = overviewLabel;
+
+		const details = dom.append(container, dom.$('.pinned-context-details'));
+		details.style.display = 'none';
+
+		this.$message = dom.append(details, dom.$('.message'));
 		this.$message.classList.add('pinned-context-subtle');
 
-		this.$tree = dom.append(this.$container, dom.$('.pinned-context-tree.show-file-icons'));
+		this.$tree = dom.append(details, dom.$('.pinned-context-tree.show-file-icons'));
 		this.$tree.classList.add('file-icon-themable-tree');
 		this.$tree.classList.add('show-file-icons');
 
@@ -193,6 +204,7 @@ export class PinnedContextPane extends ViewPane {
 		this.refresh();
 	}
 }
+
 
 class PinnedContextElementTemplate implements IDisposable {
 	static readonly id = 'PinnedContextElementTemplate';
