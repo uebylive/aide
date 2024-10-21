@@ -466,6 +466,11 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		options.scrollbar = { ...(options.scrollbar ?? {}), vertical: 'hidden' };
 		options.stickyScroll = { enabled: false };
 		options.acceptSuggestionOnEnter = 'on';
+		// TODO(@ghostwriternr): This condition is a hack, to avoid going through the pain of adding a new aide agent location.
+		// But this condition is necessary because we currently use the compact style for the floating widget.
+		// And the floating widget has fixed position relative to the window, so it helps to have the suggest controller
+		// be absolutely positioned relative to the input, rather than the whole window since the calculation goes haywire.
+		options.fixedOverflowWidgets = this.options.renderStyle !== 'compact';
 
 		this._inputEditorElement = dom.append(editorContainer!, $(chatInputEditorContainerSelector));
 		const editorOptions = getSimpleCodeEditorWidgetOptions();
