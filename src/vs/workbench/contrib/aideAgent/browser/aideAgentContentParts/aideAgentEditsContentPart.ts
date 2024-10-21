@@ -15,6 +15,8 @@ import { AideAgentRichItem as AideAgentRichItemContent, IActionsPreviewOptions }
 export class EditsContentPart extends AideAgentRichItemContent {
 	constructor(
 		readonly edits: IChatEditsInfo,
+		sessionId: string,
+		exchangeId: string,
 		descriptionPart: ChatMarkdownContentPart | undefined,
 		@IInstantiationService instantiationService: IInstantiationService,
 		@IKeybindingService keybindingService: IKeybindingService,
@@ -28,6 +30,8 @@ export class EditsContentPart extends AideAgentRichItemContent {
 			label,
 			icon,
 			edits.isStale,
+			sessionId,
+			exchangeId,
 			menuId,
 			previewOptions,
 			descriptionPart,

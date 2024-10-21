@@ -114,7 +114,12 @@ type FrameworkEvent = {
 
 type ExchangeMessageEvent = {
 	FinishedExchange: FinishedExchangeEvent;
+	EditsExchangeState: EditsExchangeEditsState;
 };
+
+interface EditsExchangeEditsState {
+	EditsState: 'Loading' | 'Cancelled' | 'InReview' | 'MarkedComplete';
+}
 
 type PlanMessageEvent = {
 	PlanStepCompleteAdded: PlanStepAddEvent;

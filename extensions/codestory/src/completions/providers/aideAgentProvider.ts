@@ -196,6 +196,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		// well understood but we should have an explicit way to do that
 		const response = await this.aideAgent.initResponse(sessionId);
 		if (response !== undefined) {
+			console.log('newExchangeCreated', sessionId, response.exchangeId);
 			this.responseStreamCollection.addResponseStream({
 				sessionId,
 				exchangeId: response.exchangeId,
@@ -215,6 +216,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			exchangeId: request.exchange_id,
 			sessionId: request.session_id,
 		});
+		console.log('provideEditStreamed', request.exchange_id, request.session_id, responseStream !== undefined);
 
 		// This is our uniqueEditId which we are using to tag the edits and make
 		// sure that we can roll-back if required on the undo-stack
@@ -223,7 +225,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			uniqueEditId = `${uniqueEditId}::${request.plan_step_id}`;
 		}
 		if (!request.apply_directly && !this.openResponseStream && !responseStream) {
-			console.log('editing_streamed::no_open_response_stream');
+			console.log('editing_streamed::no_open_response_stream', request.exchange_id, request.session_id);
 			return {
 				fs_file_path: '',
 				success: false,
@@ -719,7 +721,44 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					exchangeId,
 				});
 				if (responseStream === undefined) {
-					console.log('resonseStreamNotFound::ExchangeEvent', exchangeId, sessionId);
+					console.log('resonseStreamNotFound::ExchangeEvent::ExchangeEvent', exchangeId, sessionId);
+				}
+				if (event.event.ExchangeEvent.EditsExchangeState) {
+					const editsState = event.event.ExchangeEvent.EditsExchangeState.EditsState;
+					if (editsState === 'Loading') {
+						responseStream?.stream.editsInfo({
+							exchangeId,
+							sessionId,
+							files: [],
+							isStale: false,
+							state: 'loading',
+						});
+					} else if (editsState === 'Cancelled') {
+						responseStream?.stream.editsInfo({
+							exchangeId,
+							sessionId,
+							files: [],
+							isStale: false,
+							state: 'cancelled',
+						});
+					} else if (editsState === 'InReview') {
+						responseStream?.stream.editsInfo({
+							exchangeId,
+							sessionId,
+							files: [],
+							isStale: false,
+							state: 'inReview',
+						});
+					} else if (editsState === 'MarkedComplete') {
+						responseStream?.stream.editsInfo({
+							exchangeId,
+							sessionId,
+							files: [],
+							isStale: false,
+							state: 'markedComplete',
+						});
+					}
+					continue;
 				}
 				if (event.event.ExchangeEvent.FinishedExchange) {
 					if (responseStream) {
