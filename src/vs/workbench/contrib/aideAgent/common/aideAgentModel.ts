@@ -557,30 +557,6 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 
 		this._editingSession?.complete();
 
-		// Manually update content to display buttons
-		this.updateContent({
-			kind: 'command',
-			buttonOptions: { look: 'primary', codiconId: Codicon.checkAll.id },
-			command: {
-				id: 'workbench.action.aideAgent.acceptAll',
-				title: localize('acceptEdits', "Accept all"),
-				// passes the exchangeId and the sessionId and the agent id attached
-				// to the command (the agent id almost always present since we register it)
-				arguments: [this.id, this.session.sessionId, this._agent?.id, true]
-			}
-		});
-		this.updateContent({
-			kind: 'command',
-			buttonOptions: { look: 'secondary', codiconId: Codicon.closeAll.id },
-			command: {
-				id: 'aideAgent.rejectAll',
-				title: localize('rejectEdits', "Reject all"),
-				// passes the exchangeId and the sessionId and the agent id attached
-				// to the command (the agent id almost always present since we register it)
-				arguments: [this.id, this.session.sessionId, this._agent?.id, false]
-			}
-		});
-
 		this._isComplete = true;
 		this._onDidChange.fire();
 	}
