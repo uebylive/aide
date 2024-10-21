@@ -167,6 +167,11 @@ export interface IChatAgentMarkdownContentWithVulnerability {
 
 export interface IChatCommandButton {
 	command: Command;
+	buttonOptions?: {
+		title?: string;
+		look?: 'primary' | 'secondary';
+		icon?: ThemeIcon;
+	};
 	kind: 'command';
 }
 

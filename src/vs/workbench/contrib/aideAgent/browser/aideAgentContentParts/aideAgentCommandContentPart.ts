@@ -4,7 +4,6 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from '../../../../../base/browser/dom.js';
-import { Button } from '../../../../../base/browser/ui/button/button.js';
 import { Disposable } from '../../../../../base/common/lifecycle.js';
 import { localize } from '../../../../../nls.js';
 import { ICommandService } from '../../../../../platform/commands/common/commands.js';
@@ -13,8 +12,10 @@ import { IChatContentPart, IChatContentPartRenderContext } from './aideAgentCont
 import { IChatProgressRenderableResponseContent } from '../../common/aideAgentModel.js';
 import { IChatCommandButton } from '../../common/aideAgentService.js';
 import { isResponseVM } from '../../common/aideAgentViewModel.js';
+import { Button } from '../ui/aideButton.js';
 
 const $ = dom.$;
+
 
 export class ChatCommandButtonContentPart extends Disposable implements IChatContentPart {
 	public readonly domNode: HTMLElement;
@@ -27,12 +28,21 @@ export class ChatCommandButtonContentPart extends Disposable implements IChatCon
 		super();
 
 		this.domNode = $('.chat-command-button');
+
+
+		const label = commandButton.buttonOptions?.title || commandButton.command.title;
+		const icon = commandButton.buttonOptions?.icon;
+		const look = commandButton.buttonOptions?.look || 'secondary';
+
 		const enabled = !isResponseVM(context.element) || !context.element.isStale;
 		const tooltip = enabled ?
 			commandButton.command.tooltip :
 			localize('commandButtonDisabled', "Button not available in restored chat");
-		const button = this._register(new Button(this.domNode, { ...defaultButtonStyles, supportIcons: true, title: tooltip }));
-		button.label = commandButton.command.title;
+		const button = this._register(new Button(this.domNode, { ...defaultButtonStyles, secondary: look === 'secondary', supportIcons: !!icon, title: tooltip }));
+		if (icon) {
+			button.icon = icon;
+		}
+		button.label = label;
 		button.enabled = enabled;
 
 		// TODO still need telemetry for command buttons

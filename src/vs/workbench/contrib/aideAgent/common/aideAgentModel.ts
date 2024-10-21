@@ -5,6 +5,7 @@
 
 import { asArray } from '../../../../base/common/arrays.js';
 import { DeferredPromise } from '../../../../base/common/async.js';
+import { Codicon } from '../../../../base/common/codicons.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
 import { IMarkdownString, MarkdownString, isMarkdownString } from '../../../../base/common/htmlContent.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
@@ -552,8 +553,11 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		}
 
 		this._editingSession?.complete();
+
+		// Manually update content to display buttons
 		this.updateContent({
 			kind: 'command',
+			buttonOptions: { look: 'primary', icon: Codicon.checkAll },
 			command: {
 				id: 'aideAgent.acceptAll',
 				title: localize('acceptEdits', "Accept all"),
@@ -564,6 +568,7 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		});
 		this.updateContent({
 			kind: 'command',
+			buttonOptions: { look: 'secondary', icon: Codicon.closeAll },
 			command: {
 				id: 'aideAgent.rejectAll',
 				title: localize('rejectEdits', "Reject all"),
