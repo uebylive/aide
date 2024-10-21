@@ -61,7 +61,6 @@
 	margin: 0;
 	padding: 8px 6px;
 	border-radius: 4px;
-	overflow: hidden;
 }
 
 .command-palette-container > .interactive-session .chat-input-container {
