@@ -6,7 +6,6 @@
 import { localize } from '../../../../nls.js';
 import { RawContextKey } from '../../../../platform/contextkey/common/contextkey.js';
 import { ChatAgentLocation } from './aideAgentAgents.js';
-import { AgentMode } from './aideAgentModel.js';
 
 export const CONTEXT_RESPONSE_VOTE = new RawContextKey<string>('aideAgentSessionResponseVote', '', { type: 'string', description: localize('interactiveSessionResponseVote', "When the response has been voted up, is set to 'up'. When voted down, is set to 'down'. Otherwise an empty string.") });
 export const CONTEXT_VOTE_UP_ENABLED = new RawContextKey<boolean>('aideAgentVoteUpEnabled', false, { type: 'boolean', description: localize('chatVoteUpEnabled', "True when the chat vote up action is enabled.") });
@@ -41,5 +40,3 @@ export const CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER = new RawContextKey<boole
 export const CONTEXT_CHAT_FLOATING_WIDGET_VISIBLE = new RawContextKey<boolean>('aideAgentFloatingWidgetVisible', false, { type: 'boolean', description: localize('chatFloatingWidgetVisible', "True when the chat floating widget is visible.") });
 export const CONTEXT_CHAT_FLOATING_WIDGET_FOCUSED = new RawContextKey<boolean>('aideAgentFloatingWidgetFocused', false, { type: 'boolean', description: localize('chatFloatingWidgetFocused', "True when the chat floating widget is focused.") });
 export const CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET = new RawContextKey<boolean>('aideAgentInPassthroughWidget', false, { type: 'boolean', description: localize('chatInPassthroughWidget', "True when the chat is in a passthrough widget.") });
-
-export const CONTEXT_AGENT_MODE = new RawContextKey<AgentMode>('aideAgentMode', 'Chat' as AgentMode, { type: 'string', description: localize('agentMode', "The agent mode") });

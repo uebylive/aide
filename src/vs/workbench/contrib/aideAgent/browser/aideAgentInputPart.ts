@@ -51,13 +51,13 @@ import { AccessibilityVerbositySettingId } from '../../accessibility/browser/acc
 import { AccessibilityCommandId } from '../../accessibility/common/accessibilityCommands.js';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions, setupSimpleEditorSelectionStyling } from '../../codeEditor/browser/simpleEditorOptions.js';
 import { ChatAgentLocation } from '../common/aideAgentAgents.js';
-import { CONTEXT_AGENT_MODE, CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_IN_CHAT_INPUT } from '../common/aideAgentContextKeys.js';
-import { AgentMode, AgentScope, IChatRequestVariableEntry } from '../common/aideAgentModel.js';
+import { CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_IN_CHAT_INPUT } from '../common/aideAgentContextKeys.js';
+import { AgentScope, IChatRequestVariableEntry } from '../common/aideAgentModel.js';
 import { IChatFollowup } from '../common/aideAgentService.js';
 import { IChatResponseViewModel } from '../common/aideAgentViewModel.js';
 import { IAideAgentWidgetHistoryService, IChatHistoryEntry } from '../common/aideAgentWidgetHistoryService.js';
 import { IAideAgentLMService } from '../common/languageModels.js';
-import { AgentModePickerActionId, AgentScopePickerActionId, CancelAction, IChatExecuteActionContext, SubmitAction } from './actions/aideAgentExecuteActions.js';
+import { CancelAction, IChatExecuteActionContext, SubmitChatRequestAction, SubmitEditsRequestAction, SubmitPlanRequestAction } from './actions/aideAgentExecuteActions.js';
 import { IChatWidget } from './aideAgent.js';
 import { ChatFollowups } from './aideAgentFollowups.js';
 
@@ -151,16 +151,6 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		return metadataId;
 	}
 
-	private _onDidChangeCurrentAgentMode = this._register(new Emitter<string>());
-	private _currentAgentMode = CONTEXT_AGENT_MODE.bindTo(this.contextKeyService);
-	get currentAgentMode(): AgentMode {
-		return this._currentAgentMode.get() || AgentMode.Chat;
-	}
-
-	set currentAgentMode(mode: AgentMode) {
-		this._currentAgentMode.set(mode);
-		this._onDidChangeCurrentAgentMode.fire(mode);
-	}
 
 	private _onDidChangeCurrentAgentScope = this._register(new Emitter<string>());
 	private _currentAgentScope: AgentScope = AgentScope.Selection;
@@ -511,16 +501,16 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			menuOptions: { shouldForwardArgs: true },
 			hiddenItemStrategy: HiddenItemStrategy.Ignore,
 			actionViewItemProvider: (action, options) => {
-				if (action.id === AgentScopePickerActionId && action instanceof MenuItemAction) {
-					const scopeDelegate: AgentScopeSetterDelegate = {
-						onDidChangeScope: this._onDidChangeCurrentAgentScope.event,
-						setScope: (scopeId: AgentScope) => {
-							this._currentAgentScope = scopeId;
-						}
-					};
-					const scopeSelect = this.instantiationService.createInstance(AgentScopeActionViewItem, action, this._currentAgentScope, scopeDelegate);
-					return scopeSelect;
-				}
+				// if (action.id === AgentScopePickerActionId && action instanceof MenuItemAction) {
+				// const scopeDelegate: AgentScopeSetterDelegate = {
+				// onDidChangeScope: this._onDidChangeCurrentAgentScope.event,
+				// setScope: (scopeId: AgentScope) => {
+				// this._currentAgentScope = scopeId;
+				// }
+				// };
+				// const scopeSelect = this.instantiationService.createInstance(AgentScopeActionViewItem, action, this._currentAgentScope, scopeDelegate);
+				// return scopeSelect;
+				// }
 
 				if (action instanceof MenuItemAction) {
 					return this.instantiationService.createInstance(MenuEntryActionViewItem, action, undefined);
@@ -542,19 +532,20 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			},
 			hiddenItemStrategy: HiddenItemStrategy.Ignore, // keep it lean when hiding items and avoid a "..." overflow menu
 			actionViewItemProvider: (action, options) => {
-				if ((action.id === SubmitAction.ID || action.id === CancelAction.ID) && action instanceof MenuItemAction) {
+				const kbActionsSet = new Set([SubmitChatRequestAction.ID, SubmitEditsRequestAction.ID, SubmitPlanRequestAction.ID, CancelAction.ID]);
+				if (kbActionsSet.has(action.id) && action instanceof MenuItemAction) {
 					return this.instantiationService.createInstance(ActionViewItemWithKb, action);
 				}
 
-				if (action.id === AgentModePickerActionId && action instanceof MenuItemAction) {
-					const itemDelegate: AgentModeSetterDelegate = {
-						onDidChangeMode: this._onDidChangeCurrentAgentMode.event,
-						setMode: (modeId: string) => {
-							this._currentAgentMode.set(modeId as AgentMode);
-						}
-					};
-					return this.instantiationService.createInstance(AgentModeActionViewItem, action, this._currentAgentMode.get() || AgentMode.Chat, itemDelegate);
-				}
+				// if (action.id === AgentModePickerActionId && action instanceof MenuItemAction) {
+				// 	const itemDelegate: AgentModeSetterDelegate = {
+				// 		onDidChangeMode: this._onDidChangeCurrentAgentMode.event,
+				// 		setMode: (modeId: string) => {
+				// 			this._currentAgentMode.set(modeId as AgentMode);
+				// 		}
+				// 	};
+				// 	return this.instantiationService.createInstance(AgentModeActionViewItem, action, this._currentAgentMode.get() || AgentMode.Chat, itemDelegate);
+				// }
 
 				return undefined;
 			}
@@ -765,74 +756,74 @@ function getLastPosition(model: ITextModel): IPosition {
 	return { lineNumber: model.getLineCount(), column: model.getLineLength(model.getLineCount()) + 1 };
 }
 
-interface AgentModeSetterDelegate {
-	onDidChangeMode: Event<string>;
-	setMode(selectedModeId: string): void;
-}
+// interface AgentModeSetterDelegate {
+// 	onDidChangeMode: Event<string>;
+// 	setMode(selectedModeId: string): void;
+// }
 
-class AgentModeActionViewItem extends MenuEntryActionViewItem {
-	constructor(
-		action: MenuItemAction,
-		private currentAgentMode: AgentMode,
-		private delegate: AgentModeSetterDelegate,
-		@IKeybindingService keybindingService: IKeybindingService,
-		@INotificationService notificationService: INotificationService,
-		@IContextKeyService contextKeyService: IContextKeyService,
-		@IThemeService themeService: IThemeService,
-		@IContextMenuService contextMenuService: IContextMenuService,
-		@IAccessibilityService _accessibilityService: IAccessibilityService
-	) {
-		super(action, undefined, keybindingService, notificationService, contextKeyService, themeService, contextMenuService, _accessibilityService);
+// class AgentModeActionViewItem extends MenuEntryActionViewItem {
+// 	constructor(
+// 		action: MenuItemAction,
+// 		private currentAgentMode: AgentMode,
+// 		private delegate: AgentModeSetterDelegate,
+// 		@IKeybindingService keybindingService: IKeybindingService,
+// 		@INotificationService notificationService: INotificationService,
+// 		@IContextKeyService contextKeyService: IContextKeyService,
+// 		@IThemeService themeService: IThemeService,
+// 		@IContextMenuService contextMenuService: IContextMenuService,
+// 		@IAccessibilityService _accessibilityService: IAccessibilityService
+// 	) {
+// 		super(action, undefined, keybindingService, notificationService, contextKeyService, themeService, contextMenuService, _accessibilityService);
 
-		this._register(delegate.onDidChangeMode(modeId => {
-			this.currentAgentMode = modeId as AgentMode;
-			this.updateLabel();
-		}));
-	}
+// 		this._register(delegate.onDidChangeMode(modeId => {
+// 			this.currentAgentMode = modeId as AgentMode;
+// 			this.updateLabel();
+// 		}));
+// 	}
 
-	override async onClick(): Promise<void> {
-		this._openContextMenu();
-	}
+// 	override async onClick(): Promise<void> {
+// 		this._openContextMenu();
+// 	}
 
-	override render(container: HTMLElement): void {
-		super.render(container);
-		container.classList.add('agentmode-picker-item');
-	}
+// 	override render(container: HTMLElement): void {
+// 		super.render(container);
+// 		container.classList.add('agentmode-picker-item');
+// 	}
 
-	protected override updateLabel(): void {
-		if (this.label) {
-			this.label.textContent = this.currentAgentMode;
-			dom.reset(this.label, ...renderLabelWithIcons(`${this.currentAgentMode}$(chevron-down)`));
-		}
-	}
+// 	protected override updateLabel(): void {
+// 		if (this.label) {
+// 			this.label.textContent = this.currentAgentMode;
+// 			dom.reset(this.label, ...renderLabelWithIcons(`${this.currentAgentMode}$(chevron-down)`));
+// 		}
+// 	}
 
-	private _openContextMenu() {
-		const setAgentModeAction = (mode: string): IAction => {
-			return {
-				id: mode,
-				label: mode,
-				tooltip: '',
-				class: undefined,
-				enabled: true,
-				checked: mode === this.currentAgentMode,
-				run: () => {
-					this.currentAgentMode = mode as AgentMode;
-					this.delegate.setMode(mode);
-					this.updateLabel();
-				}
-			};
-		};
+// 	private _openContextMenu() {
+// 		const setAgentModeAction = (mode: string): IAction => {
+// 			return {
+// 				id: mode,
+// 				label: mode,
+// 				tooltip: '',
+// 				class: undefined,
+// 				enabled: true,
+// 				checked: mode === this.currentAgentMode,
+// 				run: () => {
+// 					this.currentAgentMode = mode as AgentMode;
+// 					this.delegate.setMode(mode);
+// 					this.updateLabel();
+// 				}
+// 			};
+// 		};
 
-		this._contextMenuService.showContextMenu({
-			getAnchor: () => this.element!,
-			getActions: () => [
-				setAgentModeAction('Edit'),
-				setAgentModeAction('Chat'),
-				setAgentModeAction('Plan'),
-			]
-		});
-	}
-}
+// 		this._contextMenuService.showContextMenu({
+// 			getAnchor: () => this.element!,
+// 			getActions: () => [
+// 				setAgentModeAction('Edit'),
+// 				setAgentModeAction('Chat'),
+// 				setAgentModeAction('Plan'),
+// 			]
+// 		});
+// 	}
+// }
 
 export interface AgentScopeSetterDelegate {
 	onDidChangeScope: Event<string>;

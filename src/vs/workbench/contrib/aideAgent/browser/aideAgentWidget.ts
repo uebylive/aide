@@ -793,10 +793,11 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this.inputPart.logInputHistory();
 	}
 
-	async acceptInput(query?: string): Promise<IChatResponseModel | undefined> {
-		return this._acceptInput(query ? { query } : undefined);
+	async acceptInput(query?: string, mode?: AgentMode): Promise<IChatResponseModel | undefined> {
+		return this._acceptInput(query && mode ? { query, mode } : undefined);
 	}
 
+	// Leftover from the old chat view, not sure if this is still needed
 	async acceptInputWithPrefix(prefix: string): Promise<void> {
 		this._acceptInput({ prefix });
 	}
@@ -811,7 +812,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		return inputState;
 	}
 
-	private async _acceptInput(opts: { query: string } | { prefix: string } | undefined): Promise<IChatResponseModel | undefined> {
+	private async _acceptInput(opts: { query: string; mode: AgentMode } | { prefix: string } | undefined): Promise<IChatResponseModel | undefined> {
 		if (this.viewModel) {
 			const editorValue = this.getInput();
 			if ('isPassthrough' in this.viewContext && this.viewContext.isPassthrough) {
@@ -821,7 +822,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 				}
 
 				widget.transferQueryState(AgentMode.Edit, this.inputPart.currentAgentScope);
-				widget.acceptInput(editorValue);
+				widget.acceptInput(AgentMode.Edit, editorValue);
 				widget.focusInput();
 				this._onDidAcceptInput.fire();
 				return;
@@ -833,8 +834,12 @@ export class ChatWidget extends Disposable implements IChatWidget {
 				'query' in opts ? opts.query :
 					`${opts.prefix} ${editorValue}`;
 			const isUserQuery = !opts || 'prefix' in opts;
+			let agentMode = AgentMode.Chat;
+			if (opts && 'mode' in opts) {
+				agentMode = opts.mode;
+			}
 			const result = await this.chatService.sendRequest(this.viewModel.sessionId, input, {
-				agentMode: this.inputPart.currentAgentMode,
+				agentMode,
 				agentScope: this.inputPart.currentAgentScope,
 				userSelectedModelId: this.inputPart.currentLanguageModel,
 				location: this.location,
@@ -865,7 +870,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	}
 
 	transferQueryState(mode: AgentMode, scope: AgentScope): void {
-		this.inputPart.currentAgentMode = mode;
+		//this.inputPart.currentAgentMode = mode;
 		this.inputPart.currentAgentScope = scope;
 	}
 

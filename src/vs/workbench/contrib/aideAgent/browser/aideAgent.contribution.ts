@@ -45,7 +45,7 @@ import { registerChatContextActions } from './actions/aideAgentContextActions.js
 import { registerChatCopyActions } from './actions/aideAgentCopyActions.js';
 import { registerChatDeveloperActions } from './actions/aideAgentDeveloperActions.js';
 import { registerChatEditsActions } from './actions/aideAgentEditsActions.js';
-import { SubmitAction, registerChatExecuteActions } from './actions/aideAgentExecuteActions.js';
+import { SubmitChatRequestAction, registerChatExecuteActions } from './actions/aideAgentExecuteActions.js';
 import { registerChatFileTreeActions } from './actions/aideAgentFileTreeActions.js';
 import { registerAideAgentFloatingWidgetActions } from './actions/aideAgentFloatingWidgetActions.js';
 import { registerChatPlanStepActions } from './actions/aideAgentPlanStepsActions.js';
@@ -227,7 +227,7 @@ class ChatSlashStaticSlashCommandsContribution extends Disposable {
 
 					return (agentLine + '\n' + commandText).trim();
 				}))).join('\n');
-			progress.report({ content: new MarkdownString(agentText, { isTrusted: { enabledCommands: [SubmitAction.ID] } }), kind: 'markdownContent' });
+			progress.report({ content: new MarkdownString(agentText, { isTrusted: { enabledCommands: [SubmitChatRequestAction.ID] } }), kind: 'markdownContent' });
 
 			// Report variables
 			if (defaultAgent?.metadata.helpTextVariablesPrefix) {
