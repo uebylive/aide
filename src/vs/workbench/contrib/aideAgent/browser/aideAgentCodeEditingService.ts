@@ -534,17 +534,13 @@ export class AideAgentCodeEditingService extends Disposable implements IAideAgen
 		super();
 	}
 
-	/**
-	 * NOTE: exchangeId here is not really correct, this should be sessionId if we are working
-	 * in the scope of a plan over here
-	 */
-	getOrStartCodeEditingSession(exchangeId: string): IAideAgentCodeEditingSession {
-		if (this._sessions.get(exchangeId)) {
-			return this._sessions.get(exchangeId)!;
+	getOrStartCodeEditingSession(sessionId: string): IAideAgentCodeEditingSession {
+		if (this._sessions.get(sessionId)) {
+			return this._sessions.get(sessionId)!;
 		}
 
-		const session = this.instantiationService.createInstance(AideAgentCodeEditingSession, exchangeId);
-		this._sessions.set(exchangeId, session);
+		const session = this.instantiationService.createInstance(AideAgentCodeEditingSession, sessionId);
+		this._sessions.set(sessionId, session);
 		return session;
 	}
 }
