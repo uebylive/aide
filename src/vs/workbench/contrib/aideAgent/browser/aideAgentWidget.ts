@@ -506,7 +506,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		));
 		this._register(this.renderer.onDidClickFollowup(item => {
 			// is this used anymore?
-			this.acceptInput(item.message);
+			// this.acceptInput(item.message);
 		}));
 		this._register(this.renderer.onDidClickRerunWithAgentOrCommandDetection(item => {
 			/* TODO(@ghostwriternr): Commenting this out definitely breaks rerunning requests. Fix this.
@@ -656,7 +656,8 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			}
 
 			msg += e.followup.message;
-			this.acceptInput(msg);
+			// we do not work on top of followups, so we can disable this on our side
+			// this.acceptInput(msg);
 
 			if (!e.response) {
 				// Followups can be shown by the welcome message, then there is no response associated.
@@ -793,7 +794,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this.inputPart.logInputHistory();
 	}
 
-	async acceptInput(query?: string, mode?: AgentMode): Promise<IChatResponseModel | undefined> {
+	async acceptInput(mode: AgentMode, query: string): Promise<IChatResponseModel | undefined> {
 		return this._acceptInput(query && mode ? { query, mode } : undefined);
 	}
 
