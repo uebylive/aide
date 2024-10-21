@@ -38,7 +38,7 @@ import { DEFAULT_EDITOR_ASSOCIATION, SaveReason } from '../../common/editor.js';
 import { IViewBadge } from '../../common/views.js';
 import { IChatAgentRequest as IAideAgentRequest } from '../../contrib/aideAgent/common/aideAgentAgents.js';
 import { AgentMode, AgentScope, AgentSessionExchangeUserAction } from '../../contrib/aideAgent/common/aideAgentModel.js';
-import { IChatEditsInfo, IChatEndResponse, IChatPlanStep } from '../../contrib/aideAgent/common/aideAgentService.js';
+import { IChatEditsInfo, IChatEndResponse, IChatPlanStep, IChatCommandButton as IAideChatCommandButton, IChatCommandGroup } from '../../contrib/aideAgent/common/aideAgentService.js';
 import { ChatAgentLocation, IChatAgentRequest, IChatAgentResult } from '../../contrib/chat/common/chatAgents.js';
 import { IChatRequestVariableEntry } from '../../contrib/chat/common/chatModel.js';
 import { IChatAgentDetection, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatMarkdownContent, IChatMoveMessage, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatTaskDto, IChatTaskResult, IChatTextEdit, IChatTreeData, IChatUserActionEvent, IChatWarningMessage } from '../../contrib/chat/common/chatService.js';
@@ -2960,6 +2960,36 @@ export namespace AideAgentResponseEditsInfoPart {
 			sessionId: part.sessionId,
 			exchangeId: part.exchangeId,
 			description: part.description ? MarkdownString.from(part.description) : undefined
+		};
+	}
+}
+
+export namespace AideAgentResponseCommandButtonPart {
+	export function from(part: types.AideAgentResponseCommandButtonPart, commandsConverter: CommandsConverter, commandDisposables: DisposableStore): Dto<IAideChatCommandButton> {
+		const { command, buttonOptions } = part.value;
+
+		// If the command isn't in the converter, then this session may have been restored, and the command args don't exist anymore
+		const convertedCommand = commandsConverter.toInternal(command, commandDisposables) ?? { command, title: command.title };
+		return {
+			kind: 'command',
+			command: convertedCommand,
+			buttonOptions,
+		};
+	}
+
+}
+
+export namespace AideAgentResponseCommandGroupPart {
+	export function from(part: types.AideAgentResponseCommandGroupPart, commandsConverter: CommandsConverter, commandDisposables: DisposableStore): Dto<IChatCommandGroup> {
+
+		const commands = part.value.map(aideCommand => {
+			const { command, buttonOptions } = aideCommand;
+			const convertedCommand = commandsConverter.toInternal(command, commandDisposables) ?? { command, title: command.title };
+			return { command: convertedCommand, buttonOptions };
+		});
+		return {
+			kind: 'commandGroup',
+			commands,
 		};
 	}
 }

@@ -121,8 +121,15 @@ class AideAgentResponseStream {
 				},
 				button(value) {
 					throwIfDone(this.anchor);
-					const part = new extHostTypes.ChatResponseCommandButtonPart(value);
-					const dto = typeConvert.ChatResponseCommandButtonPart.from(part, that._commandsConverter, that._sessionDisposables);
+					const part = new extHostTypes.AideAgentResponseCommandButtonPart(value);
+					const dto = typeConvert.AideAgentResponseCommandButtonPart.from(part, that._commandsConverter, that._sessionDisposables);
+					_report(dto);
+					return this;
+				},
+				buttonGroup(value) {
+					throwIfDone(this.anchor);
+					const part = new extHostTypes.AideAgentResponseCommandGroupPart(value);
+					const dto = typeConvert.AideAgentResponseCommandGroupPart.from(part, that._commandsConverter, that._sessionDisposables);
 					_report(dto);
 					return this;
 				},

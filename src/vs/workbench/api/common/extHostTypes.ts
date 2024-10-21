@@ -4713,6 +4713,11 @@ export enum AideAgentEditsState {
 	Cancelled = 'cancelled',
 }
 
+export enum AideButtonLook {
+	Primary = 'primary',
+	Secondary = 'secondary'
+}
+
 export class AideAgentResponsePlanPart {
 	description: string | vscode.MarkdownString;
 	sessionId: string;
@@ -4727,6 +4732,20 @@ export class AideAgentResponsePlanPart {
 		this.index = step.index;
 		this.isLast = step.isLast;
 		this.title = step.title;
+	}
+}
+
+export class AideAgentResponseCommandButtonPart {
+	value: vscode.AideCommand;
+	constructor(value: vscode.AideCommand) {
+		this.value = value;
+	}
+}
+
+export class AideAgentResponseCommandGroupPart {
+	value: vscode.AideCommand[];
+	constructor(value: vscode.AideCommand[]) {
+		this.value = value;
 	}
 }
 

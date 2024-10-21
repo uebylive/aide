@@ -672,7 +672,41 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				if (responseStream === undefined) {
 					console.log('responseStreamNotFound::ChatEvent', exchangeId, sessionId);
 				}
-				const { delta } = event.event.ChatEvent;
+
+				const { delta, answer_up_until_now } = event.event.ChatEvent;
+
+				if (answer_up_until_now === '') {
+					responseStream?.stream.button({
+						command: {
+							title: 'hey',
+							command: 'randomId'
+						}
+					});
+
+					responseStream?.stream.buttonGroup([
+						{
+							command: {
+								title: 'reject all',
+								command: 'randomId'
+							},
+							buttonOptions: {
+								look: vscode.AideButtonLook.Secondary,
+								codiconId: 'close-all'
+							}
+						},
+						{
+							command: {
+								title: 'accept all',
+								command: 'randomId'
+							},
+							buttonOptions: {
+								look: vscode.AideButtonLook.Primary,
+								codiconId: 'check-all'
+							}
+						}
+					]);
+
+				}
 
 				if (delta !== null) {
 					responseStream?.stream.markdown(delta);

@@ -918,7 +918,16 @@ have to be updated for changes to the rules above, or to support more deeply nes
 
 .aideagent-item-container .chat-command-button {
 	display: flex;
-	margin-bottom: 16px;
+	margin-bottom: 0px;
+}
+
+.aideagent-item-container .chat-command-group {
+	display: flex;
+	justify-content: end;
+	gap: 10px;
+}
+.aideagent-item-container .chat-command-group .monaco-button.aide-button {
+	width: fit-content;
 }
 
 .aideagent-item-container .chat-notification-widget {

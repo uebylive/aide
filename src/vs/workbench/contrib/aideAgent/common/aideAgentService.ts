@@ -165,14 +165,23 @@ export interface IChatAgentMarkdownContentWithVulnerability {
 	kind: 'markdownVuln';
 }
 
-export interface IChatCommandButton {
+
+export interface ISingleCommandButton {
 	command: Command;
 	buttonOptions?: {
 		title?: string;
 		look?: 'primary' | 'secondary';
-		icon?: ThemeIcon;
+		codiconId?: string;
 	};
+}
+
+export interface IChatCommandButton extends ISingleCommandButton {
 	kind: 'command';
+}
+
+export interface IChatCommandGroup {
+	commands: ISingleCommandButton[];
+	kind: 'commandGroup';
 }
 
 export interface IChatMoveMessage {
@@ -230,11 +239,6 @@ export interface IChatPlanStep {
 	kind: 'planStep';
 }
 
-export interface IChatPlanUpdate {
-	kind: 'planUpdate';
-	plan: IChatPlanStep[];
-}
-
 export interface IChatEndResponse {
 	kind: 'endResponse';
 }
@@ -252,6 +256,7 @@ export type IChatProgress =
 	| IChatTask
 	| IChatTaskResult
 	| IChatCommandButton
+	| IChatCommandGroup
 	| IChatWarningMessage
 	| IChatTextEdit
 	| IChatCodeEdit

@@ -44,7 +44,7 @@ import { MarkUnhelpfulActionId } from './actions/aideAgentTitleActions.js';
 import { ChatTreeItem, GeneratingPhrase, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions, IChatPlanStepsInfo } from './aideAgent.js';
 import { ChatAttachmentsContentPart } from './aideAgentContentParts/aideAgentAttachmentsContentPart.js';
 import { ChatCodeCitationContentPart } from './aideAgentContentParts/aideAgentCodeCitationContentPart.js';
-import { ChatCommandButtonContentPart } from './aideAgentContentParts/aideAgentCommandContentPart.js';
+import { ChatCommandButtonContentPart, ChatCommandGroupContentPart } from './aideAgentContentParts/aideAgentCommandContentPart.js';
 import { ChatConfirmationContentPart } from './aideAgentContentParts/aideAgentConfirmationContentPart.js';
 import { IChatContentPart, IChatContentPartRenderContext } from './aideAgentContentParts/aideAgentContentParts.js';
 import { ChatMarkdownContentPart, EditorPool } from './aideAgentContentParts/aideAgentMarkdownContentPart.js';
@@ -674,6 +674,8 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			return this.renderProgressTask(content, templateData, context);
 		} else if (content.kind === 'command') {
 			return this.instantiationService.createInstance(ChatCommandButtonContentPart, content, context);
+		} else if (content.kind === 'commandGroup') {
+			return this.instantiationService.createInstance(ChatCommandGroupContentPart, content.commands, context);
 		} else if (content.kind === 'textEditGroup') {
 			return this.renderTextEdit(context, content, templateData);
 		} else if (content.kind === 'confirmation') {

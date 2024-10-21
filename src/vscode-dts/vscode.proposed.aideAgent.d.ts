@@ -64,6 +64,11 @@ declare module 'vscode' {
 
 	export type AideAgentResponsePart = ExtendedChatResponsePart | ChatResponseCodeEditPart;
 
+	export enum AideButtonLook {
+		Primary = 'primary',
+		Secondary = 'secondary'
+	}
+
 	export interface AideChatStep {
 		/**
 		 * The index of the step in the plan
@@ -119,8 +124,21 @@ declare module 'vscode' {
 		readonly exchangeId: string;
 	}
 
-	export interface AideAgentResponseStream extends ChatResponseStream {
+
+	export interface AideCommand {
+		readonly command: Command;
+		readonly buttonOptions?: {
+			tile?: string;
+			look?: `${AideButtonLook}`;
+			codiconId?: string;
+		};
+	}
+
+
+	export interface AideAgentResponseStream extends Omit<ChatResponseStream, 'button'> {
 		editsInfo(edits: AideAgentEditsInfo): void;
+		button(command: AideCommand): void;
+		buttonGroup(commands: AideCommand[]): void;
 		codeEdit(edits: WorkspaceEdit): void;
 		step(step: AideChatStep): void;
 		push(part: AideAgentResponsePart): void;

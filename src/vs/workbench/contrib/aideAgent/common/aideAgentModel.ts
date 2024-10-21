@@ -27,7 +27,7 @@ import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgen
 import { IAideAgentCodeEditingService, IAideAgentCodeEditingSession } from './aideAgentCodeEditingService.js';
 import { HunkData } from './aideAgentEditingSession.js';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from './aideAgentParserTypes.js';
-import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanStep, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
+import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatCommandGroup, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanStep, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
 import { IChatRequestVariableValue } from './aideAgentVariables.js';
 
 export function isRequestModel(item: unknown): item is IChatRequestModel {
@@ -97,6 +97,7 @@ export type IChatProgressResponseContent =
 	| IChatContentInlineReference
 	| IChatProgressMessage
 	| IChatCommandButton
+	| IChatCommandGroup
 	| IChatWarningMessage
 	| IChatTask
 	| IChatTextEditGroup
@@ -323,6 +324,8 @@ export class Response extends Disposable implements IResponse {
 				return inlineRefToRepr(part);
 			} else if (part.kind === 'command') {
 				return part.command.title;
+			} else if (part.kind === 'commandGroup') {
+				return part.commands.map(c => c.command.title).join(', ');
 			} else if (part.kind === 'textEditGroup') {
 				return localize('editsSummary', "Made changes.");
 			} else if (part.kind === 'progressMessage' || part.kind === 'codeblockUri') {
@@ -557,7 +560,7 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		// Manually update content to display buttons
 		this.updateContent({
 			kind: 'command',
-			buttonOptions: { look: 'primary', icon: Codicon.checkAll },
+			buttonOptions: { look: 'primary', codiconId: Codicon.checkAll.id },
 			command: {
 				id: 'aideAgent.acceptAll',
 				title: localize('acceptEdits', "Accept all"),
@@ -568,7 +571,7 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		});
 		this.updateContent({
 			kind: 'command',
-			buttonOptions: { look: 'secondary', icon: Codicon.closeAll },
+			buttonOptions: { look: 'secondary', codiconId: Codicon.closeAll.id },
 			command: {
 				id: 'aideAgent.rejectAll',
 				title: localize('rejectEdits', "Reject all"),
@@ -1163,6 +1166,7 @@ export class ChatModel extends Disposable implements IChatModel {
 			progress.kind === 'markdownVuln' ||
 			progress.kind === 'progressMessage' ||
 			progress.kind === 'command' ||
+			progress.kind === 'commandGroup' ||
 			progress.kind === 'textEdit' ||
 			progress.kind === 'warning' ||
 			progress.kind === 'progressTask' ||
