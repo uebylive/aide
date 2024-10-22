@@ -853,7 +853,7 @@ export class ChatModel extends Disposable implements IChatModel {
 
 	private _welcomeMessage: ChatWelcomeMessageModel | undefined;
 	get welcomeMessage(): ChatWelcomeMessageModel | undefined {
-		return this._welcomeMessage;
+		return this._exchanges.length === 0 ? this._welcomeMessage : undefined;
 	}
 
 	// TODO to be clear, this is not the same as the id from the session object, which belongs to the provider.
