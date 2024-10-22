@@ -238,6 +238,7 @@ export class MenuId {
 	static readonly AideAgentEditsLoading = new MenuId('AideAgentEditsLoading');
 	static readonly AideAgentEditsCompleted = new MenuId('AideAgentEditsCompleted');
 	static readonly AideAgentEditsReview = new MenuId('AideAgentEditsReview');
+	static readonly AideAgentStreamingState = new MenuId('AideAgentStreamingState');
 	static readonly AideAgentInlineResourceAnchorContext = new MenuId('AideAgentInlineResourceAnchorContext');
 	static readonly AideAgentInlineSymbolAnchorContext = new MenuId('AideAgentInlineSymbolAnchorContext');
 	static readonly AccessibleView = new MenuId('AccessibleView');
