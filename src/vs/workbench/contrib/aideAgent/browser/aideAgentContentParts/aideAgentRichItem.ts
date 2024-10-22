@@ -17,6 +17,7 @@ import { Emitter } from '../../../../../base/common/event.js';
 import { ChatMarkdownContentPart } from './aideAgentMarkdownContentPart.js';
 import './media/aideAgentRichItem.css';
 import { Button } from '../../../../../base/browser/ui/button/button.js';
+import { defaultButtonStyles } from '../../../../../platform/theme/browser/defaultStyles.js';
 
 const $ = dom.$;
 
@@ -119,27 +120,16 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 			}));
 		}
 
+		// TODO: Failing to render properly, we should figure out how to work on this
 		if (supportsCheckpoint) {
 			const checkPointButtonContainer = $('.aide-rich-item-checkpoint');
-			const checkpointButton = this._register(this.instantiationService.createInstance(Button, checkPointButtonContainer, {}));
+			const checkPointButton = this._register(this.instantiationService.createInstance(Button, checkPointButtonContainer, defaultButtonStyles));
+			checkPointButton.label = 'testing';
+			this._register(checkPointButton.onDidClick(() => {
 
-			const iconContainer = $('.aide-rich-item-checkpoint-icon-container');
+			}));
 
-			this._register(this.instantiationService.createInstance(Heroicon, checkpointButton.element, 'micro/flag'));
-
-			// elements = dom.h('.interactive-input-part', [
-			// 	dom.h('.interactive-input-streaming-state@streamingStateContainer'),
-			// 	dom.h('.interactive-input-and-side-toolbar@inputAndSideToolbar', [
-			// 		dom.h('.chat-input-container@inputContainer', [
-			// 			dom.h('.chat-editor-container@editorContainer'),
-			// 			dom.h('.chat-input-toolbars@inputToolbars'),
-			// 		]),
-			// 	]),
-			// 	dom.h('.chat-attached-context@attachedContextContainer'),
-			// 	dom.h('.interactive-input-followups@followupsContainer'),
-			// ]
-
-
+			domNode.appendChild(checkPointButtonContainer);
 		}
 	}
 
