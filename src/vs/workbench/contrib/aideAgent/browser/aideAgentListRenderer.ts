@@ -713,7 +713,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		} else if (content.kind === 'editsInfo') {
 			return this.renderEdits(content, templateData, context, content.sessionId, content.exchangeId);
 		} else if (content.kind === 'planInfo') {
-			return this.renderPlanInfo(content, templateData, context, content.sessionId, content.exchangeId)
+			return this.renderPlanInfo(content, templateData, context, content.sessionId, content.exchangeId);
 		} else if (content.kind === 'planStep') {
 			// @g-danna This will be deprecated soon
 			return this.renderPlanStep(content, templateData, context);
