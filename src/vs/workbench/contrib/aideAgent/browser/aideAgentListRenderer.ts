@@ -63,10 +63,6 @@ import { ChatMarkdownDecorationsRenderer } from './aideAgentMarkdownDecorationsR
 import { ChatMarkdownRenderer } from './aideAgentMarkdownRenderer.js';
 import { ChatEditorOptions } from './aideAgentOptions.js';
 import { ChatCodeBlockContentProvider, CodeBlockPart } from './codeBlockPart.js';
-import { ChatPlanStepPart } from './aideAgentContentParts/aideAgentPlanStepPart.js';
-import { EditsContentPart } from './aideAgentContentParts/aideAgentEditsContentPart.js';
-import { ChatAgentLocation } from '../common/aideAgentAgents.js';
-import { ChatFollowups } from './aideAgentFollowups.js';
 import { PlanContentPart } from './aideAgentContentParts/aideAgentPlanContentPart.js';
 
 
