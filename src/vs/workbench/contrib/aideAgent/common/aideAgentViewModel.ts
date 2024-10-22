@@ -13,6 +13,7 @@ import { URI } from '../../../../base/common/uri.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { getFullyQualifiedId, IAideAgentAgentNameService, IChatAgentCommand, IChatAgentData, IChatAgentResult } from './aideAgentAgents.js';
+import { IAideAgentEdits } from './aideAgentEditingSession.js';
 import { ChatModelInitState, IChatModel, IChatProgressRenderableResponseContent, IChatRequestModel, IChatRequestVariableEntry, IChatResponseModel, IChatTextEditGroup, IChatWelcomeMessageContent, IResponse } from './aideAgentModel.js';
 import { IParsedChatRequest } from './aideAgentParserTypes.js';
 import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatCodeCitation, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatPlanInfo, IChatProgressMessage, IChatResponseErrorDetails, IChatStreamingState, IChatTask, IChatUsedContext } from './aideAgentService.js';
@@ -137,9 +138,17 @@ export interface IChatCodeCitations {
 }
 
 /**
+ * Content type for edits used during rendering, not in the model
+ */
+export interface IChatCodeEdits {
+	edits: Map<string, IAideAgentEdits>;
+	kind: 'codeEdits';
+}
+
+/**
  * Type for content parts rendered by IChatListRenderer
  */
-export type IChatRendererContent = IChatProgressRenderableResponseContent | IChatReferences | IChatCodeCitations;
+export type IChatRendererContent = IChatProgressRenderableResponseContent | IChatReferences | IChatCodeCitations | IChatCodeEdits;
 
 export interface IChatLiveUpdateData {
 	firstWordTime: number;
@@ -165,6 +174,7 @@ export interface IChatResponseViewModel {
 	readonly usedContext: IChatUsedContext | undefined;
 	readonly contentReferences: ReadonlyArray<IChatContentReference>;
 	readonly codeCitations: ReadonlyArray<IChatCodeCitation>;
+	readonly codeEdits: Map<string, IAideAgentEdits> | undefined;
 	readonly progressMessages: ReadonlyArray<IChatProgressMessage>;
 	readonly editsInfo: IChatEditsInfo | undefined;
 	readonly planInfo: IChatPlanInfo | undefined;
@@ -442,6 +452,10 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 
 	get contentReferences(): ReadonlyArray<IChatContentReference> {
 		return this._model.contentReferences;
+	}
+
+	get codeEdits() {
+		return this._model.codeEdits;
 	}
 
 	get editsInfo() {

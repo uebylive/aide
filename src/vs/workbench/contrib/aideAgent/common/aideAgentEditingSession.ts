@@ -12,7 +12,7 @@ import { Position } from '../../../../editor/common/core/position.js';
 import { Range } from '../../../../editor/common/core/range.js';
 import { IDocumentDiff } from '../../../../editor/common/diff/documentDiffProvider.js';
 import { DetailedLineRangeMapping, RangeMapping } from '../../../../editor/common/diff/rangeMapping.js';
-import { IIdentifiedSingleEditOperation, ITextModel, IValidEditOperation, TrackedRangeStickiness } from '../../../../editor/common/model.js';
+import { IIdentifiedSingleEditOperation, IModelDeltaDecoration, ITextModel, IValidEditOperation, TrackedRangeStickiness } from '../../../../editor/common/model.js';
 import { ModelDecorationOptions } from '../../../../editor/common/model/textModel.js';
 import { IEditorWorkerService } from '../../../../editor/common/services/editorWorker.js';
 import { IModelContentChangedEvent } from '../../../../editor/common/textModelEvents.js';
@@ -50,6 +50,14 @@ type RawHunkData = {
 	editState: IChatTextEditGroupState;
 };
 
+export interface IAideAgentEdits {
+	readonly targetUri: string;
+	readonly textModelN: ITextModel;
+	textModel0: ITextModel;
+	hunkData: HunkData;
+	textModelNDecorations?: IModelDeltaDecoration[];
+}
+
 export interface HunkInformation {
 	/**
 	 * The first element [0] is the whole modified range and subsequent elements are word-level changes
@@ -72,7 +80,7 @@ export class HunkData {
 		stickiness: TrackedRangeStickiness.AlwaysGrowsWhenTypingAtEdges
 	});
 
-	private static readonly _HUNK_THRESHOLD = 0;
+	private static readonly _HUNK_THRESHOLD = 8;
 
 	private readonly _store = new DisposableStore();
 	private readonly _data = new Map<RawHunk, RawHunkData>();

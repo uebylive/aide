@@ -34,6 +34,7 @@
 
 .monaco-workbench .part.auxiliarybar > .title > .title-label {
 	flex: 1;
+	padding-left: 8px;
 }
 
 .monaco-workbench .part.auxiliarybar > .title > .title-label h2 {
