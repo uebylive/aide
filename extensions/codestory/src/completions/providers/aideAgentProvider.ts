@@ -406,7 +406,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				await this.reportAgentEventsToChat(true, responseStream);
 			} else {
 				const isWholeCodebase = event.scope === vscode.AideAgentScope.Codebase;
-				const responseStream = await this.sidecarClient.agentSessionAgenticEdit(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, isWholeCodebase);
+				const responseStream = await this.sidecarClient.agentSessionPlanStep(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, isWholeCodebase);
 				await this.reportAgentEventsToChat(true, responseStream);
 			}
 		}
