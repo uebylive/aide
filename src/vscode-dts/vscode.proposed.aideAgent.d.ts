@@ -30,7 +30,7 @@ declare module 'vscode' {
 		UnderstandingRequest = 'understandingRequest',
 		ExploringCodebase = 'exploringCodebase',
 		Reasoning = 'reasoning',
-		Editing = 'editing',
+		Generating = 'generating',
 	}
 
 	export type AideAgentStreamingStateType = `${AideAgentStreamingStateEnum}`;

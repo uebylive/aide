@@ -4717,7 +4717,7 @@ export enum AideAgentStreamingStateEnum {
 	UnderstandingRequest = 'understandingRequest',
 	ExploringCodebase = 'exploringCodebase',
 	Reasoning = 'reasoning',
-	Editing = 'editing',
+	Generating = 'generating',
 }
 
 export enum AideButtonLook {

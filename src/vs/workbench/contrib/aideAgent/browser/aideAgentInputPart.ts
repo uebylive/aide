@@ -54,7 +54,7 @@ import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions, setupSimpleEd
 import { ChatAgentLocation } from '../common/aideAgentAgents.js';
 import { CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_IN_CHAT_INPUT } from '../common/aideAgentContextKeys.js';
 import { AgentScope, IChatRequestVariableEntry } from '../common/aideAgentModel.js';
-import { IChatFollowup, IChatStreamingState } from '../common/aideAgentService.js';
+import { ChatStreamingState, IChatFollowup, IChatStreamingState } from '../common/aideAgentService.js';
 import { IChatResponseViewModel } from '../common/aideAgentViewModel.js';
 import { IAideAgentWidgetHistoryService, IChatHistoryEntry } from '../common/aideAgentWidgetHistoryService.js';
 import { IAideAgentLMService } from '../common/languageModels.js';
@@ -118,6 +118,10 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	}
 
 	private inputSideToolbarContainer?: HTMLElement;
+
+	private streamingStateContainer!: HTMLElement;
+	private streamingStateWidget!: StreamingStateWidget | undefined;
+	private prevStreamingState: IChatStreamingState | undefined;
 
 	private followupsContainer!: HTMLElement;
 	private readonly followupsDisposables = this._register(new DisposableStore());
@@ -410,6 +414,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		let elements;
 		if (this.options.renderStyle === 'compact') {
 			elements = dom.h('.interactive-input-part', [
+				dom.h('.interactive-input-streaming-state@streamingStateContainer'),
 				dom.h('.interactive-input-and-side-toolbar@inputAndSideToolbar', [
 					dom.h('.chat-input-container@inputContainer', [
 						dom.h('.chat-editor-container@editorContainer'),
@@ -422,6 +427,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		} else {
 			elements = dom.h('.interactive-input-part', [
 				dom.h('.interactive-input-followups@followupsContainer'),
+				dom.h('.interactive-input-streaming-state@streamingStateContainer'),
 				dom.h('.interactive-input-and-side-toolbar@inputAndSideToolbar', [
 					dom.h('.chat-input-container@inputContainer', [
 						dom.h('.chat-attached-context@attachedContextContainer'),
@@ -433,6 +439,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		}
 		this._container = elements.root;
 		container.append(this._container);
+		this.streamingStateContainer = elements.streamingStateContainer;
 		this._container.classList.toggle('compact', this.options.renderStyle === 'compact');
 		this.followupsContainer = elements.followupsContainer;
 		const inputAndSideToolbar = elements.inputAndSideToolbar; // The chat input and toolbar to the right
@@ -623,11 +630,25 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 
 
 	showStreamingState(state: IChatStreamingState): void {
-		console.log('showStreamingState', state);
+		if (this.prevStreamingState &&
+			(state.state !== this.prevStreamingState.state
+				|| state.message !== this.prevStreamingState.message
+				|| state.isError !== this.prevStreamingState.isError)) {
+
+			if (this.streamingStateWidget) {
+				this.streamingStateWidget.dispose();
+			}
+			this._register(this.instantiationService.createInstance(StreamingStateWidget, state, this.streamingStateContainer));
+			this.prevStreamingState = state;
+		}
 	}
 
 	hideStreamingState(): void {
-
+		this.prevStreamingState = undefined;
+		if (this.streamingStateWidget) {
+			this.streamingStateWidget.dispose();
+			this.streamingStateWidget = undefined;
+		}
 	}
 
 	private initAttachedContext(container: HTMLElement, isLayout = false) {
@@ -782,74 +803,57 @@ function getLastPosition(model: ITextModel): IPosition {
 	return { lineNumber: model.getLineCount(), column: model.getLineLength(model.getLineCount()) + 1 };
 }
 
-// interface AgentModeSetterDelegate {
-// 	onDidChangeMode: Event<string>;
-// 	setMode(selectedModeId: string): void;
-// }
 
-// class AgentModeActionViewItem extends MenuEntryActionViewItem {
-// 	constructor(
-// 		action: MenuItemAction,
-// 		private currentAgentMode: AgentMode,
-// 		private delegate: AgentModeSetterDelegate,
-// 		@IKeybindingService keybindingService: IKeybindingService,
-// 		@INotificationService notificationService: INotificationService,
-// 		@IContextKeyService contextKeyService: IContextKeyService,
-// 		@IThemeService themeService: IThemeService,
-// 		@IContextMenuService contextMenuService: IContextMenuService,
-// 		@IAccessibilityService _accessibilityService: IAccessibilityService
-// 	) {
-// 		super(action, undefined, keybindingService, notificationService, contextKeyService, themeService, contextMenuService, _accessibilityService);
+class StreamingStateWidget extends Disposable {
 
-// 		this._register(delegate.onDidChangeMode(modeId => {
-// 			this.currentAgentMode = modeId as AgentMode;
-// 			this.updateLabel();
-// 		}));
-// 	}
+	private element: HTMLElement;
+	private willBeDisposed = false;
 
-// 	override async onClick(): Promise<void> {
-// 		this._openContextMenu();
-// 	}
+	constructor(
+		streamingState: IChatStreamingState,
+		container: HTMLElement,
+		@IInstantiationService private readonly instantiationService: IInstantiationService
+	) {
+		super();
+		const { state } = streamingState;
+		this.element = dom.append(container, $('.aide-streaming-state'));
 
-// 	override render(container: HTMLElement): void {
-// 		super.render(container);
-// 		container.classList.add('agentmode-picker-item');
-// 	}
+		let label = localize('aideAgent.streamingState.thinking', "Thinking");
+		switch (state) {
+			case ChatStreamingState.ExploringCodebase:
+				label = localize('aideAgent.streamingState.exploring', "Exploring codebase");
+				break;
+			case ChatStreamingState.Generating:
+				label = localize('aideAgent.streamingState.generating', "Generating");
+				break;
+			default:
+				break;
+		}
 
-// 	protected override updateLabel(): void {
-// 		if (this.label) {
-// 			this.label.textContent = this.currentAgentMode;
-// 			dom.reset(this.label, ...renderLabelWithIcons(`${this.currentAgentMode}$(chevron-down)`));
-// 		}
-// 	}
+		const labelElement = this.element.appendChild($('span.aide-streaming-state-label'));
+		labelElement.textContent = label;
 
-// 	private _openContextMenu() {
-// 		const setAgentModeAction = (mode: string): IAction => {
-// 			return {
-// 				id: mode,
-// 				label: mode,
-// 				tooltip: '',
-// 				class: undefined,
-// 				enabled: true,
-// 				checked: mode === this.currentAgentMode,
-// 				run: () => {
-// 					this.currentAgentMode = mode as AgentMode;
-// 					this.delegate.setMode(mode);
-// 					this.updateLabel();
-// 				}
-// 			};
-// 		};
 
-// 		this._contextMenuService.showContextMenu({
-// 			getAnchor: () => this.element!,
-// 			getActions: () => [
-// 				setAgentModeAction('Edit'),
-// 				setAgentModeAction('Chat'),
-// 				setAgentModeAction('Plan'),
-// 			]
-// 		});
-// 	}
-// }
+		const toolbarContainer = dom.append(this.element, $('.aide-streaming-state-toolbar-container'));
+
+		this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, toolbarContainer, MenuId.AideAgentStreamingState, {
+			menuOptions: { shouldForwardArgs: true },
+			hiddenItemStrategy: HiddenItemStrategy.NoHide,
+			actionViewItemProvider: (action) => {
+				if (action instanceof MenuItemAction) {
+					return this.instantiationService.createInstance(MenuEntryActionViewItem, action, undefined);
+				}
+				return undefined;
+			}
+		}));
+	}
+
+	override dispose(): void {
+		super.dispose();
+		this.element.remove();
+	}
+}
+
 
 export interface AgentScopeSetterDelegate {
 	onDidChangeScope: Event<string>;
@@ -922,3 +926,72 @@ export class AgentScopeActionViewItem extends MenuEntryActionViewItem {
 
 const chatInputEditorContainerSelector = '.interactive-input-editor';
 setupSimpleEditorSelectionStyling(chatInputEditorContainerSelector);
+
+// interface AgentModeSetterDelegate {
+// 	onDidChangeMode: Event<string>;
+// 	setMode(selectedModeId: string): void;
+// }
+
+// class AgentModeActionViewItem extends MenuEntryActionViewItem {
+// 	constructor(
+// 		action: MenuItemAction,
+// 		private currentAgentMode: AgentMode,
+// 		private delegate: AgentModeSetterDelegate,
+// 		@IKeybindingService keybindingService: IKeybindingService,
+// 		@INotificationService notificationService: INotificationService,
+// 		@IContextKeyService contextKeyService: IContextKeyService,
+// 		@IThemeService themeService: IThemeService,
+// 		@IContextMenuService contextMenuService: IContextMenuService,
+// 		@IAccessibilityService _accessibilityService: IAccessibilityService
+// 	) {
+// 		super(action, undefined, keybindingService, notificationService, contextKeyService, themeService, contextMenuService, _accessibilityService);
+
+// 		this._register(delegate.onDidChangeMode(modeId => {
+// 			this.currentAgentMode = modeId as AgentMode;
+// 			this.updateLabel();
+// 		}));
+// 	}
+
+// 	override async onClick(): Promise<void> {
+// 		this._openContextMenu();
+// 	}
+
+// 	override render(container: HTMLElement): void {
+// 		super.render(container);
+// 		container.classList.add('agentmode-picker-item');
+// 	}
+
+// 	protected override updateLabel(): void {
+// 		if (this.label) {
+// 			this.label.textContent = this.currentAgentMode;
+// 			dom.reset(this.label, ...renderLabelWithIcons(`${this.currentAgentMode}$(chevron-down)`));
+// 		}
+// 	}
+
+// 	private _openContextMenu() {
+// 		const setAgentModeAction = (mode: string): IAction => {
+// 			return {
+// 				id: mode,
+// 				label: mode,
+// 				tooltip: '',
+// 				class: undefined,
+// 				enabled: true,
+// 				checked: mode === this.currentAgentMode,
+// 				run: () => {
+// 					this.currentAgentMode = mode as AgentMode;
+// 					this.delegate.setMode(mode);
+// 					this.updateLabel();
+// 				}
+// 			};
+// 		};
+
+// 		this._contextMenuService.showContextMenu({
+// 			getAnchor: () => this.element!,
+// 			getActions: () => [
+// 				setAgentModeAction('Edit'),
+// 				setAgentModeAction('Chat'),
+// 				setAgentModeAction('Plan'),
+// 			]
+// 		});
+// 	}
+// }

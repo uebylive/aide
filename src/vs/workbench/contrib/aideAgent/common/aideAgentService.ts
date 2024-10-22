@@ -210,18 +210,11 @@ export interface IChatConfirmation {
 	kind: 'confirmation';
 }
 
-export enum ChatEditsState {
-	Loading = 'loading',
-	InReview = 'inReview',
-	MarkedComplete = 'markedComplete',
-	Cancelled = 'cancelled',
-}
-
 export enum ChatStreamingState {
 	UnderstandingRequest = 'understandingRequest',
 	ExploringCodebase = 'exploringCodebase',
 	Reasoning = 'reasoning',
-	Editing = 'editing',
+	Generating = 'generating',
 }
 
 export interface IChatStreamingState {
@@ -231,11 +224,35 @@ export interface IChatStreamingState {
 	message?: string;
 }
 
+export enum ChatEditsState {
+	Loading = 'loading',
+	InReview = 'inReview',
+	MarkedComplete = 'markedComplete',
+	Cancelled = 'cancelled',
+}
+
 export interface IChatEditsInfo {
 	kind: 'editsInfo';
 	state: `${ChatEditsState}`;
 	isStale: boolean;
 	files: URI[];
+	sessionId: string;
+	exchangeId: string;
+	description?: IMarkdownString;
+}
+
+
+export enum ChatPlanState {
+	Started = 'started',
+	Regenerated = 'regenerated',
+	Complete = 'Complete',
+	Cancelled = 'cancelled',
+}
+
+export interface IChatPlanInfo {
+	kind: 'planInfo';
+	state: `${ChatPlanState}`;
+	isStale: boolean;
 	sessionId: string;
 	exchangeId: string;
 	description?: IMarkdownString;

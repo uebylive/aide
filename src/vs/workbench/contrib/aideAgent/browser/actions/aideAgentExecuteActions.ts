@@ -175,12 +175,18 @@ export class CancelAction extends Action2 {
 			f1: false,
 			category: CHAT_CATEGORY,
 			icon: Codicon.debugStop,
-			menu: {
+			menu: [{
 				id: MenuId.AideAgentExecute,
 				when: CONTEXT_CHAT_REQUEST_IN_PROGRESS,
 				order: 2,
 				group: 'navigation',
 			},
+			{
+				id: MenuId.AideAgentStreamingState,
+				when: CONTEXT_CHAT_REQUEST_IN_PROGRESS,
+				order: 0,
+				group: 'navigation',
+			}],
 			keybinding: {
 				when: CONTEXT_IN_CHAT_INPUT,
 				weight: KeybindingWeight.WorkbenchContrib,
