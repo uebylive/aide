@@ -15,9 +15,13 @@
 }
 
 .pinned-context-widget .pinned-context-header .pinned-context-label .pinned-context-edit-button a,
-.pinned-context-widget .pinned-context-header .pinned-context-overview a {
+.pinned-context-widget .pinned-context-header .pinned-context-overview a.monaco-button {
 	height: 16px;
 	border-radius: 0;
+}
+
+.pinned-context-widget .pinned-context-header .pinned-context-overview a.monaco-button span {
+	line-height: 16px;
 }
 
 .pinned-context-widget .pinned-context-header .pinned-context-label .pinned-context-edit-button a {

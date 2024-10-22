@@ -81,6 +81,7 @@ export class PinnedContextWidget extends Disposable implements IPinnedContextWid
 		}
 
 		this.updateOverviewLabel();
+		this._onDidChangeHeight.fire();
 	}
 
 	private updateTree(pinnedContexts: URI[]): void {
@@ -192,9 +193,6 @@ export class PinnedContextWidget extends Disposable implements IPinnedContextWid
 		const ref = this._register(this.pinnedContextListPool.get());
 		const list = this.tree = ref.object;
 		this.$tree.appendChild(list.getHTMLElement().parentElement!);
-		this._register(list.onDidChangeContentHeight(() => {
-			this._onDidChangeHeight.fire();
-		}));
 
 		this._register(overviewButton.onDidClick(() => {
 			this.isExpanded = !this.isExpanded;
