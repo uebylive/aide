@@ -3,68 +3,45 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-.pinned-context-widget {
+.pinned-context-widget .pinned-context-header {
 	display: flex;
 	justify-content: space-between;
 }
 
-.pinned-context-widget .pinned-context-label {
+.pinned-context-widget .pinned-context-header .pinned-context-label {
 	display: flex;
 	gap: 4px;
 	align-items: center;
 }
 
-.pinned-context-widget .pinned-context-label .pinned-context-edit-button a {
+.pinned-context-widget .pinned-context-header .pinned-context-label .pinned-context-edit-button a,
+.pinned-context-widget .pinned-context-header .pinned-context-overview a {
 	height: 16px;
+	border-radius: 0;
+}
+
+.pinned-context-widget .pinned-context-header .pinned-context-label .pinned-context-edit-button a {
 	font-size: 11px;
 	font-weight: bold;
-	border-radius: 0;
 }
 
-.pinned-context-update-button {
-	border-radius: 0;
-}
-
-.message.pinned-context-subtle {
+.pinned-context-widget .message.pinned-context-subtle {
 	opacity: 0.5;
-	padding: 10px 16px 0 16px;
+	padding-top: 10px;
 	pointer-events: none;
 	z-index: 1;
 }
 
-.message.pinned-context-subtle.hide {
+.pinned-context-widget .message.pinned-context-subtle.hide {
 	padding: 0px;
 }
 
-.pinned-context-tree {
+.pinned-context-widget .pinned-context-tree {
 	margin-top: 4px;
 }
 
-.pinned-context-tree .monaco-tl-twistie {
-	width: 0 !important;
-	padding: 0 !important;
-}
-
-.pinned-context-tree .monaco-tl-row {
-	padding: 0 4px;
-}
-
-.pinned-context-tree .pinned-context-tree-node-item {
+.pinned-context-widget .pinned-context-tree .monaco-list-row {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-}
-
-.pinned-context-tree .pinned-context-tree-node-item .codicon {
-	display: none;
-	border-radius: 3px;
-	border: 1px solid transparent;
-}
-
-.pinned-context-tree .pinned-context-tree-node-item:hover .codicon {
-	display: inline-block;
-}
-
-.pinned-context-tree .pinned-context-tree-node-item .codicon.codicon-close:hover {
-	background-color: var(--vscode-list-activeSelectionBackground);
 }

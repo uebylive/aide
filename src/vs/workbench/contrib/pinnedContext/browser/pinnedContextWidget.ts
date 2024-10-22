@@ -4,33 +4,32 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from '../../../../base/browser/dom.js';
+import { ActionBar } from '../../../../base/browser/ui/actionbar/actionbar.js';
 import { Button } from '../../../../base/browser/ui/button/button.js';
-import { IIdentityProvider, IKeyboardNavigationLabelProvider, IListVirtualDelegate } from '../../../../base/browser/ui/list/list.js';
-import { ITreeNode, ITreeRenderer } from '../../../../base/browser/ui/tree/tree.js';
+import { IListRenderer, IListVirtualDelegate } from '../../../../base/browser/ui/list/list.js';
+import { Action } from '../../../../base/common/actions.js';
 import { Codicon } from '../../../../base/common/codicons.js';
-import { Emitter } from '../../../../base/common/event.js';
-import { FuzzyScore } from '../../../../base/common/filters.js';
-import { Disposable, IDisposable } from '../../../../base/common/lifecycle.js';
+import { Emitter, Event } from '../../../../base/common/event.js';
+import { Disposable } from '../../../../base/common/lifecycle.js';
 import { basename } from '../../../../base/common/path.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import { URI } from '../../../../base/common/uri.js';
 import { localize } from '../../../../nls.js';
 import { ICommandService } from '../../../../platform/commands/common/commands.js';
-import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { FileKind } from '../../../../platform/files/common/files.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { IKeybindingService } from '../../../../platform/keybinding/common/keybinding.js';
-import { WorkbenchObjectTree } from '../../../../platform/list/browser/listService.js';
+import { WorkbenchList } from '../../../../platform/list/browser/listService.js';
 import { IOpenerService } from '../../../../platform/opener/common/opener.js';
+import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { IResourceLabel, ResourceLabels } from '../../../browser/labels.js';
-import { IFilesConfiguration } from '../../files/common/files.js';
+import { IDisposableReference } from '../../aideAgent/browser/aideAgentContentParts/aideAgentCollections.js';
+import { createFileIconThemableTreeContainerScope } from '../../files/browser/views/explorerView.js';
 import { IPinnedContextService, IPinnedContextWidget, MANAGE_PINNED_CONTEXT, PinnedContextItem } from '../common/pinnedContext.js';
 import { ManagePinnedContext } from './actions/pinnedContextActions.js';
 import './media/pinnedContext.css';
 
 const ItemHeight = 22;
-
-type TreeElement = PinnedContextItem;
 
 export class PinnedContextWidget extends Disposable implements IPinnedContextWidget {
 	private isExpanded = false;
@@ -46,22 +45,25 @@ export class PinnedContextWidget extends Disposable implements IPinnedContextWid
 
 	private $message!: HTMLDivElement;
 	private $tree!: HTMLDivElement;
-	private tree!: WorkbenchObjectTree<TreeElement, FuzzyScore>;
-	private treeRenderer: PinnedContextTreeRenderer | undefined;
+	private overviewButton!: Button;
+	private tree!: WorkbenchList<PinnedContextItem>;
+	private pinnedContextListPool: PinnedContextListPool;
 
-	private resourceLabels: ResourceLabels;
 	private _onDidChangeVisibility = this._register(new Emitter<boolean>());
+	private _onDidChangeHeight = this._register(new Emitter<void>());
+	get onDidChangeHeight(): Event<void> {
+		return this._onDidChangeHeight.event;
+	}
 
 	constructor(
 		@ICommandService private readonly commandService: ICommandService,
-		@IConfigurationService private readonly configurationService: IConfigurationService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IKeybindingService private readonly keybindingService: IKeybindingService,
 		@IPinnedContextService private readonly pinnedContextService: IPinnedContextService,
 	) {
 		super();
 
-		this.resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this._onDidChangeVisibility.event }));
+		this.pinnedContextListPool = this._register(this.instantiationService.createInstance(PinnedContextListPool, this._onDidChangeVisibility.event));
 		this._register(this.pinnedContextService.onDidChangePinnedContexts(() => this.refresh()));
 	}
 
@@ -72,16 +74,23 @@ export class PinnedContextWidget extends Disposable implements IPinnedContextWid
 		if (pinnedContexts.length === 0) {
 			this.message = localize(
 				'noPinnedContexts',
-				"Pin files for the AI to cache and refer to for all it's work. The best files to pin are those you're actively working on or referring to for the task at hand."
+				"Pin files for the AI to cache and refer to for all its work. The best files to pin are those you're actively working on or referring to for the task at hand."
 			);
 		} else {
 			this.message = undefined;
 		}
+
+		this.updateOverviewLabel();
 	}
 
 	private updateTree(pinnedContexts: URI[]): void {
 		if (this.tree) {
-			this.tree.setChildren(null, pinnedContexts.map(uri => ({ element: { uri } })));
+			const maxItemsShown = 6;
+			const itemsShown = Math.min(pinnedContexts.length, maxItemsShown);
+			const height = itemsShown * ItemHeight;
+			this.tree.layout(height);
+			this.tree.getHTMLElement().style.height = `${height}px`;
+			this.tree.splice(0, this.tree.length, pinnedContexts.map(uri => ({ uri })));
 		}
 	}
 
@@ -125,7 +134,9 @@ export class PinnedContextWidget extends Disposable implements IPinnedContextWid
 	render(parent: HTMLElement): void {
 		const container = this.container = dom.append(parent, dom.$('.pinned-context-widget'));
 
-		const label = dom.append(container, dom.$('.pinned-context-label'));
+		/* Header area */
+		const header = dom.append(container, dom.$('.pinned-context-header'));
+		const label = dom.append(header, dom.$('.pinned-context-label'));
 		// Icon
 		const icon = dom.$('.pinned-context-icon');
 		icon.classList.add(...ThemeIcon.asClassNameArray(Codicon.pinnedDirty));
@@ -147,16 +158,16 @@ export class PinnedContextWidget extends Disposable implements IPinnedContextWid
 			buttonSecondaryBackground: undefined,
 			buttonSecondaryForeground: undefined,
 			buttonSecondaryHoverBackground: undefined,
-			buttonSeparator: undefined
+			buttonSeparator: undefined,
+			title: 'Edit pinned context'
 		}));
 		editButton.label = localize('editPinnedContexts', "Edit");
 		editButton.onDidClick(() => {
 			this.commandService.executeCommand(MANAGE_PINNED_CONTEXT);
 		});
 
-		const overview = dom.append(container, dom.$('.pinned-context-overview'));
-		const overviewLabel = localize('pinnedContextsOverview', "$(chevron-down) 12 files pinned");
-		const overviewButton = this._register(new Button(overview, {
+		const overview = dom.append(header, dom.$('.pinned-context-overview'));
+		const overviewButton = this.overviewButton = this._register(new Button(overview, {
 			buttonBackground: undefined,
 			buttonBorder: undefined,
 			buttonForeground: undefined,
@@ -165,137 +176,161 @@ export class PinnedContextWidget extends Disposable implements IPinnedContextWid
 			buttonSecondaryForeground: undefined,
 			buttonSecondaryHoverBackground: undefined,
 			buttonSeparator: undefined,
-			title: overviewLabel,
+			title: 'View pinned context',
 			supportIcons: true
 		}));
-		overviewButton.label = overviewLabel;
+		this.updateOverviewLabel();
 
+		/* Details area */
 		const details = dom.append(container, dom.$('.pinned-context-details'));
 		details.style.display = 'none';
 
 		this.$message = dom.append(details, dom.$('.message'));
 		this.$message.classList.add('pinned-context-subtle');
 
-		this.$tree = dom.append(details, dom.$('.pinned-context-tree.show-file-icons'));
-		this.$tree.classList.add('file-icon-themable-tree');
-		this.$tree.classList.add('show-file-icons');
+		this.$tree = dom.append(details, dom.$('.pinned-context-tree'));
+		const ref = this._register(this.pinnedContextListPool.get());
+		const list = this.tree = ref.object;
+		this.$tree.appendChild(list.getHTMLElement().parentElement!);
+		this._register(list.onDidChangeContentHeight(() => {
+			this._onDidChangeHeight.fire();
+		}));
 
-		this.treeRenderer = this.instantiationService.createInstance(
-			PinnedContextTreeRenderer,
-			this.resourceLabels,
-			this.configurationService.getValue('explorer.decorations')
-		);
+		this._register(overviewButton.onDidClick(() => {
+			this.isExpanded = !this.isExpanded;
+			details.style.display = this.isExpanded ? 'block' : 'none';
+			if (this.isExpanded && this.tree.length > 0) {
+				this.tree.setSelection([0]);
+			}
 
-		this.tree = <WorkbenchObjectTree<TreeElement, FuzzyScore>>this.instantiationService.createInstance(WorkbenchObjectTree, 'PinnedContextPane',
-			this.$tree, new PinnedContextVirtualDelegate(), [this.treeRenderer], {
-			identityProvider: new PinnedContextIdentityProvider(),
-			accessibilityProvider: {
-				getAriaLabel(element: TreeElement): string {
-					return element.uri.toString();
-				},
-				getWidgetAriaLabel(): string {
-					return localize('pinnedContext', "Pinned Context");
-				}
-			},
-			keyboardNavigationLabelProvider: new PinnedContextKeyboardNavigationLabelProvider(),
-			multipleSelectionSupport: false
-		});
+			this.updateOverviewLabel();
+			this._onDidChangeHeight.fire();
+		}));
 
 		this.refresh();
 	}
+
+	private updateOverviewLabel(): void {
+		const itemCount = this.tree?.length ?? 0;
+		const chevron = this.isExpanded ? '$(chevron-up)' : '$(chevron-down)';
+		this.overviewButton.label = localize('pinnedContextsOverview', "{0} {1} {2}", chevron, itemCount, itemCount === 1 ? 'item' : 'items');
+	}
 }
 
-
-class PinnedContextElementTemplate implements IDisposable {
-	static readonly id = 'PinnedContextElementTemplate';
-
-	readonly label: IResourceLabel;
-	private readonly removeButton: HTMLElement;
+class PinnedContextListPool extends Disposable {
+	private readonly pool: WorkbenchList<PinnedContextItem>[] = [];
+	private inUse = new Set<WorkbenchList<PinnedContextItem>>();
 
 	constructor(
-		container: HTMLElement,
-		private readonly labels: ResourceLabels,
-		private readonly onRemove: (item: TreeElement) => void
+		private readonly onDidChangeVisibility: Event<boolean>,
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IThemeService private readonly themeService: IThemeService,
 	) {
-		container.classList.add('pinned-context-tree-node-item');
-		this.label = this.labels.create(container, { supportHighlights: true });
-
-		this.removeButton = document.createElement('div');
-		this.removeButton.classList.add(...ThemeIcon.asClassNameArray(Codicon.close));
-		this.removeButton.title = localize('removePinnedContext', "Remove from Pinned Context");
-		container.appendChild(this.removeButton);
+		super();
 	}
 
-	setElement(element: TreeElement): void {
-		this.removeButton.onclick = (e) => {
-			e.stopPropagation();
-			this.onRemove(element);
+	get(): IDisposableReference<WorkbenchList<PinnedContextItem>> {
+		let list: WorkbenchList<PinnedContextItem>;
+		if (this.pool.length > 0) {
+			list = this.pool.pop()!;
+		} else {
+			list = this.createList();
+		}
+		this.inUse.add(list);
+
+		let stale = false;
+		return {
+			object: list,
+			isStale: () => stale,
+			dispose: () => {
+				stale = true;
+				this.inUse.delete(list);
+				this.pool.push(list);
+			}
 		};
 	}
 
-	dispose(): void {
-		this.label.dispose();
+	private createList(): WorkbenchList<PinnedContextItem> {
+		const resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this.onDidChangeVisibility }));
+
+		const container = dom.$('.pinned-context-list');
+		this._register(createFileIconThemableTreeContainerScope(container, this.themeService));
+
+		const list = this.instantiationService.createInstance(
+			WorkbenchList<PinnedContextItem>,
+			'PinnedContextList',
+			container,
+			new PinnedContextListDelegate(),
+			[this.instantiationService.createInstance(PinnedContextListRenderer, resourceLabels)],
+			{
+				multipleSelectionSupport: false,
+				identityProvider: { getId: (item: PinnedContextItem) => item.uri.toString() },
+				keyboardNavigationLabelProvider: { getKeyboardNavigationLabel: (item: PinnedContextItem) => basename(item.uri.path) },
+				accessibilityProvider: {
+					getAriaLabel: (item: PinnedContextItem) => basename(item.uri.path),
+					getWidgetAriaLabel: () => localize('pinnedContextList', "Pinned Context List")
+				}
+			}
+		);
+
+		return list;
 	}
 }
 
-export class PinnedContextIdentityProvider implements IIdentityProvider<TreeElement> {
-	getId(item: TreeElement): { toString(): string } {
-		return item.uri.fsPath;
-	}
-}
-
-export class PinnedContextKeyboardNavigationLabelProvider implements IKeyboardNavigationLabelProvider<TreeElement> {
-	getKeyboardNavigationLabel(element: TreeElement): { toString(): string } {
-		return basename(element.uri.fsPath);
-	}
-}
-
-class PinnedContextVirtualDelegate implements IListVirtualDelegate<TreeElement> {
+class PinnedContextListDelegate implements IListVirtualDelegate<PinnedContextItem> {
 	getHeight(): number {
 		return ItemHeight;
 	}
 
 	getTemplateId(): string {
-		return PinnedContextElementTemplate.id;
+		return 'pinnedContextItem';
 	}
 }
 
-class PinnedContextTreeRenderer implements ITreeRenderer<TreeElement, FuzzyScore, PinnedContextElementTemplate> {
-	readonly templateId: string = PinnedContextElementTemplate.id;
+interface IPinnedContextItemTemplateData {
+	resourceLabel: IResourceLabel;
+	actionBar: ActionBar;
+}
+
+class PinnedContextListRenderer implements IListRenderer<PinnedContextItem, IPinnedContextItemTemplateData> {
+	static readonly TEMPLATE_ID = 'pinnedContextItem';
+	readonly templateId: string = PinnedContextListRenderer.TEMPLATE_ID;
 
 	constructor(
 		private readonly labels: ResourceLabels,
-		private decorations: IFilesConfiguration['explorer']['decorations'],
 		@IOpenerService private readonly openerService: IOpenerService,
-		@IPinnedContextService private readonly pinnedContextService: IPinnedContextService
+		@IPinnedContextService private readonly pinnedContextService: IPinnedContextService,
 	) { }
 
-	renderTemplate(container: HTMLElement): PinnedContextElementTemplate {
-		return new PinnedContextElementTemplate(container, this.labels, (item) => {
-			this.pinnedContextService.removeContext(item.uri);
-		});
+	renderTemplate(container: HTMLElement): IPinnedContextItemTemplateData {
+		const resourceLabel = this.labels.create(container, { supportHighlights: true });
+		const actionBarContainer = dom.append(container, dom.$('.actions'));
+		const actionBar = new ActionBar(actionBarContainer, {});
+
+		return { resourceLabel, actionBar };
 	}
 
-	renderElement(
-		node: ITreeNode<TreeElement, FuzzyScore>,
-		_index: number,
-		template: PinnedContextElementTemplate,
-		_height: number | undefined
-	): void {
-		const { element: item } = node;
+	renderElement(element: PinnedContextItem, index: number, templateData: IPinnedContextItemTemplateData, height: number | undefined): void {
+		const uri = element.uri;
+		const label = basename(uri.path);
 
-		template.label.setFile(item.uri, {
+		templateData.resourceLabel.setResource({ resource: uri, name: label }, {
 			fileKind: FileKind.FILE,
-			hidePath: false,
-			fileDecorations: this.decorations
+			hideIcon: false,
+			fileDecorations: { colors: true, badges: true },
 		});
-		template.label.element.onclick = () => {
-			this.openerService.open(item.uri, { editorOptions: { pinned: false } });
+		templateData.resourceLabel.element.onclick = () => {
+			this.openerService.open(uri, { editorOptions: { pinned: false } });
 		};
-		template.setElement(item);
+
+		templateData.actionBar.clear();
+		templateData.actionBar.push(new Action('remove', localize('remove', "Remove"), ThemeIcon.asClassName(Codicon.close), true, () => {
+			this.pinnedContextService.removeContext(uri);
+		}), { icon: true, label: false });
 	}
 
-	disposeTemplate(template: PinnedContextElementTemplate): void {
-		template.dispose();
+	disposeTemplate(templateData: IPinnedContextItemTemplateData): void {
+		templateData.resourceLabel.dispose();
+		templateData.actionBar.dispose();
 	}
 }

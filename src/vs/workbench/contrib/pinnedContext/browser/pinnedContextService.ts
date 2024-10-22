@@ -30,8 +30,6 @@ export class PinnedContextService implements IPinnedContextService {
 	}
 
 	private onChangePinnedContexts(): void {
-		const currentContext = this.pinnedContexts.map(uri => uri.fsPath);
-		console.log('PinnedContextService#onChangePinnedContexts', currentContext);
 		this._onDidChangePinnedContexts.fire();
 		this.updateContextKeys();
 	}

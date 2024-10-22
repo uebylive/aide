@@ -5,6 +5,7 @@
 
 import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { DisposableStore } from '../../../../base/common/lifecycle.js';
+import { IDimension } from '../../../../editor/common/core/dimension.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IContextMenuService } from '../../../../platform/contextview/browser/contextView.js';
@@ -42,6 +43,8 @@ export class ChatViewPane extends ViewPane {
 	private _widget!: ChatWidget;
 	get widget(): ChatWidget { return this._widget; }
 
+	private dimension: IDimension | undefined;
+
 	private readonly modelDisposables = this._register(new DisposableStore());
 	private memento: Memento;
 	private readonly viewState: IViewPaneState;
@@ -70,6 +73,11 @@ export class ChatViewPane extends ViewPane {
 
 		this._pinnedContextWidget = this._register(this.instantiationService.createInstance(PinnedContextWidget));
 		this._register(this.pinnedContextWidgetService.register(this._pinnedContextWidget));
+		this._register(this._pinnedContextWidget.onDidChangeHeight(() => {
+			if (this.dimension) {
+				this.layoutBody(this.dimension.height, this.dimension.width);
+			}
+		}));
 
 		// View state for the ViewPane is currently global per-provider basically, but some other strictly per-model state will require a separate memento.
 		this.memento = new Memento('aide-agent-session-view-' + CHAT_PROVIDER_ID, this.storageService);
@@ -215,6 +223,7 @@ export class ChatViewPane extends ViewPane {
 	}
 
 	protected override layoutBody(height: number, width: number): void {
+		this.dimension = { height, width };
 		super.layoutBody(height, width);
 
 		const pinnedContextHeight = this._pinnedContextWidget.element?.offsetHeight ?? 0;
