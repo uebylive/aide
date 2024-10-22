@@ -501,8 +501,12 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				} else if (event.event.FrameworkEvent.SearchIteration) {
 					// console.log(event.event.FrameworkEvent.SearchIteration);
 				} else if (event.event.FrameworkEvent.AgenticTopLevelThinking) {
+					// TODO(skcd): The agent thinking event is over here, not streamed
+					// but it can get the job done
 					console.log(event.event.FrameworkEvent.AgenticTopLevelThinking);
 				} else if (event.event.FrameworkEvent.AgenticSymbolLevelThinking) {
+					// TODO(skcd): The agent symbol level thinking is here, not streamed
+					// but we can hook into it for information and context
 					console.log(event.event.FrameworkEvent.AgenticSymbolLevelThinking);
 				}
 			} else if (event.event.SymbolEvent) {
