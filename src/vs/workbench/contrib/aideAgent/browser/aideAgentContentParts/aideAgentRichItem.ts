@@ -16,6 +16,7 @@ import { IChatProgressRenderableResponseContent } from '../../common/aideAgentMo
 import { Emitter } from '../../../../../base/common/event.js';
 import { ChatMarkdownContentPart } from './aideAgentMarkdownContentPart.js';
 import './media/aideAgentRichItem.css';
+import { Button } from '../../../../../base/browser/ui/button/button.js';
 
 const $ = dom.$;
 
@@ -41,6 +42,7 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 		private sessionid: string,
 		private exchangeId: string,
 		readonly menuId: MenuId | null,
+		readonly supportsCheckpoint: boolean,
 		readonly previewOptions: IActionsPreviewOptions = { start: -1, end: -1 },
 		readonly descriptionPart: ChatMarkdownContentPart | undefined,
 		readonly instantiationService: IInstantiationService,
@@ -115,6 +117,29 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 			this._register(this.toolbar.onDidChangeMenuItems(() => {
 				this.updatePreview();
 			}));
+		}
+
+		if (supportsCheckpoint) {
+			const checkPointButtonContainer = $('.aide-rich-item-checkpoint');
+			const checkpointButton = this._register(this.instantiationService.createInstance(Button, checkPointButtonContainer, {}));
+
+			const iconContainer = $('.aide-rich-item-checkpoint-icon-container');
+
+			this._register(this.instantiationService.createInstance(Heroicon, checkpointButton.element, 'micro/flag'));
+
+			// elements = dom.h('.interactive-input-part', [
+			// 	dom.h('.interactive-input-streaming-state@streamingStateContainer'),
+			// 	dom.h('.interactive-input-and-side-toolbar@inputAndSideToolbar', [
+			// 		dom.h('.chat-input-container@inputContainer', [
+			// 			dom.h('.chat-editor-container@editorContainer'),
+			// 			dom.h('.chat-input-toolbars@inputToolbars'),
+			// 		]),
+			// 	]),
+			// 	dom.h('.chat-attached-context@attachedContextContainer'),
+			// 	dom.h('.interactive-input-followups@followupsContainer'),
+			// ]
+
+
 		}
 	}
 

@@ -26,7 +26,7 @@ import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgen
 import { IAideAgentCodeEditingService, IAideAgentCodeEditingSession } from './aideAgentCodeEditingService.js';
 import { HunkData } from './aideAgentEditingSession.js';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from './aideAgentParserTypes.js';
-import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatCommandGroup, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanStep, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatStreamingState, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
+import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatCommandGroup, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanInfo, IChatPlanStep, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatStreamingState, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
 import { IChatRequestVariableValue } from './aideAgentVariables.js';
 
 export function isRequestModel(item: unknown): item is IChatRequestModel {
@@ -102,6 +102,7 @@ export type IChatProgressResponseContent =
 	| IChatTextEditGroup
 	| IChatPlanStep
 	| IChatEditsInfo
+	| IChatPlanInfo
 	| IChatConfirmation;
 
 export type IChatProgressRenderableResponseContent = Exclude<IChatProgressResponseContent, IChatContentInlineReference | IChatAgentMarkdownContentWithVulnerability | IChatResponseCodeblockUriPart>;
@@ -131,6 +132,7 @@ export interface IChatResponseModel {
 	readonly usedContext: IChatUsedContext | undefined;
 	readonly contentReferences: ReadonlyArray<IChatContentReference>;
 	readonly editsInfo: IChatEditsInfo | undefined;
+	readonly planInfo: IChatPlanInfo | undefined;
 	readonly streamingState: IChatStreamingState | undefined;
 	readonly codeCitations: ReadonlyArray<IChatCodeCitation>;
 	readonly progressMessages: ReadonlyArray<IChatProgressMessage>;
@@ -334,8 +336,8 @@ export class Response extends Disposable implements IResponse {
 				return `${part.title}\n${part.message}`;
 			} else if (part.kind === 'planStep') {
 				return part.description.value;
-			} else if (part.kind === 'editsInfo') {
-				const repr = `${part.files?.length || 0} ${part.state}`;
+			} else if (part.kind === 'editsInfo' || part.kind === 'planInfo') {
+				const repr = part.state;
 				if (part.isStale) {
 					return repr.concat(` ${localize('stale', "(stale)")}`);
 				}
@@ -451,6 +453,11 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		return this._editsInfo;
 	}
 
+	private _planInfo: IChatPlanInfo | undefined;
+	public get planInfo(): IChatPlanInfo | undefined {
+		return this._planInfo;
+	}
+
 	private _editingSession: IAideAgentCodeEditingSession | undefined;
 
 	private readonly _codeCitations: IChatCodeCitation[] = [];
@@ -514,6 +521,11 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 
 	applyEditsInfo(editsInfo: IChatEditsInfo) {
 		this._editsInfo = editsInfo;
+		this._onDidChange.fire();
+	}
+
+	applyPlanInfo(planInfo: IChatPlanInfo) {
+		this._planInfo = planInfo;
 		this._onDidChange.fire();
 	}
 
@@ -1184,6 +1196,8 @@ export class ChatModel extends Disposable implements IChatModel {
 			this._onDidChange.fire({ kind: 'codeEdit', edits: progress.edits });
 		} else if (progress.kind === 'editsInfo') {
 			response.applyEditsInfo(progress);
+		} else if (progress.kind === 'planInfo') {
+			response.applyPlanInfo(progress);
 		} else {
 			this.logService.error(`Couldn't handle progress: ${JSON.stringify(progress)}`);
 		}

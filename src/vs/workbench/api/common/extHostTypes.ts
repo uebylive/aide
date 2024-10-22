@@ -4720,6 +4720,12 @@ export enum AideAgentStreamingStateEnum {
 	Generating = 'generating',
 }
 
+export enum AideAgentPlanState {
+	Started = 'started',
+	Complete = 'Complete',
+	Cancelled = 'cancelled',
+}
+
 export enum AideButtonLook {
 	Primary = 'primary',
 	Secondary = 'secondary'
@@ -4767,6 +4773,21 @@ export class AideAgentResponseEditsInfoPart {
 		this.state = step.state;
 		this.isStale = step.isStale;
 		this.files = step.files;
+		this.sessionId = step.sessionId;
+		this.exchangeId = step.exchangeId;
+		this.description = step.description;
+	}
+}
+
+export class AideAgentResponsePlanInfoPart {
+	state: vscode.AideAgentPlanStateType;
+	isStale: boolean;
+	sessionId: string;
+	exchangeId: string;
+	description?: string | vscode.MarkdownString;
+	constructor(step: vscode.AideAgentPlanInfo) {
+		this.state = step.state;
+		this.isStale = step.isStale;
 		this.sessionId = step.sessionId;
 		this.exchangeId = step.exchangeId;
 		this.description = step.description;

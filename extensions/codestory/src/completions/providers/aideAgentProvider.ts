@@ -685,7 +685,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				const { delta, answer_up_until_now } = event.event.ChatEvent;
 
 				if (answer_up_until_now === '') {
-					responseStream?.stream.streamingState({ state: 'reasoning', isError: false, message: 'Hello' });
+					responseStream?.stream.planInfo({ state: 'started', isStale: false, description: 'Test', sessionId, exchangeId });
 				}
 
 				if (delta !== null) {

@@ -8,13 +8,13 @@ import { MenuId } from '../../../../../platform/actions/common/actions.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { IKeybindingService } from '../../../../../platform/keybinding/common/keybinding.js';
 import { IChatProgressRenderableResponseContent } from '../../common/aideAgentModel.js';
-import { ChatEditsState, IChatEditsInfo } from '../../common/aideAgentService.js';
+import { ChatEditsState, ChatPlanState, IChatPlanInfo } from '../../common/aideAgentService.js';
 import { ChatMarkdownContentPart } from './aideAgentMarkdownContentPart.js';
 import { AideAgentRichItem as AideAgentRichItemContent, IActionsPreviewOptions } from './aideAgentRichItem.js';
 
-export class EditsContentPart extends AideAgentRichItemContent {
+export class PlanContentPart extends AideAgentRichItemContent {
 	constructor(
-		readonly edits: IChatEditsInfo,
+		readonly plan: IChatPlanInfo,
 		sessionId: string,
 		exchangeId: string,
 		descriptionPart: ChatMarkdownContentPart | undefined,
@@ -22,17 +22,18 @@ export class EditsContentPart extends AideAgentRichItemContent {
 		@IKeybindingService keybindingService: IKeybindingService,
 	) {
 
-		const label = assignLabel(edits);
-		const icon = assignIcon(edits);
-		const { menuId, previewOptions } = assignMenuAndPreviewOptions(edits);
+		const label = assignLabel(plan);
+		const icon = assignIcon(plan);
+		const { menuId, previewOptions } = assignMenuAndPreviewOptions(plan);
 
 		super(
 			label,
 			icon,
-			edits.isStale,
+			plan.isStale,
 			sessionId,
 			exchangeId,
 			menuId,
+			plan.state === ChatPlanState.Complete,
 			previewOptions,
 			descriptionPart,
 			instantiationService,
@@ -41,15 +42,14 @@ export class EditsContentPart extends AideAgentRichItemContent {
 	}
 
 	override hasSameContent(other: IChatProgressRenderableResponseContent): boolean {
-		return other.kind === 'editsInfo'
-			&& other.state === this.edits.state
-			&& other.files?.length === this.edits.files?.length
-			&& other.isStale === this.edits.isStale
-			&& other.description === this.edits.description;
+		return other.kind === 'planInfo'
+			&& other.state === this.plan.state
+			&& other.isStale === this.plan.isStale
+			&& other.description === this.plan.description;
 	}
 }
 
-function assignLabel(edits: IChatEditsInfo): string {
+function assignLabel(edits: IChatPlanInfo): string {
 	switch (edits.state) {
 		case ChatEditsState.Loading:
 			return localize('agent.editing', "Editing");
@@ -63,7 +63,7 @@ function assignLabel(edits: IChatEditsInfo): string {
 	}
 }
 
-function assignIcon(edits: IChatEditsInfo): string {
+function assignIcon(edits: IChatPlanInfo): string {
 	switch (edits.state) {
 		case ChatEditsState.Loading:
 		case ChatEditsState.InReview:
@@ -77,7 +77,7 @@ function assignIcon(edits: IChatEditsInfo): string {
 	}
 }
 
-function assignMenuAndPreviewOptions(edits: IChatEditsInfo): { menuId: MenuId | null; previewOptions: IActionsPreviewOptions } {
+function assignMenuAndPreviewOptions(edits: IChatPlanInfo): { menuId: MenuId | null; previewOptions: IActionsPreviewOptions } {
 	let menuId = null;
 	let previewOptions: IActionsPreviewOptions = { start: -1, end: -1 };
 
@@ -90,11 +90,11 @@ function assignMenuAndPreviewOptions(edits: IChatEditsInfo): { menuId: MenuId | 
 
 	switch (edits.state) {
 		case ChatEditsState.Loading:
-			menuId = MenuId.AideAgentEditsLoading;
+			menuId = MenuId.AideAgentPlanLoading;
 			previewOptions = { startLabel, start: -2, end: -1 };
 			break;
 		case ChatEditsState.InReview:
-			menuId = MenuId.AideAgentEditsReview;
+			menuId = MenuId.AideAgentPlanReview;
 			previewOptions = { startLabel, start: -2, end: -1 };
 			break;
 		case ChatEditsState.MarkedComplete:

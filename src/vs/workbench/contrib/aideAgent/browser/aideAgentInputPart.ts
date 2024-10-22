@@ -807,7 +807,6 @@ function getLastPosition(model: ITextModel): IPosition {
 class StreamingStateWidget extends Disposable {
 
 	private element: HTMLElement;
-	private willBeDisposed = false;
 
 	constructor(
 		streamingState: IChatStreamingState,
