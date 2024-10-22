@@ -5,6 +5,7 @@
 
 import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { DisposableStore } from '../../../../base/common/lifecycle.js';
+import { IDimension } from '../../../../editor/common/core/dimension.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IContextMenuService } from '../../../../platform/contextview/browser/contextView.js';
@@ -22,6 +23,8 @@ import { IViewPaneOptions, ViewPane } from '../../../browser/parts/views/viewPan
 import { Memento } from '../../../common/memento.js';
 import { SIDE_BAR_FOREGROUND } from '../../../common/theme.js';
 import { IViewDescriptorService } from '../../../common/views.js';
+import { IPinnedContextWidgetService } from '../../pinnedContext/browser/pinnedContext.js';
+import { PinnedContextWidget } from '../../pinnedContext/browser/pinnedContextWidget.js';
 import { ChatAgentLocation, IAideAgentAgentService } from '../common/aideAgentAgents.js';
 import { ChatModelInitState, IChatModel } from '../common/aideAgentModel.js';
 import { CHAT_PROVIDER_ID } from '../common/aideAgentParticipantContribTypes.js';
@@ -35,8 +38,12 @@ interface IViewPaneState extends IChatViewState {
 
 export const CHAT_SIDEBAR_PANEL_ID = 'workbench.panel.aideAgentSidebar';
 export class ChatViewPane extends ViewPane {
+	private _pinnedContextWidget: PinnedContextWidget;
+
 	private _widget!: ChatWidget;
 	get widget(): ChatWidget { return this._widget; }
+
+	private dimension: IDimension | undefined;
 
 	private readonly modelDisposables = this._register(new DisposableStore());
 	private memento: Memento;
@@ -60,8 +67,17 @@ export class ChatViewPane extends ViewPane {
 		@IAideAgentService private readonly chatService: IAideAgentService,
 		@IAideAgentAgentService private readonly chatAgentService: IAideAgentAgentService,
 		@ILogService private readonly logService: ILogService,
+		@IPinnedContextWidgetService private readonly pinnedContextWidgetService: IPinnedContextWidgetService,
 	) {
 		super(options, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, telemetryService, hoverService);
+
+		this._pinnedContextWidget = this._register(this.instantiationService.createInstance(PinnedContextWidget));
+		this._register(this.pinnedContextWidgetService.register(this._pinnedContextWidget));
+		this._register(this._pinnedContextWidget.onDidChangeHeight(() => {
+			if (this.dimension) {
+				this.layoutBody(this.dimension.height, this.dimension.width);
+			}
+		}));
 
 		// View state for the ViewPane is currently global per-provider basically, but some other strictly per-model state will require a separate memento.
 		this.memento = new Memento('aide-agent-session-view-' + CHAT_PROVIDER_ID, this.storageService);
@@ -137,6 +153,7 @@ export class ChatViewPane extends ViewPane {
 	protected override renderBody(parent: HTMLElement): void {
 		try {
 			super.renderBody(parent);
+			this._pinnedContextWidget.render(parent);
 
 			const scopedInstantiationService = this._register(this.instantiationService.createChild(new ServiceCollection([IContextKeyService, this.scopedContextKeyService])));
 			const locationBasedColors = this.getLocationBasedColors();
@@ -206,8 +223,11 @@ export class ChatViewPane extends ViewPane {
 	}
 
 	protected override layoutBody(height: number, width: number): void {
+		this.dimension = { height, width };
 		super.layoutBody(height, width);
-		this._widget.layout(height, width);
+
+		const pinnedContextHeight = this._pinnedContextWidget.element?.offsetHeight ?? 0;
+		this._widget.layout(height - pinnedContextHeight, width);
 	}
 
 	override saveState(): void {
