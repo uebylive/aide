@@ -27,7 +27,7 @@ export class AideAgentCodeEditContentPart extends Disposable implements IChatCon
 	private readonly _onDidChangeHeight = this._register(new Emitter<void>());
 	public readonly onDidChangeHeight = this._onDidChangeHeight.event;
 	constructor(
-		context: IChatContentPartRenderContext,
+		context: IChatContentPartRenderContext | undefined,
 		codeEdits: IChatCodeEdits,
 		pool: CodeEditsPool,
 	) {
