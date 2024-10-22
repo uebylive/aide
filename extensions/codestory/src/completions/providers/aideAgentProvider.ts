@@ -450,6 +450,17 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				continue;
 			}
 
+			const sessionId = event.request_id;
+			const exchangeId = event.exchange_id;
+			const responseStream = this.responseStreamCollection.getResponseStream({
+				sessionId,
+				exchangeId,
+			});
+			if (responseStream === undefined) {
+				console.log('resonseStreamNotFound::ExchangeEvent::ExchangeEvent', exchangeId, sessionId);
+				continue;
+			}
+
 			if (event.event.FrameworkEvent) {
 				if (event.event.FrameworkEvent.InitialSearchSymbols) {
 					// const initialSearchSymbolInformation = event.event.FrameworkEvent.InitialSearchSymbols.symbols.map((item) => {
@@ -564,69 +575,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						// 	}
 						// });
 					} else if (editEvent.EditCodeStreaming) {
-						// we have to do some state management over here
-						// we send 3 distinct type of events over here
-						// - start
-						// - delta
-						// - end
-						// const editStreamEvent = editEvent.EditCodeStreaming;
-						// if ('Start' === editStreamEvent.event) {
-						// 	const fileDocument = editStreamEvent.fs_file_path;
-						// 	const document = await vscode.workspace.openTextDocument(fileDocument);
-						// 	if (document === undefined || document === null) {
-						// 		continue;
-						// 	}
-						// 	const documentLines = document.getText().split(/\r\n|\r|\n/g);
-						// 	console.log('editStreaming.start', editStreamEvent.fs_file_path);
-						// 	console.log(editStreamEvent.range);
-						// 	editsMap.set(editStreamEvent.edit_request_id, {
-						// 		answerSplitter: new AnswerSplitOnNewLineAccumulatorStreaming(),
-						// 		// TODO(skcd): This should be the real response stream here depending on
-						// 		// which exchange this is part of
-						// 		streamProcessor: new StreamProcessor(
-						// 			responseStream,
-						// 			documentLines,
-						// 			undefined,
-						// 			vscode.Uri.file(editStreamEvent.fs_file_path),
-						// 			editStreamEvent.range,
-						// 			limiter,
-						// 			iterationEdits,
-						// 			false,
-						// 			// hack for now, we will figure out the right way to
-						// 			// handle this
-						// 			'plan_0',
-						// 		)
-						// 	});
-						// } else if ('End' === editStreamEvent.event) {
-						// 	// drain the lines which might be still present
-						// 	const editsManager = editsMap.get(editStreamEvent.edit_request_id);
-						// 	while (true) {
-						// 		const currentLine = editsManager.answerSplitter.getLine();
-						// 		if (currentLine === null) {
-						// 			break;
-						// 		}
-						// 		console.log('end::process_line');
-						// 		await editsManager.streamProcessor.processLine(currentLine);
-						// 	}
-						// 	console.log('end::cleanup');
-						// 	editsManager.streamProcessor.cleanup();
-						// 	// delete this from our map
-						// 	editsMap.delete(editStreamEvent.edit_request_id);
-						// 	// we have the updated code (we know this will be always present, the types are a bit meh)
-						// } else if (editStreamEvent.event.Delta) {
-						// 	const editsManager = editsMap.get(editStreamEvent.edit_request_id);
-						// 	if (editsManager !== undefined) {
-						// 		editsManager.answerSplitter.addDelta(editStreamEvent.event.Delta);
-						// 		while (true) {
-						// 			const currentLine = editsManager.answerSplitter.getLine();
-						// 			if (currentLine === null) {
-						// 				break;
-						// 			}
-						// 			console.log('delta::process_line');
-						// 			await editsManager.streamProcessor.processLine(currentLine);
-						// 		}
-						// 	}
-						// }
+						// scraped out over here, we do not need to react to this
+						// event anymore
 					}
 				} else if (symbolEventSubStep.Probe) {
 					if (!symbol_identifier.fs_file_path) {
@@ -682,14 +632,36 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					console.log('responseStreamNotFound::ChatEvent', exchangeId, sessionId);
 				}
 
-				const { delta, answer_up_until_now } = event.event.ChatEvent;
-
-				if (answer_up_until_now === '') {
-					responseStream?.stream.planInfo({ state: 'started', isStale: false, description: 'Test', sessionId, exchangeId });
-				}
+				const { delta } = event.event.ChatEvent;
 
 				if (delta !== null) {
 					responseStream?.stream.markdown(delta);
+				}
+			} else if (event.event.PlanEvent) {
+				const sessionId = event.request_id;
+				const exchangeId = event.exchange_id;
+				const responseStream = this.responseStreamCollection.getResponseStream({
+					sessionId, exchangeId,
+				});
+				if (event.event.PlanEvent.PlanStepTitleAdded) {
+					responseStream?.stream.step({
+						description: '',
+						index: event.event.PlanEvent.PlanStepTitleAdded.index,
+						sessionId,
+						exchangeId: event.event.PlanEvent.PlanStepTitleAdded.exchange_id,
+						isLast: false,
+						title: event.event.PlanEvent.PlanStepTitleAdded.title,
+					});
+				}
+				if (event.event.PlanEvent.PlanStepCompleteAdded) {
+					responseStream?.stream.step({
+						description: event.event.PlanEvent.PlanStepCompleteAdded.description,
+						index: event.event.PlanEvent.PlanStepCompleteAdded.index,
+						sessionId,
+						exchangeId: event.event.PlanEvent.PlanStepCompleteAdded.exchange_id,
+						isLast: false,
+						title: event.event.PlanEvent.PlanStepCompleteAdded.title,
+					});
 				}
 			} else if (event.event.ExchangeEvent) {
 				const sessionId = event.request_id;
@@ -700,6 +672,39 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				});
 				if (responseStream === undefined) {
 					console.log('resonseStreamNotFound::ExchangeEvent::ExchangeEvent', exchangeId, sessionId);
+				}
+				if (event.event.ExchangeEvent.PlansExchangeState) {
+					const editsState = event.event.ExchangeEvent.PlansExchangeState.EditsState;
+					if (editsState === 'Loading') {
+						responseStream?.stream.planInfo({
+							exchangeId,
+							sessionId,
+							isStale: false,
+							state: 'started',
+						});
+					} else if (editsState === 'Cancelled') {
+						responseStream?.stream.planInfo({
+							exchangeId,
+							sessionId,
+							isStale: false,
+							state: 'cancelled',
+						});
+					} else if (editsState === 'InReview') {
+						responseStream?.stream.planInfo({
+							exchangeId,
+							sessionId,
+							isStale: false,
+							state: 'started',
+						});
+					} else if (editsState === 'MarkedComplete') {
+						responseStream?.stream.planInfo({
+							exchangeId,
+							sessionId,
+							isStale: false,
+							state: 'Complete',
+						});
+					}
+					continue;
 				}
 				if (event.event.ExchangeEvent.EditsExchangeState) {
 					const editsState = event.event.ExchangeEvent.EditsExchangeState.EditsState;
@@ -749,36 +754,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					sessionId,
 					exchangeId,
 				});
-			} else if (event.event.PlanEvent) {
-				const sessionId = event.request_id;
-				const exchangeId = event.exchange_id;
-				const responseStream = this.responseStreamCollection.getResponseStream({
-					sessionId,
-					exchangeId,
-				});
-				if (responseStream === undefined) {
-					console.log('resonseStreamNotFound::ExchangeEvent', exchangeId, sessionId);
-				}
-				if (event.event.PlanEvent.PlanStepTitleAdded) {
-					responseStream?.stream.step({
-						description: '',
-						index: event.event.PlanEvent.PlanStepTitleAdded.index,
-						sessionId,
-						exchangeId: event.event.PlanEvent.PlanStepTitleAdded.exchange_id,
-						isLast: false,
-						title: event.event.PlanEvent.PlanStepTitleAdded.title,
-					});
-				}
-				if (event.event.PlanEvent.PlanStepCompleteAdded) {
-					responseStream?.stream.step({
-						description: event.event.PlanEvent.PlanStepCompleteAdded.description,
-						index: event.event.PlanEvent.PlanStepCompleteAdded.index,
-						sessionId,
-						exchangeId: event.event.PlanEvent.PlanStepCompleteAdded.exchange_id,
-						isLast: false,
-						title: event.event.PlanEvent.PlanStepCompleteAdded.title,
-					});
-				}
 			}
 		}
 	}

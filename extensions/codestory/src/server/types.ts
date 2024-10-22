@@ -115,6 +115,7 @@ type FrameworkEvent = {
 type ExchangeMessageEvent = {
 	FinishedExchange: FinishedExchangeEvent;
 	EditsExchangeState: EditsExchangeEditsState;
+	PlansExchangeState: EditsExchangeEditsState;
 };
 
 interface EditsExchangeEditsState {
