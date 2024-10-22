@@ -236,6 +236,13 @@ export enum ChatEditsState {
 	Cancelled = 'cancelled',
 }
 
+
+export enum ChatPlanState {
+	Started = 'started',
+	Complete = 'Complete',
+	Cancelled = 'cancelled',
+}
+
 export interface IChatEditsInfo {
 	kind: 'editsInfo';
 	state: `${ChatEditsState}`;
@@ -244,14 +251,6 @@ export interface IChatEditsInfo {
 	sessionId: string;
 	exchangeId: string;
 	description?: IMarkdownString;
-}
-
-
-export enum ChatPlanState {
-	Started = 'started',
-	Regenerated = 'regenerated',
-	Complete = 'Complete',
-	Cancelled = 'cancelled',
 }
 
 export interface IChatPlanInfo {
@@ -298,6 +297,7 @@ export type IChatProgress =
 	| IChatResponseCodeblockUriPart
 	| IChatConfirmation
 	| IChatStreamingState
+	| IChatPlanInfo
 	| IChatEditsInfo
 	| IChatPlanStep
 	| IChatEndResponse;

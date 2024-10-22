@@ -8,13 +8,13 @@ import { MenuId } from '../../../../../platform/actions/common/actions.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { IKeybindingService } from '../../../../../platform/keybinding/common/keybinding.js';
 import { IChatProgressRenderableResponseContent } from '../../common/aideAgentModel.js';
-import { ChatEditsState, IChatEditsInfo } from '../../common/aideAgentService.js';
+import { ChatPlanState, IChatPlanInfo } from '../../common/aideAgentService.js';
 import { ChatMarkdownContentPart } from './aideAgentMarkdownContentPart.js';
 import { AideAgentRichItem as AideAgentRichItemContent, IActionsPreviewOptions } from './aideAgentRichItem.js';
 
-export class EditsContentPart extends AideAgentRichItemContent {
+export class PlanContentPart extends AideAgentRichItemContent {
 	constructor(
-		readonly edits: IChatEditsInfo,
+		readonly plan: IChatPlanInfo,
 		sessionId: string,
 		exchangeId: string,
 		descriptionPart: ChatMarkdownContentPart | undefined,
@@ -22,17 +22,18 @@ export class EditsContentPart extends AideAgentRichItemContent {
 		@IKeybindingService keybindingService: IKeybindingService,
 	) {
 
-		const label = assignLabel(edits);
-		const icon = assignIcon(edits);
-		const { menuId, previewOptions } = assignMenuAndPreviewOptions(edits);
+		const label = assignLabel(plan);
+		const icon = assignIcon(plan);
+		const { menuId, previewOptions } = assignMenuAndPreviewOptions(plan);
 
 		super(
 			label,
 			icon,
-			edits.isStale,
+			plan.isStale,
 			sessionId,
 			exchangeId,
 			menuId,
+			plan.state === ChatPlanState.Complete,
 			previewOptions,
 			descriptionPart,
 			instantiationService,
@@ -41,63 +42,55 @@ export class EditsContentPart extends AideAgentRichItemContent {
 	}
 
 	override hasSameContent(other: IChatProgressRenderableResponseContent): boolean {
-		return other.kind === 'editsInfo'
-			&& other.state === this.edits.state
-			&& other.files?.length === this.edits.files?.length
-			&& other.isStale === this.edits.isStale
-			&& other.description === this.edits.description;
+		return other.kind === 'planInfo'
+			&& other.state === this.plan.state
+			&& other.isStale === this.plan.isStale
+			&& other.description === this.plan.description;
 	}
 }
 
-function assignLabel(edits: IChatEditsInfo): string {
-	switch (edits.state) {
-		case ChatEditsState.Loading:
-			return localize('agent.editing', "Editing");
-		case ChatEditsState.InReview:
-		case ChatEditsState.MarkedComplete:
-			return localize('agent.editsMade', "Edits made");
-		case ChatEditsState.Cancelled:
-			return localize('agent.editsCancelled', "Edits cancelled");
+function assignLabel(plan: IChatPlanInfo): string {
+	switch (plan.state) {
+		case 'started':
+			return localize('agent.planStarted', "Started Planning");
+		case 'Complete':
+			return localize('agent.planComplete', "Planning Complete");
+		case 'cancelled':
+			return localize('agent.planCancelled', "Plan Cancelled");
 		default:
 			throw new Error('Invalid state');
 	}
 }
 
-function assignIcon(edits: IChatEditsInfo): string {
-	switch (edits.state) {
-		case ChatEditsState.Loading:
-		case ChatEditsState.InReview:
+function assignIcon(plan: IChatPlanInfo): string {
+	switch (plan.state) {
+		case 'started':
 			return 'micro/bolt';
-		case ChatEditsState.MarkedComplete:
+		case 'Complete':
 			return 'micro/check-circle';
-		case ChatEditsState.Cancelled:
+		case 'cancelled':
 			return 'micro/x-mark';
 		default:
 			throw new Error('Invalid state');
 	}
 }
 
-function assignMenuAndPreviewOptions(edits: IChatEditsInfo): { menuId: MenuId | null; previewOptions: IActionsPreviewOptions } {
+function assignMenuAndPreviewOptions(edits: IChatPlanInfo): { menuId: MenuId | null; previewOptions: IActionsPreviewOptions } {
 	let menuId = null;
 	let previewOptions: IActionsPreviewOptions = { start: -1, end: -1 };
 
-	let startLabel: string | undefined;
-	if (edits.files.length === 1) {
-		startLabel = localize('editedFile', "{0} file edited", edits.files.length);
-	} else if (edits.files.length > 1) {
-		startLabel = localize('editedFiles', "{0} files edited", edits.files.length);
-	}
+	const startLabel: string = 'Planning';
 
 	switch (edits.state) {
-		case ChatEditsState.Loading:
-			menuId = MenuId.AideAgentEditsLoading;
+		case 'started':
+			menuId = MenuId.AideAgentPlanLoading;
 			previewOptions = { startLabel, start: -2, end: -1 };
 			break;
-		case ChatEditsState.InReview:
-			menuId = MenuId.AideAgentEditsReview;
+		case 'Complete':
+			menuId = MenuId.AideAgentPlanReview;
 			previewOptions = { startLabel, start: -2, end: -1 };
 			break;
-		case ChatEditsState.MarkedComplete:
+		case 'cancelled':
 			menuId = MenuId.AideAgentEditsCompleted;
 			break;
 		default:

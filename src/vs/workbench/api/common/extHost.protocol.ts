@@ -52,7 +52,7 @@ import { EditSessionIdentityMatch } from '../../../platform/workspace/common/edi
 import { WorkspaceTrustRequestOptions } from '../../../platform/workspace/common/workspaceTrust.js';
 import { SaveReason } from '../../common/editor.js';
 import { IRevealOptions, ITreeItem, IViewBadge } from '../../common/views.js';
-import { IChatCodeEdit, IChatCommandButton as IAideChatCommandButton, IChatCommandGroup, IChatEditsInfo, IChatEndResponse, IChatPlanStep, IChatStreamingState } from '../../contrib/aideAgent/common/aideAgentService.js';
+import { IChatCodeEdit, IChatCommandButton as IAideChatCommandButton, IChatCommandGroup, IChatEditsInfo, IChatEndResponse, IChatPlanStep, IChatStreamingState, IChatPlanInfo } from '../../contrib/aideAgent/common/aideAgentService.js';
 import { CallHierarchyItem } from '../../contrib/callHierarchy/common/callHierarchy.js';
 import { ChatAgentLocation, IChatAgentMetadata, IChatAgentRequest, IChatAgentResult } from '../../contrib/chat/common/chatAgents.js';
 import { ICodeMapperRequest, ICodeMapperResult } from '../../contrib/chat/common/chatCodeMapperService.js';
@@ -1429,7 +1429,7 @@ export interface ExtHostAideAgentAgentsShape extends ExtHostChatAgentsShape2 {
 	$initSession(handle: number, sessionId: string): void;
 }
 
-export type IAideChatProgressDto = Dto<IChatEditsInfo | IChatStreamingState | IAideChatCommandButton | IChatCommandGroup | IChatPlanStep | IChatEndResponse>;
+export type IAideChatProgressDto = Dto<IChatEditsInfo | IChatStreamingState | IAideChatCommandButton | IChatCommandGroup | IChatPlanStep | IChatPlanInfo | IChatEndResponse>;
 export type IChatCodeEditDto = Pick<IChatCodeEdit, 'kind'> & { edits: IWorkspaceEditDto };
 export type IAideAgentProgressDto = IChatProgressDto | IAideChatProgressDto | IChatCodeEditDto;
 

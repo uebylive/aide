@@ -16,7 +16,7 @@ import { getFullyQualifiedId, IAideAgentAgentNameService, IChatAgentCommand, ICh
 import { IAideAgentEdits } from './aideAgentEditingSession.js';
 import { ChatModelInitState, IChatModel, IChatProgressRenderableResponseContent, IChatRequestModel, IChatRequestVariableEntry, IChatResponseModel, IChatTextEditGroup, IChatWelcomeMessageContent, IResponse } from './aideAgentModel.js';
 import { IParsedChatRequest } from './aideAgentParserTypes.js';
-import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatCodeCitation, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatProgressMessage, IChatResponseErrorDetails, IChatStreamingState, IChatTask, IChatUsedContext } from './aideAgentService.js';
+import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatCodeCitation, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatPlanInfo, IChatProgressMessage, IChatResponseErrorDetails, IChatStreamingState, IChatTask, IChatUsedContext } from './aideAgentService.js';
 import { countWords } from './aideAgentWordCounter.js';
 import { annotateVulnerabilitiesInText } from './annotations.js';
 import { CodeBlockModelCollection } from './codeBlockModelCollection.js';
@@ -177,6 +177,7 @@ export interface IChatResponseViewModel {
 	readonly codeEdits: Map<string, IAideAgentEdits> | undefined;
 	readonly progressMessages: ReadonlyArray<IChatProgressMessage>;
 	readonly editsInfo: IChatEditsInfo | undefined;
+	readonly planInfo: IChatPlanInfo | undefined;
 	readonly isComplete: boolean;
 	readonly isCanceled: boolean;
 	readonly isStale: boolean;
@@ -459,6 +460,10 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 
 	get editsInfo() {
 		return this._model.editsInfo;
+	}
+
+	get planInfo() {
+		return this._model.planInfo;
 	}
 
 	get streamingState() {

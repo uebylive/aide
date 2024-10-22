@@ -808,7 +808,6 @@ class StreamingStateWidget extends Disposable {
 
 	private element: HTMLElement;
 
-
 	constructor(
 		streamingState: IChatStreamingState,
 		container: HTMLElement,

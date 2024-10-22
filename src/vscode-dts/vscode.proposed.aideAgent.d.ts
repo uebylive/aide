@@ -16,6 +16,13 @@ declare module 'vscode' {
 		Codebase = 3
 	}
 
+	export enum AideAgentPlanState {
+		Started = 'started',
+		Complete = 'Complete',
+		Cancelled = 'cancelled',
+	}
+
+	export type AideAgentPlanStateType = `${AideAgentPlanState}`;
 
 	export enum AideAgentEditsState {
 		Loading = 'loading',
@@ -87,12 +94,8 @@ declare module 'vscode' {
 		 * Wether it's the last step in the plan
 		 */
 		readonly isLast: boolean;
-		/**
-		 * The title of the step in the plan
-		 */
-		readonly title: string;
-		/**
-		 * The description of the step
+		/*
+		 * Description of the edits
 		 */
 		readonly description: string | MarkdownString;
 		/*
@@ -104,7 +107,37 @@ declare module 'vscode' {
 		 * the exchange id might be tied to a previous plan)
 		 */
 		readonly exchangeId: string;
+
+		/**
+		 * The title of the step in the plan
+		 */
+		readonly title: string;
 	}
+
+
+	export interface AideAgentPlanInfo {
+		/*
+		 * State of the edits
+		 */
+		readonly state: AideAgentPlanStateType;
+		/*
+		 * Wether the edits are stale
+		 */
+		readonly isStale: boolean;
+		/*
+		 * Description of the edits
+		 */
+		readonly description?: string | MarkdownString;
+		/*
+		 * The session id of the plan
+		 */
+		readonly sessionId: string;
+		/*
+		 * The session id of the plan
+		 */
+		readonly exchangeId: string;
+	}
+
 
 	export interface AideAgentEditsInfo {
 		/*
@@ -157,6 +190,7 @@ declare module 'vscode' {
 
 	export interface AideAgentResponseStream extends Omit<ChatResponseStream, 'button'> {
 		editsInfo(edits: AideAgentEditsInfo): void;
+		planInfo(plan: AideAgentPlanInfo): void;
 		button(command: AideCommand): void;
 		buttonGroup(commands: AideCommand[]): void;
 		streamingState(state: AideAgentStreamingState): void;

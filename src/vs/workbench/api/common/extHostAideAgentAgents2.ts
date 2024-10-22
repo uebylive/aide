@@ -153,6 +153,13 @@ class AideAgentResponseStream {
 					_report(dto);
 					return this;
 				},
+				planInfo(value) {
+					throwIfDone(this.anchor);
+					const part = new extHostTypes.AideAgentResponsePlanInfoPart(value);
+					const dto = typeConvert.AideAgentResponsePlanInfoPart.from(part);
+					_report(dto);
+					return this;
+				},
 				step(value) {
 					throwIfDone(this.anchor);
 					const part = new extHostTypes.AideAgentResponsePlanPart(value);

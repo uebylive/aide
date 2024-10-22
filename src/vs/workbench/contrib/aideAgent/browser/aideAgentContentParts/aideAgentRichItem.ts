@@ -16,6 +16,8 @@ import { IChatProgressRenderableResponseContent } from '../../common/aideAgentMo
 import { Emitter } from '../../../../../base/common/event.js';
 import { ChatMarkdownContentPart } from './aideAgentMarkdownContentPart.js';
 import './media/aideAgentRichItem.css';
+import { Button } from '../../../../../base/browser/ui/button/button.js';
+import { defaultButtonStyles } from '../../../../../platform/theme/browser/defaultStyles.js';
 
 const $ = dom.$;
 
@@ -41,6 +43,7 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 		private sessionid: string,
 		private exchangeId: string,
 		readonly menuId: MenuId | null,
+		readonly supportsCheckpoint: boolean,
 		readonly previewOptions: IActionsPreviewOptions = { start: -1, end: -1 },
 		readonly descriptionPart: ChatMarkdownContentPart | undefined,
 		readonly instantiationService: IInstantiationService,
@@ -115,6 +118,18 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 			this._register(this.toolbar.onDidChangeMenuItems(() => {
 				this.updatePreview();
 			}));
+		}
+
+		// TODO: Failing to render properly, we should figure out how to work on this
+		if (supportsCheckpoint) {
+			const checkPointButtonContainer = $('.aide-rich-item-checkpoint');
+			const checkPointButton = this._register(this.instantiationService.createInstance(Button, checkPointButtonContainer, defaultButtonStyles));
+			checkPointButton.label = 'testing';
+			this._register(checkPointButton.onDidClick(() => {
+
+			}));
+
+			domNode.appendChild(checkPointButtonContainer);
 		}
 	}
 
