@@ -392,8 +392,55 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		const agentMode = event.mode;
 		const variables = event.references;
 		if (event.mode === vscode.AideAgentMode.Chat) {
-			const responseStream = this.sidecarClient.agentSessionChat(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels);
-			await this.reportAgentEventsToChat(true, responseStream);
+			// const responseStream = this.sidecarClient.agentSessionChat(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels);
+			// await this.reportAgentEventsToChat(true, responseStream);
+			// const responseStream = this.responseStreamCollection.getResponseStream({ sessionId, exchangeId: exchangeIdForEvent });
+			const exchange = await this.newExchangeIdForSession(sessionId);
+			if (exchange.exchange_id) {
+				const responseStream = this.responseStreamCollection.getResponseStream({ sessionId, exchangeId: exchange.exchange_id });
+				responseStream?.stream.markdown('I\'ll add comments to explain the functionality of the sys_info.rs file:\n\
+\n\
+/home/ghost_000/github/codestory/sidecar/sidecar/src/bin/sys_info.rs\n\
+```rust\n\
+<<<<<<< SEARCH\n\
+use sysinfo::System;\n\
+\n\
+#[tokio::main]\n\
+async fn main() {\n\
+    let mut system = System::new();\n\
+    system.refresh_processes();\n\
+\n\
+    let process_name = "qdrant.ext";\n\
+    let processes = system.processes_by_name(process_name);\n\
+\n\
+    processes.into_iter().for_each(|process| {\n\
+        process.kill_with(sysinfo::Signal::Kill);\n\
+    });\n\
+}\n\
+=======\n\
+// Import the System struct from sysinfo crate for system information access\n\
+use sysinfo::System;\n\
+\n\
+#[tokio::main]\n\
+async fn main() {\n\
+    // Create a new System instance to gather system information\n\
+    let mut system = System::new();\n\
+    // Refresh the process list to get current running processes\n\
+    system.refresh_processes();\n\
+\n\
+    // Target process name to find and terminate\n\
+    let process_name = "qdrant.ext";\n\
+    // Get all processes matching the target name\n\
+    let processes = system.processes_by_name(process_name);\n\
+\n\
+    // Iterate through matching processes and forcefully terminate them\n\
+    processes.into_iter().for_each(|process| {\n\
+        process.kill_with(sysinfo::Signal::Kill);\n\
+    });\n\
+}\n\
+>>>>>>> REPLACE\n\
+```');
+			}
 		}
 		// Now lets try to handle the edit event first
 		// there are 2 kinds of edit events:
