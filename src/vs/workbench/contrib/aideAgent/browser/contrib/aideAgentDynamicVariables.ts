@@ -95,8 +95,9 @@ export class ChatDynamicVariableModel extends Disposable implements IChatWidgetC
 										columnDelta = charsInserted - charsRemoved;
 									} else {
 										// Multi-line change (e.g., newline inserted)
-										// The variable moves down; columns remain the same
-										columnDelta = 0;
+										// Adjust columns accordingly
+										columnDelta = - (c.range.endColumn - 1);
+										// The variable's column should be adjusted to account for the reset after newline
 									}
 								} else {
 									// Change occurs after the variable's start column
