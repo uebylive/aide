@@ -6,7 +6,6 @@
 import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
 import { IPinnedContextService } from '../common/pinnedContext.js';
 import { registerPinnedContextActions } from './actions/pinnedContextActions.js';
-import { IPinnedContextWidgetService, PinnedContextWidgetService } from './pinnedContext.js';
 import { PinnedContextService } from './pinnedContextService.js';
 
 // Register actions
@@ -14,4 +13,3 @@ registerPinnedContextActions();
 
 // Register services
 registerSingleton(IPinnedContextService, PinnedContextService, InstantiationType.Delayed);
-registerSingleton(IPinnedContextWidgetService, PinnedContextWidgetService, InstantiationType.Delayed);

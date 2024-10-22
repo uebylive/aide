@@ -23,7 +23,6 @@ import { IViewPaneOptions, ViewPane } from '../../../browser/parts/views/viewPan
 import { Memento } from '../../../common/memento.js';
 import { SIDE_BAR_FOREGROUND } from '../../../common/theme.js';
 import { IViewDescriptorService } from '../../../common/views.js';
-import { IPinnedContextWidgetService } from '../../pinnedContext/browser/pinnedContext.js';
 import { PinnedContextWidget } from '../../pinnedContext/browser/pinnedContextWidget.js';
 import { ChatAgentLocation, IAideAgentAgentService } from '../common/aideAgentAgents.js';
 import { ChatModelInitState, IChatModel } from '../common/aideAgentModel.js';
@@ -67,12 +66,10 @@ export class ChatViewPane extends ViewPane {
 		@IAideAgentService private readonly chatService: IAideAgentService,
 		@IAideAgentAgentService private readonly chatAgentService: IAideAgentAgentService,
 		@ILogService private readonly logService: ILogService,
-		@IPinnedContextWidgetService private readonly pinnedContextWidgetService: IPinnedContextWidgetService,
 	) {
 		super(options, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, telemetryService, hoverService);
 
 		this._pinnedContextWidget = this._register(this.instantiationService.createInstance(PinnedContextWidget));
-		this._register(this.pinnedContextWidgetService.register(this._pinnedContextWidget));
 		this._register(this._pinnedContextWidget.onDidChangeHeight(() => {
 			if (this.dimension) {
 				this.layoutBody(this.dimension.height, this.dimension.width);

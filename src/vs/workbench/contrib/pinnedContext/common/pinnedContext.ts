@@ -14,10 +14,6 @@ export interface PinnedContextItem {
 	readonly uri: URI;
 }
 
-export interface IPinnedContextWidget {
-	setEditing(editing: boolean): void;
-}
-
 const PINNED_CONTEXT_SERVICE_ID = 'pinnedContextService';
 export const IPinnedContextService = createDecorator<IPinnedContextService>(PINNED_CONTEXT_SERVICE_ID);
 export interface IPinnedContextService {

@@ -25,18 +25,14 @@ import { IThemeService } from '../../../../platform/theme/common/themeService.js
 import { IResourceLabel, ResourceLabels } from '../../../browser/labels.js';
 import { IDisposableReference } from '../../aideAgent/browser/aideAgentContentParts/aideAgentCollections.js';
 import { createFileIconThemableTreeContainerScope } from '../../files/browser/views/explorerView.js';
-import { IPinnedContextService, IPinnedContextWidget, MANAGE_PINNED_CONTEXT, PinnedContextItem } from '../common/pinnedContext.js';
+import { IPinnedContextService, MANAGE_PINNED_CONTEXT, PinnedContextItem } from '../common/pinnedContext.js';
 import { ManagePinnedContext } from './actions/pinnedContextActions.js';
 import './media/pinnedContext.css';
 
 const ItemHeight = 22;
 
-export class PinnedContextWidget extends Disposable implements IPinnedContextWidget {
+export class PinnedContextWidget extends Disposable {
 	private isExpanded = false;
-	private isEditing = false;
-	setEditing(editing: boolean): void {
-		this.isEditing = editing;
-	}
 
 	private container: HTMLElement | undefined;
 	get element(): HTMLElement | undefined {
