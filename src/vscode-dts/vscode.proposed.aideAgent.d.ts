@@ -117,15 +117,15 @@ declare module 'vscode' {
 
 	export interface AideAgentPlanInfo {
 		/*
-		 * State of the edits
+		 * State of the plans
 		 */
 		readonly state: AideAgentPlanStateType;
 		/*
-		 * Wether the edits are stale
+		 * Wether the plans are stale
 		 */
 		readonly isStale: boolean;
 		/*
-		 * Description of the edits
+		 * Description of the plans
 		 */
 		readonly description?: string | MarkdownString;
 		/*
