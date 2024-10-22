@@ -20,6 +20,7 @@ import { IParsedChatRequest } from '../common/aideAgentParserTypes.js';
 import { CHAT_PROVIDER_ID } from '../common/aideAgentParticipantContribTypes.js';
 import { IChatRequestViewModel, IChatResponseViewModel, IChatViewModel, IChatWelcomeMessageViewModel } from '../common/aideAgentViewModel.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
+import { PLAN_REVIEW_PANEL_ID, PlanReviewPane } from './aideAgentPlanReviewViewPane.js';
 
 export const IAideAgentWidgetService = createDecorator<IAideAgentWidgetService>('aideAgentWidgetService');
 
@@ -38,6 +39,10 @@ export interface IAideAgentWidgetService {
 
 export async function showChatView(viewsService: IViewsService): Promise<IChatWidget | undefined> {
 	return (await viewsService.openView<ChatViewPane>(CHAT_VIEW_ID))?.widget;
+}
+
+export async function showPlanReviewView(viewsService: IViewsService): Promise<PlanReviewPane | null> {
+	return (await viewsService.openView<PlanReviewPane>(PLAN_REVIEW_PANEL_ID));
 }
 
 export const IAideAgentAccessibilityService = createDecorator<IAideAgentAccessibilityService>('aideAgentAccessibilityService');

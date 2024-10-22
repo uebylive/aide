@@ -20,6 +20,7 @@ import { IChatCodeEdits } from '../../common/aideAgentViewModel.js';
 import { IDisposableReference, ResourcePool } from './aideAgentCollections.js';
 import { IChatContentPart, IChatContentPartRenderContext } from './aideAgentContentParts.js';
 const $ = dom.$;
+
 export class AideAgentCodeEditContentPart extends Disposable implements IChatContentPart {
 	public readonly domNode: HTMLElement;
 	private list: WorkbenchList<IAideAgentCodeEditsItem>;
@@ -62,6 +63,7 @@ export class AideAgentCodeEditContentPart extends Disposable implements IChatCon
 		this._register(disposable);
 	}
 }
+
 export class CodeEditsPool extends Disposable {
 	private _pool: ResourcePool<WorkbenchList<IAideAgentCodeEditsItem>>;
 	public get inUse(): ReadonlySet<WorkbenchList<IAideAgentCodeEditsItem>> {

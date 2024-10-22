@@ -60,6 +60,7 @@ import { AideAgentFloatingWidgetService, IAideAgentFloatingWidgetService } from 
 import { ChatGettingStartedContribution } from './aideAgentGettingStarted.js';
 import { agentSlashCommandToMarkdown, agentToMarkdown } from './aideAgentMarkdownDecorationsRenderer.js';
 import { ChatCompatibilityNotifier, ChatExtensionPointHandler } from './aideAgentParticipantContributions.js';
+import { registerPlanReviewViewAndViewContainer } from './aideAgentPlanReviewContributions.js';
 import { ChatResponseAccessibleView } from './aideAgentResponseAccessibleView.js';
 import { ChatVariablesService } from './aideAgentVariables.js';
 import { ChatWidgetService } from './aideAgentWidget.js';
@@ -285,6 +286,7 @@ registerChatContextActions();
 registerChatDeveloperActions();
 registerAideAgentFloatingWidgetActions();
 registerCodeEditActions();
+registerPlanReviewViewAndViewContainer();
 
 registerSingleton(IAideAgentService, ChatService, InstantiationType.Delayed);
 registerSingleton(IAideAgentWidgetService, ChatWidgetService, InstantiationType.Delayed);
