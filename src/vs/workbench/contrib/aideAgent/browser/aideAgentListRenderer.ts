@@ -33,35 +33,36 @@ import { IInstantiationService } from '../../../../platform/instantiation/common
 import { ServiceCollection } from '../../../../platform/instantiation/common/serviceCollection.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { IWorkbenchIssueService } from '../../issue/common/issue.js';
-import { annotateSpecialMarkdownContent } from '../common/annotations.js';
+import { ChatAgentLocation } from '../common/aideAgentAgents.js';
 import { CONTEXT_CHAT_RESPONSE_SUPPORT_ISSUE_REPORTING, CONTEXT_REQUEST, CONTEXT_RESPONSE, CONTEXT_RESPONSE_DETECTED_AGENT_COMMAND, CONTEXT_RESPONSE_ERROR, CONTEXT_RESPONSE_FILTERED, CONTEXT_RESPONSE_VOTE } from '../common/aideAgentContextKeys.js';
 import { IChatRequestVariableEntry, IChatTextEditGroup } from '../common/aideAgentModel.js';
 import { chatSubcommandLeader } from '../common/aideAgentParserTypes.js';
 import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatConfirmation, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatPlanStep, IChatTask, IChatTreeData } from '../common/aideAgentService.js';
-import { IChatCodeCitations, IChatReferences, IChatRendererContent, IChatRequestViewModel, IChatResponseViewModel, IChatWelcomeMessageViewModel, isRequestVM, isResponseVM, isWelcomeVM } from '../common/aideAgentViewModel.js';
+import { IChatCodeCitations, IChatCodeEdits, IChatReferences, IChatRendererContent, IChatRequestViewModel, IChatResponseViewModel, IChatWelcomeMessageViewModel, isRequestVM, isResponseVM, isWelcomeVM } from '../common/aideAgentViewModel.js';
+import { annotateSpecialMarkdownContent } from '../common/annotations.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
 import { MarkUnhelpfulActionId } from './actions/aideAgentTitleActions.js';
 import { ChatTreeItem, GeneratingPhrase, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions, IChatPlanStepsInfo } from './aideAgent.js';
 import { ChatAttachmentsContentPart } from './aideAgentContentParts/aideAgentAttachmentsContentPart.js';
 import { ChatCodeCitationContentPart } from './aideAgentContentParts/aideAgentCodeCitationContentPart.js';
+import { AideAgentCodeEditContentPart, CodeEditsPool } from './aideAgentContentParts/aideAgentCodeEditParts.js';
 import { ChatCommandButtonContentPart, ChatCommandGroupContentPart } from './aideAgentContentParts/aideAgentCommandContentPart.js';
 import { ChatConfirmationContentPart } from './aideAgentContentParts/aideAgentConfirmationContentPart.js';
 import { IChatContentPart, IChatContentPartRenderContext } from './aideAgentContentParts/aideAgentContentParts.js';
+import { EditsContentPart } from './aideAgentContentParts/aideAgentEditsContentPart.js';
 import { ChatMarkdownContentPart, EditorPool } from './aideAgentContentParts/aideAgentMarkdownContentPart.js';
+import { ChatPlanStepPart } from './aideAgentContentParts/aideAgentPlanStepPart.js';
 import { ChatProgressContentPart } from './aideAgentContentParts/aideAgentProgressContentPart.js';
 import { ChatCollapsibleListContentPart, CollapsibleListPool } from './aideAgentContentParts/aideAgentReferencesContentPart.js';
 import { ChatTaskContentPart } from './aideAgentContentParts/aideAgentTaskContentPart.js';
 import { ChatTextEditContentPart, DiffEditorPool } from './aideAgentContentParts/aideAgentTextEditContentPart.js';
 import { ChatTreeContentPart, TreePool } from './aideAgentContentParts/aideAgentTreeContentPart.js';
 import { ChatWarningContentPart } from './aideAgentContentParts/aideAgentWarningContentPart.js';
+import { ChatFollowups } from './aideAgentFollowups.js';
 import { ChatMarkdownDecorationsRenderer } from './aideAgentMarkdownDecorationsRenderer.js';
 import { ChatMarkdownRenderer } from './aideAgentMarkdownRenderer.js';
 import { ChatEditorOptions } from './aideAgentOptions.js';
 import { ChatCodeBlockContentProvider, CodeBlockPart } from './codeBlockPart.js';
-import { ChatPlanStepPart } from './aideAgentContentParts/aideAgentPlanStepPart.js';
-import { EditsContentPart } from './aideAgentContentParts/aideAgentEditsContentPart.js';
-import { ChatAgentLocation } from '../common/aideAgentAgents.js';
-import { ChatFollowups } from './aideAgentFollowups.js';
 
 const $ = dom.$;
 
@@ -122,6 +123,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	private readonly _diffEditorPool: DiffEditorPool;
 	private readonly _treePool: TreePool;
 	private readonly _contentReferencesListPool: CollapsibleListPool;
+	private readonly _codeEditsPool: CodeEditsPool;
 
 	private _currentLayoutWidth: number = 0;
 	private _isVisible = true;
@@ -147,6 +149,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		this._diffEditorPool = this._register(this.instantiationService.createInstance(DiffEditorPool, editorOptions, delegate, overflowWidgetsDomNode));
 		this._treePool = this._register(this.instantiationService.createInstance(TreePool, this._onDidChangeVisibility.event));
 		this._contentReferencesListPool = this._register(this.instantiationService.createInstance(CollapsibleListPool, this._onDidChangeVisibility.event));
+		this._codeEditsPool = this._register(this.instantiationService.createInstance(CodeEditsPool, this._onDidChangeVisibility.event));
 
 		this._register(this.instantiationService.createInstance(ChatCodeBlockContentProvider));
 	}
@@ -423,6 +426,9 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			if (element.editsInfo) {
 				value.push({ ...element.editsInfo });
 			}
+			if (element.codeEdits?.size) {
+				value.push({ kind: 'codeEdits', edits: element.codeEdits });
+			}
 		}
 
 		dom.clearNode(templateData.value);
@@ -634,6 +640,11 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		// Simply add all parts to render
 		partsToRender.push(...renderableResponse);
 
+		// Render code edits at the end
+		if (element.codeEdits?.size) {
+			partsToRender.push({ kind: 'codeEdits', edits: element.codeEdits });
+		}
+
 		// Update the render data
 		const newRenderedWordCount = renderableResponse.reduce((count, part) => {
 			if (part.kind === 'markdownContent') {
@@ -681,6 +692,8 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			return this.instantiationService.createInstance(ChatCommandGroupContentPart, content.commands, context);
 		} else if (content.kind === 'textEditGroup') {
 			return this.renderTextEdit(context, content, templateData);
+		} else if (content.kind === 'codeEdits') {
+			return this.renderCodeEdit(context, content, templateData);
 		} else if (content.kind === 'confirmation') {
 			return this.renderConfirmation(context, content, templateData);
 		} else if (content.kind === 'warning') {
@@ -777,6 +790,14 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		}));
 
 		return textEditPart;
+	}
+
+	private renderCodeEdit(context: IChatContentPartRenderContext, edits: IChatCodeEdits, templateData: IChatListItemTemplate): IChatContentPart {
+		const codeEditPart = this.instantiationService.createInstance(AideAgentCodeEditContentPart, context, edits, this._codeEditsPool);
+		codeEditPart.addDisposable(codeEditPart.onDidChangeHeight(() => {
+			this.updateItemHeight(templateData);
+		}));
+		return codeEditPart;
 	}
 
 	private renderMarkdown(markdown: IMarkdownString, templateData: IChatListItemTemplate, context: IChatContentPartRenderContext, width = this._currentLayoutWidth): IChatContentPart {
