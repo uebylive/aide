@@ -436,7 +436,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		};
 
 		for await (const event of asyncIterable) {
-			console.log(event);
 			// now we ping the sidecar that the probing needs to stop
 
 			if ('keep_alive' in event) {

@@ -420,6 +420,9 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			if (element.codeCitations.length) {
 				value.push({ kind: 'codeCitations', citations: element.codeCitations });
 			}
+			if (element.editsInfo) {
+				value.push({ ...element.editsInfo });
+			}
 		}
 
 		dom.clearNode(templateData.value);
@@ -439,7 +442,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 					content: value,
 					preceedingContentParts: parts,
 				};
-				const newPart = this.renderChatContentPart(data, templateData, context);
+				const newPart = this.renderChatContentPart(data, templateData, context, index);
 				if (newPart) {
 					templateData.value.appendChild(newPart.domNode);
 					parts.push(newPart);
@@ -592,7 +595,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			if (partToRender.kind === 'planStep') {
 				partToRender.sessionId = element.sessionId;
 			}
-			const newPart = this.renderChatContentPart(partToRender, templateData, context);
+			const newPart = this.renderChatContentPart(partToRender, templateData, context, index);
 			if (newPart) {
 				// Maybe the part can't be rendered in this context, but this shouldn't really happen
 				if (alreadyRenderedPart) {
@@ -665,7 +668,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		return diff;
 	}
 
-	private renderChatContentPart(content: IChatRendererContent, templateData: IChatListItemTemplate, context: IChatContentPartRenderContext): IChatContentPart | undefined {
+	private renderChatContentPart(content: IChatRendererContent, templateData: IChatListItemTemplate, context: IChatContentPartRenderContext, index: number): IChatContentPart | undefined {
 		if (content.kind === 'treeData') {
 			return this.renderTreeData(content, templateData, context);
 		} else if (content.kind === 'progressMessage') {
