@@ -426,6 +426,9 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			if (element.editsInfo) {
 				value.push({ ...element.editsInfo });
 			}
+			if (element.codeEdits?.size) {
+				value.push({ kind: 'codeEdits', edits: element.codeEdits });
+			}
 		}
 
 		dom.clearNode(templateData.value);

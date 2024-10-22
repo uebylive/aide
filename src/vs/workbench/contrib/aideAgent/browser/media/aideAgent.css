@@ -196,12 +196,6 @@
 	margin-top: 8px;
 }
 
-/* TODO(@ghostwriternr): I don't know why there is a gap between the code edits and the rest of the content.
-   So this is a temporary hack to remove it. */
-.aideagent-item-container > .value > .aideagent-codeedit-list {
-	margin-top: -12px !important;
-}
-
 /* Should handle this one separately */
 .aideagent-item-container > .value .chat-used-context {
 	margin-top: 6px;

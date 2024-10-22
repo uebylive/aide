@@ -43,13 +43,10 @@ export class AideAgentCodeEditContentPart extends Disposable implements IChatCon
 			for (const hunk of hunks) {
 				const ranges = hunk.getRangesN();
 				if (ranges.length > 1) {
-					for (let i = 1; i < ranges.length; i++) {
-						console.log(ranges[i]);
-						data.push({
-							uri: URI.parse(uri),
-							range: ranges[i]
-						});
-					}
+					data.push({
+						uri: URI.parse(uri),
+						range: ranges[0]
+					});
 				}
 			}
 		}
