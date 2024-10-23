@@ -457,6 +457,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				exchangeId,
 			});
 			if (responseStream === undefined) {
+				console.log(event);
 				console.log('resonseStreamNotFound::ExchangeEvent::ExchangeEvent', exchangeId, sessionId);
 				continue;
 			}
@@ -694,6 +695,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 							exchangeId,
 							sessionId,
 							isStale: false,
+							// this state is wrong over here, we should show
+							// that the plan is in review right now
 							state: 'started',
 						});
 					} else if (editsState === 'MarkedComplete') {

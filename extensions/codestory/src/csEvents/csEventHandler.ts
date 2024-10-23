@@ -57,7 +57,6 @@ export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable 
 			}
 		});
 		console.log('handleSymbolNavigation');
-		console.log(event);
 	}
 
 	async handleAgentCodeEdit(event: { accepted: boolean; added: number; removed: number }): Promise<void> {
