@@ -18,9 +18,10 @@ import { ChatAgentLocation, IChatAgentCommand, IChatAgentData } from '../common/
 import { AgentMode, AgentScope, IChatRequestVariableEntry, IChatResponseModel } from '../common/aideAgentModel.js';
 import { IParsedChatRequest } from '../common/aideAgentParserTypes.js';
 import { CHAT_PROVIDER_ID } from '../common/aideAgentParticipantContribTypes.js';
-import { IChatRequestViewModel, IChatResponseViewModel, IChatViewModel, IChatWelcomeMessageViewModel } from '../common/aideAgentViewModel.js';
+import { IChatRequestViewModel, IChatResponseRenderData, IChatResponseViewModel, IChatViewModel, IChatWelcomeMessageViewModel } from '../common/aideAgentViewModel.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
-import { PLAN_REVIEW_PANEL_ID, PlanReviewPane } from './aideAgentPlanReviewViewPane.js';
+import { MarkdownString } from '../../../../base/common/htmlContent.js';
+import { IAideAgentCodeEditsItem } from '../common/aideAgentService.js';
 
 export const IAideAgentWidgetService = createDecorator<IAideAgentWidgetService>('aideAgentWidgetService');
 
@@ -41,9 +42,6 @@ export async function showChatView(viewsService: IViewsService): Promise<IChatWi
 	return (await viewsService.openView<ChatViewPane>(CHAT_VIEW_ID))?.widget;
 }
 
-export async function showPlanReviewView(viewsService: IViewsService): Promise<PlanReviewPane | null> {
-	return (await viewsService.openView<PlanReviewPane>(PLAN_REVIEW_PANEL_ID));
-}
 
 export const IAideAgentAccessibilityService = createDecorator<IAideAgentAccessibilityService>('aideAgentAccessibilityService');
 export interface IAideAgentAccessibilityService {
@@ -52,14 +50,21 @@ export interface IAideAgentAccessibilityService {
 	acceptResponse(response: IChatResponseViewModel | string | undefined, requestId: number): void;
 }
 
-export interface IChatCodeBlockInfo {
+interface ICodeBlockInfo {
 	readonly ownerMarkdownPartId: string;
 	readonly codeBlockIndex: number;
-	readonly element: ChatTreeItem;
 	readonly uri: URI | undefined;
 	codemapperUri: URI | undefined;
 	focus(): void;
 	getContent(): string;
+}
+
+export interface IPlanReviewCodeBlockInfo extends ICodeBlockInfo {
+	readonly element: ReviewTreeItem;
+}
+// TODO(@g-danna) Could be merged into one?
+export interface IChatCodeBlockInfo extends ICodeBlockInfo {
+	readonly element: ChatTreeItem;
 }
 
 export interface IChatFileTreeInfo {
@@ -80,6 +85,19 @@ export interface IChatPlanStepsInfo {
 }
 
 export type ChatTreeItem = IChatRequestViewModel | IChatResponseViewModel | IChatWelcomeMessageViewModel;
+
+
+export interface ReviewTreeItem {
+	title: string;
+	description: MarkdownString;
+	id: string;
+	exchangeId: string;
+	edits: IAideAgentCodeEditsItem[]; // Temporary type
+	currentRenderedHeight: number | undefined;
+	isComplete: boolean;
+	isCanceled: boolean;
+	renderData?: IChatResponseRenderData;
+}
 
 export interface IChatListItemRendererOptions {
 	readonly renderStyle?: 'default' | 'compact' | 'minimal';
