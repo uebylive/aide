@@ -644,7 +644,18 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				const responseStream = this.responseStreamCollection.getResponseStream({
 					sessionId, exchangeId,
 				});
+				// we also have a plan step description updated event which we are going
+				// to handle on the review panel
 				if (event.event.PlanEvent.PlanStepTitleAdded) {
+					responseStream?.stream.planInfo({
+						exchangeId,
+						sessionId,
+						isStale: false,
+						state: 'started',
+						description: event.event.PlanEvent.PlanStepTitleAdded.title,
+					});
+					// TODO(codestory): Remove this soon after cause we will just rely
+					// on the title for now to provide updates to the side panel
 					responseStream?.stream.step({
 						description: '',
 						index: event.event.PlanEvent.PlanStepTitleAdded.index,
