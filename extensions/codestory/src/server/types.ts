@@ -125,6 +125,7 @@ interface EditsExchangeEditsState {
 type PlanMessageEvent = {
 	PlanStepCompleteAdded: PlanStepAddEvent;
 	PlanStepTitleAdded: PlanStepTitleEvent;
+	PlanStepDescriptionUpdate: PlanStepDescriptionUpdateEvent;
 };
 
 interface PlanStepAddEvent {
@@ -141,6 +142,15 @@ interface PlanStepTitleEvent {
 	exchange_id: string;
 	files_to_edit: string[];
 	title: string;
+	index: number;
+}
+
+interface PlanStepDescriptionUpdateEvent {
+	session_id: string;
+	exchange_id: string;
+	files_to_edit: string[];
+	delta: string | null;
+	description_up_until_now: string;
 	index: number;
 }
 
