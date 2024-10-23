@@ -289,6 +289,7 @@ interface SymbolEventEditRequest {
 
 interface ThinkingForEditRequest {
 	thinking: string;
+	delta: string | null;
 }
 
 interface RangeSelectionForEditRequest {
