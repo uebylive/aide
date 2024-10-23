@@ -15,7 +15,7 @@ export interface IPlanReviewViewTitleActionContext {
 
 export const PLAN_REVIEW_CATEGORY = localize2('aideAgent.category', 'Aide');
 
-export function registerPlanActions() {
+export function registerPlanReviewActions() {
 	registerAction2(class ToggleReasoningAction extends Action2 {
 		constructor() {
 			super({

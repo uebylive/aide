@@ -14,9 +14,7 @@ import { IResolvedTextEditorModel, ITextModelService } from '../../../../../edit
 import { MenuId } from '../../../../../platform/actions/common/actions.js';
 import { IContextKeyService } from '../../../../../platform/contextkey/common/contextkey.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
-import { IChatCodeBlockInfo, IChatListItemRendererOptions } from '../aideAgent.js';
-import { IDisposableReference, ResourcePool } from './aideAgentCollections.js';
-import { IChatContentPart, IChatContentPartRenderContext } from './aideAgentContentParts.js';
+import { IChatListItemRendererOptions, IPlanReviewCodeBlockInfo } from '../aideAgent.js';
 import { IChatRendererDelegate } from '../aideAgentListRenderer.js';
 import { ChatMarkdownDecorationsRenderer } from '../aideAgentMarkdownDecorationsRenderer.js';
 import { ChatEditorOptions } from '../aideAgentOptions.js';
@@ -26,6 +24,8 @@ import { IChatProgressRenderableResponseContent } from '../../common/aideAgentMo
 import { isRequestVM, isResponseVM } from '../../common/aideAgentViewModel.js';
 import { CodeBlockModelCollection } from '../../common/codeBlockModelCollection.js';
 import { URI } from '../../../../../base/common/uri.js';
+import { IDisposableReference, ResourcePool } from './aideAgentCollections.js';
+import { IChatContentPart, IPlanReviewContentPartRenderContext } from './aideAgentContentParts.js';
 
 const $ = dom.$;
 
@@ -33,20 +33,20 @@ const defaultRendererOptions: IChatListItemRendererOptions = {
 	editableCodeBlock: false
 };
 
-export class ChatMarkdownContentPart extends Disposable implements IChatContentPart {
+export class PlanReviewMarkdownContentPart extends Disposable implements IChatContentPart {
 	private static idPool = 0;
-	public readonly id = String(++ChatMarkdownContentPart.idPool);
+	public readonly id = String(++PlanReviewMarkdownContentPart.idPool);
 	public readonly domNode: HTMLElement;
 	private readonly allRefs: IDisposableReference<CodeBlockPart>[] = [];
 
 	private readonly _onDidChangeHeight = this._register(new Emitter<void>());
 	public readonly onDidChangeHeight = this._onDidChangeHeight.event;
 
-	public readonly codeblocks: IChatCodeBlockInfo[] = [];
+	public readonly codeblocks: IPlanReviewCodeBlockInfo[] = [];
 
 	constructor(
 		private readonly markdown: IMarkdownString,
-		context: IChatContentPartRenderContext,
+		context: IPlanReviewContentPartRenderContext,
 		private readonly editorPool: EditorPool,
 		fillInIncompleteTokens = false,
 		codeBlockStartIndex = 0,
@@ -104,7 +104,7 @@ export class ChatMarkdownContentPart extends Disposable implements IChatContentP
 				this._register(ref.object.onDidChangeContentHeight(() => this._onDidChangeHeight.fire()));
 
 				const ownerMarkdownPartId = this.id;
-				const info: IChatCodeBlockInfo = new class {
+				const info: IPlanReviewCodeBlockInfo = new class {
 					readonly ownerMarkdownPartId = ownerMarkdownPartId;
 					readonly codeBlockIndex = index;
 					readonly element = element;
