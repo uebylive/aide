@@ -26,6 +26,7 @@ import { CodeMapperService, IAideAgentCodeMapperService } from '../common/aideAg
 import '../common/aideAgentColors.js';
 import { IAideAgentEditingService } from '../common/aideAgentEditingService.js';
 import { chatVariableLeader } from '../common/aideAgentParserTypes.js';
+import { IAideAgentPlanService } from '../common/aideAgentPlanService.js';
 import { IAideAgentService } from '../common/aideAgentService.js';
 import { ChatService } from '../common/aideAgentServiceImpl.js';
 import { ChatSlashCommandService, IAideAgentSlashCommandService } from '../common/aideAgentSlashCommands.js';
@@ -62,6 +63,7 @@ import { ChatGettingStartedContribution } from './aideAgentGettingStarted.js';
 import { agentSlashCommandToMarkdown, agentToMarkdown } from './aideAgentMarkdownDecorationsRenderer.js';
 import { ChatCompatibilityNotifier, ChatExtensionPointHandler } from './aideAgentParticipantContributions.js';
 import { registerPlanReviewViewAndViewContainer } from './aideAgentPlanReviewContributions.js';
+import { AideAgentPlanService } from './aideAgentPlanService.js';
 import { ChatResponseAccessibleView } from './aideAgentResponseAccessibleView.js';
 import { ChatVariablesService } from './aideAgentVariables.js';
 import { ChatWidgetService } from './aideAgentWidget.js';
@@ -306,3 +308,4 @@ registerSingleton(IAideAgentCodeMapperService, CodeMapperService, InstantiationT
 registerSingleton(IAideAgentEditingService, ChatEditingService, InstantiationType.Delayed);
 registerSingleton(IAideAgentFloatingWidgetService, AideAgentFloatingWidgetService, InstantiationType.Delayed);
 registerSingleton(IAideAgentCodeEditingService, AideAgentCodeEditingService, InstantiationType.Delayed);
+registerSingleton(IAideAgentPlanService, AideAgentPlanService, InstantiationType.Delayed);
