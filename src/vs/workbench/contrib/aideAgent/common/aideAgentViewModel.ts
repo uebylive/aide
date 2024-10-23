@@ -116,7 +116,6 @@ export interface IChatTaskRenderData {
 
 export interface IChatResponseRenderData {
 	renderedParts: IChatRendererContent[];
-
 	renderedWordCount: number;
 	lastRenderTime: number;
 }
