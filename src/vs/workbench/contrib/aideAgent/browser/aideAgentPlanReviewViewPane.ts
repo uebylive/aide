@@ -59,6 +59,12 @@ const $ = dom.$;
 
 export const PLAN_REVIEW_PANEL_ID = 'workbench.panel.aideAgentPlanReview';
 
+// ChatViewModel <-> planreviewmodel
+// planreviewmodel -> all the data
+// planReviewPane -> rendering logic
+// we need to have a planreviewmodel so we can store all the data over there
+// the planreviewpane should get the planreviewmodel
+
 export class PlanReviewPane extends ViewPane {
 
 	private listContainer!: HTMLElement;
