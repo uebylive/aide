@@ -93,6 +93,9 @@ export interface ReviewTreeItem {
 	exchangeId: string;
 	edits: IAideAgentCodeEditsItem[]; // Temporary type
 	currentRenderedHeight: number | undefined;
+	willBeSaved: boolean;
+	isSaved: boolean;
+	willBeDropped: boolean;
 	isComplete: boolean;
 	isCanceled: boolean;
 	renderData?: IChatResponseRenderData;

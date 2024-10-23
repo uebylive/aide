@@ -1,0 +1,92 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+
+.aide-plan-review-item {
+	display: flex;
+}
+
+.aide-plan-review-timeline {
+	display: flex;
+	flex-direction: column;
+}
+
+.aide-plan-review-timeline-dot-container {
+	display: grid;
+	align-items: center;
+	justify-content: center;
+	width: 16px;
+	height: 16px;
+	/* Max dot size is 16px, so we need to distance it from the top by 2px to center with the title line height */
+	margin-top: 2px;
+}
+
+.aide-plan-review-timeline-dot-container :is(.aide-plan-review-timeline-dot, .aide-plan-review-timeline-save-icon, .aide-plan-review-timeline-drop-icon) {
+	grid-area: 1 / -1 / 1 / -1;
+}
+
+.aide-plan-review-timeline-dot-container .aide-plan-review-timeline-save-icon {
+	opacity: 0;
+}
+
+.aide-plan-review-timeline-dot-container .aide-plan-review-timeline-drop-icon {
+	opacity: 0;
+}
+
+.aide-plan-review-timeline-dot-container .aide-plan-review-timeline-dot {
+	width: 5px;
+	height: 5px;
+	background-color: var(--vscode-editorPane-background);
+	border: 1px solid var(--vscode-descriptionForeground);
+}
+
+.aide-plan-review-timeline-line-container {
+	flex-grow: 2;
+	position: relative;
+}
+
+.aide-plan-review-timeline-line {
+	position: absolute;
+	top: -3px;
+	bottom: -3px;
+	left: 0;
+	right: 0;
+	width: 1px;
+	height: auto;
+	background-color: var(--vscode-descriptionForeground);
+}
+
+.aide-plan-review-content {
+	display: flex;
+	flex-direction: column;
+	flex-grow: 1;
+}
+
+.aide-plan-review-header {
+	display: flex;
+	align-items: baseline;
+	padding-block: 4px;
+	padding-inline: 6px;
+}
+
+.aide-plan-review-title {
+	font-size: 13px;
+	line-height: 18px;
+	font-weight: 500;
+	color: var(--vscode-interactive-session-foreground);
+}
+
+.aide-plan-review-title::before {
+	content: counter(plan-item) ".";
+	margin-right: 2px;
+	counter-increment: plan-item;
+	color: var(--vscode-editorLineNumber-foreground);
+}
+
+.aide-plan-review-description {
+	margin-inline: 6px;
+	margin-block-end: 4px;
+	color: var(--vscode-list-deemphasizedForeground);
+}

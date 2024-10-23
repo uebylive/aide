@@ -29,5 +29,4 @@ export interface IPlanReviewContentPartRenderContext {
 	element: ReviewTreeItem;
 	preceedingContentParts: ReadonlyArray<IChatContentPart>;
 	index: number;
-	content: ReadonlyArray<IChatRendererContent>;
 }

@@ -52,6 +52,9 @@ import { IPlanReviewViewTitleActionContext } from './actions/aideAgentPlanReview
 import { URI } from '../../../../base/common/uri.js';
 import { Range } from '../../../../editor/common/core/range.js';
 
+import './media/aideAgentPlanReview.css';
+import { Heroicon } from '../../../browser/heroicon.js';
+
 
 const $ = dom.$;
 
@@ -175,6 +178,9 @@ export class PlanReviewPane extends ViewPane {
 
 	protected override layoutBody(height: number, width: number): void {
 		super.layoutBody(height, width);
+		this.tree.getHTMLElement().style.height = `${height}px`;
+		this.renderer.layout(width);
+		this.listContainer.style.height = `${height}px`;
 		this.tree.layout(height, width);
 	}
 
@@ -237,7 +243,7 @@ export class PlanReviewPane extends ViewPane {
 				setRowLineHeight: false,
 			}));
 		// this._register(this.tree.onContextMenu(e => this.onContextMenu(e)));
-
+		console.log('list created');
 		//this._register(this.tree.onDidChangeContentHeight(() => {
 		//	this.onDidChangeTreeContentHeight();
 		//}));
@@ -365,7 +371,7 @@ export class ReviewListItemRenderer extends Disposable implements ITreeRenderer<
 
 	renderTemplate(container: HTMLElement): IReviewListItemTemplate {
 		const templateDisposables = new DisposableStore();
-		const rowContainer = dom.append(container, $('.aide-review-plan-item-container'));
+		const rowContainer = dom.append(container, $('.aide-plan-review-item'));
 		const elementDisposables = new DisposableStore();
 
 		const contextKeyService = templateDisposables.add(this.contextKeyService.createScoped(rowContainer));
@@ -377,25 +383,64 @@ export class ReviewListItemRenderer extends Disposable implements ITreeRenderer<
 
 	renderElement(node: ITreeNode<ReviewTreeItem, FuzzyScore>, index: number, templateData: IReviewListItemTemplate): void {
 
-		console.log('renderElement');
-		dom.clearNode(templateData.rowContainer);
-
+		// console.log('renderElement');
+		// dom.clearNode(templateData.rowContainer);
+		//
 		// Create a container for the title
-		const titleElement = dom.append(templateData.rowContainer, $('.review-item-title'));
-		titleElement.textContent = node.element.title;
+		// const titleElement = dom.append(templateData.rowContainer, $('.review-item-title'));
+		// titleElement.textContent = node.element.title;
 
 		// If you want to render the description as well
-		if (node.element.description) {
-			const descriptionElement = dom.append(templateData.rowContainer, $('.review-item-description'));
-			const renderedMarkdown = this.renderer.render(node.element.description);
-			descriptionElement.appendChild(renderedMarkdown.element);
-		}
+		// if (node.element.description) {
+		// 	const descriptionElement = dom.append(templateData.rowContainer, $('.review-item-description'));
+		// 	const renderedMarkdown = this.renderer.render(node.element.description);
+		// 	descriptionElement.appendChild(renderedMarkdown.element);
+		// }
 
 		// Store the current element in the template data
-		templateData.currentElement = node.element;
+		// templateData.currentElement = node.element;
 
 		// Update the item height after rendering
+		//this.updateItemHeight(templateData);
+
+		const element = node.element;
+
+		const { title, description } = element;
+		const rowContainer = templateData.rowContainer;
+
+		const context: IPlanReviewContentPartRenderContext = {
+			preceedingContentParts: [],
+			element,
+			index
+		};
+
+		dom.clearNode(rowContainer);
+
+		const timelineElement = dom.append(rowContainer, $('.aide-review-plan-timeline'));
+		const dotContainerElement = dom.append(timelineElement, $('.aide-plan-review-timeline-dot-container'));
+		dom.append(dotContainerElement, $('.aide-plan-review-timeline-dot'));
+		const saveIcon = this.instantiationService.createInstance(Heroicon, dotContainerElement, 'micro/check-circle');
+		saveIcon.svg.classList.add('aide-plan-review-timeline-save-icon');
+		templateData.elementDisposables.add(saveIcon);
+
+		const dropIcon = this.instantiationService.createInstance(Heroicon, dotContainerElement, 'micro/x-circle');
+		dropIcon.svg.classList.add('aide-plan-review-timeline-drop-icon');
+		templateData.elementDisposables.add(dropIcon);
+
+		const contentElement = dom.append(rowContainer, $('.aide-plan-review-content'));
+
+		const header = dom.append(contentElement, $('.aide-plan-review-header'));
+		const titleElement = dom.append(header, $('.aide-plan-review-title'));
+		titleElement.textContent = title;
+
+		const descriptionElement = dom.append(contentElement, $('.aide-plan-review-description'));
+		const markdownPart = this.renderMarkdown(description, templateData, context);
+		descriptionElement.appendChild(markdownPart.domNode);
+
+
 		this.updateItemHeight(templateData);
+		console.log(rowContainer.innerHTML);
+
 	}
 
 
@@ -558,6 +603,9 @@ function getMockPlanSteps(sessionId: string, exchangeId: string): ReviewTreeItem
 		currentRenderedHeight: undefined,
 		isComplete: true,
 		isCanceled: false,
+		willBeDropped: false,
+		willBeSaved: false,
+		isSaved: false,
 	},
 	{
 		title: `${sessionId}-${exchangeId}-Add a new language feature`,
@@ -570,6 +618,9 @@ function getMockPlanSteps(sessionId: string, exchangeId: string): ReviewTreeItem
 		currentRenderedHeight: undefined,
 		isComplete: true,
 		isCanceled: false,
+		willBeSaved: false,
+		isSaved: false,
+		willBeDropped: false,
 	},
 	{
 		title: `${sessionId}-${exchangeId}-SomethingElseOverHere`,
@@ -582,5 +633,8 @@ function getMockPlanSteps(sessionId: string, exchangeId: string): ReviewTreeItem
 		currentRenderedHeight: undefined,
 		isComplete: true,
 		isCanceled: false,
+		willBeSaved: false,
+		isSaved: false,
+		willBeDropped: false,
 	}];
 }
