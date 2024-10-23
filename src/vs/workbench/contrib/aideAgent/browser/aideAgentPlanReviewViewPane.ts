@@ -127,6 +127,7 @@ export class PlanReviewPane extends ViewPane {
 
 	protected override layoutBody(height: number, width: number): void {
 		super.layoutBody(height, width);
+		this.tree.layout(height, width);
 	}
 
 	private createList(listContainer: HTMLElement) {
