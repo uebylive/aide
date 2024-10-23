@@ -55,10 +55,7 @@ import { Range } from '../../../../editor/common/core/range.js';
 import './media/aideAgentPlanReview.css';
 import { Heroicon } from '../../../browser/heroicon.js';
 
-
 const $ = dom.$;
-
-
 
 export const PLAN_REVIEW_PANEL_ID = 'workbench.panel.aideAgentPlanReview';
 
