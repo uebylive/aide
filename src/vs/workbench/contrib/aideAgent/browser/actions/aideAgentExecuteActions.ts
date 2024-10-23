@@ -62,7 +62,8 @@ export class SubmitChatRequestAction extends Action2 {
 
 		const widgetService = accessor.get(IAideAgentWidgetService);
 		const widget = context?.widget ?? widgetService.lastFocusedWidget;
-		widget?.acceptInput(AgentMode.Chat, context?.inputValue);
+		const input = widget?.getInput() ?? context?.inputValue;
+		widget?.acceptInput(AgentMode.Chat, input);
 	}
 }
 
@@ -102,7 +103,8 @@ export class SubmitEditsRequestAction extends Action2 {
 
 		const widgetService = accessor.get(IAideAgentWidgetService);
 		const widget = context?.widget ?? widgetService.lastFocusedWidget;
-		widget?.acceptInput(AgentMode.Edit, context?.inputValue);
+		const input = widget?.getInput() ?? context?.inputValue;
+		widget?.acceptInput(AgentMode.Edit, input);
 	}
 }
 
@@ -139,7 +141,8 @@ export class SubmitPlanRequestAction extends Action2 {
 
 		const widgetService = accessor.get(IAideAgentWidgetService);
 		const widget = context?.widget ?? widgetService.lastFocusedWidget;
-		widget?.acceptInput(AgentMode.Plan, context?.inputValue);
+		const input = widget?.getInput() ?? context?.inputValue;
+		widget?.acceptInput(AgentMode.Plan, input);
 	}
 }
 

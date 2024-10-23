@@ -849,9 +849,20 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			if (opts && 'mode' in opts) {
 				agentMode = opts.mode;
 			}
+
+			// This is also tied to just the edit and to nothing else right now
+			// which kind of feels weird ngl
+			let agentScope = AgentScope.PinnedContext;
+			// If we are inPassthrough which implies a floating widget then
+			// our scope is always Selection
+			if ('isPassthrough' in this.viewContext && this.viewContext.isPassthrough) {
+				agentScope = AgentScope.Selection;
+			}
+			// scope here is dicated by how the command is run, not on the internal state
+			// of the inputPart which was based on a selector before
 			const result = await this.chatService.sendRequest(this.viewModel.sessionId, input, {
 				agentMode,
-				agentScope: this.inputPart.currentAgentScope,
+				agentScope: agentScope,
 				userSelectedModelId: this.inputPart.currentLanguageModel,
 				location: this.location,
 				locationData: this._location.resolveData?.(),
