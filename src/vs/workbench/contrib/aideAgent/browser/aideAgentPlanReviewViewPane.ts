@@ -21,9 +21,9 @@ import { IThemeService } from '../../../../platform/theme/common/themeService.js
 import { getLocationBasedViewColors, IViewPaneOptions, ViewPane } from '../../../browser/parts/views/viewPane.js';
 import { IViewDescriptorService } from '../../../common/views.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
-import { ITreeNode, ITreeRenderer } from '../../../../base/browser/ui/tree/tree.js';
+import { ITreeElement, ITreeNode, ITreeRenderer } from '../../../../base/browser/ui/tree/tree.js';
 import { FuzzyScore } from '../../../../base/common/filters.js';
-import { IMarkdownString } from '../../../../base/common/htmlContent.js';
+import { IMarkdownString, MarkdownString } from '../../../../base/common/htmlContent.js';
 import { coalesce } from '../../../../base/common/arrays.js';
 import { IListVirtualDelegate } from '../../../../base/browser/ui/list/list.js';
 import { ChatCodeBlockContentProvider, CodeBlockPart } from './codeBlockPart.js';
@@ -49,6 +49,8 @@ import { IChatContentPart, IPlanReviewContentPartRenderContext } from './aideAge
 
 // Proprietary for this feature
 import { IPlanReviewViewTitleActionContext } from './actions/aideAgentPlanReviewActions.js';
+import { URI } from '../../../../base/common/uri.js';
+import { Range } from '../../../../editor/common/core/range.js';
 
 
 const $ = dom.$;
@@ -59,11 +61,10 @@ export const PLAN_REVIEW_PANEL_ID = 'workbench.panel.aideAgentPlanReview';
 
 export class PlanReviewPane extends ViewPane {
 
+	private listContainer!: HTMLElement;
 	private tree!: WorkbenchObjectTree<ReviewTreeItem>;
 	private renderer!: ReviewListItemRenderer;
 	private readonly _codeBlockModelCollection: CodeBlockModelCollection;
-
-	private listContainer!: HTMLElement;
 
 	constructor(
 		options: IViewPaneOptions,
@@ -102,6 +103,14 @@ export class PlanReviewPane extends ViewPane {
 			this.listContainer = dom.append(parent, $(`.aide-review-plan-list-container`));
 			this.createList(this.listContainer);
 
+			const treeItems: ITreeElement<ReviewTreeItem>[] = mockPlanSteps.map(item => ({ element: item, collapsed: false, collapsible: false }));
+
+			this.tree.setChildren(null, treeItems, {
+				diffIdentityProvider: {
+					getId: (element) => element.id,
+				}
+			});
+
 			// const scopedInstantiationService = this._register(this.instantiationService.createChild(new ServiceCollection([IContextKeyService, this.scopedContextKeyService])));
 			// const locationBasedColors = this.getLocationBasedColors();
 
@@ -123,7 +132,7 @@ export class PlanReviewPane extends ViewPane {
 	private createList(listContainer: HTMLElement) {
 		const scopedInstantiationService = this._register(this._register(this.instantiationService.createChild(new ServiceCollection([IContextKeyService, this.contextKeyService]))));
 		const delegate = scopedInstantiationService.createInstance(ChatListDelegate, 200);
-		const rendererDelegate: IChatRendererDelegate = {
+		const rendererDelegate: IPlanReviewRendererDelegate = {
 			getListLength: () => this.tree.getNode(null).visibleChildrenCount,
 			//onDidScroll: this.onDidScroll,
 		};
@@ -164,7 +173,7 @@ export class PlanReviewPane extends ViewPane {
 
 		this.tree = this._register(<WorkbenchObjectTree<ReviewTreeItem>>scopedInstantiationService.createInstance(
 			WorkbenchObjectTree,
-			'Chat',
+			'PlanReview',
 			listContainer,
 			delegate,
 			[this.renderer],
@@ -209,9 +218,8 @@ export class PlanReviewPane extends ViewPane {
 	}
 }
 
-export interface IChatRendererDelegate {
+export interface IPlanReviewRendererDelegate {
 	getListLength(): number;
-
 	readonly onDidScroll?: Event<void>;
 }
 
@@ -253,7 +261,7 @@ export class ReviewListItemRenderer extends Disposable implements ITreeRenderer<
 	private _onDidChangeVisibility = this._register(new Emitter<boolean>());
 
 	constructor(
-		delegate: IChatRendererDelegate,
+		delegate: IPlanReviewRendererDelegate,
 		private readonly codeBlockModelCollection: CodeBlockModelCollection,
 		overflowWidgetsDomNode: HTMLElement | undefined,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
@@ -324,6 +332,8 @@ export class ReviewListItemRenderer extends Disposable implements ITreeRenderer<
 		// if (templateData.titleToolbar) {
 		// 	templateData.titleToolbar.context = node.element;
 		// }
+
+		console.log(node.element);
 
 		dom.clearNode(templateData.rowContainer);
 	}
@@ -446,3 +456,70 @@ export class ChatListDelegate implements IListVirtualDelegate<ReviewTreeItem> {
 		return true;
 	}
 }
+
+
+const mockMarkdown = new MarkdownString(`To search among commit messages in Git, you can use the \`git log\` command with the \`--grep\` option. Here's a concise explanation of how to do it:
+
+	\`\`\`
+	git log --grep="search term"
+	\`\`\`
+
+	This command will search for commits whose messages contain the specified "search term". The search is case-sensitive by default.
+
+	Some useful variations:
+
+	1. Case-insensitive search:
+		 \`\`\`
+		 git log --grep="search term" --ignore-case
+		 \`\`\`
+
+	2. Search with regular expressions:
+		 \`\`\`
+		 git log --grep="search term" --extended-regexp
+		 \`\`\`
+
+	3. Limit the number of results:
+		 \`\`\`
+		 git log --grep="search term" -n 5
+		 \`\`\`
+
+	Would you like me to explain any of these options in more detail or provide examples of more advanced search patterns?`);
+
+
+const mockPlanSteps: ReviewTreeItem[] = [{
+	title: 'Modify the TextModel',
+	description: mockMarkdown,
+	id: '1',
+	exchangeId: 'exchangeId',
+	edits: [
+		{ uri: URI.parse('file:///path/to/file1.txt'), range: Range.fromPositions({ lineNumber: 1, column: 1 }, { lineNumber: 1, column: 1 }) },
+	],
+	currentRenderedHeight: undefined,
+	isComplete: true,
+	isCanceled: false,
+},
+{
+	title: 'Add a new language feature',
+	description: mockMarkdown,
+	id: '2',
+	exchangeId: 'exchangeId',
+	edits: [
+		{ uri: URI.parse('file:///path/to/file1.txt'), range: Range.fromPositions({ lineNumber: 1, column: 1 }, { lineNumber: 1, column: 1 }) },
+	],
+	currentRenderedHeight: undefined,
+	isComplete: true,
+	isCanceled: false,
+},
+{
+	title: 'Add the status bar item',
+	description: mockMarkdown,
+	id: '3',
+	exchangeId: 'exchangeId',
+	edits: [
+		{ uri: URI.parse('file:///path/to/file1.txt'), range: Range.fromPositions({ lineNumber: 1, column: 1 }, { lineNumber: 1, column: 1 }) },
+	],
+	currentRenderedHeight: undefined,
+	isComplete: true,
+	isCanceled: false,
+}];
+

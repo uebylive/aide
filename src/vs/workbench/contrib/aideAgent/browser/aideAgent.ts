@@ -42,7 +42,6 @@ export async function showChatView(viewsService: IViewsService): Promise<IChatWi
 	return (await viewsService.openView<ChatViewPane>(CHAT_VIEW_ID))?.widget;
 }
 
-
 export const IAideAgentAccessibilityService = createDecorator<IAideAgentAccessibilityService>('aideAgentAccessibilityService');
 export interface IAideAgentAccessibilityService {
 	readonly _serviceBrand: undefined;
