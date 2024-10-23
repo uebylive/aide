@@ -50,7 +50,7 @@ import { ChatCommandButtonContentPart, ChatCommandGroupContentPart } from './aid
 import { ChatConfirmationContentPart } from './aideAgentContentParts/aideAgentConfirmationContentPart.js';
 import { IChatContentPart, IChatContentPartRenderContext } from './aideAgentContentParts/aideAgentContentParts.js';
 import { EditsContentPart } from './aideAgentContentParts/aideAgentEditsContentPart.js';
-import { ChatMarkdownContentPart, EditorPool } from './aideAgentContentParts/aideAgentMarkdownContentPart.js';
+import { ChatMarkdownContentPart, EditorPool, EditPreviewEditorPool } from './aideAgentContentParts/aideAgentMarkdownContentPart.js';
 import { ChatPlanStepPart } from './aideAgentContentParts/aideAgentPlanStepPart.js';
 import { ChatProgressContentPart } from './aideAgentContentParts/aideAgentProgressContentPart.js';
 import { ChatCollapsibleListContentPart, CollapsibleListPool } from './aideAgentContentParts/aideAgentReferencesContentPart.js';
@@ -123,6 +123,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 	private readonly _editorPool: EditorPool;
 	private readonly _diffEditorPool: DiffEditorPool;
+	private readonly _editPreviewEditorPool: EditPreviewEditorPool;
 	private readonly _treePool: TreePool;
 	private readonly _contentReferencesListPool: CollapsibleListPool;
 	private readonly _codeEditsPool: CodeEditsPool;
@@ -149,6 +150,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		this.markdownDecorationsRenderer = this.instantiationService.createInstance(ChatMarkdownDecorationsRenderer);
 		this._editorPool = this._register(this.instantiationService.createInstance(EditorPool, editorOptions, delegate, overflowWidgetsDomNode));
 		this._diffEditorPool = this._register(this.instantiationService.createInstance(DiffEditorPool, editorOptions, delegate, overflowWidgetsDomNode));
+		this._editPreviewEditorPool = this._register(this.instantiationService.createInstance(EditPreviewEditorPool, editorOptions, delegate, overflowWidgetsDomNode));
 		this._treePool = this._register(this.instantiationService.createInstance(TreePool, this._onDidChangeVisibility.event));
 		this._contentReferencesListPool = this._register(this.instantiationService.createInstance(CollapsibleListPool, this._onDidChangeVisibility.event));
 		this._codeEditsPool = this._register(this.instantiationService.createInstance(CodeEditsPool, this._onDidChangeVisibility.event));
@@ -221,6 +223,9 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		}
 		for (const diffEditor of this._diffEditorPool.inUse()) {
 			diffEditor.layout(this._currentLayoutWidth);
+		}
+		for (const editPreviewEditor of this._editPreviewEditorPool.inUse()) {
+			editPreviewEditor.layout(this._currentLayoutWidth);
 		}
 	}
 
@@ -826,7 +831,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			}
 		}
 
-		const markdownPart = this.instantiationService.createInstance(ChatMarkdownContentPart, markdown, context, this._editorPool, fillInIncompleteTokens, codeBlockStartIndex, this.renderer, width, this.codeBlockModelCollection, this.rendererOptions);
+		const markdownPart = this.instantiationService.createInstance(ChatMarkdownContentPart, markdown, context, this._editorPool, this._editPreviewEditorPool, fillInIncompleteTokens, codeBlockStartIndex, this.renderer, width, this.codeBlockModelCollection, this.rendererOptions);
 		const markdownPartId = markdownPart.id;
 		markdownPart.addDisposable(markdownPart.onDidChangeHeight(() => {
 			markdownPart.layout(width);

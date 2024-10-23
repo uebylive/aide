@@ -4,28 +4,30 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from '../../../../../base/browser/dom.js';
+import { CancellationToken } from '../../../../../base/common/cancellation.js';
 import { Emitter } from '../../../../../base/common/event.js';
 import { IMarkdownString } from '../../../../../base/common/htmlContent.js';
 import { Disposable, IDisposable } from '../../../../../base/common/lifecycle.js';
 import { equalsIgnoreCase } from '../../../../../base/common/strings.js';
+import { URI } from '../../../../../base/common/uri.js';
 import { MarkdownRenderer } from '../../../../../editor/browser/widget/markdownRenderer/browser/markdownRenderer.js';
 import { Range } from '../../../../../editor/common/core/range.js';
 import { IResolvedTextEditorModel, ITextModelService } from '../../../../../editor/common/services/resolverService.js';
 import { MenuId } from '../../../../../platform/actions/common/actions.js';
 import { IContextKeyService } from '../../../../../platform/contextkey/common/contextkey.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
+import { IChatProgressRenderableResponseContent } from '../../common/aideAgentModel.js';
+import { isRequestVM, isResponseVM } from '../../common/aideAgentViewModel.js';
+import { IMarkdownVulnerability } from '../../common/annotations.js';
+import { CodeBlockModelCollection } from '../../common/codeBlockModelCollection.js';
 import { IChatCodeBlockInfo, IChatListItemRendererOptions } from '../aideAgent.js';
-import { IDisposableReference, ResourcePool } from './aideAgentCollections.js';
-import { IChatContentPart, IChatContentPartRenderContext } from './aideAgentContentParts.js';
 import { IChatRendererDelegate } from '../aideAgentListRenderer.js';
 import { ChatMarkdownDecorationsRenderer } from '../aideAgentMarkdownDecorationsRenderer.js';
 import { ChatEditorOptions } from '../aideAgentOptions.js';
 import { CodeBlockPart, ICodeBlockData, localFileLanguageId, parseLocalFileData } from '../codeBlockPart.js';
-import { IMarkdownVulnerability } from '../../common/annotations.js';
-import { IChatProgressRenderableResponseContent } from '../../common/aideAgentModel.js';
-import { isRequestVM, isResponseVM } from '../../common/aideAgentViewModel.js';
-import { CodeBlockModelCollection } from '../../common/codeBlockModelCollection.js';
-import { URI } from '../../../../../base/common/uri.js';
+import { EditPreviewBlockPart, IEditPreviewBlockData } from '../editPreviewPart.js';
+import { IDisposableReference, ResourcePool } from './aideAgentCollections.js';
+import { IChatContentPart, IChatContentPartRenderContext } from './aideAgentContentParts.js';
 
 const $ = dom.$;
 
@@ -38,6 +40,7 @@ export class ChatMarkdownContentPart extends Disposable implements IChatContentP
 	public readonly id = String(++ChatMarkdownContentPart.idPool);
 	public readonly domNode: HTMLElement;
 	private readonly allRefs: IDisposableReference<CodeBlockPart>[] = [];
+	private readonly allEditPreviewRefs: IDisposableReference<EditPreviewBlockPart>[] = [];
 
 	private readonly _onDidChangeHeight = this._register(new Emitter<void>());
 	public readonly onDidChangeHeight = this._onDidChangeHeight.event;
@@ -48,6 +51,7 @@ export class ChatMarkdownContentPart extends Disposable implements IChatContentP
 		private readonly markdown: IMarkdownString,
 		context: IChatContentPartRenderContext,
 		private readonly editorPool: EditorPool,
+		private readonly editPreviewEditorPool: EditPreviewEditorPool,
 		fillInIncompleteTokens = false,
 		codeBlockStartIndex = 0,
 		renderer: MarkdownRenderer,
@@ -69,6 +73,32 @@ export class ChatMarkdownContentPart extends Disposable implements IChatContentP
 		const result = this._register(renderer.render(markdown, {
 			fillInIncompleteTokens,
 			codeBlockRendererSync: (languageId, text) => {
+				const editPreviewBlock = this.parseEditPreviewBlock(text);
+				if (editPreviewBlock) {
+					const sessionId = isResponseVM(element) || isRequestVM(element) ? element.sessionId : '';
+					if (!isRequestVM(element) && !isResponseVM(element)) {
+						return $('div');
+					}
+
+					const originalIndex = codeBlockIndex++;
+					const original = this.codeBlockModelCollection.getOrCreate(sessionId, element, originalIndex).model;
+					const modifiedIndex = codeBlockIndex++;
+					const modified = this.codeBlockModelCollection.getOrCreate(sessionId, element, modifiedIndex).model;
+
+					const ref = this.renderEditPreviewBlock({
+						uri: URI.parse('/Users/nareshr/github/codestory/sidecar/sidecar/src/bin/sys_info.rs'),
+						element,
+						languageId,
+						parentContextKeyService: contextKeyService,
+						original: { model: original, text: editPreviewBlock.original, codeBlockIndex: originalIndex },
+						modified: { model: modified, text: editPreviewBlock.modified, codeBlockIndex: modifiedIndex }
+					}, currentWidth);
+					this.allEditPreviewRefs.push(ref);
+					this._register(ref.object.onDidChangeContentHeight(() => this._onDidChangeHeight.fire()));
+
+					return ref.object.element;
+				}
+
 				const index = codeBlockIndex++;
 				let textModel: Promise<IResolvedTextEditorModel>;
 				let range: Range | undefined;
@@ -134,6 +164,17 @@ export class ChatMarkdownContentPart extends Disposable implements IChatContentP
 		this.domNode = result.element;
 	}
 
+	private parseEditPreviewBlock(text: string): { original: string; modified: string } | null {
+		const searchMatch = text.match(/^<<<<<<< SEARCH\n([\s\S]*?)=======\n([\s\S]*?)>>>>>>> REPLACE$/);
+		if (searchMatch === null) {
+			return null;
+		}
+		return {
+			original: searchMatch[1],
+			modified: searchMatch[2]
+		};
+	}
+
 	private renderCodeBlock(data: ICodeBlockData, text: string, currentWidth: number, editableCodeBlock: boolean | undefined): IDisposableReference<CodeBlockPart> {
 		const ref = this.editorPool.get();
 		const editorInfo = ref.object;
@@ -149,12 +190,25 @@ export class ChatMarkdownContentPart extends Disposable implements IChatContentP
 		return ref;
 	}
 
+	private renderEditPreviewBlock(data: IEditPreviewBlockData, currentWidth: number): IDisposableReference<EditPreviewBlockPart> {
+		const ref = this.editPreviewEditorPool.get();
+		const editPreviewEditorInfo = ref.object;
+		if (isResponseVM(data.element)) {
+			this.codeBlockModelCollection.update(data.element.sessionId, data.element, data.original.codeBlockIndex, { text: data.original.text, languageId: data.languageId });
+			this.codeBlockModelCollection.update(data.element.sessionId, data.element, data.modified.codeBlockIndex, { text: data.modified.text, languageId: data.languageId });
+		}
+
+		editPreviewEditorInfo.render(data, currentWidth, CancellationToken.None);
+		return ref;
+	}
+
 	hasSameContent(other: IChatProgressRenderableResponseContent): boolean {
 		return other.kind === 'markdownContent' && other.content.value === this.markdown.value;
 	}
 
 	layout(width: number): void {
 		this.allRefs.forEach(ref => ref.object.layout(width));
+		this.allEditPreviewRefs.forEach(ref => ref.object.layout(width));
 	}
 
 	addDisposable(disposable: IDisposable): void {
@@ -192,6 +246,40 @@ export class EditorPool extends Disposable {
 				codeBlock.reset();
 				stale = true;
 				this._pool.release(codeBlock);
+			}
+		};
+	}
+}
+
+export class EditPreviewEditorPool extends Disposable {
+	private readonly _pool: ResourcePool<EditPreviewBlockPart>;
+
+	public inUse(): Iterable<EditPreviewBlockPart> {
+		return this._pool.inUse;
+	}
+
+	constructor(
+		options: ChatEditorOptions,
+		delegate: IChatRendererDelegate,
+		overflowWidgetsDomNode: HTMLElement | undefined,
+		@IInstantiationService instantiationService: IInstantiationService,
+	) {
+		super();
+		this._pool = this._register(new ResourcePool(() => {
+			return instantiationService.createInstance(EditPreviewBlockPart, options, delegate, overflowWidgetsDomNode);
+		}));
+	}
+
+	get(): IDisposableReference<EditPreviewBlockPart> {
+		const editPreviewBlock = this._pool.get();
+		let stale = false;
+		return {
+			object: editPreviewBlock,
+			isStale: () => stale,
+			dispose: () => {
+				editPreviewBlock.reset();
+				stale = true;
+				this._pool.release(editPreviewBlock);
 			}
 		};
 	}
