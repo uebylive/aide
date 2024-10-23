@@ -18,6 +18,7 @@ import { ChatMarkdownContentPart } from './aideAgentMarkdownContentPart.js';
 import './media/aideAgentRichItem.css';
 import { Button } from '../../../../../base/browser/ui/button/button.js';
 import { defaultButtonStyles } from '../../../../../platform/theme/browser/defaultStyles.js';
+import { IAideAgentPlanService } from '../../common/aideAgentPlanService.js';
 
 const $ = dom.$;
 
@@ -40,7 +41,7 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 		headerTitle: string,
 		iconId: string,
 		stale: boolean,
-		private sessionid: string,
+		private sessionId: string,
 		private exchangeId: string,
 		readonly menuId: MenuId | null,
 		readonly supportsCheckpoint: boolean,
@@ -48,6 +49,7 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 		readonly descriptionPart: ChatMarkdownContentPart | undefined,
 		readonly instantiationService: IInstantiationService,
 		readonly keybindingService: IKeybindingService,
+		readonly aideAgentPlanService: IAideAgentPlanService,
 	) {
 		super();
 		const domNode = this.domNode = $('.aide-rich-item');
@@ -100,7 +102,7 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 
 			// pass relevent information to the context over here
 			this.toolbar.context = {
-				'aideAgentSessionId': this.sessionid,
+				'aideAgentSessionId': this.sessionId,
 				'aideAgentExchangeId': this.exchangeId,
 			};
 
@@ -130,6 +132,20 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 			}));
 
 			domNode.appendChild(checkPointButtonContainer);
+
+			const planReviewButtonContainer = $('.aide-rich-item-plan');
+			const planReviewButton = this._register(this.instantiationService.createInstance(Button, planReviewButtonContainer, defaultButtonStyles));
+			planReviewButton.label = 'planView';
+			planReviewButton.onDidClick(() => {
+				// forces the view pane to open up
+				this.aideAgentPlanService.anchorPlanViewPane(sessionId, exchangeId);
+			});
+
+			dom.addDisposableListener(planReviewButton.element, dom.EventType.CLICK, async (e: MouseEvent) => {
+				dom.EventHelper.stop(e, true);
+				this.aideAgentPlanService.anchorPlanViewPane(sessionId, exchangeId);
+			});
+			domNode.appendChild(planReviewButtonContainer);
 		}
 	}
 

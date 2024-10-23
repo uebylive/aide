@@ -8,6 +8,7 @@ import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions
 import { localize2 } from '../../../../../nls.js';
 import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
 import { IAideAgentCodeEditingService } from '../../common/aideAgentCodeEditingService.js';
+import { IAideAgentPlanService } from '../../common/aideAgentPlanService.js';
 import { IAideAgentService } from '../../common/aideAgentService.js';
 
 export function registerChatEditsActions() {
@@ -142,6 +143,40 @@ export function registerChatEditsActions() {
 			// Note: this is an async function so the GC will not clear it when we
 			// go out of scope over here in the `run` function
 			editingSession.rejectForExchange(sessionId, exchangeId);
+		}
+	});
+
+	registerAction2(class PlanReviewPaneAction extends Action2 {
+		constructor() {
+			super({
+				id: 'workbench.action.aideAgent.planReviewPaneAction',
+				title: localize2('interactiveSession.planReview.label', "Plan Review Actions"),
+				menu: [{
+					id: MenuId.AideAgentPlanLoading,
+					group: 'navigation',
+					order: 2,
+				},
+				{
+					id: MenuId.AideAgentPlanReview,
+					group: 'navigation',
+					order: 2
+				}],
+				icon: Codicon.preview,
+				f1: false,
+			});
+		}
+		run(accessor: ServicesAccessor, ...args: any[]) {
+			const context = args[0];
+			console.log('planReviewPaneAction');
+			// These values are set on the toolbar present over in aideAgentRichItem
+			const exchangeId = context['aideAgentExchangeId'];
+			const sessionId = context['aideAgentSessionId'];
+			try {
+				const aidePlanService = accessor.get(IAideAgentPlanService);
+				aidePlanService.anchorPlanViewPane(sessionId, exchangeId);
+			} catch (exception) {
+				console.error(exception);
+			}
 		}
 	});
 }

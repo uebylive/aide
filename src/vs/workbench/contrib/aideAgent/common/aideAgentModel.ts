@@ -25,6 +25,7 @@ import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgen
 import { IAideAgentCodeEditingService, IAideAgentCodeEditingSession } from './aideAgentCodeEditingService.js';
 import { IAideAgentEdits } from './aideAgentEditingSession.js';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from './aideAgentParserTypes.js';
+import { IAideAgentPlanService, IAideAgentPlanSession } from './aideAgentPlanService.js';
 import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatCommandGroup, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanInfo, IChatPlanStep, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatStreamingState, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
 import { IChatRequestVariableValue } from './aideAgentVariables.js';
 
@@ -455,6 +456,8 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		return this._editingSession?.codeEdits;
 	}
 
+	private _planSession: IAideAgentPlanSession | undefined;
+
 	private readonly _codeCitations: IChatCodeCitation[] = [];
 	public get codeCitations(): ReadonlyArray<IChatCodeCitation> {
 		return this._codeCitations;
@@ -472,6 +475,7 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 
 	constructor(
 		@IAideAgentCodeEditingService private readonly _aideAgentCodeEditingService: IAideAgentCodeEditingService,
+		@IAideAgentPlanService private readonly _aidePlanService: IAideAgentPlanService,
 		_response: IMarkdownString | ReadonlyArray<IMarkdownString | IChatResponseProgressFileTreeData | IChatContentInlineReference | IChatAgentMarkdownContentWithVulnerability | IChatResponseCodeblockUriPart>,
 		private _session: ChatModel,
 		private _agent: IChatAgentData | undefined,
@@ -520,7 +524,10 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 	}
 
 	applyPlanInfo(planInfo: IChatPlanInfo) {
+		this._planSession = this._aidePlanService.getOrStartPlanSession(planInfo.sessionId, planInfo.exchangeId);
 		this._planInfo = planInfo;
+		// update the plan info to what we have over here
+		this._planSession.updatePlanInfo(planInfo);
 		this._onDidChange.fire();
 	}
 
@@ -958,6 +965,7 @@ export class ChatModel extends Disposable implements IChatModel {
 		@ILogService private readonly logService: ILogService,
 		@IAideAgentAgentService private readonly chatAgentService: IAideAgentAgentService,
 		@IAideAgentCodeEditingService private readonly aideAgentCodeEditingService: IAideAgentCodeEditingService,
+		@IAideAgentPlanService private readonly aideAgentPlanService: IAideAgentPlanService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 	) {
 		super();
@@ -1006,6 +1014,7 @@ export class ChatModel extends Disposable implements IChatModel {
 					// TODO(@ghostwriternr): We used to assign the response to the request here, but now we don't.
 					const response = new ChatResponseModel(
 						this.aideAgentCodeEditingService,
+						this.aideAgentPlanService,
 						raw.response ?? [new MarkdownString(raw.response)], this, agent, raw.slashCommand, true, raw.isCanceled, raw.vote, raw.voteDownReason, result, raw.followups
 					);
 					if (raw.usedContext) { // @ulugbekna: if this's a new vscode sessions, doc versions are incorrect anyway?
@@ -1106,6 +1115,7 @@ export class ChatModel extends Disposable implements IChatModel {
 		const request = new ChatRequestModel(this, message, variableData, attempt, confirmation, locationData, attachments);
 		const response = new ChatResponseModel(
 			this.aideAgentCodeEditingService,
+			this.aideAgentPlanService,
 			[], this, chatAgent, slashCommand
 		);
 
@@ -1118,6 +1128,7 @@ export class ChatModel extends Disposable implements IChatModel {
 	addResponse(): ChatResponseModel {
 		const response = new ChatResponseModel(
 			this.aideAgentCodeEditingService,
+			this.aideAgentPlanService,
 			[], this, undefined, undefined
 		);
 		this._exchanges.push(response);
@@ -1149,6 +1160,7 @@ export class ChatModel extends Disposable implements IChatModel {
 		if (!response) {
 			response = new ChatResponseModel(
 				this.aideAgentCodeEditingService,
+				this.aideAgentPlanService,
 				[], this, undefined, undefined
 			);
 		}

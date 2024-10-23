@@ -8,7 +8,8 @@ import { MenuId } from '../../../../../platform/actions/common/actions.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { IKeybindingService } from '../../../../../platform/keybinding/common/keybinding.js';
 import { IChatProgressRenderableResponseContent } from '../../common/aideAgentModel.js';
-import { ChatPlanState, IChatPlanInfo } from '../../common/aideAgentService.js';
+import { IAideAgentPlanService } from '../../common/aideAgentPlanService.js';
+import { IChatPlanInfo } from '../../common/aideAgentService.js';
 import { ChatMarkdownContentPart } from './aideAgentMarkdownContentPart.js';
 import { AideAgentRichItem as AideAgentRichItemContent, IActionsPreviewOptions } from './aideAgentRichItem.js';
 
@@ -20,6 +21,7 @@ export class PlanContentPart extends AideAgentRichItemContent {
 		descriptionPart: ChatMarkdownContentPart | undefined,
 		@IInstantiationService instantiationService: IInstantiationService,
 		@IKeybindingService keybindingService: IKeybindingService,
+		@IAideAgentPlanService aideAgentPlanService: IAideAgentPlanService,
 	) {
 
 		const label = assignLabel(plan);
@@ -33,11 +35,13 @@ export class PlanContentPart extends AideAgentRichItemContent {
 			sessionId,
 			exchangeId,
 			menuId,
-			plan.state === ChatPlanState.Complete,
+			// changing this to true for now, we will change it back later on
+			true,
 			previewOptions,
 			descriptionPart,
 			instantiationService,
-			keybindingService
+			keybindingService,
+			aideAgentPlanService,
 		);
 	}
 
