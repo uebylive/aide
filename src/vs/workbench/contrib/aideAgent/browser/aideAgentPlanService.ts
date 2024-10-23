@@ -5,7 +5,10 @@
 
 import { Disposable, DisposableMap } from '../../../../base/common/lifecycle.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { IAideAgentPlanService, IAideAgentPlanSession } from '../common/aideAgentPlanService.js';
+import { IChatPlanInfo } from '../common/aideAgentService.js';
+import { PLAN_REVIEW_PANEL_ID, PlanReviewPane } from './aideAgentPlanReviewViewPane.js';
 
 /**
  * This creates a copy of the plan similar to what we have on the sidecar even with incremental
@@ -23,6 +26,11 @@ class AideAgentPlanSession extends Disposable implements IAideAgentPlanSession {
 		this.sessionId = sessionId;
 		this.exchangeId = exchangeId;
 	}
+
+	updatePlanInfo(planInfo: IChatPlanInfo): void {
+		// do something with the plan info over here, for now we are just figuring
+		// out the layout
+	}
 }
 
 export class AideAgentPlanService extends Disposable implements IAideAgentPlanService {
@@ -30,7 +38,10 @@ export class AideAgentPlanService extends Disposable implements IAideAgentPlanSe
 
 	private _planSessions = new DisposableMap<string, IAideAgentPlanSession>();
 
-	constructor(@IInstantiationService private readonly instantiationService: IInstantiationService) {
+	constructor(
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IViewsService private readonly viewsService: IViewsService,
+	) {
 		super();
 	}
 
@@ -45,5 +56,12 @@ export class AideAgentPlanService extends Disposable implements IAideAgentPlanSe
 		const planSession = this.instantiationService.createInstance(AideAgentPlanSession, sessionId, exchangeId);
 		this._planSessions.set(lookupKey, planSession);
 		return planSession;
+	}
+
+	async anchorPlanViewPane(sessionId: string, exchangeId: string): Promise<void> {
+		const planReviewPane = await this.viewsService.openView<PlanReviewPane>(PLAN_REVIEW_PANEL_ID);
+		if (planReviewPane) {
+			planReviewPane.anchorPlanReviewPane(sessionId, exchangeId);
+		}
 	}
 }

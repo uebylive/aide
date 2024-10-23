@@ -8,6 +8,7 @@ import { MenuId } from '../../../../../platform/actions/common/actions.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { IKeybindingService } from '../../../../../platform/keybinding/common/keybinding.js';
 import { IChatProgressRenderableResponseContent } from '../../common/aideAgentModel.js';
+import { IAideAgentPlanService } from '../../common/aideAgentPlanService.js';
 import { ChatEditsState, IChatEditsInfo } from '../../common/aideAgentService.js';
 import { ChatMarkdownContentPart } from './aideAgentMarkdownContentPart.js';
 import { AideAgentRichItem as AideAgentRichItemContent, IActionsPreviewOptions } from './aideAgentRichItem.js';
@@ -20,6 +21,7 @@ export class EditsContentPart extends AideAgentRichItemContent {
 		descriptionPart: ChatMarkdownContentPart | undefined,
 		@IInstantiationService instantiationService: IInstantiationService,
 		@IKeybindingService keybindingService: IKeybindingService,
+		@IAideAgentPlanService aideAgentPlanService: IAideAgentPlanService,
 	) {
 
 		const label = assignLabel(edits);
@@ -37,7 +39,8 @@ export class EditsContentPart extends AideAgentRichItemContent {
 			previewOptions,
 			descriptionPart,
 			instantiationService,
-			keybindingService
+			keybindingService,
+			aideAgentPlanService,
 		);
 	}
 

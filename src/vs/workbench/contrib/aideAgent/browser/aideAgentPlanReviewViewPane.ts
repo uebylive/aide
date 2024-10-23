@@ -71,6 +71,8 @@ export class PlanReviewPane extends ViewPane {
 	private tree!: WorkbenchObjectTree<ReviewTreeItem>;
 	private renderer!: ReviewListItemRenderer;
 	private readonly _codeBlockModelCollection: CodeBlockModelCollection;
+	private sessionId: string | null = null;
+	private exchangeId: string | null = null;
 
 	constructor(
 		options: IViewPaneOptions,
@@ -102,28 +104,68 @@ export class PlanReviewPane extends ViewPane {
 		};
 	}
 
+	anchorPlanReviewPane(sessionId: string, exchangeId: string) {
+		this.sessionId = sessionId;
+		this.exchangeId = exchangeId;
+		this.tree.dispose();
+		this.updateTreeItems(sessionId, exchangeId);
+	}
+
+	private updateTreeItems(sessionId: string, exchangeId: string): void {
+		let steps: ReviewTreeItem[] = getMockPlanSteps(sessionId, exchangeId);
+		if (this.sessionId && this.exchangeId) {
+			steps = getMockPlanSteps(this.sessionId, this.exchangeId);
+		}
+
+		const treeItems: ITreeElement<ReviewTreeItem>[] = steps.map(item => ({
+			element: item,
+			collapsed: false,
+			collapsible: false,
+		}));
+
+		this.tree.setChildren(null, treeItems, {
+			diffIdentityProvider: {
+				getId: (element) => element.id,
+			},
+		});
+	}
 
 	protected override renderBody(parent: HTMLElement): void {
 		try {
+			console.log('renderBody::again');
 			super.renderBody(parent);
 			this.listContainer = dom.append(parent, $(`.aide-review-plan-list-container`));
 			this.createList(this.listContainer);
 
-			const treeItems: ITreeElement<ReviewTreeItem>[] = mockPlanSteps.map(item => ({ element: item, collapsed: false, collapsible: false }));
-
-			this.tree.setChildren(null, treeItems, {
-				diffIdentityProvider: {
-					getId: (element) => element.id,
-				}
-			});
-
-			// const scopedInstantiationService = this._register(this.instantiationService.createChild(new ServiceCollection([IContextKeyService, this.scopedContextKeyService])));
-			// const locationBasedColors = this.getLocationBasedColors();
-
+			// setTimeout(() => {
+			// 	this.updateTreeItems();
+			// }, 0);
 			this._register(this.onDidChangeBodyVisibility(visible => {
-				// this._widget.setVisible(visible);
-				// Update visibility of children that need to be updated after the widget is visible
+				if (visible) {
+					this.updateTreeItems('testing', 'testing');
+				}
 			}));
+
+			// let steps: ReviewTreeItem[] = getMockPlanSteps('sss', 'bbb');
+			// if (this.sessionId && this.exchangeId) {
+			// 	steps = getMockPlanSteps(this.sessionId, this.exchangeId);
+			// }
+
+			// const treeItems: ITreeElement<ReviewTreeItem>[] = steps.map(item => ({ element: item, collapsed: false, collapsible: false }));
+
+			// this.tree.setChildren(null, treeItems, {
+			// 	diffIdentityProvider: {
+			// 		getId: (element) => element.id,
+			// 	}
+			// });
+
+			// // const scopedInstantiationService = this._register(this.instantiationService.createChild(new ServiceCollection([IContextKeyService, this.scopedContextKeyService])));
+			// // const locationBasedColors = this.getLocationBasedColors();
+
+			// this._register(this.onDidChangeBodyVisibility(visible => {
+			// 	// this._widget.setVisible(visible);
+			// 	// Update visibility of children that need to be updated after the widget is visible
+			// }));
 
 		} catch (e) {
 			this.logService.error(e);
@@ -335,14 +377,25 @@ export class ReviewListItemRenderer extends Disposable implements ITreeRenderer<
 
 	renderElement(node: ITreeNode<ReviewTreeItem, FuzzyScore>, index: number, templateData: IReviewListItemTemplate): void {
 
-		// templateData.currentElement = node.element;
-		// if (templateData.titleToolbar) {
-		// 	templateData.titleToolbar.context = node.element;
-		// }
-
-		console.log(node.element);
-
+		console.log('renderElement');
 		dom.clearNode(templateData.rowContainer);
+
+		// Create a container for the title
+		const titleElement = dom.append(templateData.rowContainer, $('.review-item-title'));
+		titleElement.textContent = node.element.title;
+
+		// If you want to render the description as well
+		if (node.element.description) {
+			const descriptionElement = dom.append(templateData.rowContainer, $('.review-item-description'));
+			const renderedMarkdown = this.renderer.render(node.element.description);
+			descriptionElement.appendChild(renderedMarkdown.element);
+		}
+
+		// Store the current element in the template data
+		templateData.currentElement = node.element;
+
+		// Update the item height after rendering
+		this.updateItemHeight(templateData);
 	}
 
 
@@ -493,40 +546,41 @@ const mockMarkdown = new MarkdownString(`To search among commit messages in Git,
 	Would you like me to explain any of these options in more detail or provide examples of more advanced search patterns?`);
 
 
-const mockPlanSteps: ReviewTreeItem[] = [{
-	title: 'Modify the TextModel',
-	description: mockMarkdown,
-	id: '1',
-	exchangeId: 'exchangeId',
-	edits: [
-		{ uri: URI.parse('file:///path/to/file1.txt'), range: Range.fromPositions({ lineNumber: 1, column: 1 }, { lineNumber: 1, column: 1 }) },
-	],
-	currentRenderedHeight: undefined,
-	isComplete: true,
-	isCanceled: false,
-},
-{
-	title: 'Add a new language feature',
-	description: mockMarkdown,
-	id: '2',
-	exchangeId: 'exchangeId',
-	edits: [
-		{ uri: URI.parse('file:///path/to/file1.txt'), range: Range.fromPositions({ lineNumber: 1, column: 1 }, { lineNumber: 1, column: 1 }) },
-	],
-	currentRenderedHeight: undefined,
-	isComplete: true,
-	isCanceled: false,
-},
-{
-	title: 'Add the status bar item',
-	description: mockMarkdown,
-	id: '3',
-	exchangeId: 'exchangeId',
-	edits: [
-		{ uri: URI.parse('file:///path/to/file1.txt'), range: Range.fromPositions({ lineNumber: 1, column: 1 }, { lineNumber: 1, column: 1 }) },
-	],
-	currentRenderedHeight: undefined,
-	isComplete: true,
-	isCanceled: false,
-}];
-
+function getMockPlanSteps(sessionId: string, exchangeId: string): ReviewTreeItem[] {
+	return [{
+		title: `${sessionId}-${exchangeId}-Modify the TextModel`,
+		description: mockMarkdown,
+		id: '1',
+		exchangeId: 'exchangeId',
+		edits: [
+			{ uri: URI.parse('file:///path/to/file1.txt'), range: Range.fromPositions({ lineNumber: 1, column: 1 }, { lineNumber: 1, column: 1 }) },
+		],
+		currentRenderedHeight: undefined,
+		isComplete: true,
+		isCanceled: false,
+	},
+	{
+		title: `${sessionId}-${exchangeId}-Add a new language feature`,
+		description: mockMarkdown,
+		id: '2',
+		exchangeId: 'exchangeId',
+		edits: [
+			{ uri: URI.parse('file:///path/to/file1.txt'), range: Range.fromPositions({ lineNumber: 1, column: 1 }, { lineNumber: 1, column: 1 }) },
+		],
+		currentRenderedHeight: undefined,
+		isComplete: true,
+		isCanceled: false,
+	},
+	{
+		title: `${sessionId}-${exchangeId}-SomethingElseOverHere`,
+		description: mockMarkdown,
+		id: '3',
+		exchangeId: 'exchangeId',
+		edits: [
+			{ uri: URI.parse('file:///path/to/file1.txt'), range: Range.fromPositions({ lineNumber: 1, column: 1 }, { lineNumber: 1, column: 1 }) },
+		],
+		currentRenderedHeight: undefined,
+		isComplete: true,
+		isCanceled: false,
+	}];
+}
