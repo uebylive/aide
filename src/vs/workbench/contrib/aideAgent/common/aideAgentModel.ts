@@ -5,6 +5,7 @@
 
 import { asArray } from '../../../../base/common/arrays.js';
 import { DeferredPromise } from '../../../../base/common/async.js';
+import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
 import { IMarkdownString, MarkdownString, isMarkdownString } from '../../../../base/common/htmlContent.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
@@ -26,7 +27,7 @@ import { IAideAgentCodeEditingService, IAideAgentCodeEditingSession } from './ai
 import { IAideAgentEdits } from './aideAgentEditingSession.js';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from './aideAgentParserTypes.js';
 import { IAideAgentPlanService, IAideAgentPlanSession } from './aideAgentPlanService.js';
-import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatCommandGroup, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanInfo, IChatPlanStep, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatStreamingState, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
+import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IAideAgentService, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatCommandGroup, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanInfo, IChatPlanStep, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatStreamingState, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
 import { IChatRequestVariableValue } from './aideAgentVariables.js';
 
 export function isRequestModel(item: unknown): item is IChatRequestModel {
@@ -869,6 +870,10 @@ export class ChatModel extends Disposable implements IChatModel {
 	private _exchanges: IChatExchangeModel[];
 	private _initState: ChatModelInitState = ChatModelInitState.Created;
 	private _isInitializedDeferred = new DeferredPromise<void>();
+	// this is kinda similar to threads in a way if you think about it??
+	// cause each chat model can have children chat models which are shown over here
+	private _planChatModels: Map<string, ChatModel> = new Map();
+	private _planChatResponseModels: Map<string, ChatResponseModel> = new Map();
 
 	private _welcomeMessage: ChatWelcomeMessageModel | undefined;
 	get welcomeMessage(): ChatWelcomeMessageModel | undefined {
@@ -962,7 +967,11 @@ export class ChatModel extends Disposable implements IChatModel {
 		private readonly initialData: ISerializableChatData | IExportableChatData | undefined,
 		private readonly _initialLocation: ChatAgentLocation,
 		readonly isPassthrough: boolean,
+		// used to force a certain session id on the chatmodel, use it at your own risk
+		// we are using it now to set the sessionId for the planreview pane over here
+		readonly forcedSessionId: string | null,
 		@ILogService private readonly logService: ILogService,
+		@IAideAgentService private readonly aideAgentService: IAideAgentService,
 		@IAideAgentAgentService private readonly chatAgentService: IAideAgentAgentService,
 		@IAideAgentCodeEditingService private readonly aideAgentCodeEditingService: IAideAgentCodeEditingService,
 		@IAideAgentPlanService private readonly aideAgentPlanService: IAideAgentPlanService,
@@ -971,7 +980,11 @@ export class ChatModel extends Disposable implements IChatModel {
 		super();
 
 		this._isImported = (!!initialData && !isSerializableSessionData(initialData)) || (initialData?.isImported ?? false);
-		this._sessionId = (isSerializableSessionData(initialData) && initialData.sessionId) || generateUuid();
+		if (forcedSessionId) {
+			this._sessionId = forcedSessionId;
+		} else {
+			this._sessionId = (isSerializableSessionData(initialData) && initialData.sessionId) || generateUuid();
+		}
 		this._exchanges = initialData ? this._deserialize(initialData) : [];
 		this._creationDate = (isSerializableSessionData(initialData) && initialData.creationDate) || Date.now();
 		this._lastMessageDate = (isSerializableSessionData(initialData) && initialData.lastMessageDate) || this._creationDate;
@@ -1146,6 +1159,68 @@ export class ChatModel extends Disposable implements IChatModel {
 		this._onDidChange.fire({ kind: 'changedRequest', request });
 	}
 
+	/**
+	 * Handles IChatPlanStep which has deltas streaming in continously, we have total
+	 * control over how to render the plan properly. Of course we can create rich elemnts etc for this
+	 * which is all good
+	 */
+	acceptPlanStepInfo(progress: IChatPlanStep) {
+		if (progress.kind !== 'planStep') {
+			return;
+		}
+		const planId = `${progress.sessionId}-${progress.exchangeId}`;
+		let planMaybe = this._planChatModels.get(planId);
+		if (planMaybe === undefined) {
+			planMaybe = this.aideAgentService.startSessionWithId(ChatAgentLocation.Notebook, CancellationToken.None, planId);
+			if (planMaybe === undefined) {
+				return;
+			}
+			this._planChatModels.set(planId, planMaybe);
+		}
+		// if its still empty.. boy oh boy
+		if (planMaybe === undefined) {
+			return;
+		}
+
+		const currentProgressIndex = progress.index;
+
+		// We do not have enough entries in our session for this... awkward
+		if (currentProgressIndex > planMaybe.getExchanges().length - 1) {
+			// if there is a previous plan response which is going on, we can safely cancel it over here
+			const previousResponseModel = this._planChatResponseModels.get(`${planId}-${planMaybe.getExchanges().length - 1}`);
+			if (previousResponseModel) {
+				// complete the previous step over here
+				previousResponseModel.complete();
+			}
+			// if this is the first entry we will have a title over here
+			const response = planMaybe.addResponse();
+			this._planChatResponseModels.set(`${planId}-${currentProgressIndex}`, response);
+			planMaybe.acceptResponseProgress(response, {
+				'kind': 'markdownContent',
+				content: new MarkdownString(`## ${progress.title}\n`)
+			});
+			// do not mark this as complete yet.. we are not done
+			return;
+		}
+
+		if (currentProgressIndex === planMaybe.getExchanges().length - 1) {
+			// extra dumb logic here but esentially what we are going to do is the following
+			// update the markdown content for the plan over here
+			// we want to get back the response over here so we can send more events to it
+			const responseModel = this._planChatResponseModels.get(`${planId}-${currentProgressIndex}`);
+			if (progress.descriptionDelta) {
+				planMaybe.acceptResponseProgress(responseModel, {
+					'kind': 'markdownContent',
+					content: progress.descriptionDelta,
+				});
+			}
+		}
+
+		// For now we can also make sure that we bring the review pane over here into the view
+		// automagically since the plan is getting generated
+		this.aideAgentPlanService.anchorPlanViewPane(progress.sessionId, progress.exchangeId);
+	}
+
 	acceptResponseProgress(response: ChatResponseModel | undefined, progress: IChatProgress, quiet?: boolean): void {
 		/*
 		if (!request.response) {
@@ -1171,6 +1246,10 @@ export class ChatModel extends Disposable implements IChatModel {
 			this._lastStreamingState = undefined;
 		}
 
+		if (progress.kind === 'planStep') {
+			this.acceptPlanStepInfo(progress);
+		}
+
 		if (progress.kind === 'markdownContent' ||
 			progress.kind === 'treeData' ||
 			progress.kind === 'inlineReference' ||
@@ -1182,8 +1261,7 @@ export class ChatModel extends Disposable implements IChatModel {
 			progress.kind === 'textEdit' ||
 			progress.kind === 'warning' ||
 			progress.kind === 'progressTask' ||
-			progress.kind === 'confirmation' ||
-			progress.kind === 'planStep'
+			progress.kind === 'confirmation'
 		) {
 			response.updateContent(progress, quiet);
 		} else if (progress.kind === 'usedContext' || progress.kind === 'reference') {

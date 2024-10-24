@@ -264,6 +264,7 @@ export interface IChatPlanInfo {
 
 export interface IChatPlanStep {
 	description: IMarkdownString;
+	descriptionDelta: IMarkdownString | null;
 	sessionId: string;
 	exchangeId: string;
 	title: string;
@@ -496,6 +497,7 @@ export interface IAideAgentService {
 
 	isEnabled(location: ChatAgentLocation): boolean;
 	hasSessions(): boolean;
+	startSessionWithId(location: ChatAgentLocation, token: CancellationToken, sessionId: string, isPassthrough?: boolean): ChatModel | undefined;
 	startSession(location: ChatAgentLocation, token: CancellationToken, isPassthrough?: boolean): ChatModel | undefined;
 	getSession(sessionId: string): IChatModel | undefined;
 	getOrRestoreSession(sessionId: string): IChatModel | undefined;
