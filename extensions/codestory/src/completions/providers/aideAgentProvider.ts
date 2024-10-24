@@ -647,6 +647,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				// we also have a plan step description updated event which we are going
 				// to handle on the review panel
 				if (event.event.PlanEvent.PlanStepTitleAdded) {
+					// we still want to send the planInfo over here (we should check
+					// why the rendering is so slow for this... weird reason)
 					responseStream?.stream.planInfo({
 						exchangeId,
 						sessionId,
@@ -663,16 +665,18 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						exchangeId: event.event.PlanEvent.PlanStepTitleAdded.exchange_id,
 						isLast: false,
 						title: event.event.PlanEvent.PlanStepTitleAdded.title,
+						descriptionDelta: null,
 					});
 				}
-				if (event.event.PlanEvent.PlanStepCompleteAdded) {
+				if (event.event.PlanEvent.PlanStepDescriptionUpdate) {
 					responseStream?.stream.step({
-						description: event.event.PlanEvent.PlanStepCompleteAdded.description,
-						index: event.event.PlanEvent.PlanStepCompleteAdded.index,
+						description: event.event.PlanEvent.PlanStepDescriptionUpdate.description_up_until_now,
+						index: event.event.PlanEvent.PlanStepDescriptionUpdate.index,
 						sessionId,
-						exchangeId: event.event.PlanEvent.PlanStepCompleteAdded.exchange_id,
+						exchangeId: event.event.PlanEvent.PlanStepDescriptionUpdate.exchange_id,
 						isLast: false,
-						title: event.event.PlanEvent.PlanStepCompleteAdded.title,
+						title: '',
+						descriptionDelta: event.event.PlanEvent.PlanStepDescriptionUpdate.delta,
 					});
 				}
 			} else if (event.event.ExchangeEvent) {

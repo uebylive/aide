@@ -852,7 +852,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 			// This is also tied to just the edit and to nothing else right now
 			// which kind of feels weird ngl
-			let agentScope = AgentScope.PinnedContext;
+			let agentScope = this.inputPart.currentAgentScope;
 			// If we are inPassthrough which implies a floating widget then
 			// our scope is always Selection
 			if ('isPassthrough' in this.viewContext && this.viewContext.isPassthrough) {

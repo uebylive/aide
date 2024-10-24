@@ -4733,6 +4733,7 @@ export enum AideButtonLook {
 
 export class AideAgentResponsePlanPart {
 	description: string | vscode.MarkdownString;
+	descriptionDelta: string | vscode.MarkdownString | null;
 	sessionId: string;
 	exchangeId: string;
 	index: number;
@@ -4740,6 +4741,7 @@ export class AideAgentResponsePlanPart {
 	title: string;
 	constructor(step: vscode.AideChatStep) {
 		this.description = step.description;
+		this.descriptionDelta = step.descriptionDelta;
 		this.sessionId = step.sessionId;
 		this.exchangeId = step.exchangeId;
 		this.index = step.index;

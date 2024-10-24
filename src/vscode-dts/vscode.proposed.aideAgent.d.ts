@@ -112,6 +112,10 @@ declare module 'vscode' {
 		 * The title of the step in the plan
 		 */
 		readonly title: string;
+		/**
+		 * Progressive update on the description over here
+		 */
+		readonly descriptionDelta: string | MarkdownString | null;
 	}
 
 
