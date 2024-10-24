@@ -564,7 +564,11 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					// even with the search and replace blocks we do want to show it
 					// to the user
 					if (editEvent.ThinkingForEdit.delta) {
-						responseStream.stream.markdown(new vscode.MarkdownString(editEvent.ThinkingForEdit.delta));
+						responseStream.stream.thinkingForEdit({
+							exchangeId,
+							sessionId,
+							thinkingDelta: editEvent.ThinkingForEdit.delta
+						});
 					}
 					if (editEvent.RangeSelectionForEdit) {
 						// response.breakdown({
