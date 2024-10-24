@@ -222,6 +222,13 @@ export enum ChatStreamingState {
 	Generating = 'generating',
 }
 
+export interface IChatThinkingForEditPart {
+	kind: 'thinkingForEdit';
+	sessionId: string;
+	exchangeId: string;
+	thinkingDelta: IMarkdownString;
+}
+
 export interface IChatStreamingState {
 	kind: 'streamingState';
 	state: `${ChatStreamingState}`;

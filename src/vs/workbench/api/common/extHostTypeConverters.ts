@@ -38,7 +38,7 @@ import { DEFAULT_EDITOR_ASSOCIATION, SaveReason } from '../../common/editor.js';
 import { IViewBadge } from '../../common/views.js';
 import { IChatAgentRequest as IAideAgentRequest } from '../../contrib/aideAgent/common/aideAgentAgents.js';
 import { AgentMode, AgentScope, AgentSessionExchangeUserAction } from '../../contrib/aideAgent/common/aideAgentModel.js';
-import { IChatEditsInfo, IChatEndResponse, IChatPlanStep, IChatCommandButton as IAideChatCommandButton, IChatCommandGroup, IChatStreamingState, IChatPlanInfo } from '../../contrib/aideAgent/common/aideAgentService.js';
+import { IChatEditsInfo, IChatEndResponse, IChatPlanStep, IChatCommandButton as IAideChatCommandButton, IChatCommandGroup, IChatStreamingState, IChatPlanInfo, IChatThinkingForEditPart } from '../../contrib/aideAgent/common/aideAgentService.js';
 import { ChatAgentLocation, IChatAgentRequest, IChatAgentResult } from '../../contrib/chat/common/chatAgents.js';
 import { IChatRequestVariableEntry } from '../../contrib/chat/common/chatModel.js';
 import { IChatAgentDetection, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatMarkdownContent, IChatMoveMessage, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatTaskDto, IChatTaskResult, IChatTextEdit, IChatTreeData, IChatUserActionEvent, IChatWarningMessage } from '../../contrib/chat/common/chatService.js';
@@ -2974,6 +2974,17 @@ export namespace AideAgentResponsePlanInfoPart {
 			sessionId: part.sessionId,
 			exchangeId: part.exchangeId,
 			description: part.description ? MarkdownString.from(part.description) : undefined
+		};
+	}
+}
+
+export namespace AideAgentThinkingForEditPart {
+	export function from(part: types.AideAgentThinkingForEditPart): Dto<IChatThinkingForEditPart> {
+		return {
+			kind: 'thinkingForEdit',
+			sessionId: part.sessionId,
+			exchangeId: part.exchangeId,
+			thinkingDelta: MarkdownString.from(part.thinkingDelta),
 		};
 	}
 }

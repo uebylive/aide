@@ -142,6 +142,11 @@ declare module 'vscode' {
 		readonly exchangeId: string;
 	}
 
+	export interface AideAgentThinkingForEdit {
+		readonly exchangeId: string;
+		readonly sessionId: string;
+		readonly thinkingDelta: string;
+	}
 
 	export interface AideAgentEditsInfo {
 		/*
@@ -201,6 +206,7 @@ declare module 'vscode' {
 		codeEdit(edits: WorkspaceEdit): void;
 		step(step: AideChatStep): void;
 		push(part: AideAgentResponsePart): void;
+		thinkingForEdit(part: AideAgentThinkingForEdit): void;
 		close(): void;
 	}
 
