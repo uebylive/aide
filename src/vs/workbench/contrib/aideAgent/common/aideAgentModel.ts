@@ -1164,6 +1164,51 @@ export class ChatModel extends Disposable implements IChatModel {
 		this._onDidChange.fire({ kind: 'changedRequest', request });
 	}
 
+
+	acceptThinkingForEdit(progress: IChatThinkingForEditPart) {
+		if (progress.kind !== 'thinkingForEdit') {
+			return;
+		}
+		const planId = `${progress.sessionId}-${progress.exchangeId}`;
+		let planMaybe = this._planChatModels.get(planId);
+		if (planMaybe === undefined) {
+			planMaybe = this.aideAgentService.startSessionWithId(ChatAgentLocation.Notebook, CancellationToken.None, planId);
+			if (planMaybe === undefined) {
+				return;
+			}
+			this._planChatModels.set(planId, planMaybe);
+		}
+		// if its still empty.. boy oh boy
+		if (planMaybe === undefined) {
+			return;
+		}
+
+		// No running exchanges, implies we have not started showing this information to the user
+		if (planMaybe.getExchanges().length === 0) {
+			const response = planMaybe.addResponse();
+			this._planChatResponseModels.set(planId, response);
+			// push the progress over here as markdown
+			planMaybe.acceptResponseProgress(response,
+				{
+					'kind': 'markdownContent',
+					content: progress.thinkingDelta,
+				}
+			);
+		} else {
+			const responseModel = this._planChatResponseModels.get(planId);
+			if (responseModel === undefined) {
+				return;
+			}
+			planMaybe.acceptResponseProgress(responseModel, {
+				'kind': 'markdownContent',
+				content: progress.thinkingDelta,
+			});
+		}
+
+		// Bring the plan view pane to the view of the user
+		this.aideAgentPlanService.anchorPlanViewPane(progress.sessionId, progress.exchangeId);
+	}
+
 	/**
 	 * Handles IChatPlanStep which has deltas streaming in continously, we have total
 	 * control over how to render the plan properly. Of course we can create rich elemnts etc for this
@@ -1251,8 +1296,15 @@ export class ChatModel extends Disposable implements IChatModel {
 			this._lastStreamingState = undefined;
 		}
 
+		// These events are special as they directed towards the side panel
+		// as well, so we have to send the right notification over here
 		if (progress.kind === 'planStep') {
 			this.acceptPlanStepInfo(progress);
+			return;
+		}
+
+		if (progress.kind === 'thinkingForEdit') {
+			this.acceptThinkingForEdit(progress);
 			return;
 		}
 
