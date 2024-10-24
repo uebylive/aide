@@ -1248,6 +1248,7 @@ export class ChatModel extends Disposable implements IChatModel {
 
 		if (progress.kind === 'planStep') {
 			this.acceptPlanStepInfo(progress);
+			return;
 		}
 
 		if (progress.kind === 'markdownContent' ||

@@ -676,7 +676,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						exchangeId: event.event.PlanEvent.PlanStepDescriptionUpdate.exchange_id,
 						isLast: false,
 						title: '',
-						descriptionDelta: event.event.PlanEvent.PlanStepDescriptionUpdate.delta,
+						descriptionDelta: `\n${event.event.PlanEvent.PlanStepDescriptionUpdate.delta}`,
 					});
 				}
 			} else if (event.event.ExchangeEvent) {
