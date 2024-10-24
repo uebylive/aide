@@ -42,7 +42,7 @@ import { IChatCodeCitations, IChatCodeEdits, IChatReferences, IChatRendererConte
 import { annotateSpecialMarkdownContent } from '../common/annotations.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
 import { MarkUnhelpfulActionId } from './actions/aideAgentTitleActions.js';
-import { ChatTreeItem, GeneratingPhrase, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions, IChatPlanStepsInfo } from './aideAgent.js';
+import { ChatTreeItem, GeneratingPhrase, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions, IChatPlanStepsInfo, IEditPreviewCodeBlockInfo } from './aideAgent.js';
 import { ChatAttachmentsContentPart } from './aideAgentContentParts/aideAgentAttachmentsContentPart.js';
 import { ChatCodeCitationContentPart } from './aideAgentContentParts/aideAgentCodeCitationContentPart.js';
 import { AideAgentCodeEditContentPart, CodeEditsPool } from './aideAgentContentParts/aideAgentCodeEditParts.js';
@@ -102,6 +102,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 	private readonly codeBlocksByResponseId = new Map<string, IChatCodeBlockInfo[]>();
 	private readonly codeBlocksByEditorUri = new ResourceMap<IChatCodeBlockInfo>();
+	private readonly editPreviewBlocksByResponseId = new Map<string, IEditPreviewCodeBlockInfo[]>();
 
 	private readonly fileTreesByResponseId = new Map<string, IChatFileTreeInfo[]>();
 	private readonly focusedFileTreesByResponseId = new Map<string, number>();
@@ -829,7 +830,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 				codeBlockStartIndex = codeBlockStartIndex + value.getCodeBlocksPresent();
 			} else {
 				if (value instanceof ChatMarkdownContentPart) {
-					codeBlockStartIndex = codeBlockStartIndex + value.codeblocks.length;
+					codeBlockStartIndex = codeBlockStartIndex + value.codeblocks.length + value.editPreviewBlocks.length;
 				}
 			}
 		}
@@ -841,6 +842,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			this.updateItemHeight(templateData);
 		}));
 
+		// Code blocks
 		const codeBlocksByResponseId = this.codeBlocksByResponseId.get(element.id) ?? [];
 		this.codeBlocksByResponseId.set(element.id, codeBlocksByResponseId);
 		markdownPart.addDisposable(toDisposable(() => {
@@ -868,6 +870,25 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 					}
 				}));
 			}
+		});
+
+		// Edit previews
+		const editPreviewBlocksByResponseId = this.editPreviewBlocksByResponseId.get(element.id) ?? [];
+		this.editPreviewBlocksByResponseId.set(element.id, editPreviewBlocksByResponseId);
+		markdownPart.addDisposable(toDisposable(() => {
+			const editPreviewBlocksByResponseId = this.editPreviewBlocksByResponseId.get(element.id);
+			if (editPreviewBlocksByResponseId) {
+				markdownPart.editPreviewBlocks.forEach((info, i) => {
+					const editPreviewBlock = editPreviewBlocksByResponseId[codeBlockStartIndex + i];
+					if (editPreviewBlock?.ownerMarkdownPartId === markdownPartId) {
+						delete editPreviewBlocksByResponseId[codeBlockStartIndex + i];
+					}
+				});
+			}
+		}));
+
+		markdownPart.editPreviewBlocks.forEach((info, i) => {
+			editPreviewBlocksByResponseId[codeBlockStartIndex + i] = info;
 		});
 
 		return markdownPart;

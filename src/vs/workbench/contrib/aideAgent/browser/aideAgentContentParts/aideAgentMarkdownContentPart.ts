@@ -20,7 +20,7 @@ import { IChatProgressRenderableResponseContent } from '../../common/aideAgentMo
 import { isRequestVM, isResponseVM } from '../../common/aideAgentViewModel.js';
 import { IMarkdownVulnerability } from '../../common/annotations.js';
 import { CodeBlockModelCollection } from '../../common/codeBlockModelCollection.js';
-import { IChatCodeBlockInfo, IChatListItemRendererOptions } from '../aideAgent.js';
+import { IChatCodeBlockInfo, IChatListItemRendererOptions, IEditPreviewCodeBlockInfo } from '../aideAgent.js';
 import { IChatRendererDelegate } from '../aideAgentListRenderer.js';
 import { ChatMarkdownDecorationsRenderer } from '../aideAgentMarkdownDecorationsRenderer.js';
 import { ChatEditorOptions } from '../aideAgentOptions.js';
@@ -46,6 +46,7 @@ export class ChatMarkdownContentPart extends Disposable implements IChatContentP
 	public readonly onDidChangeHeight = this._onDidChangeHeight.event;
 
 	public readonly codeblocks: IChatCodeBlockInfo[] = [];
+	public readonly editPreviewBlocks: IEditPreviewCodeBlockInfo[] = [];
 
 	private extractUriFromMarkdown(markdown: string): URI | undefined {
 		const lines = markdown.split('\n');
@@ -113,8 +114,17 @@ export class ChatMarkdownContentPart extends Disposable implements IChatContentP
 						modified: { model: modified, text: editPreviewBlock.modified, codeBlockIndex: modifiedIndex }
 					}, currentWidth);
 					this.allEditPreviewRefs.push(ref);
+
 					this._register(ref.object.onDidChangeContentHeight(() => this._onDidChangeHeight.fire()));
 
+					const ownerMarkdownPartId = this.id;
+					const info: IEditPreviewCodeBlockInfo = new class {
+						readonly ownerMarkdownPartId = ownerMarkdownPartId;
+						readonly element = element;
+					}();
+					this.editPreviewBlocks.push(info);
+
+					orderedDisposablesList.push(ref);
 					return ref.object.element;
 				}
 
@@ -211,9 +221,9 @@ export class ChatMarkdownContentPart extends Disposable implements IChatContentP
 			original = contentAfterStart.slice(0, separatorIndex).trim();
 			modified = contentAfterStart.slice(separatorIndex + separatorMarker.length).trim();
 		} else {
-			// Partial block with only start, treat as modified
+			// Partial block with only start
 			console.log('partial block with only start, treat as modified');
-			modified = contentAfterStart.trim();
+			original = contentAfterStart.trim();
 		}
 
 		return { original, modified };
