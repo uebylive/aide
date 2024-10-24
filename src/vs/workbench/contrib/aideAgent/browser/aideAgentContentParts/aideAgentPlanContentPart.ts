@@ -55,12 +55,14 @@ export class PlanContentPart extends AideAgentRichItemContent {
 
 function assignLabel(plan: IChatPlanInfo): string {
 	switch (plan.state) {
-		case 'started':
+		case 'Started':
 			return localize('agent.planStarted', "Started Planning");
 		case 'Complete':
 			return localize('agent.planComplete', "Planning Complete");
-		case 'cancelled':
+		case 'Cancelled':
 			return localize('agent.planCancelled', "Plan Cancelled");
+		case 'InReview':
+			return localize('angent.planInReview', "Plan InReview");
 		default:
 			throw new Error('Invalid state');
 	}
@@ -68,12 +70,14 @@ function assignLabel(plan: IChatPlanInfo): string {
 
 function assignIcon(plan: IChatPlanInfo): string {
 	switch (plan.state) {
-		case 'started':
+		case 'Started':
 			return 'micro/bolt';
 		case 'Complete':
 			return 'micro/check-circle';
-		case 'cancelled':
+		case 'Cancelled':
 			return 'micro/x-mark';
+		case 'InReview':
+			return 'micro/bolt';
 		default:
 			throw new Error('Invalid state');
 	}
@@ -86,7 +90,7 @@ function assignMenuAndPreviewOptions(edits: IChatPlanInfo): { menuId: MenuId | n
 	const startLabel: string = 'Planning';
 
 	switch (edits.state) {
-		case 'started':
+		case 'Started':
 			menuId = MenuId.AideAgentPlanLoading;
 			previewOptions = { startLabel, start: -2, end: -1 };
 			break;
@@ -94,9 +98,12 @@ function assignMenuAndPreviewOptions(edits: IChatPlanInfo): { menuId: MenuId | n
 			menuId = MenuId.AideAgentPlanReview;
 			previewOptions = { startLabel, start: -2, end: -1 };
 			break;
-		case 'cancelled':
+		case 'Cancelled':
 			menuId = MenuId.AideAgentEditsCompleted;
 			break;
+		case 'InReview':
+			menuId = MenuId.AideAgentPlanReview;
+			previewOptions = { startLabel, start: -2, end: -1 };
 		default:
 			break;
 	}

@@ -245,9 +245,10 @@ export enum ChatEditsState {
 
 
 export enum ChatPlanState {
-	Started = 'started',
+	Started = 'Started',
 	Complete = 'Complete',
-	Cancelled = 'cancelled',
+	Cancelled = 'Cancelled',
+	InReview = 'InReview',
 }
 
 export interface IChatEditsInfo {
