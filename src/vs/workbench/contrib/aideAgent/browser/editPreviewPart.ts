@@ -4,7 +4,6 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from '../../../../base/browser/dom.js';
-import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
 import { combinedDisposable, Disposable, MutableDisposable } from '../../../../base/common/lifecycle.js';
 import { URI } from '../../../../base/common/uri.js';
@@ -195,7 +194,7 @@ export class EditPreviewBlockPart extends Disposable {
 		};
 	}
 
-	async render(data: IEditPreviewBlockData, width: number, token: CancellationToken) {
+	async render(data: IEditPreviewBlockData, width: number) {
 		if (data.parentContextKeyService) {
 			this.contextKeyService.updateParent(data.parentContextKeyService);
 		}
@@ -206,7 +205,7 @@ export class EditPreviewBlockPart extends Disposable {
 			this.layout(width);
 		}
 
-		await this.updateEditor(data, token);
+		await this.updateEditor(data);
 
 		this.layout(width);
 		this.diffEditor.updateOptions({ ariaLabel: localize('chat.editPreviewBlockLabel', "Edit Preview") });
@@ -218,7 +217,7 @@ export class EditPreviewBlockPart extends Disposable {
 		});
 	}
 
-	private async updateEditor(data: IEditPreviewBlockData, token: CancellationToken): Promise<void> {
+	private async updateEditor(data: IEditPreviewBlockData): Promise<void> {
 		if (!isResponseVM(data.element)) {
 			return;
 		}
@@ -227,11 +226,7 @@ export class EditPreviewBlockPart extends Disposable {
 		const modified = (await data.modified.model).textEditorModel;
 
 		const viewModel = this.diffEditor.createViewModel({ original, modified });
-		// await viewModel.waitForDiff();
-
-		if (token.isCancellationRequested) {
-			return;
-		}
+		await viewModel.waitForDiff();
 
 		const listener = Event.any(original.onWillDispose, modified.onWillDispose)(() => {
 			// this a bit weird and basically duplicates https://github.com/microsoft/vscode/blob/7cbcafcbcc88298cfdcd0238018fbbba8eb6853e/src/vs/editor/browser/widget/diffEditor/diffEditorWidget.ts#L328

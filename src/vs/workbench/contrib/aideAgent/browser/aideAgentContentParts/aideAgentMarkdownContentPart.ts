@@ -4,7 +4,6 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from '../../../../../base/browser/dom.js';
-import { CancellationToken } from '../../../../../base/common/cancellation.js';
 import { Emitter } from '../../../../../base/common/event.js';
 import { IMarkdownString } from '../../../../../base/common/htmlContent.js';
 import { Disposable, IDisposable } from '../../../../../base/common/lifecycle.js';
@@ -212,17 +211,14 @@ export class ChatMarkdownContentPart extends Disposable implements IChatContentP
 
 		if (separatorIndex !== -1 && endIndex !== -1) {
 			// Full block with both search and replace
-			console.log('full block with both search and replace');
 			original = contentAfterStart.slice(0, separatorIndex).trim();
 			modified = contentAfterStart.slice(separatorIndex + separatorMarker.length, endIndex).trim();
 		} else if (separatorIndex !== -1) {
 			// Separator exists but end doesn't
-			console.log('separator exists but end doesn\'t');
 			original = contentAfterStart.slice(0, separatorIndex).trim();
 			modified = contentAfterStart.slice(separatorIndex + separatorMarker.length).trim();
 		} else {
 			// Partial block with only start
-			console.log('partial block with only start, treat as modified');
 			original = contentAfterStart.trim();
 		}
 
@@ -252,7 +248,7 @@ export class ChatMarkdownContentPart extends Disposable implements IChatContentP
 			this.codeBlockModelCollection.update(data.element.sessionId, data.element, data.modified.codeBlockIndex, { text: data.modified.text, languageId: data.languageId });
 		}
 
-		editPreviewEditorInfo.render(data, currentWidth, CancellationToken.None);
+		editPreviewEditorInfo.render(data, currentWidth);
 		return ref;
 	}
 
