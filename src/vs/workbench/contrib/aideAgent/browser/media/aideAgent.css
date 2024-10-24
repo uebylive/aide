@@ -351,6 +351,23 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	border-radius: 4px;
 }
 
+.aideagent-item-container > .value > .aideagent-codeedit-list {
+	border: 1px solid var(--vscode-chat-requestBorder, var(--vscode-input-background));
+	border-radius: 4px;
+	padding: 2px;
+}
+
+.aideagent-item-container > .value > .aideagent-codeedit-list .monaco-list-row .monaco-icon-label-container {
+	display: flex;
+	padding-right: 2px;
+}
+
+.aideagent-item-container > .value > .aideagent-codeedit-list .monaco-list-row .monaco-icon-label-container > .monaco-icon-description-container {
+	flex-grow: 1;
+	display: flex;
+	justify-content: end;
+}
+
 .aideagent-item-container.interactive-item-compact {
 	padding: 8px 20px;
 }
