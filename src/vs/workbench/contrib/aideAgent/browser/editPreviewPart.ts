@@ -84,8 +84,7 @@ export class EditPreviewBlockPart extends Disposable {
 		const editorElement = dom.append(this.element, $('.interactive-result-editor'));
 		this.diffEditor = this.createDiffEditor(scopedInstantiationService, editorElement, {
 			...getSimpleEditorOptions(this.configurationService),
-			lineNumbers: 'on',
-			selectOnLineNumbers: true,
+			lineNumbers: 'off',
 			scrollBeyondLastLine: false,
 			lineDecorationsWidth: 12,
 			dragAndDrop: false,
@@ -166,7 +165,7 @@ export class EditPreviewBlockPart extends Disposable {
 			originalAriaLabel: localize('original', 'Original'),
 			modifiedAriaLabel: localize('modified', 'Modified'),
 			diffAlgorithm: 'advanced',
-			readOnly: false,
+			readOnly: true,
 			isInEmbeddedEditor: true,
 			useInlineViewWhenSpaceIsLimited: true,
 			experimental: {
@@ -177,7 +176,6 @@ export class EditPreviewBlockPart extends Disposable {
 			compactMode: true,
 			hideUnchangedRegions: { enabled: true, contextLineCount: 1 },
 			renderGutterMenu: false,
-			lineNumbersMinChars: 1,
 			...options
 		}, { originalEditor: widgetOptions, modifiedEditor: widgetOptions }));
 	}
