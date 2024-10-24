@@ -726,6 +726,9 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		} else if (content.kind === 'planStep') {
 			// @g-danna This will be deprecated soon
 			return this.renderPlanStep(content, templateData, context);
+		} else if (content.kind === 'thinkingForEdit') {
+			// thinking for edit uses the markdown rendering
+			return this.renderMarkdown(content.thinkingDelta, templateData, context);
 		}
 
 		return undefined;

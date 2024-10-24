@@ -308,7 +308,8 @@ export type IChatProgress =
 	| IChatPlanInfo
 	| IChatEditsInfo
 	| IChatPlanStep
-	| IChatEndResponse;
+	| IChatEndResponse
+	| IChatThinkingForEditPart;
 
 export interface IChatFollowup {
 	kind: 'reply';
