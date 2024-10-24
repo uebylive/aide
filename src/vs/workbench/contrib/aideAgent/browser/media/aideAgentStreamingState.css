@@ -32,7 +32,7 @@
 	margin-left: 0px;
 	height: 16px;
 	overflow: hidden;
-	transition: width 0.2s ease, margin-right 0.2 ease;
+	transition: width 0.5s ease, margin-right 0.5s ease;
 }
 
 .aide-streaming-state.aide-streaming-state-error .aide-streaming-state-icon {

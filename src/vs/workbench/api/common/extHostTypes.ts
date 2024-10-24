@@ -4714,8 +4714,11 @@ export enum AideAgentEditsState {
 }
 
 export enum AideAgentStreamingStateEnum {
-	GeneralLoading = 'generalLoading',
+	Loading = 'loading',
 	WaitingFeedback = 'waitingFeedback',
+}
+
+export enum AideAgentStreamingStateLoadingLabel {
 	UnderstandingRequest = 'understandingRequest',
 	ExploringCodebase = 'exploringCodebase',
 	Reasoning = 'reasoning',
@@ -4812,10 +4815,16 @@ export class AideAgentThinkingForEditPart {
 
 export class AideAgentResponseStreamingStatePart {
 	state: vscode.AideAgentStreamingStateType;
+	loadingLabel?: vscode.AideAgentStreamingStateLoadingLabelType;
+	exchangeId: string;
+	sessionId: string;
 	isError: boolean;
 	message?: string;
 	constructor(step: vscode.AideAgentStreamingState) {
 		this.state = step.state;
+		this.loadingLabel = step.loadingLabel;
+		this.exchangeId = step.exchangeId;
+		this.sessionId = step.sessionId;
 		this.isError = step.isError;
 		this.message = step.message;
 	}

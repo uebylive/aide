@@ -2994,6 +2994,9 @@ export namespace AideAgentResponseStreamingStatePart {
 		return {
 			kind: 'streamingState',
 			state: part.state,
+			loadingLabel: part.loadingLabel,
+			sessionId: part.sessionId,
+			exchangeId: part.exchangeId,
 			isError: part.isError,
 			message: part.message,
 		};

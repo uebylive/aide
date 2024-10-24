@@ -8,8 +8,9 @@ import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions
 import { localize2 } from '../../../../../nls.js';
 import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
 import { IAideAgentCodeEditingService } from '../../common/aideAgentCodeEditingService.js';
+import { CONTEXT_STREAMING_STATE } from '../../common/aideAgentContextKeys.js';
 import { IAideAgentPlanService } from '../../common/aideAgentPlanService.js';
-import { IAideAgentService } from '../../common/aideAgentService.js';
+import { ChatStreamingState, IAideAgentService } from '../../common/aideAgentService.js';
 
 export function registerChatEditsActions() {
 	registerAction2(class StopEditsAction extends Action2 {
@@ -81,11 +82,16 @@ export function registerChatEditsActions() {
 			super({
 				id: 'workbench.action.aideAgent.acceptAll',
 				title: localize2('interactiveSession.acceptAll.label', "Accept all edits"),
-				menu: {
+				menu: [{
 					id: MenuId.AideAgentEditsReview,
 					group: 'navigation',
 					order: 1
-				},
+				}, {
+					id: MenuId.AideAgentStreamingState,
+					when: CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.WaitingFeedback),
+					order: 0,
+					group: 'navigation',
+				}],
 				icon: Codicon.checkAll,
 				f1: false,
 			});
@@ -113,11 +119,16 @@ export function registerChatEditsActions() {
 			super({
 				id: 'workbench.action.aideAgent.rejectAll',
 				title: localize2('interactiveSession.rejectAll.label', "Reject all edits"),
-				menu: {
+				menu: [{
 					id: MenuId.AideAgentEditsReview,
 					group: 'navigation',
 					order: 2
-				},
+				}, {
+					id: MenuId.AideAgentStreamingState,
+					when: CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.WaitingFeedback),
+					order: 2,
+					group: 'navigation',
+				}],
 				icon: Codicon.closeAll,
 				f1: false,
 			});
