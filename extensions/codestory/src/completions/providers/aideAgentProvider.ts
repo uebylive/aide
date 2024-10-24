@@ -68,7 +68,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	private openResponseStream: vscode.AideAgentResponseStream | undefined;
 	private processingEvents: Map<string, boolean> = new Map();
 	private responseStreamCollection: AideResponseStreamCollection;
-	private sessionId: string | undefined;
+	// private sessionId: string | undefined;
 	// this is a hack to test the theory that we can keep snapshots and make
 	// that work
 	private editCounter = 0;
@@ -333,7 +333,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	}
 
 	newSession(sessionId: string): void {
-		this.sessionId = sessionId;
+		console.log('newSessionStarting');
+		// this.sessionId = sessionId;
 	}
 
 	/**
@@ -364,19 +365,20 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 
 	handleEvent(event: vscode.AideAgentRequest): void {
 		this.eventQueue.push(event);
-		if (this.sessionId && !this.processingEvents.has(event.id)) {
-			this.processingEvents.set(event.id, true);
+		const uniqueId = `${event.sessionId}-${event.exchangeId}`;
+		if (!this.processingEvents.has(uniqueId)) {
+			this.processingEvents.set(uniqueId, true);
 			this.processEvent(event);
 		}
 	}
 
 	private async processEvent(event: vscode.AideAgentRequest): Promise<void> {
-		if (!this.sessionId || !this.editorUrl) {
+		if (!this.editorUrl) {
 			return;
 		}
 		// New flow migration
 		if (event.mode === vscode.AideAgentMode.Chat || event.mode === vscode.AideAgentMode.Edit || event.mode === vscode.AideAgentMode.Plan) {
-			await this.streamResponse(event, this.sessionId, this.editorUrl);
+			await this.streamResponse(event, event.sessionId, this.editorUrl);
 			return;
 		}
 	}
@@ -388,7 +390,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	 */
 	private async streamResponse(event: vscode.AideAgentRequest, sessionId: string, editorUrl: string) {
 		const prompt = event.prompt;
-		const exchangeIdForEvent = event.id;
+		const exchangeIdForEvent = event.exchangeId;
 		const agentMode = event.mode;
 		const variables = event.references;
 		if (event.mode === vscode.AideAgentMode.Chat) {

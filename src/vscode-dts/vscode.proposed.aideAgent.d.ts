@@ -75,7 +75,8 @@ declare module 'vscode' {
 
 	export interface AideAgentRequest extends ChatRequest {
 		// is this the exchange id, if so it should explicity be named that instead of id :|
-		readonly id: string;
+		readonly exchangeId: string;
+		readonly sessionId: string;
 		readonly mode: AideAgentMode;
 		readonly scope: AideAgentScope;
 		readonly references: readonly AideAgentPromptReference[];
