@@ -61,6 +61,7 @@ export class EditPreviewBlockPart extends Disposable {
 	private readonly diffEditor: DiffEditorWidget;
 	private readonly resourceLabel: ResourceLabel;
 	readonly element: HTMLElement;
+	private readonly header: HTMLElement;
 
 	private readonly _lastDiffEditorViewModel = this._store.add(new MutableDisposable());
 	private currentScrollWidth = 0;
@@ -74,16 +75,16 @@ export class EditPreviewBlockPart extends Disposable {
 		@IConfigurationService private readonly configurationService: IConfigurationService,
 	) {
 		super();
-		this.element = $('.interactive-result-edit-preview-block');
+		this.element = $('.interactive-result-code-block');
+		this.element.classList.add('compare');
 
 		this.contextKeyService = this._register(contextKeyService.createScoped(this.element));
 		const scopedInstantiationService = this._register(instantiationService.createChild(new ServiceCollection([IContextKeyService, this.contextKeyService])));
-		const editorHeader = dom.append(this.element, $('.interactive-result-header.show-file-icons'));
+		const editorHeader = this.header = dom.append(this.element, $('.interactive-result-header.show-file-icons'));
 		const editorElement = dom.append(this.element, $('.interactive-result-editor'));
 		this.diffEditor = this.createDiffEditor(scopedInstantiationService, editorElement, {
 			...getSimpleEditorOptions(this.configurationService),
-			lineNumbers: 'on',
-			selectOnLineNumbers: true,
+			lineNumbers: 'off',
 			scrollBeyondLastLine: false,
 			lineDecorationsWidth: 12,
 			dragAndDrop: false,
@@ -164,7 +165,7 @@ export class EditPreviewBlockPart extends Disposable {
 			originalAriaLabel: localize('original', 'Original'),
 			modifiedAriaLabel: localize('modified', 'Modified'),
 			diffAlgorithm: 'advanced',
-			readOnly: false,
+			readOnly: true,
 			isInEmbeddedEditor: true,
 			useInlineViewWhenSpaceIsLimited: true,
 			experimental: {
@@ -175,7 +176,6 @@ export class EditPreviewBlockPart extends Disposable {
 			compactMode: true,
 			hideUnchangedRegions: { enabled: true, contextLineCount: 1 },
 			renderGutterMenu: false,
-			lineNumbersMinChars: 1,
 			...options
 		}, { originalEditor: widgetOptions, modifiedEditor: widgetOptions }));
 	}
@@ -241,7 +241,7 @@ export class EditPreviewBlockPart extends Disposable {
 		const contentHeight = this.getContentHeight();
 		const editorBorder = 2;
 		const dimension = { width: width - editorBorder, height: contentHeight };
-		this.element.style.height = `${dimension.height}px`;
+		this.element.style.height = `${dimension.height + dom.getTotalHeight(this.header)}px`;
 		this.element.style.width = `${dimension.width}px`;
 		this.diffEditor.layout(dimension);
 		this.updatePaddingForLayout();
