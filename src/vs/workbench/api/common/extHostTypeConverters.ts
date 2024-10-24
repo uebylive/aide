@@ -2945,7 +2945,8 @@ export namespace AideAgentResponsePlanPart {
 			index: part.index,
 			isLast: part.isLast,
 			title: part.title,
-			description: MarkdownString.from(part.description)
+			description: MarkdownString.from(part.description),
+			descriptionDelta: part.descriptionDelta ? MarkdownString.from(part.descriptionDelta) : null,
 		};
 	}
 }

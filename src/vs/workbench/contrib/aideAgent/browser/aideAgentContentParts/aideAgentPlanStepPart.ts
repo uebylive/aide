@@ -432,7 +432,7 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 	}
 
 	hasSameContent(other: IChatProgressRenderableResponseContent): boolean {
-		return other.kind === 'planStep' && other.description === this.step.description;
+		return other.kind === 'planStep' && other.description === this.step.description && other.descriptionDelta === this.step.descriptionDelta;
 	}
 }
 

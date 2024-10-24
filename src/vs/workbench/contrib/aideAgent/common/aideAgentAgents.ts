@@ -40,7 +40,7 @@ export enum ChatAgentLocation {
 	Panel = 'panel',
 	Terminal = 'terminal',
 	Notebook = 'notebook',
-	Editor = 'editor'
+	Editor = 'editor',
 }
 
 export namespace ChatAgentLocation {

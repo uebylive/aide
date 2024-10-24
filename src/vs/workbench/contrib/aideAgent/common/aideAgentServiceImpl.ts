@@ -342,13 +342,20 @@ export class ChatService extends Disposable implements IAideAgentService {
 		this.saveState();
 	}
 
+	startSessionWithId(location: ChatAgentLocation, token: CancellationToken, sessionId: string, isPassthrough: boolean = false): ChatModel {
+		const model = this.instantiationService.createInstance(ChatModel, undefined, location, isPassthrough, sessionId);
+		this._sessionModels.set(model.sessionId, model);
+		this.initializeSession(model, token);
+		return model;
+	}
+
 	startSession(location: ChatAgentLocation, token: CancellationToken, isPassthrough: boolean = false): ChatModel {
 		this.trace('startSession');
 		return this._startSession(undefined, location, isPassthrough, token);
 	}
 
 	private _startSession(someSessionHistory: IExportableChatData | ISerializableChatData | undefined, location: ChatAgentLocation, isPassthrough: boolean, token: CancellationToken): ChatModel {
-		const model = this.instantiationService.createInstance(ChatModel, someSessionHistory, location, isPassthrough);
+		const model = this.instantiationService.createInstance(ChatModel, someSessionHistory, location, isPassthrough, null);
 		this._sessionModels.set(model.sessionId, model);
 		this.initializeSession(model, token);
 		return model;

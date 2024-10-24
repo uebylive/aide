@@ -167,7 +167,6 @@ export function registerChatEditsActions() {
 		}
 		run(accessor: ServicesAccessor, ...args: any[]) {
 			const context = args[0];
-			console.log('planReviewPaneAction');
 			// These values are set on the toolbar present over in aideAgentRichItem
 			const exchangeId = context['aideAgentExchangeId'];
 			const sessionId = context['aideAgentSessionId'];
