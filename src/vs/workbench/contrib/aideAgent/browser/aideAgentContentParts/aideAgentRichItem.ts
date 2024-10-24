@@ -15,10 +15,9 @@ import { IChatContentPart } from './aideAgentContentParts.js';
 import { IChatProgressRenderableResponseContent } from '../../common/aideAgentModel.js';
 import { Emitter } from '../../../../../base/common/event.js';
 import { ChatMarkdownContentPart } from './aideAgentMarkdownContentPart.js';
-import './media/aideAgentRichItem.css';
-import { Button } from '../../../../../base/browser/ui/button/button.js';
-import { defaultButtonStyles } from '../../../../../platform/theme/browser/defaultStyles.js';
 import { IAideAgentPlanService } from '../../common/aideAgentPlanService.js';
+import './media/aideAgentRichItem.css';
+import { localize } from '../../../../../nls.js';
 
 const $ = dom.$;
 
@@ -124,28 +123,32 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 
 		// TODO: Failing to render properly, we should figure out how to work on this
 		if (supportsCheckpoint) {
-			const checkPointButtonContainer = $('.aide-rich-item-checkpoint');
-			const checkPointButton = this._register(this.instantiationService.createInstance(Button, checkPointButtonContainer, defaultButtonStyles));
-			checkPointButton.label = 'testing';
-			this._register(checkPointButton.onDidClick(() => {
 
+			const checkPointButton = domNode.appendChild($('a.aide-rich-item-checkpoint'));
+			this._register(dom.addDisposableListener(checkPointButton, dom.EventType.CLICK, async (e: MouseEvent) => {
+				console.log('revert to checkpoint');
 			}));
 
-			domNode.appendChild(checkPointButtonContainer);
+			this._register(this.instantiationService.createInstance(Heroicon, checkPointButton, 'micro/flag', { 'class': 'aide-rich-item-checkpoint-flag-icon' }));
 
-			const planReviewButtonContainer = $('.aide-rich-item-plan');
-			const planReviewButton = this._register(this.instantiationService.createInstance(Button, planReviewButtonContainer, defaultButtonStyles));
-			planReviewButton.label = 'planView';
-			planReviewButton.onDidClick(() => {
-				// forces the view pane to open up
-				this.aideAgentPlanService.anchorPlanViewPane(sessionId, exchangeId);
-			});
+			const checkpointLabel = checkPointButton.appendChild($('.aide-rich-item-checkpoint-label'));
+			checkpointLabel.textContent = localize('agent.checkpoint', "Checkpoint"); // TODO(g-danna) Include more information about the checkpoint
 
-			dom.addDisposableListener(planReviewButton.element, dom.EventType.CLICK, async (e: MouseEvent) => {
-				dom.EventHelper.stop(e, true);
-				this.aideAgentPlanService.anchorPlanViewPane(sessionId, exchangeId);
-			});
-			domNode.appendChild(planReviewButtonContainer);
+			checkPointButton.appendChild($('.aide-rich-item-checkpoint-icon.codicon.codicon-discard'));
+
+			// const planReviewButtonContainer = $('.aide-rich-item-plan');
+			// const planReviewButton = this._register(this.instantiationService.createInstance(Button, planReviewButtonContainer, defaultButtonStyles));
+			// planReviewButton.label = 'planView';
+			// planReviewButton.onDidClick(() => {
+			// 	// forces the view pane to open up
+			// 	this.aideAgentPlanService.anchorPlanViewPane(sessionId, exchangeId);
+			// });
+			//
+			// dom.addDisposableListener(planReviewButton.element, dom.EventType.CLICK, async (e: MouseEvent) => {
+			// 	dom.EventHelper.stop(e, true);
+			// 	this.aideAgentPlanService.anchorPlanViewPane(sessionId, exchangeId);
+			// });
+			// domNode.appendChild(planReviewButtonContainer);
 		}
 	}
 

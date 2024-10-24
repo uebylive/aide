@@ -269,7 +269,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		const username = dom.append(user, $('h3.username'));
 		const detailContainer = dom.append(detailContainerParent ?? user, $('span.detail-container'));
 		const detail = dom.append(detailContainer, $('span.detail'));
-		dom.append(detailContainer, $('span.chat-animated-ellipsis'));
+		// dom.append(detailContainer, $('span.chat-animated-ellipsis'));
 		const value = dom.append(valueParent, $('.value'));
 		const elementDisposables = new DisposableStore();
 
