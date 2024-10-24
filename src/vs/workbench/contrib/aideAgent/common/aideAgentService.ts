@@ -216,8 +216,11 @@ export interface IChatConfirmation {
 }
 
 export enum ChatStreamingState {
-	GeneralLoading = 'generalLoading',
+	Loading = 'loading',
 	WaitingFeedback = 'waitingFeedback',
+}
+
+export enum ChatStreamingStateLoadingLabel {
 	UnderstandingRequest = 'understandingRequest',
 	ExploringCodebase = 'exploringCodebase',
 	Reasoning = 'reasoning',
@@ -234,6 +237,9 @@ export interface IChatThinkingForEditPart {
 export interface IChatStreamingState {
 	kind: 'streamingState';
 	state: `${ChatStreamingState}`;
+	loadingLabel?: `${ChatStreamingStateLoadingLabel}`;
+	sessionId: string;
+	exchangeId: string;
 	isError: boolean;
 	message?: string;
 }

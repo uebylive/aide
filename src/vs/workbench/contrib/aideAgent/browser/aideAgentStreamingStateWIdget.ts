@@ -9,20 +9,22 @@ import { MenuEntryActionViewItem } from '../../../../platform/actions/browser/me
 import { MenuWorkbenchToolBar, HiddenItemStrategy } from '../../../../platform/actions/browser/toolbar.js';
 import { MenuId, MenuItemAction } from '../../../../platform/actions/common/actions.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
-import { IChatStreamingState, ChatStreamingState } from '../common/aideAgentService.js';
+import { IChatStreamingState, ChatStreamingState, ChatStreamingStateLoadingLabel } from '../common/aideAgentService.js';
 import { Heroicon } from '../../../browser/heroicon.js';
 import './media/aideAgentStreamingState.css';
+import { CONTEXT_STREAMING_STATE } from '../common/aideAgentContextKeys.js';
+import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 
 const $ = dom.$;
 
-
-type StreamingState = Omit<IChatStreamingState, 'kind'>;
+type StreamingState = Omit<IChatStreamingState, 'kind' | 'sessionId' | 'exchangeId'> & Partial<Pick<IChatStreamingState, 'sessionId' | 'exchangeId'>>;
 
 export class StreamingStateWidget extends Disposable {
 
 	private rootElement: HTMLElement;
 	private iconContainer: HTMLElement;
 	private textLabelElement: HTMLElement;
+	private toolbar: MenuWorkbenchToolBar;
 	private _isVisible: boolean;
 
 	get isVisible() {
@@ -33,7 +35,8 @@ export class StreamingStateWidget extends Disposable {
 		streamingState: StreamingState,
 		container: HTMLElement,
 		initialIsVisible = false,
-		@IInstantiationService private readonly instantiationService: IInstantiationService
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IContextKeyService private readonly contextKeyService: IContextKeyService
 	) {
 		super();
 		this._isVisible = initialIsVisible;
@@ -48,7 +51,9 @@ export class StreamingStateWidget extends Disposable {
 
 		const toolbarContainer = dom.append(this.rootElement, $('.aide-streaming-state-toolbar-container'));
 
-		this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, toolbarContainer, MenuId.AideAgentStreamingState, {
+		CONTEXT_STREAMING_STATE.bindTo(this.contextKeyService);
+
+		this.toolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, toolbarContainer, MenuId.AideAgentStreamingState, {
 			menuOptions: { shouldForwardArgs: true },
 			hiddenItemStrategy: HiddenItemStrategy.NoHide,
 			actionViewItemProvider: (action) => {
@@ -62,35 +67,46 @@ export class StreamingStateWidget extends Disposable {
 		this.update(streamingState, true);
 		if (this._isVisible) {
 			this.show();
+		} else {
+			this.hide();
 		}
 	}
 
-	private updateLabel(state: StreamingState['state'], message?: StreamingState['message']) {
-		if (message) {
-			this.textLabelElement.textContent = message;
+	private updateLabel(state: StreamingState) {
+		if (state.message) {
+			this.textLabelElement.textContent = state.message;
 			return;
 		}
 
-		let label = localize('aideAgent.streamingState.generalLoading', "Loading");
-		switch (state) {
-			case ChatStreamingState.WaitingFeedback:
-				label = localize('aideAgent.streamingState.waitingFeedback', "Accept changes?");
-			case ChatStreamingState.Reasoning:
-				label = localize('aideAgent.streamingState.thinking', "Thinking");
-				break;
-			case ChatStreamingState.ExploringCodebase:
-				label = localize('aideAgent.streamingState.exploring', "Exploring codebase");
-				break;
-			case ChatStreamingState.Generating:
-				label = localize('aideAgent.streamingState.generating', "Generating");
-				break;
-			default:
-				break;
+		if (state.state === ChatStreamingState.Loading) {
+			let label = localize('aideAgent.streamingState.generalLoading', "Loading");
+			switch (state.loadingLabel) {
+				case ChatStreamingStateLoadingLabel.Reasoning:
+					label = localize('aideAgent.streamingState.thinking', "Thinking");
+					break;
+				case ChatStreamingStateLoadingLabel.ExploringCodebase:
+					label = localize('aideAgent.streamingState.exploring', "Exploring codebase");
+					break;
+				case ChatStreamingStateLoadingLabel.Generating:
+					label = localize('aideAgent.streamingState.generating', "Generating");
+					break;
+				default:
+					break;
+			}
+			this.textLabelElement.textContent = label;
+		} else if (state.state === ChatStreamingState.WaitingFeedback) {
+			this.textLabelElement.textContent = localize('aideAgent.streamingState.waitingFeedback', "Waiting for feedback");
 		}
-		this.textLabelElement.textContent = label;
+
 	}
 
 	update(newState: StreamingState, quiet = false) {
+
+		this.toolbar.context = {
+			'aideAgentSessionId': newState.sessionId,
+			'aideAgentExchangeId': newState.exchangeId,
+		};
+
 		if (!quiet && !this._isVisible) {
 			this.show();
 		}
@@ -102,12 +118,12 @@ export class StreamingStateWidget extends Disposable {
 			this.iconContainer.ariaHidden = 'true';
 		}
 
-		if (newState.isError || newState.state === ChatStreamingState.WaitingFeedback) {
+		if (newState.message || newState.isError || newState.state === ChatStreamingState.WaitingFeedback) {
 			this.textLabelElement.classList.remove('aide-streaming-state-label-ellipsis');
 		} else {
 			this.textLabelElement.classList.add('aide-streaming-state-label-ellipsis');
 		}
-		this.updateLabel(newState.state);
+		this.updateLabel(newState);
 	}
 
 	show() {
@@ -117,9 +133,6 @@ export class StreamingStateWidget extends Disposable {
 	}
 
 	hide() {
-		if (!this._isVisible) {
-			return;
-		}
 		this.rootElement.ariaHidden = 'true';
 		this.rootElement.classList.add('aide-streaming-state-hidden');
 		this._register(dom.addDisposableListener(this.rootElement, dom.EventType.ANIMATION_END, async (e: AnimationEvent) => {

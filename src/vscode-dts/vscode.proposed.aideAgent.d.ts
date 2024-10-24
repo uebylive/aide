@@ -35,15 +35,20 @@ declare module 'vscode' {
 	export type AideAgentEditsStateType = `${AideAgentEditsState}`;
 
 	export enum AideAgentStreamingStateEnum {
-		GeneralLoading = 'generalLoading',
+		Loading = 'loading',
 		WaitingFeedback = 'waitingFeedback',
+	}
+
+	export type AideAgentStreamingStateType = `${AideAgentStreamingStateEnum}`;
+
+	export enum AideAgentStreamingStateLoadingLabel {
 		UnderstandingRequest = 'understandingRequest',
 		ExploringCodebase = 'exploringCodebase',
 		Reasoning = 'reasoning',
 		Generating = 'generating',
 	}
 
-	export type AideAgentStreamingStateType = `${AideAgentStreamingStateEnum}`;
+	export type AideAgentStreamingStateLoadingLabelType = `${AideAgentStreamingStateLoadingLabel}`;
 
 	export interface AideAgentFileReference extends ChatPromptReference {
 		readonly id: 'vscode.file';
@@ -70,7 +75,8 @@ declare module 'vscode' {
 
 	export interface AideAgentRequest extends ChatRequest {
 		// is this the exchange id, if so it should explicity be named that instead of id :|
-		readonly id: string;
+		readonly exchangeId: string;
+		readonly sessionId: string;
 		readonly mode: AideAgentMode;
 		readonly scope: AideAgentScope;
 		readonly references: readonly AideAgentPromptReference[];
@@ -196,6 +202,9 @@ declare module 'vscode' {
 
 	export interface AideAgentStreamingState {
 		state: `${AideAgentStreamingStateEnum}`;
+		loadingLabel?: `${AideAgentStreamingStateLoadingLabel}`;
+		exchangeId: string;
+		sessionId: string;
 		isError: boolean;
 		message?: string;
 	}

@@ -6,6 +6,7 @@
 import { localize } from '../../../../nls.js';
 import { RawContextKey } from '../../../../platform/contextkey/common/contextkey.js';
 import { ChatAgentLocation } from './aideAgentAgents.js';
+import { IChatStreamingState } from './aideAgentService.js';
 
 export const CONTEXT_RESPONSE_VOTE = new RawContextKey<string>('aideAgentSessionResponseVote', '', { type: 'string', description: localize('interactiveSessionResponseVote', "When the response has been voted up, is set to 'up'. When voted down, is set to 'down'. Otherwise an empty string.") });
 export const CONTEXT_VOTE_UP_ENABLED = new RawContextKey<boolean>('aideAgentVoteUpEnabled', false, { type: 'boolean', description: localize('chatVoteUpEnabled', "True when the chat vote up action is enabled.") });
@@ -26,6 +27,7 @@ export const CONTEXT_IN_CHAT_INPUT = new RawContextKey<boolean>('inAideAgentInpu
 export const CONTEXT_IN_CHAT_SESSION = new RawContextKey<boolean>('inAideAgent', false, { type: 'boolean', description: localize('inChat', "True when focus is in the chat widget, false otherwise.") });
 export const CONTEXT_IN_CHAT_RESPONSE_WITH_PLAN_STEPS = new RawContextKey<boolean>('inAideAgentResponseWithPlanSteps', false, { type: 'boolean', description: localize('inAideAgentResponseWithPlanSteps', "True when focus is in the response of a response with plan steps.") });
 export const CONTEXT_IN_CHAT_PLAN_STEP = new RawContextKey<boolean>('inAideAgentPlanStep', false, { type: 'boolean', description: localize('inAideAgentPlanStep', "True when focus is in a step of a plan.") });
+export const CONTEXT_STREAMING_STATE = new RawContextKey<IChatStreamingState['state'] | undefined>('streamingState', undefined, { type: 'string', description: localize('a ideAgentStreamingState', "What state of streaming is the agent in.") });
 
 export const CONTEXT_CHAT_ENABLED = new RawContextKey<boolean>('aideAgentIsEnabled', false, { type: 'boolean', description: localize('chatIsEnabled', "True when chat is enabled because a default chat participant is activated with an implementation.") });
 export const CONTEXT_CHAT_PANEL_PARTICIPANT_REGISTERED = new RawContextKey<boolean>('aideAgentPanelParticipantRegistered', false, { type: 'boolean', description: localize('chatParticipantRegistered', "True when a default chat participant is registered for the panel.") });
