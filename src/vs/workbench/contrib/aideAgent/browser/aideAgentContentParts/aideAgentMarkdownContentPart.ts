@@ -47,6 +47,22 @@ export class ChatMarkdownContentPart extends Disposable implements IChatContentP
 
 	public readonly codeblocks: IChatCodeBlockInfo[] = [];
 
+	private extractUriFromMarkdown(markdown: string): URI | undefined {
+		const lines = markdown.split('\n');
+		for (let i = 0; i < lines.length; i++) {
+			const line = lines[i].trim();
+			if (line.startsWith('```') && i > 0) {
+				const previousLine = lines[i - 1].trim();
+				try {
+					return URI.parse(previousLine);
+				} catch {
+					return undefined;
+				}
+			}
+		}
+		return undefined;
+	}
+
 	constructor(
 		private readonly markdown: IMarkdownString,
 		context: IChatContentPartRenderContext,
@@ -67,6 +83,9 @@ export class ChatMarkdownContentPart extends Disposable implements IChatContentP
 		const element = context.element;
 		const markdownDecorationsRenderer = instantiationService.createInstance(ChatMarkdownDecorationsRenderer);
 
+		// Extract URI before rendering
+		const extractedUri = this.extractUriFromMarkdown(markdown.value);
+
 		// We release editors in order so that it's more likely that the same editor will be assigned if this element is re-rendered right away, like it often is during progressive rendering
 		const orderedDisposablesList: IDisposable[] = [];
 		let codeBlockIndex = codeBlockStartIndex;
@@ -86,7 +105,7 @@ export class ChatMarkdownContentPart extends Disposable implements IChatContentP
 					const modified = this.codeBlockModelCollection.getOrCreate(sessionId, element, modifiedIndex).model;
 
 					const ref = this.renderEditPreviewBlock({
-						uri: URI.parse('/Users/nareshr/github/codestory/sidecar/sidecar/src/bin/sys_info.rs'),
+						uri: extractedUri || URI.parse(''), // Use the extracted URI
 						element,
 						languageId,
 						parentContextKeyService: contextKeyService,
@@ -165,14 +184,39 @@ export class ChatMarkdownContentPart extends Disposable implements IChatContentP
 	}
 
 	private parseEditPreviewBlock(text: string): { original: string; modified: string } | null {
-		const searchMatch = text.match(/^<<<<<<< SEARCH\n([\s\S]*?)=======\n([\s\S]*?)>>>>>>> REPLACE$/);
-		if (searchMatch === null) {
+		const startMarker = '<<<<<<< SEARCH';
+		const separatorMarker = '=======';
+		const endMarker = '>>>>>>> REPLACE';
+
+		const startIndex = text.indexOf(startMarker);
+		if (startIndex === -1) {
 			return null;
 		}
-		return {
-			original: searchMatch[1],
-			modified: searchMatch[2]
-		};
+
+		let original = '';
+		let modified = '';
+
+		const contentAfterStart = text.slice(startIndex + startMarker.length);
+		const separatorIndex = contentAfterStart.indexOf(separatorMarker);
+		const endIndex = contentAfterStart.indexOf(endMarker);
+
+		if (separatorIndex !== -1 && endIndex !== -1) {
+			// Full block with both search and replace
+			console.log('full block with both search and replace');
+			original = contentAfterStart.slice(0, separatorIndex).trim();
+			modified = contentAfterStart.slice(separatorIndex + separatorMarker.length, endIndex).trim();
+		} else if (separatorIndex !== -1) {
+			// Separator exists but end doesn't
+			console.log('separator exists but end doesn\'t');
+			original = contentAfterStart.slice(0, separatorIndex).trim();
+			modified = contentAfterStart.slice(separatorIndex + separatorMarker.length).trim();
+		} else {
+			// Partial block with only start, treat as modified
+			console.log('partial block with only start, treat as modified');
+			modified = contentAfterStart.trim();
+		}
+
+		return { original, modified };
 	}
 
 	private renderCodeBlock(data: ICodeBlockData, text: string, currentWidth: number, editableCodeBlock: boolean | undefined): IDisposableReference<CodeBlockPart> {

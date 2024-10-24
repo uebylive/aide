@@ -156,6 +156,7 @@ export class EditPreviewBlockPart extends Disposable {
 		};
 
 		return this._register(instantiationService.createInstance(DiffEditorWidget, parent, {
+			renderSideBySide: false,
 			scrollbar: { useShadows: false, alwaysConsumeMouseWheel: false, ignoreHorizontalScrollbarInContentHeight: true, },
 			renderMarginRevertIcon: false,
 			diffCodeLens: false,
@@ -212,7 +213,8 @@ export class EditPreviewBlockPart extends Disposable {
 
 		this.resourceLabel.element.setFile(data.uri, {
 			fileKind: FileKind.FILE,
-			fileDecorations: { colors: true, badges: false }
+			fileDecorations: { colors: true, badges: false },
+			hidePath: true,
 		});
 	}
 
