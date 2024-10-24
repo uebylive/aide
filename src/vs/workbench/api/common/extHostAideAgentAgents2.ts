@@ -139,6 +139,12 @@ class AideAgentResponseStream {
 					const dto = typeConvert.AideAgentResponseStreamingStatePart.from(part);
 					_report(dto);
 				},
+				thinkingForEdit(value) {
+					throwIfDone(this.anchor);
+					const part = new extHostTypes.AideAgentThinkingForEditPart(value);
+					const dto = typeConvert.AideAgentThinkingForEditPart.from(part);
+					_report(dto);
+				},
 				progress(value, task?: ((progress: vscode.Progress<vscode.ChatResponseWarningPart>) => Thenable<string | void>)) {
 					throwIfDone(this.progress);
 					const part = new extHostTypes.ChatResponseProgressPart2(value, task);

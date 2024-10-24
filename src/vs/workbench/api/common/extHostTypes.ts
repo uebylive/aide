@@ -4796,6 +4796,17 @@ export class AideAgentResponsePlanInfoPart {
 	}
 }
 
+export class AideAgentThinkingForEditPart {
+	sessionId: string;
+	exchangeId: string;
+	thinkingDelta: vscode.MarkdownString;
+	constructor(step: vscode.AideAgentThinkingForEdit) {
+		this.exchangeId = step.exchangeId;
+		this.sessionId = step.exchangeId;
+		this.thinkingDelta = new MarkdownString(step.thinkingDelta);
+	}
+}
+
 export class AideAgentResponseStreamingStatePart {
 	state: vscode.AideAgentStreamingStateType;
 	isError: boolean;

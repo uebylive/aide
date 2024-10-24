@@ -564,8 +564,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					// even with the search and replace blocks we do want to show it
 					// to the user
 					if (editEvent.ThinkingForEdit.delta) {
-						// TODO(@skcd42): This event currently gets sent multiple times, and doesn't contain the text we'd ideally like to show the user.
-						// It also seems to contain the search/replace block in the text, which we don't want to show.
 						responseStream.stream.markdown(new vscode.MarkdownString(editEvent.ThinkingForEdit.delta));
 					}
 					if (editEvent.RangeSelectionForEdit) {
