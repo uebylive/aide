@@ -651,11 +651,12 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				if (event.event.PlanEvent.PlanStepTitleAdded) {
 					// we still want to send the planInfo over here (we should check
 					// why the rendering is so slow for this... weird reason)
+					console.log('planEvent::title::update_for', event.event.PlanEvent.PlanStepTitleAdded.index);
 					responseStream?.stream.planInfo({
 						exchangeId,
 						sessionId,
 						isStale: false,
-						state: 'started',
+						state: 'Started',
 						description: event.event.PlanEvent.PlanStepTitleAdded.title,
 					});
 					// TODO(codestory): Remove this soon after cause we will just rely
@@ -671,6 +672,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					});
 				}
 				if (event.event.PlanEvent.PlanStepDescriptionUpdate) {
+					console.log('planEvent::description::update_for', event.event.PlanEvent.PlanStepDescriptionUpdate.index);
 					responseStream?.stream.step({
 						description: event.event.PlanEvent.PlanStepDescriptionUpdate.description_up_until_now,
 						index: event.event.PlanEvent.PlanStepDescriptionUpdate.index,
@@ -698,14 +700,14 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 							exchangeId,
 							sessionId,
 							isStale: false,
-							state: 'started',
+							state: 'Started',
 						});
 					} else if (editsState === 'Cancelled') {
 						responseStream?.stream.planInfo({
 							exchangeId,
 							sessionId,
 							isStale: false,
-							state: 'cancelled',
+							state: 'Cancelled',
 						});
 					} else if (editsState === 'InReview') {
 						responseStream?.stream.planInfo({
@@ -714,7 +716,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 							isStale: false,
 							// this state is wrong over here, we should show
 							// that the plan is in review right now
-							state: 'started',
+							state: 'InReview',
 						});
 					} else if (editsState === 'MarkedComplete') {
 						responseStream?.stream.planInfo({

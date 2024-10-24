@@ -4723,9 +4723,10 @@ export enum AideAgentStreamingStateEnum {
 }
 
 export enum AideAgentPlanState {
-	Started = 'started',
+	Started = 'Started',
 	Complete = 'Complete',
-	Cancelled = 'cancelled',
+	Cancelled = 'Cancelled',
+	InReview = 'InReview',
 }
 
 export enum AideButtonLook {
@@ -4804,7 +4805,7 @@ export class AideAgentThinkingForEditPart {
 	thinkingDelta: vscode.MarkdownString;
 	constructor(step: vscode.AideAgentThinkingForEdit) {
 		this.exchangeId = step.exchangeId;
-		this.sessionId = step.exchangeId;
+		this.sessionId = step.sessionId;
 		this.thinkingDelta = new MarkdownString(step.thinkingDelta);
 	}
 }

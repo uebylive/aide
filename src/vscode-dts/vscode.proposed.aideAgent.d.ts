@@ -17,9 +17,10 @@ declare module 'vscode' {
 	}
 
 	export enum AideAgentPlanState {
-		Started = 'started',
+		Started = 'Started',
 		Complete = 'Complete',
-		Cancelled = 'cancelled',
+		InReview = 'InReview',
+		Cancelled = 'Cancelled',
 	}
 
 	export type AideAgentPlanStateType = `${AideAgentPlanState}`;
