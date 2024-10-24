@@ -145,52 +145,8 @@ export class PlanReviewPane extends ViewPane {
 	) {
 		super(options, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, telemetryService, hoverService);
 
-		// The chatService is the main thing which is handling all the things related to the session and the exchanges
-		// The idea here is that the planReivewPane is yet another session albeit a special one
-		// one where the id is: `${sessionId}-${exchangeId}`
-		// for all events coming to the main chat service, we can also proxy it forward to this guy and let the rendering take care of things
-		// The key differences here will be how we render the plan steps
-		// each plan step will be a single exchange and be a rich element which we can render in a nice way the same way we
-		// do things today
-		// This allows us to handle things properly using a single service ChatService
-		// while also supporting various truncated views and threads in some ways (neato)
-		// without having to do extra work for handling lists etc because we have a way to render lists now
-		// and we should just stick with it and render different elements properly
-		// Incremental wins, lets start by just showing the titles over here properly and then we can move forward
-
-		// View state for the ViewPane is currently global per-provider basically, but some other strictly per-model state will require a separate memento.
-		// Don't know if this is needs to be per exchange id
-		// this.memento = new Memento('aide-agent-plan-review', this.storageService);
-		//this.viewState = this.memento.getMemento(StorageScope.WORKSPACE, StorageTarget.MACHINE) as IViewPaneState;
 		this._codeBlockModelCollection = this._register(instantiationService.createInstance(CodeBlockModelCollection));
 
-		// okay we have a cleanish way to figure out things over here
-
-		// should probably dispose this as well but ....
-		// const chatModel = this.chatService.startSession(ChatAgentLocation.Notebook, CancellationToken.None, false);
-		// const session = this.chatService.getSession(chatModel?.sessionId);
-		// if (chatModel === undefined) {
-		// 	console.log('reviewPane::chatModel::notPresent');
-		// 	return;
-		// }
-		// now lets see if we can suggest progress items over here just for show
-		// we will figure out how to keep pushing things over here properly
-
-		// undefined over here implies that we are not updating any of the values at all
-		// so we are screwed, we want to pass a global object of sorts over here somehow
-		// thinking of what that could be ..... (trying to brute-force our way right now
-		// maximising reusing of the lists and the rich chat elements which we have)
-		// const response = chatModel.addResponse();
-		// chatModel.acceptResponseProgress(response, {
-		// 	kind: 'markdownContent',
-		// 	content: mockMarkdown,
-		// }, false);
-		// chatModel.completeResponse(response);
-		// // This will inevitavely create a new session over here for the plan as well
-		// // which kind of sucks but we can do better over here later on
-		// console.log('reviewPane::chatModel::present', chatModel.sessionId);
-		// this._viewModel = this.instantiationService.createInstance(ChatViewModel, chatModel, this._codeBlockModelCollection);
-		// const currentElements = this._viewModel.getItems().length;
 		this._register(codeEditorService.registerCodeEditorOpenHandler(async (input: ITextResourceEditorInput, _source: ICodeEditor | null, _sideBySide?: boolean): Promise<ICodeEditor | null> => {
 			const resource = input.resource;
 			if (resource.scheme !== Schemas.vscodeAideAgentCodeBlock) {
