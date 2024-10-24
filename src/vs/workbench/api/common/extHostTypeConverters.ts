@@ -3074,7 +3074,8 @@ export namespace AideAgentRequest {
 		const variableReferences = request.variables.variables.filter(v => !v.isTool);
 		return {
 			...chatAgentRequest,
-			id: request.requestId,
+			exchangeId: request.requestId,
+			sessionId: request.sessionId,
 			mode: AideAgentMode.to(request.mode),
 			scope: AideAgentScope.to(request.scope),
 			references: variableReferences.map(AideAgentPromptReference.to)
