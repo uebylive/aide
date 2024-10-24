@@ -18,7 +18,7 @@
 }
 
 .chat-used-context-icons .file-icon::before {
-	font-size: 150%;
+	font-size: 175% !important;
 }
 
 .chat-used-context-icons .icon-label {

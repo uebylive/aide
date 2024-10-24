@@ -82,8 +82,8 @@ export class ChatCollapsibleListContentPart extends Disposable implements IChatC
 		});
 
 		const referencesLabel = labelOverride ?? (data.length > 1 ?
-			localize('usedReferencesPlural', "@ {0} items", data.length) :
-			localize('usedReferencesSingular', "@ {0} item", 1));
+			localize('usedReferencesPlural', "used {0} references", data.length) :
+			localize('usedReferencesSingular', "used {0} reference", 1));
 		const iconsContainer = $('.chat-used-context-icons');
 		for (const item of data) {
 			if (item.kind === 'reference') {
