@@ -720,11 +720,10 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			// React to changes in the viewmodel here
 
 			if (this.viewModel.lastStreamingState) {
-				this.inputPart.showStreamingState(this.viewModel.lastStreamingState);
+				this.inputPart.updateStreamingState(this.viewModel.lastStreamingState);
 			} else {
-				this.inputPart.hideStreamingState();
+				// this.inputPart.hideStreamingState();
 			}
-
 
 			this.requestInProgress.set(this.viewModel.requestInProgress);
 

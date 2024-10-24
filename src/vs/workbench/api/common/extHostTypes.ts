@@ -4714,6 +4714,8 @@ export enum AideAgentEditsState {
 }
 
 export enum AideAgentStreamingStateEnum {
+	GeneralLoading = 'generalLoading',
+	WaitingFeedback = 'waitingFeedback',
 	UnderstandingRequest = 'understandingRequest',
 	ExploringCodebase = 'exploringCodebase',
 	Reasoning = 'reasoning',

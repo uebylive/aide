@@ -1268,7 +1268,10 @@ export const EventType = {
 	// Animation
 	ANIMATION_START: browser.isWebKit ? 'webkitAnimationStart' : 'animationstart',
 	ANIMATION_END: browser.isWebKit ? 'webkitAnimationEnd' : 'animationend',
-	ANIMATION_ITERATION: browser.isWebKit ? 'webkitAnimationIteration' : 'animationiteration'
+	ANIMATION_ITERATION: browser.isWebKit ? 'webkitAnimationIteration' : 'animationiteration',
+	// Transition
+	TRANSITION_START: browser.isWebKit ? 'webkitTransitionStart' : 'transitionstart',
+	TRANSITION_END: browser.isWebKit ? 'webkitTransitionEnd' : 'transitionend',
 } as const;
 
 export interface EventLike {

@@ -61,6 +61,7 @@ import { IAideAgentLMService } from '../common/languageModels.js';
 import { CancelAction, IChatExecuteActionContext, SubmitChatRequestAction, SubmitEditsRequestAction, SubmitPlanRequestAction } from './actions/aideAgentExecuteActions.js';
 import { IChatWidget } from './aideAgent.js';
 import { ChatFollowups } from './aideAgentFollowups.js';
+import { StreamingStateWidget } from './aideAgentStreamingStateWIdget.js';
 
 const $ = dom.$;
 
@@ -118,10 +119,10 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	}
 
 	private inputSideToolbarContainer?: HTMLElement;
-
-	private streamingStateContainer!: HTMLElement;
-	private streamingStateWidget!: StreamingStateWidget | undefined;
-	private prevStreamingState: IChatStreamingState | undefined;
+	private _streamingStateWidget: StreamingStateWidget | undefined;
+	get streamingStateWidget() {
+		return this._streamingStateWidget;
+	}
 
 	private followupsContainer!: HTMLElement;
 	private readonly followupsDisposables = this._register(new DisposableStore());
@@ -439,7 +440,9 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		}
 		this._container = elements.root;
 		container.append(this._container);
-		this.streamingStateContainer = elements.streamingStateContainer;
+		if (this.location === ChatAgentLocation.Panel) {
+			this._streamingStateWidget = this._register(this.instantiationService.createInstance(StreamingStateWidget, { state: ChatStreamingState.GeneralLoading, isError: false }, elements.streamingStateContainer, false));
+		}
 		this._container.classList.toggle('compact', this.options.renderStyle === 'compact');
 		this.followupsContainer = elements.followupsContainer;
 		const inputAndSideToolbar = elements.inputAndSideToolbar; // The chat input and toolbar to the right
@@ -629,26 +632,12 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	}
 
 
-	showStreamingState(state: IChatStreamingState): void {
-		if (this.prevStreamingState &&
-			(state.state !== this.prevStreamingState.state
-				|| state.message !== this.prevStreamingState.message
-				|| state.isError !== this.prevStreamingState.isError)) {
-
-			if (this.streamingStateWidget) {
-				this.streamingStateWidget.dispose();
-			}
-			this._register(this.instantiationService.createInstance(StreamingStateWidget, state, this.streamingStateContainer));
-			this.prevStreamingState = state;
-		}
+	updateStreamingState(state: IChatStreamingState): void {
+		this._streamingStateWidget?.update(state);
 	}
 
 	hideStreamingState(): void {
-		this.prevStreamingState = undefined;
-		if (this.streamingStateWidget) {
-			this.streamingStateWidget.dispose();
-			this.streamingStateWidget = undefined;
-		}
+		this._streamingStateWidget?.hide();
 	}
 
 	private initAttachedContext(container: HTMLElement, isLayout = false) {
@@ -801,56 +790,6 @@ const historyKeyFn = (entry: IChatHistoryEntry) => JSON.stringify(entry);
 
 function getLastPosition(model: ITextModel): IPosition {
 	return { lineNumber: model.getLineCount(), column: model.getLineLength(model.getLineCount()) + 1 };
-}
-
-
-class StreamingStateWidget extends Disposable {
-
-	private element: HTMLElement;
-
-	constructor(
-		streamingState: IChatStreamingState,
-		container: HTMLElement,
-		@IInstantiationService private readonly instantiationService: IInstantiationService
-	) {
-		super();
-		const { state } = streamingState;
-		this.element = dom.append(container, $('.aide-streaming-state'));
-
-		let label = localize('aideAgent.streamingState.thinking', "Thinking");
-		switch (state) {
-			case ChatStreamingState.ExploringCodebase:
-				label = localize('aideAgent.streamingState.exploring', "Exploring codebase");
-				break;
-			case ChatStreamingState.Generating:
-				label = localize('aideAgent.streamingState.generating', "Generating");
-				break;
-			default:
-				break;
-		}
-
-		const labelElement = this.element.appendChild($('span.aide-streaming-state-label'));
-		labelElement.textContent = label;
-
-
-		const toolbarContainer = dom.append(this.element, $('.aide-streaming-state-toolbar-container'));
-
-		this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, toolbarContainer, MenuId.AideAgentStreamingState, {
-			menuOptions: { shouldForwardArgs: true },
-			hiddenItemStrategy: HiddenItemStrategy.NoHide,
-			actionViewItemProvider: (action) => {
-				if (action instanceof MenuItemAction) {
-					return this.instantiationService.createInstance(MenuEntryActionViewItem, action, undefined);
-				}
-				return undefined;
-			}
-		}));
-	}
-
-	override dispose(): void {
-		super.dispose();
-		this.element.remove();
-	}
 }
 
 

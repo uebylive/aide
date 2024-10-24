@@ -468,6 +468,7 @@ have to be updated for changes to the rules above, or to support more deeply nes
 }
 
 .interactive-session .chat-input-container {
+	width: 100%;
 	box-sizing: border-box;
 	cursor: text;
 	background-color: var(--vscode-input-background);
@@ -623,6 +624,7 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	padding: 12px 0px;
 	display: flex;
 	flex-direction: column;
+	position: relative;
 }
 
 .interactive-session .interactive-input-part.compact {

@@ -34,6 +34,8 @@ declare module 'vscode' {
 	export type AideAgentEditsStateType = `${AideAgentEditsState}`;
 
 	export enum AideAgentStreamingStateEnum {
+		GeneralLoading = 'generalLoading',
+		WaitingFeedback = 'waitingFeedback',
 		UnderstandingRequest = 'understandingRequest',
 		ExploringCodebase = 'exploringCodebase',
 		Reasoning = 'reasoning',
