@@ -66,6 +66,11 @@ export interface IChatCodeBlockInfo extends ICodeBlockInfo {
 	readonly element: ChatTreeItem;
 }
 
+export interface IEditPreviewCodeBlockInfo {
+	readonly ownerMarkdownPartId: string;
+	readonly element: ChatTreeItem;
+}
+
 export interface IChatFileTreeInfo {
 	treeDataId: string;
 	treeIndex: number;

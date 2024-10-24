@@ -563,10 +563,10 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					// TODO(skcd): We have to show this properly over here since
 					// even with the search and replace blocks we do want to show it
 					// to the user
-					if (editEvent.ThinkingForEdit) {
+					if (editEvent.ThinkingForEdit.delta) {
 						// TODO(@skcd42): This event currently gets sent multiple times, and doesn't contain the text we'd ideally like to show the user.
 						// It also seems to contain the search/replace block in the text, which we don't want to show.
-						// response.markdown(new vscode.MarkdownString(editEvent.ThinkingForEdit.thinking));
+						responseStream.stream.markdown(new vscode.MarkdownString(editEvent.ThinkingForEdit.delta));
 					}
 					if (editEvent.RangeSelectionForEdit) {
 						// response.breakdown({
