@@ -427,7 +427,6 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			if (element.contentReferences.length) {
 				value.push({ kind: 'references', references: element.contentReferences });
 			}
-			value.push(...annotateSpecialMarkdownContent(element.response.value));
 			if (element.codeCitations.length) {
 				value.push({ kind: 'codeCitations', citations: element.codeCitations });
 			}
@@ -437,6 +436,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			if (element.planInfo) {
 				value.push({ ...element.planInfo });
 			}
+			value.push(...annotateSpecialMarkdownContent(element.response.value));
 			if (element.codeEdits?.size) {
 				value.push({ kind: 'codeEdits', edits: element.codeEdits });
 			}
