@@ -27,7 +27,7 @@ import { IAideAgentCodeEditingService, IAideAgentCodeEditingSession } from './ai
 import { IAideAgentEdits } from './aideAgentEditingSession.js';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from './aideAgentParserTypes.js';
 import { IAideAgentPlanService, IAideAgentPlanSession } from './aideAgentPlanService.js';
-import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IAideAgentService, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatCommandGroup, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanInfo, IChatPlanStep, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatStreamingState, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
+import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IAideAgentService, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatCommandGroup, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanInfo, IChatPlanStep, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatStreamingState, IChatTask, IChatTextEdit, IChatThinkingForEditPart, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
 import { IChatRequestVariableValue } from './aideAgentVariables.js';
 
 export function isRequestModel(item: unknown): item is IChatRequestModel {
@@ -104,7 +104,8 @@ export type IChatProgressResponseContent =
 	| IChatPlanStep
 	| IChatEditsInfo
 	| IChatPlanInfo
-	| IChatConfirmation;
+	| IChatConfirmation
+	| IChatThinkingForEditPart;
 
 export type IChatProgressRenderableResponseContent = Exclude<IChatProgressResponseContent, IChatContentInlineReference | IChatAgentMarkdownContentWithVulnerability | IChatResponseCodeblockUriPart>;
 
@@ -336,6 +337,8 @@ export class Response extends Disposable implements IResponse {
 					return repr.concat(` ${localize('stale', "(stale)")}`);
 				}
 				return repr;
+			} else if (part.kind === 'thinkingForEdit') {
+				return part.thinkingDelta.value;
 			} else {
 				return part.content.value;
 			}
@@ -348,6 +351,8 @@ export class Response extends Disposable implements IResponse {
 		this._markdownContent = this._responseParts.map(part => {
 			if (part.kind === 'inlineReference') {
 				return inlineRefToRepr(part);
+			} else if (part.kind === 'thinkingForEdit') {
+				return part.thinkingDelta.value;
 			} else if (part.kind === 'markdownContent' || part.kind === 'markdownVuln') {
 				return part.content.value;
 			} else {
