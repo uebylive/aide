@@ -15,6 +15,10 @@ import { basename } from '../../../../../base/common/path.js';
 import { basenameOrAuthority, isEqualAuthority } from '../../../../../base/common/resources.js';
 import { ThemeIcon } from '../../../../../base/common/themables.js';
 import { URI } from '../../../../../base/common/uri.js';
+import { Location } from '../../../../../editor/common/languages.js';
+import { ILanguageService } from '../../../../../editor/common/languages/language.js';
+import { getIconClasses } from '../../../../../editor/common/services/getIconClasses.js';
+import { IModelService } from '../../../../../editor/common/services/model.js';
 import { localize } from '../../../../../nls.js';
 import { IClipboardService } from '../../../../../platform/clipboard/common/clipboardService.js';
 import { IContextMenuService } from '../../../../../platform/contextview/browser/contextView.js';
@@ -31,12 +35,13 @@ import { ColorScheme } from '../../../../browser/web.api.js';
 import { SETTINGS_AUTHORITY } from '../../../../services/preferences/common/preferences.js';
 import { createFileIconThemableTreeContainerScope } from '../../../files/browser/views/explorerView.js';
 import { chatVariableLeader } from '../../common/aideAgentParserTypes.js';
-import { ChatResponseReferencePartStatusKind, IChatContentReference, IChatWarningMessage } from '../../common/aideAgentService.js';
+import { ChatResponseReferencePartStatusKind, IChatContentReference, IChatContentVariableReference, IChatWarningMessage } from '../../common/aideAgentService.js';
 import { IAideAgentVariablesService } from '../../common/aideAgentVariables.js';
 import { IChatRendererContent, IChatResponseViewModel } from '../../common/aideAgentViewModel.js';
 import { ChatTreeItem } from '../aideAgent.js';
 import { IDisposableReference, ResourcePool } from './aideAgentCollections.js';
 import { IChatContentPart } from './aideAgentContentParts.js';
+import './media/aideAgentReferencesContentPart.css';
 
 const $ = dom.$;
 
@@ -59,6 +64,8 @@ export class ChatCollapsibleListContentPart extends Disposable implements IChatC
 		element: IChatResponseViewModel,
 		contentReferencesListPool: CollapsibleListPool,
 		@IOpenerService openerService: IOpenerService,
+		@IModelService modelService: IModelService,
+		@ILanguageService languageService: ILanguageService,
 		@IContextMenuService private readonly contextMenuService: IContextMenuService,
 		@IClipboardService private readonly clipboardService: IClipboardService,
 	) {
@@ -73,13 +80,23 @@ export class ChatCollapsibleListContentPart extends Disposable implements IChatC
 			}
 			return false;
 		});
+
 		const referencesLabel = labelOverride ?? (data.length > 1 ?
-			localize('usedReferencesPlural', "Used {0} references", data.length) :
-			localize('usedReferencesSingular', "Used {0} reference", 1));
-		const iconElement = $('.chat-used-context-icon');
-		const icon = (element: IChatResponseViewModel) => element.usedReferencesExpanded ? Codicon.chevronDown : Codicon.chevronRight;
-		iconElement.classList.add(...ThemeIcon.asClassNameArray(icon(element)));
-		const buttonElement = $('.chat-used-context-label', undefined);
+			localize('usedReferencesPlural', "@ {0} items", data.length) :
+			localize('usedReferencesSingular', "@ {0} item", 1));
+		const iconsContainer = $('.chat-used-context-icons');
+		for (const item of data) {
+			if (item.kind === 'reference') {
+				const iconElement = $('span.icon');
+				const reference = this.getReferenceUri(item.reference);
+				if (reference) {
+					iconElement.classList.add(...getIconClasses(modelService, languageService, reference, FileKind.FILE));
+				}
+				iconsContainer.appendChild(iconElement);
+			}
+		}
+
+		const buttonElement = $('.aideagent-used-context-label.show-file-icons', undefined);
 
 		const collapseButton = this._register(new Button(buttonElement, {
 			buttonBackground: undefined,
@@ -92,14 +109,11 @@ export class ChatCollapsibleListContentPart extends Disposable implements IChatC
 			buttonSeparator: undefined
 		}));
 		this.domNode = $('.chat-used-context', undefined, buttonElement);
-		collapseButton.label = referencesLabel;
-		collapseButton.element.prepend(iconElement);
+		collapseButton.element.replaceChildren(iconsContainer, dom.$('span.icon-label', {}, referencesLabel));
 		this.updateAriaLabel(collapseButton.element, referencesLabel, element.usedReferencesExpanded);
 		this.domNode.classList.toggle('chat-used-context-collapsed', !element.usedReferencesExpanded);
 		this._register(collapseButton.onDidClick(() => {
-			iconElement.classList.remove(...ThemeIcon.asClassNameArray(icon(element)));
 			element.usedReferencesExpanded = !element.usedReferencesExpanded;
-			iconElement.classList.add(...ThemeIcon.asClassNameArray(icon(element)));
 			this.domNode.classList.toggle('chat-used-context-collapsed', !element.usedReferencesExpanded);
 			this._onDidChangeHeight.fire();
 			this.updateAriaLabel(collapseButton.element, referencesLabel, element.usedReferencesExpanded);
@@ -178,6 +192,18 @@ export class ChatCollapsibleListContentPart extends Disposable implements IChatC
 
 	addDisposable(disposable: IDisposable): void {
 		this._register(disposable);
+	}
+
+	private getReferenceUri(reference: string | URI | Location | IChatContentVariableReference): URI | undefined {
+		if (typeof reference === 'string') {
+			return undefined;
+		} else if (URI.isUri(reference)) {
+			return reference;
+		} else if ('uri' in reference) {
+			return reference.uri;
+		} else {
+			return undefined;
+		}
 	}
 }
 

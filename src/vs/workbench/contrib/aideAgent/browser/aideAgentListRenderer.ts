@@ -424,9 +424,6 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 				this.markdownDecorationsRenderer.convertParsedRequestToMarkdown(element.message);
 			value = [{ content: new MarkdownString(markdown), kind: 'markdownContent' }];
 		} else if (isResponseVM(element)) {
-			if (element.contentReferences.length) {
-				value.push({ kind: 'references', references: element.contentReferences });
-			}
 			if (element.codeCitations.length) {
 				value.push({ kind: 'codeCitations', citations: element.codeCitations });
 			}
@@ -439,6 +436,9 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			value.push(...annotateSpecialMarkdownContent(element.response.value));
 			if (element.codeEdits?.size) {
 				value.push({ kind: 'codeEdits', edits: element.codeEdits });
+			}
+			if (element.contentReferences.length) {
+				value.push({ kind: 'references', references: element.contentReferences });
 			}
 		}
 
@@ -640,10 +640,6 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		const renderableResponse = annotateSpecialMarkdownContent(element.response.value);
 
 		const partsToRender: IChatRendererContent[] = [];
-		if (element.contentReferences.length) {
-			partsToRender.push({ kind: 'references', references: element.contentReferences });
-		}
-
 		if (element.editsInfo) {
 			partsToRender.push(element.editsInfo);
 		}
@@ -658,6 +654,10 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		// Render code edits at the end
 		if (element.codeEdits?.size) {
 			partsToRender.push({ kind: 'codeEdits', edits: element.codeEdits });
+		}
+
+		if (element.contentReferences.length) {
+			partsToRender.push({ kind: 'references', references: element.contentReferences });
 		}
 
 		// Update the render data
