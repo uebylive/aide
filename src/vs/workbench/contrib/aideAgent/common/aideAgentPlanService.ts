@@ -18,6 +18,13 @@ export interface IAideAgentPlanService {
 	_serviceBrand: undefined;
 
 	/**
+	 * Returns true if we have a plan session going on, otherwise it returns false
+	 * This can be useful since we have a single pane to show rich information
+	 * to the user and have to decide on what goes there
+	 */
+	isPlanSession(sessionId: string, exchangeId: string): boolean;
+
+	/**
 	 * Returns the plan session which is associated with the session and the exchange id
 	 * or creates a new one, no guarantee on correctness of the step if its really a plan
 	 * or something else

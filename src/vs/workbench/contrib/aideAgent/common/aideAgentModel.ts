@@ -1170,6 +1170,11 @@ export class ChatModel extends Disposable implements IChatModel {
 			return;
 		}
 		const planId = `${progress.sessionId}-${progress.exchangeId}`;
+		// If this is a plan session, then we are showing rich information on the side pane already
+		// and the edit information is not as useful anymore
+		if (this.aideAgentPlanService.isPlanSession(progress.sessionId, progress.exchangeId)) {
+			return;
+		}
 		let planMaybe = this._planChatModels.get(planId);
 		if (planMaybe === undefined) {
 			planMaybe = this.aideAgentService.startSessionWithId(ChatAgentLocation.Notebook, CancellationToken.None, planId);

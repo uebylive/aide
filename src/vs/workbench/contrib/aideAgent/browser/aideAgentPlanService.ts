@@ -45,6 +45,11 @@ export class AideAgentPlanService extends Disposable implements IAideAgentPlanSe
 		super();
 	}
 
+	isPlanSession(sessionId: string, exchangeId: string): boolean {
+		const lookupKey = `${sessionId}-${exchangeId}`;
+		return this._planSessions.has(lookupKey);
+	}
+
 	getOrStartPlanSession(sessionId: string, exchangeId: string): IAideAgentPlanSession {
 		// Plan belongs to the sessionId and the exchangeId together
 		const lookupKey = `${sessionId}-${exchangeId}`;
