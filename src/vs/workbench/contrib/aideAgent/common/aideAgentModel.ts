@@ -141,6 +141,8 @@ export interface IChatResponseModel {
 	readonly voteDownReason: ChatAgentVoteDownReason | undefined;
 	readonly followups?: IChatFollowup[] | undefined;
 	readonly result?: IChatAgentResult;
+	readonly planExchangeId: string | null;
+	readonly planSessionId: string | null;
 	setVote(vote: ChatAgentVoteDirection): void;
 	setVoteDownReason(reason: ChatAgentVoteDownReason | undefined): void;
 	setEditApplied(edit: IChatTextEditGroup, editCount: number): boolean;
@@ -476,6 +478,24 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 	private _isStale: boolean = false;
 	public get isStale(): boolean {
 		return this._isStale;
+	}
+
+	private _planExchangeId: string | null = null;
+	public get planExchangeId(): string | null {
+		return this._planExchangeId;
+	}
+
+	public set planExchangeId(planExchangeId: string) {
+		this._planExchangeId = planExchangeId;
+	}
+
+	private _planSessionId: string | null = null;
+	public get planSessionId(): string | null {
+		return this._planSessionId;
+	}
+
+	public set planSessionId(planSessionId: string) {
+		this._planSessionId = planSessionId;
 	}
 
 	constructor(
@@ -1248,6 +1268,8 @@ export class ChatModel extends Disposable implements IChatModel {
 			}
 			// if this is the first entry we will have a title over here
 			const response = planMaybe.addResponse();
+			response.planExchangeId = progress.exchangeId;
+			response.planSessionId = progress.sessionId;
 			this._planChatResponseModels.set(`${planId}-${currentProgressIndex}`, response);
 			planMaybe.acceptResponseProgress(response, {
 				'kind': 'markdownContent',

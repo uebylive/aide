@@ -398,7 +398,17 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 				templateData.titleToolbar.context = element;
 			}
 			if (templateData.kind === 'planReviewTemplate') {
-				templateData.titleToolbar.context = { stepIndex: index };
+				let planSessionId = null;
+				let planExchangeId = null;
+				if (isResponseVM(element)) {
+					planSessionId = element.planSessionId;
+					planExchangeId = element.planExchangeId;
+				}
+				templateData.titleToolbar.context = {
+					stepIndex: index,
+					sessionId: planSessionId,
+					exchangeId: planExchangeId,
+				};
 			}
 		}
 
