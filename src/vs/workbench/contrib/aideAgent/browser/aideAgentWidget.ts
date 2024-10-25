@@ -35,7 +35,7 @@ import { IAideAgentService, IChatFollowup, IChatLocationData, IChatStreamingStat
 import { IAideAgentSlashCommandService } from '../common/aideAgentSlashCommands.js';
 import { ChatViewModel, IChatResponseViewModel, isRequestVM, isResponseVM, isWelcomeVM } from '../common/aideAgentViewModel.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
-import { ChatTreeItem, IAideAgentAccessibilityService, IAideAgentWidgetService, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions, IChatPlanStepsInfo, IChatWidget, IChatWidgetViewContext, IChatWidgetViewOptions, showChatView } from './aideAgent.js';
+import { ChatTreeItem, IAideAgentAccessibilityService, IAideAgentWidgetService, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions, IChatPlanStepsInfo, IChatWidget, IChatWidgetViewContext, IChatWidgetViewOptions, showChatView, TreeUser } from './aideAgent.js';
 import { ChatAccessibilityProvider } from './aideAgentAccessibilityProvider.js';
 import { ChatInputPart } from './aideAgentInputPart.js';
 import { ChatListDelegate, ChatListItemRenderer, IChatRendererDelegate } from './aideAgentListRenderer.js';
@@ -497,9 +497,11 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		const overflowWidgetsContainer = document.createElement('div');
 		overflowWidgetsContainer.classList.add('chat-overflow-widget-container', 'monaco-editor');
 		listContainer.append(overflowWidgetsContainer);
+		const user = TreeUser.Chat;
 
 		this.renderer = this._register(scopedInstantiationService.createInstance(
 			ChatListItemRenderer,
+			user,
 			this.editorOptions,
 			this.location,
 			options,
@@ -522,7 +524,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 		this.tree = this._register(<WorkbenchObjectTree<ChatTreeItem>>scopedInstantiationService.createInstance(
 			WorkbenchObjectTree,
-			'Chat',
+			user,
 			listContainer,
 			delegate,
 			[this.renderer],

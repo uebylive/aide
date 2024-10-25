@@ -18,10 +18,8 @@ import { ChatAgentLocation, IChatAgentCommand, IChatAgentData } from '../common/
 import { AgentMode, AgentScope, IChatRequestVariableEntry, IChatResponseModel } from '../common/aideAgentModel.js';
 import { IParsedChatRequest } from '../common/aideAgentParserTypes.js';
 import { CHAT_PROVIDER_ID } from '../common/aideAgentParticipantContribTypes.js';
-import { IChatRequestViewModel, IChatResponseRenderData, IChatResponseViewModel, IChatViewModel, IChatWelcomeMessageViewModel } from '../common/aideAgentViewModel.js';
+import { IChatRequestViewModel, IChatResponseViewModel, IChatViewModel, IChatWelcomeMessageViewModel } from '../common/aideAgentViewModel.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
-import { MarkdownString } from '../../../../base/common/htmlContent.js';
-import { IAideAgentCodeEditsItem } from '../common/aideAgentService.js';
 
 export const IAideAgentWidgetService = createDecorator<IAideAgentWidgetService>('aideAgentWidgetService');
 
@@ -49,20 +47,20 @@ export interface IAideAgentAccessibilityService {
 	acceptResponse(response: IChatResponseViewModel | string | undefined, requestId: number): void;
 }
 
-interface ICodeBlockInfo {
-	readonly ownerMarkdownPartId: string;
+export enum TreeUser {
+	Chat = 'Chat',
+	ReviewPlan = 'ReviewPlan',
+}
+
+export type ITreeUser = `${TreeUser}`;
+
+export interface IChatCodeBlockInfo {
+	ownerMarkdownPartId: string;
 	readonly codeBlockIndex: number;
 	readonly uri: URI | undefined;
 	codemapperUri: URI | undefined;
 	focus(): void;
 	getContent(): string;
-}
-
-export interface IPlanReviewCodeBlockInfo extends ICodeBlockInfo {
-	readonly element: ReviewTreeItem;
-}
-// TODO(@g-danna) Could be merged into one?
-export interface IChatCodeBlockInfo extends ICodeBlockInfo {
 	readonly element: ChatTreeItem;
 }
 
@@ -89,22 +87,6 @@ export interface IChatPlanStepsInfo {
 }
 
 export type ChatTreeItem = IChatRequestViewModel | IChatResponseViewModel | IChatWelcomeMessageViewModel;
-
-
-export interface ReviewTreeItem {
-	title: string;
-	description: MarkdownString;
-	id: string;
-	exchangeId: string;
-	edits: IAideAgentCodeEditsItem[]; // Temporary type
-	currentRenderedHeight: number | undefined;
-	willBeSaved: boolean;
-	isSaved: boolean;
-	willBeDropped: boolean;
-	isComplete: boolean;
-	isCanceled: boolean;
-	renderData?: IChatResponseRenderData;
-}
 
 export interface IChatListItemRendererOptions {
 	readonly renderStyle?: 'default' | 'compact' | 'minimal';

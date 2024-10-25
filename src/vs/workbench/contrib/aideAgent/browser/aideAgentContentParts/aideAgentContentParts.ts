@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { IDisposable } from '../../../../../base/common/lifecycle.js';
-import { ChatTreeItem, ReviewTreeItem } from '../aideAgent.js';
+import { ChatTreeItem } from '../aideAgent.js';
 import { IChatRendererContent } from '../../common/aideAgentViewModel.js';
 
 export interface IChatContentPart extends IDisposable {
@@ -19,14 +19,9 @@ export interface IChatContentPart extends IDisposable {
 }
 
 export interface IChatContentPartRenderContext {
+	user: string; // Is it chat or plan review?
 	element: ChatTreeItem;
 	index: number;
 	content: ReadonlyArray<IChatRendererContent>;
 	preceedingContentParts: ReadonlyArray<IChatContentPart>;
-}
-
-export interface IPlanReviewContentPartRenderContext {
-	element: ReviewTreeItem;
-	preceedingContentParts: ReadonlyArray<IChatContentPart>;
-	index: number;
 }

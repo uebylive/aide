@@ -24,7 +24,7 @@ import { ITreeElement } from '../../../../base/browser/ui/tree/tree.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
 
 // Common agent
-import { ChatTreeItem, IChatWidgetViewOptions, ReviewTreeItem } from './aideAgent.js';
+import { ChatTreeItem, IChatWidgetViewOptions, TreeUser } from './aideAgent.js';
 import { ChatEditorOptions } from './aideAgentOptions.js';
 
 
@@ -397,6 +397,7 @@ export class PlanReviewPane extends ViewPane {
 		const supportsFileReferences: IChatWidgetViewOptions = { supportsFileReferences: true };
 		this.renderer = this._register(scopedInstantiationService.createInstance(
 			ChatListItemRenderer, // same renderer from chat
+			TreeUser.ReviewPlan,
 			this._register(this.instantiationService.createInstance(ChatEditorOptions, 'planReview', AideEditorStyleOptions.listForeground, AideEditorStyleOptions.inputEditorBackground, AideEditorStyleOptions.resultEditorBackground)),
 			// fuck it we ball
 			ChatAgentLocation.Notebook,
@@ -413,13 +414,13 @@ export class PlanReviewPane extends ViewPane {
 			delegate,
 			[this.renderer],
 			{
-				identityProvider: { getId: (e: ReviewTreeItem) => e.id },
+				identityProvider: { getId: (e: ChatTreeItem) => e.id },
 				horizontalScrolling: false,
 				alwaysConsumeMouseWheel: false,
 				supportDynamicHeights: true,
 				hideTwistiesOfChildlessElements: true,
 				accessibilityProvider: this.instantiationService.createInstance(ChatAccessibilityProvider),
-				keyboardNavigationLabelProvider: { getKeyboardNavigationLabel: (e: ReviewTreeItem) => e.title }, // TODO
+				keyboardNavigationLabelProvider: { getKeyboardNavigationLabel: (e: ChatTreeItem) => e.username }, // TODO
 				setRowLineHeight: false,
 				overrideStyles: {
 					listFocusBackground: AideEditorStyleOptions.listBackground,

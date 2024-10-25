@@ -4,53 +4,61 @@
  *--------------------------------------------------------------------------------------------*/
 
 
-.aide-plan-review-item {
-	display: flex;
+.aideagent-item-container.aideagent-review-plan {
+	flex-direction: row;
+	position: relative;
 }
 
-.aide-plan-review-timeline {
+.aideagent-item-container.aideagent-review-plan .header {
+	position: absolute;
+	right: 0;
+	top: 0;
+}
+
+.aideagent-timeline {
 	display: flex;
 	flex-direction: column;
 }
 
-.aide-plan-review-timeline-dot-container {
+.aideagent-timeline-dot-container {
 	display: grid;
-	align-items: center;
-	justify-content: center;
+	place-items: center;
 	width: 16px;
 	height: 16px;
 	/* Max dot size is 16px, so we need to distance it from the top by 2px to center with the title line height */
 	margin-top: 2px;
 }
 
-.aide-plan-review-timeline-dot-container :is(.aide-plan-review-timeline-dot, .aide-plan-review-timeline-save-icon, .aide-plan-review-timeline-drop-icon) {
+.aideagent-timeline-dot-container :is(.aideagent-timeline-dot, .aideagent-timeline-save-icon, .aideagent-timeline-drop-icon) {
 	grid-area: 1 / -1 / 1 / -1;
 }
 
-.aide-plan-review-timeline-dot-container .aide-plan-review-timeline-save-icon {
+.aideagent-timeline-dot-container .aideagent-timeline-save-icon {
 	opacity: 0;
 }
 
-.aide-plan-review-timeline-dot-container .aide-plan-review-timeline-drop-icon {
+.aideagent-timeline-dot-container .aideagent-timeline-drop-icon {
 	opacity: 0;
 }
 
-.aide-plan-review-timeline-dot-container .aide-plan-review-timeline-dot {
+.aideagent-timeline-dot-container .aideagent-timeline-dot {
 	width: 5px;
 	height: 5px;
 	background-color: var(--vscode-editorPane-background);
 	border: 1px solid var(--vscode-descriptionForeground);
+	border-radius: 9999px;
 }
 
-.aide-plan-review-timeline-line-container {
+.aideagent-timeline-line-container {
 	flex-grow: 2;
 	position: relative;
 }
 
-.aide-plan-review-timeline-line {
+.aideagent-timeline-line {
 	position: absolute;
-	top: -3px;
+	top: 0px;
 	bottom: -3px;
+	margin: auto;
 	left: 0;
 	right: 0;
 	width: 1px;
@@ -58,35 +66,37 @@
 	background-color: var(--vscode-descriptionForeground);
 }
 
-.aide-plan-review-content {
+.aideagent-plan-content {
 	display: flex;
 	flex-direction: column;
 	flex-grow: 1;
 }
 
-.aide-plan-review-header {
+/*
+.aideagent-header {
 	display: flex;
 	align-items: baseline;
 	padding-block: 4px;
 	padding-inline: 6px;
 }
 
-.aide-plan-review-title {
+.aideagent-title {
 	font-size: 13px;
 	line-height: 18px;
 	font-weight: 500;
 	color: var(--vscode-interactive-session-foreground);
 }
 
-.aide-plan-review-title::before {
+.aideagent-title::before {
 	content: counter(plan-item) ".";
 	margin-right: 2px;
 	counter-increment: plan-item;
 	color: var(--vscode-editorLineNumber-foreground);
 }
 
-.aide-plan-review-description {
+.aideagent-description {
 	margin-inline: 6px;
 	margin-block-end: 4px;
 	color: var(--vscode-list-deemphasizedForeground);
 }
+*/
