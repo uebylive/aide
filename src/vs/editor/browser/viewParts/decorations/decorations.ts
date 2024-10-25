@@ -13,11 +13,6 @@ import * as viewEvents from '../../../common/viewEvents.js';
 import { ViewModelDecoration } from '../../../common/viewModel.js';
 import { ViewContext } from '../../../common/viewModel/viewContext.js';
 
-
-
-
-
-
 export class DecorationsOverlay extends DynamicViewOverlay {
 
 	private readonly _context: ViewContext;

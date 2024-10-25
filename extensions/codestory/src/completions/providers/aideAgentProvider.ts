@@ -333,7 +333,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	}
 
 	newSession(sessionId: string): void {
-		console.log('newSessionStarting');
+		console.log('newSessionStarting', sessionId);
 		// this.sessionId = sessionId;
 	}
 
