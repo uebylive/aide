@@ -41,6 +41,7 @@ import { ChatInputPart } from './aideAgentInputPart.js';
 import { ChatListDelegate, ChatListItemRenderer, IChatRendererDelegate } from './aideAgentListRenderer.js';
 import { ChatEditorOptions } from './aideAgentOptions.js';
 import './media/aideAgent.css';
+import './media/aideReviewPane.css';
 
 const $ = dom.$;
 

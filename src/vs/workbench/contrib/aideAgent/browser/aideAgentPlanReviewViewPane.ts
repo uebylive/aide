@@ -4,8 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from '../../../../base/browser/dom.js';
-import { DisposableStore, Disposable, IDisposable, dispose, toDisposable, MutableDisposable } from '../../../../base/common/lifecycle.js';
-import { MarkdownRenderer } from '../../../../editor/browser/widget/markdownRenderer/browser/markdownRenderer.js';
+import { DisposableStore, MutableDisposable } from '../../../../base/common/lifecycle.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IContextMenuService } from '../../../../platform/contextview/browser/contextView.js';
@@ -18,40 +17,26 @@ import { ILogService } from '../../../../platform/log/common/log.js';
 import { IOpenerService } from '../../../../platform/opener/common/opener.js';
 import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
-import { getLocationBasedViewColors, IViewPaneOptions, ViewPane } from '../../../browser/parts/views/viewPane.js';
+import { IViewPaneOptions, ViewPane } from '../../../browser/parts/views/viewPane.js';
 import { IViewDescriptorService } from '../../../common/views.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
-import { ITreeElement, ITreeNode, ITreeRenderer } from '../../../../base/browser/ui/tree/tree.js';
-import { FuzzyScore } from '../../../../base/common/filters.js';
-import { IMarkdownString } from '../../../../base/common/htmlContent.js';
-import { coalesce } from '../../../../base/common/arrays.js';
-import { IListVirtualDelegate } from '../../../../base/browser/ui/list/list.js';
-import { ChatCodeBlockContentProvider, CodeBlockPart } from './codeBlockPart.js';
+import { ITreeElement } from '../../../../base/browser/ui/tree/tree.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
-import { ResourceMap } from '../../../../base/common/map.js';
-import { SIDE_BAR_FOREGROUND } from '../../../common/theme.js';
-import { editorBackground } from '../../../../platform/theme/common/colorRegistry.js';
 
 // Common agent
-import { ChatTreeItem, IChatWidgetViewOptions, IPlanReviewCodeBlockInfo, ReviewTreeItem } from './aideAgent.js';
+import { ChatTreeItem, IChatWidgetViewOptions, ReviewTreeItem } from './aideAgent.js';
 import { ChatEditorOptions } from './aideAgentOptions.js';
 
 
 // Taken from chat
 import { ChatViewModel, isRequestVM, isResponseVM } from '../common/aideAgentViewModel.js';
 import { ChatAccessibilityProvider } from './aideAgentAccessibilityProvider.js';
-import { ChatMarkdownRenderer } from './aideAgentMarkdownRenderer.js';
-import { ChatPlanStepPart } from './aideAgentContentParts/aideAgentPlanStepPart.js';
-import { PlanReviewMarkdownContentPart, EditorPool } from './aideAgentContentParts/aideAgentPlanMarkdownContentPart.js';
-import { DiffEditorPool } from './aideAgentContentParts/aideAgentTextEditContentPart.js';
-import { IChatContentPart, IPlanReviewContentPartRenderContext } from './aideAgentContentParts/aideAgentContentParts.js';
 
 // Proprietary for this feature
 import { IPlanReviewViewTitleActionContext } from './actions/aideAgentPlanReviewActions.js';
 
 import './media/aideAgentPlanReview.css';
-import { Heroicon } from '../../../browser/heroicon.js';
-import { ChatListItemRenderer, IChatRendererDelegate } from './aideAgentListRenderer.js';
+import { ChatListDelegate, ChatListItemRenderer, IChatRendererDelegate } from './aideAgentListRenderer.js';
 import { AideEditorStyleOptions } from './aideAgentEditor.js';
 import { ChatAgentLocation } from '../common/aideAgentAgents.js';
 import { disposableTimeout, timeout } from '../../../../base/common/async.js';
@@ -411,7 +396,7 @@ export class PlanReviewPane extends ViewPane {
 
 		const supportsFileReferences: IChatWidgetViewOptions = { supportsFileReferences: true };
 		this.renderer = this._register(scopedInstantiationService.createInstance(
-			ChatListItemRenderer,
+			ChatListItemRenderer, // same renderer from chat
 			this._register(this.instantiationService.createInstance(ChatEditorOptions, 'planReview', AideEditorStyleOptions.listForeground, AideEditorStyleOptions.inputEditorBackground, AideEditorStyleOptions.resultEditorBackground)),
 			// fuck it we ball
 			ChatAgentLocation.Notebook,
@@ -513,282 +498,5 @@ export class PlanReviewPane extends ViewPane {
 		// }
 
 		super.saveState();
-	}
-}
-
-export interface IPlanReviewRendererDelegate {
-	getListLength(): number;
-	readonly onDidScroll?: Event<void>;
-}
-
-interface IReviewListItemTemplate {
-	currentElement?: ReviewTreeItem;
-	renderedParts?: IChatContentPart[];
-	readonly rowContainer: HTMLElement;
-	// readonly titleToolbar?: MenuWorkbenchToolBar;
-	readonly contextKeyService: IContextKeyService;
-	readonly instantiationService: IInstantiationService;
-	readonly templateDisposables: IDisposable;
-	readonly elementDisposables: DisposableStore;
-}
-
-interface IItemHeightChangeParams {
-	element: ReviewTreeItem;
-	height: number;
-}
-
-export class ReviewListItemRenderer extends Disposable implements ITreeRenderer<ReviewTreeItem, FuzzyScore, IReviewListItemTemplate> {
-	static readonly ID = 'item';
-
-	private readonly codeBlocksByResponseId = new Map<string, IPlanReviewCodeBlockInfo[]>();
-	private readonly codeBlocksByEditorUri = new ResourceMap<IPlanReviewCodeBlockInfo>();
-
-	private readonly renderer: MarkdownRenderer;
-
-	protected readonly _onDidChangeItemHeight = this._register(new Emitter<IItemHeightChangeParams>());
-	readonly onDidChangeItemHeight: Event<IItemHeightChangeParams> = this._onDidChangeItemHeight.event;
-
-	private readonly editorOptions: ChatEditorOptions;
-	private readonly _editorPool: EditorPool;
-	private readonly _diffEditorPool: DiffEditorPool;
-	//private readonly _treePool: TreePool;
-	//private readonly _contentReferencesListPool: CollapsibleListPool;
-
-	private _currentLayoutWidth: number = 0;
-	private _onDidChangeVisibility = this._register(new Emitter<boolean>());
-
-	constructor(
-		delegate: IPlanReviewRendererDelegate,
-		private readonly codeBlockModelCollection: CodeBlockModelCollection,
-		overflowWidgetsDomNode: HTMLElement | undefined,
-		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@IConfigurationService configService: IConfigurationService,
-		@IContextKeyService private readonly contextKeyService: IContextKeyService,
-		@IViewDescriptorService private readonly viewDescriptorService: IViewDescriptorService,
-	) {
-		super();
-
-		this.renderer = this._register(this.instantiationService.createInstance(ChatMarkdownRenderer, undefined));
-
-
-		const locationBasedColors = getLocationBasedViewColors(this.viewDescriptorService.getViewLocationById(PLAN_REVIEW_PANEL_ID));
-		const styles = {
-			listForeground: SIDE_BAR_FOREGROUND,
-			listBackground: locationBasedColors.background,
-			overlayBackground: locationBasedColors.overlayBackground,
-			inputEditorBackground: locationBasedColors.background,
-			resultEditorBackground: editorBackground
-		};
-		this.editorOptions = this._register(this.instantiationService.createInstance(ChatEditorOptions, PLAN_REVIEW_PANEL_ID, styles.listForeground, styles.inputEditorBackground, styles.resultEditorBackground));
-		this._editorPool = this._register(this.instantiationService.createInstance(EditorPool, this.editorOptions, delegate, overflowWidgetsDomNode));
-		this._diffEditorPool = this._register(this.instantiationService.createInstance(DiffEditorPool, this.editorOptions, delegate, overflowWidgetsDomNode));
-
-		this._register(this.instantiationService.createInstance(ChatCodeBlockContentProvider));
-	}
-
-	get templateId(): string {
-		return ReviewListItemRenderer.ID;
-	}
-
-	editorsInUse(): Iterable<CodeBlockPart> {
-		return this._editorPool.inUse();
-	}
-
-	setVisible(visible: boolean): void {
-		this._onDidChangeVisibility.fire(visible);
-	}
-
-	layout(width: number): void {
-		this._currentLayoutWidth = width;
-		for (const editor of this._editorPool.inUse()) {
-			editor.layout(this._currentLayoutWidth);
-		}
-		for (const diffEditor of this._diffEditorPool.inUse()) {
-			diffEditor.layout(this._currentLayoutWidth);
-		}
-	}
-
-	renderTemplate(container: HTMLElement): IReviewListItemTemplate {
-		const templateDisposables = new DisposableStore();
-		const rowContainer = dom.append(container, $('.aide-plan-review-item'));
-		const elementDisposables = new DisposableStore();
-
-		const contextKeyService = templateDisposables.add(this.contextKeyService.createScoped(rowContainer));
-		const scopedInstantiationService = templateDisposables.add(this.instantiationService.createChild(new ServiceCollection([IContextKeyService, contextKeyService])));
-
-		const template: IReviewListItemTemplate = { rowContainer, elementDisposables, templateDisposables, contextKeyService, instantiationService: scopedInstantiationService };
-		return template;
-	}
-
-	renderElement(node: ITreeNode<ReviewTreeItem, FuzzyScore>, index: number, templateData: IReviewListItemTemplate): void {
-
-		// console.log('renderElement');
-		// dom.clearNode(templateData.rowContainer);
-		//
-		// Create a container for the title
-		// const titleElement = dom.append(templateData.rowContainer, $('.review-item-title'));
-		// titleElement.textContent = node.element.title;
-
-		// If you want to render the description as well
-		// if (node.element.description) {
-		// 	const descriptionElement = dom.append(templateData.rowContainer, $('.review-item-description'));
-		// 	const renderedMarkdown = this.renderer.render(node.element.description);
-		// 	descriptionElement.appendChild(renderedMarkdown.element);
-		// }
-
-		// Store the current element in the template data
-		// templateData.currentElement = node.element;
-
-		// Update the item height after rendering
-		//this.updateItemHeight(templateData);
-
-		const element = node.element;
-
-		const { title, description } = element;
-		const rowContainer = templateData.rowContainer;
-
-		const context: IPlanReviewContentPartRenderContext = {
-			preceedingContentParts: [],
-			element,
-			index
-		};
-
-		dom.clearNode(rowContainer);
-
-		const timelineElement = dom.append(rowContainer, $('.aide-review-plan-timeline'));
-		const dotContainerElement = dom.append(timelineElement, $('.aide-plan-review-timeline-dot-container'));
-		dom.append(dotContainerElement, $('.aide-plan-review-timeline-dot'));
-		const saveIcon = this.instantiationService.createInstance(Heroicon, dotContainerElement, 'micro/check-circle');
-		saveIcon.svg.classList.add('aide-plan-review-timeline-save-icon');
-		templateData.elementDisposables.add(saveIcon);
-
-		const dropIcon = this.instantiationService.createInstance(Heroicon, dotContainerElement, 'micro/x-circle');
-		dropIcon.svg.classList.add('aide-plan-review-timeline-drop-icon');
-		templateData.elementDisposables.add(dropIcon);
-
-		const contentElement = dom.append(rowContainer, $('.aide-plan-review-content'));
-
-		const header = dom.append(contentElement, $('.aide-plan-review-header'));
-		const titleElement = dom.append(header, $('.aide-plan-review-title'));
-		titleElement.textContent = title;
-
-		const descriptionElement = dom.append(contentElement, $('.aide-plan-review-description'));
-		const markdownPart = this.renderMarkdown(description, templateData, context);
-		descriptionElement.appendChild(markdownPart.domNode);
-
-
-		this.updateItemHeight(templateData);
-		console.log(rowContainer.innerHTML);
-
-	}
-
-
-
-	private updateItemHeight(templateData: IReviewListItemTemplate): void {
-		if (!templateData.currentElement) {
-			return;
-		}
-
-		const newHeight = templateData.rowContainer.offsetHeight;
-		templateData.currentElement.currentRenderedHeight = newHeight;
-		this._onDidChangeItemHeight.fire({ element: templateData.currentElement, height: newHeight });
-	}
-
-	private renderMarkdown(markdown: IMarkdownString, templateData: IReviewListItemTemplate, context: IPlanReviewContentPartRenderContext, width = this._currentLayoutWidth) {
-		const element = context.element;
-		const fillInIncompleteTokens = !element.isComplete || element.isCanceled || !!element.renderData;
-		// we are getting 0 as the codeBlockStartIndex over here which is wrong
-		// cause that implies we will be overwriting all the codeblocks with the same value
-		// which is the one at the very end
-		// or the last entry which will generate a codeblock over here
-		let codeBlockStartIndex = 0;
-		for (const value of context.preceedingContentParts) {
-			if (value instanceof ChatPlanStepPart) {
-				codeBlockStartIndex = codeBlockStartIndex + value.getCodeBlocksPresent();
-			} else {
-				if (value instanceof PlanReviewMarkdownContentPart) {
-					codeBlockStartIndex = codeBlockStartIndex + value.codeblocks.length;
-				}
-			}
-		}
-
-		const markdownPart = this.instantiationService.createInstance(PlanReviewMarkdownContentPart, markdown, context, this._editorPool, fillInIncompleteTokens, codeBlockStartIndex, this.renderer, width, this.codeBlockModelCollection, undefined);
-		const markdownPartId = markdownPart.id;
-		markdownPart.addDisposable(markdownPart.onDidChangeHeight(() => {
-			markdownPart.layout(width);
-			this.updateItemHeight(templateData);
-		}));
-
-		const codeBlocksByResponseId = this.codeBlocksByResponseId.get(element.exchangeId) ?? [];
-		this.codeBlocksByResponseId.set(element.exchangeId, codeBlocksByResponseId);
-		markdownPart.addDisposable(toDisposable(() => {
-			const codeBlocksByResponseId = this.codeBlocksByResponseId.get(element.exchangeId);
-			if (codeBlocksByResponseId) {
-				// Only delete if this is my code block
-				markdownPart.codeblocks.forEach((info, i) => {
-					const codeblock = codeBlocksByResponseId[codeBlockStartIndex + i];
-					if (codeblock?.ownerMarkdownPartId === markdownPartId) {
-						delete codeBlocksByResponseId[codeBlockStartIndex + i];
-					}
-				});
-			}
-		}));
-
-		markdownPart.codeblocks.forEach((info, i) => {
-			codeBlocksByResponseId[codeBlockStartIndex + i] = info;
-			if (info.uri) {
-				const uri = info.uri;
-				this.codeBlocksByEditorUri.set(uri, info);
-				markdownPart.addDisposable(toDisposable(() => {
-					const codeblock = this.codeBlocksByEditorUri.get(uri);
-					if (codeblock?.ownerMarkdownPartId === markdownPartId) {
-						this.codeBlocksByEditorUri.delete(uri);
-					}
-				}));
-			}
-		});
-
-		return markdownPart;
-	}
-
-	disposeElement(node: ITreeNode<ReviewTreeItem, FuzzyScore>, index: number, templateData: IReviewListItemTemplate): void {
-
-		// We could actually reuse a template across a renderElement call?
-		if (templateData.renderedParts) {
-			try {
-				dispose(coalesce(templateData.renderedParts));
-				templateData.renderedParts = undefined;
-				dom.clearNode(templateData.rowContainer);
-			} catch (err) {
-				throw err;
-			}
-		}
-
-		templateData.currentElement = undefined;
-		templateData.elementDisposables.clear();
-	}
-
-	disposeTemplate(templateData: IReviewListItemTemplate): void {
-		templateData.templateDisposables.dispose();
-	}
-}
-
-export class ChatListDelegate implements IListVirtualDelegate<ReviewTreeItem> {
-	constructor(
-		private readonly defaultElementHeight: number,
-	) { }
-
-
-	getHeight(element: ReviewTreeItem): number {
-		const height = ('currentRenderedHeight' in element ? element.currentRenderedHeight : undefined) ?? this.defaultElementHeight;
-		return height;
-	}
-
-	getTemplateId(element: ReviewTreeItem): string {
-		return ReviewListItemRenderer.ID;
-	}
-
-	hasDynamicHeight(element: ReviewTreeItem): boolean {
-		return true;
 	}
 }
