@@ -4,35 +4,44 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from '../../../../../base/browser/dom.js';
+import { Button } from '../../../../../base/browser/ui/button/button.js';
+import { IListRenderer, IListVirtualDelegate } from '../../../../../base/browser/ui/list/list.js';
+import { Emitter, Event } from '../../../../../base/common/event.js';
 import { Disposable, DisposableStore } from '../../../../../base/common/lifecycle.js';
-import { IChatRequestVariableEntry } from '../../common/aideAgentModel.js';
-import { Emitter } from '../../../../../base/common/event.js';
-import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
-import { ResourceLabels } from '../../../../browser/labels.js';
-import { URI } from '../../../../../base/common/uri.js';
-import { FileKind } from '../../../../../platform/files/common/files.js';
-import { Range } from '../../../../../editor/common/core/range.js';
 import { basename, dirname } from '../../../../../base/common/path.js';
+import { URI } from '../../../../../base/common/uri.js';
+import { Range } from '../../../../../editor/common/core/range.js';
 import { localize } from '../../../../../nls.js';
-import { ChatResponseReferencePartStatusKind, IChatContentReference } from '../../common/aideAgentService.js';
+import { FileKind } from '../../../../../platform/files/common/files.js';
+import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
+import { WorkbenchList } from '../../../../../platform/list/browser/listService.js';
 import { IOpenerService } from '../../../../../platform/opener/common/opener.js';
+import { IThemeService } from '../../../../../platform/theme/common/themeService.js';
+import { IResourceLabel, ResourceLabels } from '../../../../browser/labels.js';
+import { createFileIconThemableTreeContainerScope } from '../../../files/browser/views/explorerView.js';
+import { IChatRequestVariableEntry } from '../../common/aideAgentModel.js';
+import { ChatResponseReferencePartStatusKind, IChatContentReference } from '../../common/aideAgentService.js';
+import { IDisposableReference, ResourcePool } from './aideAgentCollections.js';
+
+const $ = dom.$;
 
 export class ChatAttachmentsContentPart extends Disposable {
-	private readonly attachedContextDisposables = this._register(new DisposableStore());
+	public readonly domNode: HTMLElement;
 
-	private readonly _onDidChangeVisibility = this._register(new Emitter<boolean>());
-	private readonly _contextResourceLabels = this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this._onDidChangeVisibility.event });
+	private readonly attachedContextDisposables = this._register(new DisposableStore());
+	private readonly _onDidChangeHeight = this._register(new Emitter<void>());
+	public readonly onDidChangeHeight = this._onDidChangeHeight.event;
 
 	constructor(
 		private readonly variables: IChatRequestVariableEntry[],
-		private readonly contentReferences: ReadonlyArray<IChatContentReference> = [],
-		public readonly domNode: HTMLElement = dom.$('.chat-attached-context'),
-		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@IOpenerService private readonly openerService: IOpenerService,
+		private readonly contentReferences: readonly IChatContentReference[] | undefined,
+		private readonly attachmentsCollapsibleListPool: AttachmentsCollapsibleListPool,
+		@IThemeService private readonly themeService: IThemeService,
 	) {
 		super();
 
-		this.initAttachedContext(domNode);
+		this.domNode = dom.$('.aideagent-attached-context');
+		this.initAttachedContext(this.domNode);
 	}
 
 	private initAttachedContext(container: HTMLElement) {
@@ -40,85 +49,207 @@ export class ChatAttachmentsContentPart extends Disposable {
 		this.attachedContextDisposables.clear();
 		dom.setVisibility(Boolean(this.variables.length), this.domNode);
 
-		this.variables.forEach((attachment) => {
-			const widget = dom.append(container, dom.$('.chat-attached-context-attachment.show-file-icons'));
-			const label = this._contextResourceLabels.create(widget, { supportIcons: true });
-			const file = URI.isUri(attachment.value) ? attachment.value : attachment.value && typeof attachment.value === 'object' && 'uri' in attachment.value && URI.isUri(attachment.value.uri) ? attachment.value.uri : undefined;
-			// TODO(skcd): Fix the range over here properly, now everything shows up as 42
-			const range = attachment.value && typeof attachment.value === 'object' && 'range' in attachment.value && Range.isIRange(attachment.value.range) ? attachment.value.range : undefined;
+		if (this.variables.length) {
+			const attachmentsLabel = this.variables.length > 1 ?
+				localize('attachmentsPlural', "{0} attachments", this.variables.length) :
+				localize('attachmentsSingular', "1 attachment");
 
-			const correspondingContentReference = this.contentReferences.find((ref) => typeof ref.reference === 'object' && 'variableName' in ref.reference && ref.reference.variableName === attachment.name);
-			const isAttachmentOmitted = correspondingContentReference?.options?.status?.kind === ChatResponseReferencePartStatusKind.Omitted;
-			const isAttachmentPartialOrOmitted = isAttachmentOmitted || correspondingContentReference?.options?.status?.kind === ChatResponseReferencePartStatusKind.Partial;
+			const buttonElement = $('.aideagent-attachments-label.show-file-icons', undefined);
+			const collapseButton = this._register(new Button(buttonElement, {
+				buttonBackground: undefined,
+				buttonBorder: undefined,
+				buttonForeground: undefined,
+				buttonHoverBackground: undefined,
+				buttonSecondaryBackground: undefined,
+				buttonSecondaryForeground: undefined,
+				buttonSecondaryHoverBackground: undefined,
+				buttonSeparator: undefined
+			}));
+			container.appendChild(buttonElement);
+			collapseButton.element.textContent = attachmentsLabel;
+			this.updateAriaLabel(collapseButton.element, attachmentsLabel, true);
+			let expanded = false;
+			this._register(collapseButton.onDidClick(() => {
+				expanded = !expanded;
+				listContainer.classList.toggle('hidden', !expanded);
+				this._onDidChangeHeight.fire();
+				this.updateAriaLabel(collapseButton.element, attachmentsLabel, expanded);
+			}));
 
-			if (file) {
-				const fileBasename = basename(file.path);
-				const fileDirname = dirname(file.path);
-				const friendlyName = `${fileBasename} ${fileDirname}`;
-				let ariaLabel;
-				if (isAttachmentOmitted) {
-					ariaLabel = range ? localize('chat.omittedFileAttachmentWithRange', "Omitted: {0}, line {1} to line {2}.", friendlyName, range.startLineNumber, range.endLineNumber) : localize('chat.omittedFileAttachment', "Omitted: {0}.", friendlyName);
-				} else if (isAttachmentPartialOrOmitted) {
-					ariaLabel = range ? localize('chat.partialFileAttachmentWithRange', "Partially attached: {0}, line {1} to line {2}.", friendlyName, range.startLineNumber, range.endLineNumber) : localize('chat.partialFileAttachment', "Partially attached: {0}.", friendlyName);
-				} else {
-					ariaLabel = range ? localize('chat.fileAttachmentWithRange3', "Attached: {0}, line {1} to line {2}.", friendlyName, range.startLineNumber, range.endLineNumber) : localize('chat.fileAttachment3', "Attached: {0}.", friendlyName);
-				}
+			const listContainer = dom.append(container, $('.chat-attachments-list'));
+			this._register(createFileIconThemableTreeContainerScope(listContainer, this.themeService));
 
-				let updatedRange = range;
-				// if the range starts and ends at the same line and the variable
-				// id is vscode.file.rangeNotSetProperlyFullFile
-				if (range?.startLineNumber === 42 && range.endLineNumber === 42 || attachment.id === 'vscode.file.rangeNotSetProperlyFullFile') {
-					updatedRange = undefined;
-				}
-				label.setFile(file, {
-					fileKind: FileKind.FILE,
-					hidePath: true,
-					// put the updated range over here
-					range: updatedRange,
-					title: correspondingContentReference?.options?.status?.description
-				});
-				widget.ariaLabel = ariaLabel;
-				widget.tabIndex = 0;
-				widget.style.cursor = 'pointer';
+			const ref = this._register(this.attachmentsCollapsibleListPool.get());
+			const list = ref.object;
+			listContainer.appendChild(list.getHTMLElement().parentElement!);
 
-				this.attachedContextDisposables.add(dom.addDisposableListener(widget, dom.EventType.CLICK, async (e: MouseEvent) => {
-					dom.EventHelper.stop(e, true);
-					if (file) {
-						this.openerService.open(
-							file,
-							{
-								fromUserGesture: true,
-								editorOptions: {
-									// set the selection to the updated range we have
-									// over here
-									selection: updatedRange,
-								} as any
-							});
-					}
-				}));
-			} else {
-				const attachmentLabel = attachment.fullName ?? attachment.name;
-				const withIcon = attachment.icon?.id ? `$(${attachment.icon.id}) ${attachmentLabel}` : attachmentLabel;
-				label.setLabel(withIcon, correspondingContentReference?.options?.status?.description);
+			const maxItemsShown = 6;
+			const itemsShown = Math.min(this.variables.length, maxItemsShown);
+			const height = itemsShown * 22;
+			list.layout(height);
+			list.getHTMLElement().style.height = `${height}px`;
+			list.splice(0, list.length, this.variables);
+		}
+	}
 
-				widget.ariaLabel = localize('chat.attachment3', "Attached context: {0}.", attachment.name);
-				widget.tabIndex = 0;
-			}
-
-			if (isAttachmentPartialOrOmitted) {
-				widget.classList.add('warning');
-			}
-			const description = correspondingContentReference?.options?.status?.description;
-			if (isAttachmentPartialOrOmitted) {
-				widget.ariaLabel = `${widget.ariaLabel}${description ? ` ${description}` : ''}`;
-				for (const selector of ['.monaco-icon-suffix-container', '.monaco-icon-name-container']) {
-					const element = label.element.querySelector(selector);
-					if (element) {
-						element.classList.add('warning');
-					}
-				}
-			}
-		});
+	private updateAriaLabel(element: HTMLElement, label: string, expanded: boolean): void {
+		element.ariaLabel = expanded ? localize('attachmentsExpanded', "{0}, expanded", label) : localize('attachmentsCollapsed', "{0}, collapsed", label);
 	}
 }
 
+export class AttachmentsCollapsibleListPool extends Disposable {
+	private _pool: ResourcePool<WorkbenchList<IChatRequestVariableEntry>>;
+
+	public get inUse(): ReadonlySet<WorkbenchList<IChatRequestVariableEntry>> {
+		return this._pool.inUse;
+	}
+
+	constructor(
+		private _onDidChangeVisibility: Event<boolean>,
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IThemeService private readonly themeService: IThemeService,
+	) {
+		super();
+		this._pool = this._register(new ResourcePool(() => this.listFactory()));
+	}
+
+	private listFactory(): WorkbenchList<IChatRequestVariableEntry> {
+		const resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this._onDidChangeVisibility }));
+
+		const container = $('.chat-attachments-list');
+		this._register(createFileIconThemableTreeContainerScope(container, this.themeService));
+
+		const list = this.instantiationService.createInstance(
+			WorkbenchList<IChatRequestVariableEntry>,
+			'ChatAttachmentsListRenderer',
+			container,
+			new CollapsibleListDelegate(),
+			[this.instantiationService.createInstance(CollapsibleListRenderer, resourceLabels)],
+			{
+				alwaysConsumeMouseWheel: false,
+			}
+		);
+		return list;
+	}
+
+	get(): IDisposableReference<WorkbenchList<IChatRequestVariableEntry>> {
+		const object = this._pool.get();
+		let stale = false;
+		return {
+			object,
+			isStale: () => stale,
+			dispose: () => {
+				stale = true;
+				this._pool.release(object);
+			}
+		};
+	}
+}
+
+class CollapsibleListDelegate implements IListVirtualDelegate<IChatRequestVariableEntry> {
+	getHeight(element: IChatRequestVariableEntry): number {
+		return 22;
+	}
+
+	getTemplateId(element: IChatRequestVariableEntry): string {
+		return CollapsibleListRenderer.TEMPLATE_ID;
+	}
+}
+
+interface ICollapsibleListTemplate {
+	label: IResourceLabel;
+	templateDisposables: DisposableStore;
+}
+
+class CollapsibleListRenderer implements IListRenderer<IChatRequestVariableEntry, ICollapsibleListTemplate> {
+	static TEMPLATE_ID = 'chatCollapsibleListRenderer';
+	readonly templateId: string = CollapsibleListRenderer.TEMPLATE_ID;
+
+	constructor(
+		private readonly labels: ResourceLabels,
+		@IOpenerService private readonly openerService: IOpenerService,
+	) { }
+
+	renderTemplate(container: HTMLElement): ICollapsibleListTemplate {
+		const templateDisposables = new DisposableStore();
+		const label = templateDisposables.add(this.labels.create(container, { supportHighlights: true, supportIcons: true }));
+		return { templateDisposables, label };
+	}
+
+	renderElement(element: IChatRequestVariableEntry, index: number, templateData: ICollapsibleListTemplate, height: number | undefined): void {
+		const { label } = templateData;
+		const file = URI.isUri(element.value) ? element.value : element.value && typeof element.value === 'object' && 'uri' in element.value && URI.isUri(element.value.uri) ? element.value.uri : undefined;
+		const range = element.value && typeof element.value === 'object' && 'range' in element.value && Range.isIRange(element.value.range) ? element.value.range : undefined;
+
+		const correspondingContentReference = element.references?.find((ref) => typeof ref.reference === 'object' && 'variableName' in ref.reference && ref.reference.variableName === element.name);
+		const isAttachmentOmitted = correspondingContentReference?.options?.status?.kind === ChatResponseReferencePartStatusKind.Omitted;
+		const isAttachmentPartialOrOmitted = isAttachmentOmitted || correspondingContentReference?.options?.status?.kind === ChatResponseReferencePartStatusKind.Partial;
+
+		if (file) {
+			const fileBasename = basename(file.path);
+			const fileDirname = dirname(file.path);
+			const friendlyName = `${fileBasename} ${fileDirname}`;
+			let ariaLabel;
+			if (isAttachmentOmitted) {
+				ariaLabel = range ? localize('chat.omittedFileAttachmentWithRange', "Omitted: {0}, line {1} to line {2}.", friendlyName, range.startLineNumber, range.endLineNumber) : localize('chat.omittedFileAttachment', "Omitted: {0}.", friendlyName);
+			} else if (isAttachmentPartialOrOmitted) {
+				ariaLabel = range ? localize('chat.partialFileAttachmentWithRange', "Partially attached: {0}, line {1} to line {2}.", friendlyName, range.startLineNumber, range.endLineNumber) : localize('chat.partialFileAttachment', "Partially attached: {0}.", friendlyName);
+			} else {
+				ariaLabel = range ? localize('chat.fileAttachmentWithRange3', "Attached: {0}, line {1} to line {2}.", friendlyName, range.startLineNumber, range.endLineNumber) : localize('chat.fileAttachment3', "Attached: {0}.", friendlyName);
+			}
+
+			let updatedRange = range;
+			if (range?.startLineNumber === 42 && range.endLineNumber === 42 || element.id === 'vscode.file.rangeNotSetProperlyFullFile') {
+				updatedRange = undefined;
+			}
+			label.setFile(file, {
+				fileKind: FileKind.FILE,
+				hidePath: true,
+				range: updatedRange,
+				title: correspondingContentReference?.options?.status?.description
+			});
+			label.element.ariaLabel = ariaLabel;
+			label.element.tabIndex = 0;
+			label.element.style.cursor = 'pointer';
+
+			templateData.templateDisposables.add(dom.addDisposableListener(label.element, dom.EventType.CLICK, async (e: MouseEvent) => {
+				dom.EventHelper.stop(e, true);
+				if (file) {
+					this.openerService.open(
+						file,
+						{
+							fromUserGesture: true,
+							editorOptions: {
+								selection: updatedRange,
+							} as any
+						});
+				}
+			}));
+		} else {
+			const attachmentLabel = element.fullName ?? element.name;
+			const withIcon = element.icon?.id ? `$(${element.icon.id}) ${attachmentLabel}` : attachmentLabel;
+			label.setLabel(withIcon, correspondingContentReference?.options?.status?.description);
+
+			label.element.ariaLabel = localize('chat.attachment3', "Attached context: {0}.", element.name);
+			label.element.tabIndex = 0;
+		}
+
+		if (isAttachmentPartialOrOmitted) {
+			label.element.classList.add('warning');
+		}
+		const description = correspondingContentReference?.options?.status?.description;
+		if (isAttachmentPartialOrOmitted) {
+			label.element.ariaLabel = `${label.element.ariaLabel}${description ? ` ${description}` : ''}`;
+			for (const selector of ['.monaco-icon-suffix-container', '.monaco-icon-name-container']) {
+				const element = label.element.querySelector(selector);
+				if (element) {
+					element.classList.add('warning');
+				}
+			}
+		}
+	}
+
+	disposeTemplate(templateData: ICollapsibleListTemplate): void {
+		templateData.templateDisposables.dispose();
+	}
+}
