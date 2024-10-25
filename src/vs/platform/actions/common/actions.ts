@@ -232,6 +232,7 @@ export class MenuId {
 	static readonly AideAgentCodeBlock = new MenuId('AideAgentCodeblock');
 	static readonly AideAgentCompareBlock = new MenuId('AideAgentCompareBlock');
 	static readonly AideAgentMessageTitle = new MenuId('AideAgentMessageTitle');
+	static readonly AideAgentReviewPlanSteps = new MenuId('AideAgentReviewPlanSteps');
 	static readonly AideAgentExecute = new MenuId('AideAgentExecute');
 	static readonly AideAgentExecuteSecondary = new MenuId('AideAgentExecuteSecondary');
 	static readonly AideAgentInput = new MenuId('AideAgentInput');

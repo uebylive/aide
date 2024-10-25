@@ -11,8 +11,8 @@
 
 .aideagent-item-container.aideagent-review-plan .header {
 	position: absolute;
-	right: 0;
-	top: 0;
+	right: 8px;
+	top: 16px;
 }
 
 .aideagent-timeline {

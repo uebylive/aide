@@ -13,6 +13,10 @@ export interface IPlanReviewViewTitleActionContext {
 	planReviewView: PlanReviewPane;
 }
 
+export interface IPlanReviewStepActionContext {
+	stepIndex: number;
+}
+
 export const PLAN_REVIEW_CATEGORY = localize2('aideAgent.category', 'Aide');
 
 export function registerPlanReviewActions() {
@@ -61,6 +65,53 @@ export function registerPlanReviewActions() {
 			console.log('Provide feedback', context);
 		}
 	});
+
+	registerAction2(class DropStepsAfterAction extends Action2 {
+		constructor() {
+			super({
+				id: 'workbench.action.aideAgent.reviewPlan.dropStepsAfter',
+				title: localize2('aideAgent.planReview.dropStepsAfter', "Drop this step and following ones"),
+				category: PLAN_REVIEW_CATEGORY,
+				icon: Codicon.close,
+				menu: [
+					{
+						id: MenuId.AideAgentReviewPlanSteps,
+						// when: ContextKeyExpr.equals('view', PLAN_REVIEW_PANEL_ID),
+						group: 'navigation',
+						order: 0
+					}]
+			});
+		}
+
+		run(accessor: any, context: IPlanReviewStepActionContext) {
+			console.log('Drop from step', context.stepIndex);
+		}
+	});
+
+	registerAction2(class SaveStepsUpToAction extends Action2 {
+		constructor() {
+			super({
+				id: 'workbench.action.aideAgent.reviewPlan.saveStepsUpTo',
+				title: localize2('aideAgent.planReview.saveStepsUpTo', "Save steps up to this one"),
+				category: PLAN_REVIEW_CATEGORY,
+				icon: Codicon.check,
+				menu: [
+					{
+						id: MenuId.AideAgentReviewPlanSteps,
+						//when: ContextKeyExpr.equals('view', PLAN_REVIEW_PANEL_ID),
+						group: 'navigation',
+						order: 1
+					}]
+			});
+		}
+
+		run(accessor: any, context: IPlanReviewStepActionContext) {
+			console.log(context);
+			console.log('Save up to step ', context.stepIndex);
+		}
+	});
+
+	// AideAgentReviewPlanSteps
 
 	registerAction2(class RejectAllAction extends Action2 {
 		constructor() {
