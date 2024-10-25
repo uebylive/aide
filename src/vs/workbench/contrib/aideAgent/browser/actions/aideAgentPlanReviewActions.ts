@@ -7,6 +7,7 @@ import { Codicon } from '../../../../../base/common/codicons.js';
 import { localize2 } from '../../../../../nls.js';
 import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
 import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
+import { ServicesAccessor } from '../../../../../platform/instantiation/common/instantiation.js';
 import { PLAN_REVIEW_PANEL_ID, PlanReviewPane } from '../aideAgentPlanReviewViewPane.js';
 
 export interface IPlanReviewViewTitleActionContext {
@@ -22,51 +23,52 @@ export interface IPlanReviewStepActionContext {
 export const PLAN_REVIEW_CATEGORY = localize2('aideAgent.category', 'Aide');
 
 export function registerPlanReviewActions() {
-	registerAction2(class ToggleReasoningAction extends Action2 {
-		constructor() {
-			super({
-				id: 'workbench.action.aideAgent.reviewPlan.toggleReasoning',
-				title: localize2('aideAgent.planReview.toggleReasoning', "New Session"),
-				category: PLAN_REVIEW_CATEGORY,
-				icon: Codicon.unfold,
-				f1: true,
-				menu: [
-					{
-						id: MenuId.ViewTitle,
-						when: ContextKeyExpr.equals('view', PLAN_REVIEW_PANEL_ID),
-						group: 'navigation',
-						order: 0
-					}]
-			});
-		}
+	// Disable the toggle reasoning and the provide Feedback flow
+	// registerAction2(class ToggleReasoningAction extends Action2 {
+	// 	constructor() {
+	// 		super({
+	// 			id: 'workbench.action.aideAgent.reviewPlan.toggleReasoning',
+	// 			title: localize2('aideAgent.planReview.toggleReasoning', "New Session"),
+	// 			category: PLAN_REVIEW_CATEGORY,
+	// 			icon: Codicon.unfold,
+	// 			f1: true,
+	// 			menu: [
+	// 				{
+	// 					id: MenuId.ViewTitle,
+	// 					when: ContextKeyExpr.equals('view', PLAN_REVIEW_PANEL_ID),
+	// 					group: 'navigation',
+	// 					order: 0
+	// 				}]
+	// 		});
+	// 	}
 
-		run(accessor: any, context: IPlanReviewViewTitleActionContext) {
-			console.log('Toggle reasoning', context);
-		}
-	});
+	// 	run(accessor: ServicesAccessor, context: IPlanReviewViewTitleActionContext) {
+	// 		console.log('Toggle reasoning', context);
+	// 	}
+	// });
 
-	registerAction2(class ProvideFeedbackAction extends Action2 {
-		constructor() {
-			super({
-				id: 'workbench.action.aideAgent.reviewPlan.provideFeedback',
-				title: localize2('aideAgent.planReview.provideFeedback', "New Session"),
-				category: PLAN_REVIEW_CATEGORY,
-				icon: Codicon.commentDiscussion,
-				f1: true,
-				menu: [
-					{
-						id: MenuId.ViewTitle,
-						when: ContextKeyExpr.equals('view', PLAN_REVIEW_PANEL_ID),
-						group: 'navigation',
-						order: 1
-					}]
-			});
-		}
+	// registerAction2(class ProvideFeedbackAction extends Action2 {
+	// 	constructor() {
+	// 		super({
+	// 			id: 'workbench.action.aideAgent.reviewPlan.provideFeedback',
+	// 			title: localize2('aideAgent.planReview.provideFeedback', "New Session"),
+	// 			category: PLAN_REVIEW_CATEGORY,
+	// 			icon: Codicon.commentDiscussion,
+	// 			f1: true,
+	// 			menu: [
+	// 				{
+	// 					id: MenuId.ViewTitle,
+	// 					when: ContextKeyExpr.equals('view', PLAN_REVIEW_PANEL_ID),
+	// 					group: 'navigation',
+	// 					order: 1
+	// 				}]
+	// 		});
+	// 	}
 
-		run(accessor: any, context: IPlanReviewViewTitleActionContext) {
-			console.log('Provide feedback', context);
-		}
-	});
+	// 	run(accessor: any, context: IPlanReviewViewTitleActionContext) {
+	// 		console.log('Provide feedback', context);
+	// 	}
+	// });
 
 	registerAction2(class DropStepsAfterAction extends Action2 {
 		constructor() {
@@ -85,8 +87,8 @@ export function registerPlanReviewActions() {
 			});
 		}
 
-		run(accessor: any, context: IPlanReviewStepActionContext) {
-			console.log('Drop from step', context.stepIndex);
+		run(accessor: ServicesAccessor, context: IPlanReviewStepActionContext) {
+			console.log('Drop from step', context.stepIndex, context.sessionId, context.exchangeId);
 		}
 	});
 
@@ -107,7 +109,7 @@ export function registerPlanReviewActions() {
 			});
 		}
 
-		run(accessor: any, context: IPlanReviewStepActionContext) {
+		run(accessor: ServicesAccessor, context: IPlanReviewStepActionContext) {
 			console.log(context);
 			console.log('Save up to step ', context.stepIndex, context.sessionId, context.exchangeId);
 		}
@@ -156,7 +158,7 @@ export function registerPlanReviewActions() {
 			});
 		}
 
-		run(accessor: any, context: IPlanReviewViewTitleActionContext) {
+		run(accessor: ServicesAccessor, context: IPlanReviewViewTitleActionContext) {
 			console.log('Accept all', context);
 		}
 	});
