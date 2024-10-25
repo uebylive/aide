@@ -37,6 +37,7 @@ declare module 'vscode' {
 	export enum AideAgentStreamingStateEnum {
 		Loading = 'loading',
 		WaitingFeedback = 'waitingFeedback',
+		Finished = 'finished',
 	}
 
 	export type AideAgentStreamingStateType = `${AideAgentStreamingStateEnum}`;

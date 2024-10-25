@@ -33,7 +33,7 @@ export function isWelcomeVM(item: unknown): item is IChatWelcomeMessageViewModel
 	return !!item && typeof item === 'object' && 'content' in item;
 }
 
-export type IChatViewModelChangeEvent = IChatAddRequestEvent | IChangePlaceholderEvent | IChatSessionInitEvent | null;
+export type IChatViewModelChangeEvent = IChatAddRequestEvent | IChangePlaceholderEvent | IChatSessionInitEvent | IChatStreamingState | null;
 
 export interface IChatAddRequestEvent {
 	kind: 'addRequest';
@@ -54,7 +54,6 @@ export interface IChatViewModel {
 	readonly onDidDisposeModel: Event<void>;
 	readonly onDidChange: Event<IChatViewModelChangeEvent>;
 	readonly requestInProgress: boolean;
-	readonly lastStreamingState: IChatStreamingState | undefined;
 	readonly inputPlaceholder?: string;
 	getItems(): (IChatRequestViewModel | IChatResponseViewModel | IChatWelcomeMessageViewModel)[];
 	setInputPlaceholder(text: string): void;
@@ -232,10 +231,6 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 		return this._model.requestInProgress;
 	}
 
-	get lastStreamingState() {
-		return this._model.lastStreamingState;
-	}
-
 	get initState() {
 		return this._model.initState;
 	}
@@ -285,6 +280,8 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 						item.dispose();
 					}
 				}
+			} else if (e.kind === 'streamingState') {
+				this._onDidChange.fire(e);
 			}
 
 			const modelEventToVmEvent: IChatViewModelChangeEvent = e.kind === 'addRequest' ? { kind: 'addRequest' } :
