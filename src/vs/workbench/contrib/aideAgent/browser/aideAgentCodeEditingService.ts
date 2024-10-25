@@ -522,7 +522,7 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 		await this.processWorkspaceEdit(workspaceEditForRevert);
 	}
 
-	async fileLocationForEditsMade(sessionId: string, exchangeId: string): Promise<Map<URI, Range[]>> {
+	fileLocationForEditsMade(sessionId: string, exchangeId: string): Map<URI, Range[]> {
 		if (sessionId !== this.sessionId) {
 			return new Map();
 		}
@@ -584,6 +584,16 @@ export class AideAgentCodeEditingService extends Disposable implements IAideAgen
 		@IInstantiationService private readonly instantiationService: IInstantiationService
 	) {
 		super();
+	}
+
+	doesExchangeHaveEdits(sessionId: string, exchangeId: string): boolean {
+		const editingSession = this._sessions.get(sessionId);
+		if (!editingSession) {
+			return false;
+		}
+		const fileLocationWithEdits = editingSession.fileLocationForEditsMade(sessionId, exchangeId);
+		// If the edits location is not empty, then we for sure have some edits
+		return fileLocationWithEdits.size !== 0;
 	}
 
 	getOrStartCodeEditingSession(sessionId: string): IAideAgentCodeEditingSession {

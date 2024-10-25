@@ -120,9 +120,6 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 
 	private inputSideToolbarContainer?: HTMLElement;
 	private _streamingStateWidget: StreamingStateWidget | undefined;
-	get streamingStateWidget() {
-		return this._streamingStateWidget;
-	}
 
 	private followupsContainer!: HTMLElement;
 	private readonly followupsDisposables = this._register(new DisposableStore());

@@ -362,9 +362,15 @@ export class ChatService extends Disposable implements IAideAgentService {
 	}
 
 	private progressCallback(model: ChatModel, response: ChatResponseModel | undefined, progress: IChatProgress, token: CancellationToken): void {
-		if (token.isCancellationRequested) {
-			return;
-		}
+		// TODO(skcd): There is a race condition over here, we have the cancellation token which we set to cancelled and stop processing requests
+		// for the exchange at the moment but there are terminating events which get sent on cancellation, we have to understand a better way
+		// to notify the system that the exchange has terminated, what we have now works but breaks since we need to send additional cleanup
+		// actions when the cancellation is triggered
+		// The guarantee we can establish is that the external system will make sure that we terminate the model over here correctly instead of relying
+		// on cancellation token over here as a proxy to stop reacting to events
+		// if (token.isCancellationRequested) {
+		// 	return;
+		// }
 
 		if (progress.kind === 'endResponse' && response) {
 			model.completeResponse(response);

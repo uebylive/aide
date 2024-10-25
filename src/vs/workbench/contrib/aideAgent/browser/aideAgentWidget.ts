@@ -26,6 +26,7 @@ import { ILogService } from '../../../../platform/log/common/log.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgentData } from '../common/aideAgentAgents.js';
+import { IAideAgentCodeEditingService } from '../common/aideAgentCodeEditingService.js';
 import { CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_RESPONSE_WITH_PLAN_STEPS, CONTEXT_IN_CHAT_SESSION, CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER, CONTEXT_RESPONSE_FILTERED, CONTEXT_STREAMING_STATE } from '../common/aideAgentContextKeys.js';
 import { AgentMode, AgentScope, ChatModelInitState, IChatModel, IChatRequestVariableEntry, IChatResponseModel } from '../common/aideAgentModel.js';
 import { ChatRequestAgentPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader, formatChatQuestion } from '../common/aideAgentParserTypes.js';
@@ -202,6 +203,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IAideAgentService private readonly chatService: IAideAgentService,
 		@IAideAgentAgentService private readonly chatAgentService: IAideAgentAgentService,
+		@IAideAgentCodeEditingService private readonly aideAgentCodeEditingService: IAideAgentCodeEditingService,
 		@IAideAgentWidgetService chatWidgetService: IAideAgentWidgetService,
 		@IContextMenuService private readonly contextMenuService: IContextMenuService,
 		@IAideAgentAccessibilityService private readonly chatAccessibilityService: IAideAgentAccessibilityService,
@@ -815,6 +817,25 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		if (state === 'finished') {
 			CONTEXT_STREAMING_STATE.bindTo(this.contextKeyService).set(undefined);
 			this.inputPart.hideStreamingState();
+		} else if (state === 'cancelled') {
+			// If the streaming state is showing cancelled, then we have to first
+			// check if there are any edits associated with the session and the exchange
+			// and do operations based on top of that
+			if (this.aideAgentCodeEditingService.doesExchangeHaveEdits(event.sessionId, event.exchangeId)) {
+				CONTEXT_STREAMING_STATE.bindTo(this.contextKeyService).set('waitingFeedback');
+				this.inputPart.updateStreamingState({
+					exchangeId: event.exchangeId,
+					sessionId: event.sessionId,
+					isError: event.isError,
+					kind: 'streamingState',
+					state: 'waitingFeedback',
+					loadingLabel: event.loadingLabel,
+					message: event.message,
+				});
+			} else {
+				CONTEXT_STREAMING_STATE.bindTo(this.contextKeyService).set(undefined);
+				this.inputPart.hideStreamingState();
+			}
 		} else {
 			CONTEXT_STREAMING_STATE.bindTo(this.contextKeyService).set(state);
 			this.inputPart.updateStreamingState(event);
