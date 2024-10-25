@@ -7,10 +7,11 @@ import { Codicon } from '../../../../../base/common/codicons.js';
 import { KeyCode, KeyMod } from '../../../../../base/common/keyCodes.js';
 import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions.js';
 import { localize2 } from '../../../../../nls.js';
-import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
+import { Action2, MenuId, MenuRegistry, registerAction2 } from '../../../../../platform/actions/common/actions.js';
 import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
+import { IsDevelopmentContext } from '../../../../../platform/contextkey/common/contextkeys.js';
 import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
-import { CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_INPUT, CONTEXT_STREAMING_STATE } from '../../common/aideAgentContextKeys.js';
+import { CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_INPUT_PLANNING_ENABLED, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_INPUT, CONTEXT_STREAMING_STATE } from '../../common/aideAgentContextKeys.js';
 import { AgentMode } from '../../common/aideAgentModel.js';
 import { ChatStreamingState, IAideAgentService } from '../../common/aideAgentService.js';
 import { IAideAgentWidgetService, IChatWidget } from '../aideAgent.js';
@@ -104,46 +105,48 @@ export class SubmitEditsRequestAction extends Action2 {
 		const widgetService = accessor.get(IAideAgentWidgetService);
 		const widget = context?.widget ?? widgetService.lastFocusedWidget;
 		const input = widget?.getInput() ?? context?.inputValue;
-		widget?.acceptInput(AgentMode.Edit, input);
+		const planningEnabled = widget?.planningEnabled ?? false;
+		widget?.acceptInput(planningEnabled ? AgentMode.Plan : AgentMode.Edit, input);
 	}
 }
 
-export class SubmitPlanRequestAction extends Action2 {
-	static readonly ID = 'workbench.action.aideAgent.plan.submit';
+class TogglePlanningAction extends Action2 {
+	static readonly ID = 'workbench.action.aideAgent.togglePlanning';
 
 	constructor() {
 		super({
-			id: SubmitPlanRequestAction.ID,
-			title: localize2('interactive.plan.submit.label', "Plan"),
+			id: TogglePlanningAction.ID,
+			title: localize2('interactive.togglePlanning.label', "Toggle additional reasoning"),
 			f1: false,
 			category: CHAT_CATEGORY,
-			icon: Codicon.send,
-			precondition: ContextKeyExpr.and(CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate()),
+			icon: Codicon.compass,
 			keybinding: {
 				when: CONTEXT_IN_CHAT_INPUT,
-				primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.Enter,
-				weight: KeybindingWeight.EditorContrib
-			},
-			menu: [
-				{
-					id: MenuId.AideAgentExecute,
-					order: 0,
-					when: ContextKeyExpr.and(CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate(), CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET.negate()),
-					group: 'navigation',
-				},
-			]
+				primary: KeyMod.CtrlCmd | KeyCode.KeyR,
+				weight: IsDevelopmentContext ? KeybindingWeight.WorkbenchContrib + 51 : KeybindingWeight.WorkbenchContrib
+			}
 		});
 	}
 
 	run(accessor: ServicesAccessor, ...args: any[]) {
-		console.log(CONTEXT_CHAT_LOCATION);
-		const context: IChatExecuteActionContext | undefined = args[0];
-
 		const widgetService = accessor.get(IAideAgentWidgetService);
-		const widget = context?.widget ?? widgetService.lastFocusedWidget;
-		const input = widget?.getInput() ?? context?.inputValue;
-		widget?.acceptInput(AgentMode.Plan, input);
+		const widget = widgetService.lastFocusedWidget;
+		if (widget) {
+			widget.togglePlanning();
+		}
 	}
+}
+
+function registerPlanningToggleMenu() {
+	MenuRegistry.appendMenuItem(MenuId.AideAgentInput, {
+		group: 'navigation',
+		command: {
+			id: TogglePlanningAction.ID,
+			title: localize2('interactive.togglePlanning.label', "Toggle additional reasoning"),
+			icon: Codicon.compass,
+			toggled: { condition: CONTEXT_CHAT_INPUT_PLANNING_ENABLED, icon: Codicon.compassActive }
+		},
+	});
 }
 
 // export const AgentModePickerActionId = 'workbench.action.aideAgent.setMode';
@@ -217,6 +220,7 @@ export class CancelAction extends Action2 {
 export function registerChatExecuteActions() {
 	registerAction2(SubmitChatRequestAction);
 	registerAction2(SubmitEditsRequestAction);
-	registerAction2(SubmitPlanRequestAction);
 	registerAction2(CancelAction);
+	registerAction2(TogglePlanningAction);
+	registerPlanningToggleMenu();
 }

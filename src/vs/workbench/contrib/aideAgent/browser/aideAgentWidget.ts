@@ -928,6 +928,14 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this.inputPart.currentAgentScope = scope;
 	}
 
+	get planningEnabled(): boolean {
+		return this.inputPart.planningEnabled;
+	}
+
+	togglePlanning(): void {
+		this.inputPart.planningEnabled = !this.inputPart.planningEnabled;
+	}
+
 	setContext(overwrite: boolean, ...contentReferences: IChatRequestVariableEntry[]) {
 		this.inputPart.attachContext(overwrite, ...contentReferences);
 	}

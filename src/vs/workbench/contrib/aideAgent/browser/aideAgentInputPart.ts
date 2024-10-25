@@ -52,13 +52,13 @@ import { AccessibilityVerbositySettingId } from '../../accessibility/browser/acc
 import { AccessibilityCommandId } from '../../accessibility/common/accessibilityCommands.js';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions, setupSimpleEditorSelectionStyling } from '../../codeEditor/browser/simpleEditorOptions.js';
 import { ChatAgentLocation } from '../common/aideAgentAgents.js';
-import { CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_IN_CHAT_INPUT } from '../common/aideAgentContextKeys.js';
+import { CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_INPUT_PLANNING_ENABLED, CONTEXT_IN_CHAT_INPUT } from '../common/aideAgentContextKeys.js';
 import { AgentScope, IChatRequestVariableEntry } from '../common/aideAgentModel.js';
 import { ChatStreamingState, IChatFollowup, IChatStreamingState } from '../common/aideAgentService.js';
 import { IChatResponseViewModel } from '../common/aideAgentViewModel.js';
 import { IAideAgentWidgetHistoryService, IChatHistoryEntry } from '../common/aideAgentWidgetHistoryService.js';
 import { IAideAgentLMService } from '../common/languageModels.js';
-import { CancelAction, IChatExecuteActionContext, SubmitChatRequestAction, SubmitEditsRequestAction, SubmitPlanRequestAction } from './actions/aideAgentExecuteActions.js';
+import { CancelAction, IChatExecuteActionContext, SubmitChatRequestAction, SubmitEditsRequestAction } from './actions/aideAgentExecuteActions.js';
 import { IChatWidget } from './aideAgent.js';
 import { ChatFollowups } from './aideAgentFollowups.js';
 import { StreamingStateWidget } from './aideAgentStreamingStateWIdget.js';
@@ -158,7 +158,6 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		return metadataId;
 	}
 
-
 	private _onDidChangeCurrentAgentScope = this._register(new Emitter<string>());
 	private _currentAgentScope: AgentScope = AgentScope.Selection;
 	get currentAgentScope() {
@@ -168,6 +167,15 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	set currentAgentScope(scope: AgentScope) {
 		this._currentAgentScope = scope;
 		this._onDidChangeCurrentAgentScope.fire(scope);
+	}
+
+	private _planningEnabled: IContextKey<boolean>;
+	get planningEnabled() {
+		return this._planningEnabled.get() ?? false;
+	}
+
+	set planningEnabled(enabled: boolean) {
+		this._planningEnabled.set(enabled);
 	}
 
 	private cachedDimensions: dom.Dimension | undefined;
@@ -198,6 +206,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		this.inputEditorHasText = CONTEXT_CHAT_INPUT_HAS_TEXT.bindTo(contextKeyService);
 		this.chatCursorAtTop = CONTEXT_CHAT_INPUT_CURSOR_AT_TOP.bindTo(contextKeyService);
 		this.inputEditorHasFocus = CONTEXT_CHAT_INPUT_HAS_FOCUS.bindTo(contextKeyService);
+		this._planningEnabled = CONTEXT_CHAT_INPUT_PLANNING_ENABLED.bindTo(contextKeyService);
 
 		this.history = this.loadHistory();
 		this._register(this.historyService.onDidClearHistory(() => this.history = new HistoryNavigator2([{ text: '' }], 50, historyKeyFn)));
@@ -416,7 +425,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 				dom.h('.interactive-input-and-side-toolbar@inputAndSideToolbar', [
 					dom.h('.chat-input-container@inputContainer', [
 						dom.h('.chat-editor-container@editorContainer'),
-						dom.h('.chat-input-toolbars@inputToolbars'),
+						dom.h('.aideagent-input-toolbars@inputToolbars'),
 					]),
 				]),
 				dom.h('.aideagent-attached-context@attachedContextContainer'),
@@ -430,7 +439,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 					dom.h('.chat-input-container@inputContainer', [
 						dom.h('.aideagent-attached-context@attachedContextContainer'),
 						dom.h('.chat-editor-container@editorContainer'),
-						dom.h('.chat-input-toolbars@inputToolbars'),
+						dom.h('.aideagent-input-toolbars@inputToolbars'),
 					]),
 				]),
 			]);
@@ -556,7 +565,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			},
 			hiddenItemStrategy: HiddenItemStrategy.Ignore, // keep it lean when hiding items and avoid a "..." overflow menu
 			actionViewItemProvider: (action, options) => {
-				const kbActionsSet = new Set([SubmitChatRequestAction.ID, SubmitEditsRequestAction.ID, SubmitPlanRequestAction.ID, CancelAction.ID]);
+				const kbActionsSet = new Set([SubmitChatRequestAction.ID, SubmitEditsRequestAction.ID, CancelAction.ID]);
 				if (kbActionsSet.has(action.id) && action instanceof MenuItemAction) {
 					return this.instantiationService.createInstance(ActionViewItemWithKb, action);
 				}
