@@ -7,7 +7,6 @@ import { IListRenderer, IListVirtualDelegate } from '../../../../../base/browser
 import { Emitter, Event } from '../../../../../base/common/event.js';
 import { Disposable, DisposableStore, IDisposable } from '../../../../../base/common/lifecycle.js';
 import { basename, basenameOrAuthority, dirname } from '../../../../../base/common/resources.js';
-import { URI } from '../../../../../base/common/uri.js';
 import { localize } from '../../../../../nls.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { ILabelService } from '../../../../../platform/label/common/label.js';
@@ -40,16 +39,9 @@ export class AideAgentCodeEditContentPart extends Disposable implements IChatCon
 	}
 	private setInput(codeEdits: IChatCodeEdits) {
 		const data: IAideAgentCodeEditsItem[] = [];
-		for (const [uri, edits] of codeEdits.edits) {
-			const hunks = edits.hunkData.getInfo();
-			for (const hunk of hunks) {
-				const ranges = hunk.getRangesN();
-				if (ranges.length > 1) {
-					data.push({
-						uri: URI.parse(uri),
-						range: ranges[0]
-					});
-				}
+		for (const [uri, ranges] of codeEdits.edits) {
+			for (const range of ranges) {
+				data.push({ uri, range });
 			}
 		}
 		const height = data.length * 22;

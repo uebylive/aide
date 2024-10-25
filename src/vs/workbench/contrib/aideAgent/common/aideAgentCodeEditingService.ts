@@ -27,8 +27,8 @@ export interface IAideAgentCodeEditingSession {
 	accept(): void;
 	reject(): void;
 	rejectForExchange(sessionId: string, exchangeId: string): Promise<void>;
-	fileLocationForEditsMade(sessionId: string, exchangeId: string): Promise<Map<URI, Range[]>>;
-	filesChangedForExchange(sessionId: string, exchangeId: string): Promise<URI[]>;
+	fileLocationForEditsMade(sessionId: string, exchangeId: string): Map<URI, Range[]>;
+	filesChangedForExchange(sessionId: string, exchangeId: string): URI[];
 	/**
 	 * Will lead to this object getting disposed
 	 */

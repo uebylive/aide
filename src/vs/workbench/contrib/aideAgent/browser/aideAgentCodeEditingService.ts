@@ -522,11 +522,11 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 		await this.processWorkspaceEdit(workspaceEditForRevert);
 	}
 
-	async fileLocationForEditsMade(sessionId: string, exchangeId: string): Promise<Map<URI, Range[]>> {
+	fileLocationForEditsMade(sessionId: string, exchangeId: string): Map<URI, Range[]> {
 		if (sessionId !== this.sessionId) {
 			return new Map();
 		}
-		const filteredTextModelReferneces = this._textModelSnapshotUntilPoint.filter((textModelSnapshot) => {
+		const filteredTextModelReferences = this._textModelSnapshotUntilPoint.filter((textModelSnapshot) => {
 			const textModelReference = parseLabel(textModelSnapshot.reference);
 			const exchangeIdParsedReference = parseLabel(exchangeId);
 			return textModelReference?.response_idx === exchangeIdParsedReference?.response_idx;
@@ -536,12 +536,14 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 		// the codeEdits map we have for getting the hunks which have been edited
 		const resourceChangedLocations = new Map();
 		for (const [resourceName, aideAgentEdits] of this._codeEdits) {
-			if (filteredTextModelReferneces.find((textModelReference) => {
+			if (filteredTextModelReferences.find((textModelReference) => {
 				return textModelReference.resourceName === resourceName;
 			}) !== undefined) {
 				const hunkInformation = aideAgentEdits.hunkData.getInfo();
 				const changedRanges = hunkInformation.map((hunkInfo) => {
-					return hunkInfo.getRangesN();
+					const allRanges = hunkInfo.getRangesN();
+					// The first range is the whole hunk range after adjusting for gaps.
+					return allRanges.length > 0 ? [allRanges[0]] : [];
 				}).flat();
 				resourceChangedLocations.set(URI.parse(resourceName), changedRanges);
 			}
@@ -553,7 +555,7 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 	 * Returns the set of files which were changed during an exchange and additionally
 	 * for the plan step we are interested in
 	 */
-	async filesChangedForExchange(sessionId: string, exchangeId: string): Promise<URI[]> {
+	filesChangedForExchange(sessionId: string, exchangeId: string): URI[] {
 		if (sessionId !== this.sessionId) {
 			return [];
 		}

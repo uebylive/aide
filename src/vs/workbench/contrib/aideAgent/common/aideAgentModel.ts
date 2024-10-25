@@ -17,14 +17,13 @@ import { isObject } from '../../../../base/common/types.js';
 import { URI, UriComponents, UriDto, isUriComponents } from '../../../../base/common/uri.js';
 import { generateUuid } from '../../../../base/common/uuid.js';
 import { IOffsetRange, OffsetRange } from '../../../../editor/common/core/offsetRange.js';
-import { IRange } from '../../../../editor/common/core/range.js';
+import { IRange, Range } from '../../../../editor/common/core/range.js';
 import { IWorkspaceFileEdit, IWorkspaceTextEdit, TextEdit, WorkspaceEdit } from '../../../../editor/common/languages.js';
 import { localize } from '../../../../nls.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgentData, IChatAgentResult, reviveSerializedAgent } from './aideAgentAgents.js';
 import { IAideAgentCodeEditingService, IAideAgentCodeEditingSession } from './aideAgentCodeEditingService.js';
-import { IAideAgentEdits } from './aideAgentEditingSession.js';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from './aideAgentParserTypes.js';
 import { IAideAgentPlanService, IAideAgentPlanSession } from './aideAgentPlanService.js';
 import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IAideAgentService, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatCommandGroup, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanInfo, IChatPlanStep, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatStreamingState, IChatTask, IChatTextEdit, IChatThinkingForEditPart, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
@@ -129,7 +128,7 @@ export interface IChatResponseModel {
 	readonly planInfo: IChatPlanInfo | undefined;
 	readonly streamingState: IChatStreamingState | undefined;
 	readonly codeCitations: ReadonlyArray<IChatCodeCitation>;
-	readonly codeEdits: Map<string, IAideAgentEdits> | undefined;
+	readonly codeEdits: Map<URI, Range[]> | undefined;
 	readonly progressMessages: ReadonlyArray<IChatProgressMessage>;
 	readonly slashCommand?: IChatAgentCommand;
 	readonly agentOrSlashCommandDetected: boolean;
@@ -458,8 +457,8 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 	}
 
 	private _editingSession: IAideAgentCodeEditingSession | undefined;
-	public get codeEdits(): Map<string, IAideAgentEdits> | undefined {
-		return this._editingSession?.codeEdits;
+	public get codeEdits(): Map<URI, Range[]> | undefined {
+		return this._editingSession?.fileLocationForEditsMade(this.session.sessionId, this.id);
 	}
 
 	private _planSession: IAideAgentPlanSession | undefined;

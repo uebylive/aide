@@ -10,10 +10,10 @@ import { Disposable } from '../../../../base/common/lifecycle.js';
 import * as marked from '../../../../base/common/marked/marked.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import { URI } from '../../../../base/common/uri.js';
+import { Range } from '../../../../editor/common/core/range.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { getFullyQualifiedId, IAideAgentAgentNameService, IChatAgentCommand, IChatAgentData, IChatAgentResult } from './aideAgentAgents.js';
-import { IAideAgentEdits } from './aideAgentEditingSession.js';
 import { ChatModelInitState, IChatModel, IChatProgressRenderableResponseContent, IChatRequestModel, IChatRequestVariableEntry, IChatResponseModel, IChatTextEditGroup, IChatWelcomeMessageContent, IResponse } from './aideAgentModel.js';
 import { IParsedChatRequest } from './aideAgentParserTypes.js';
 import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatCodeCitation, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatPlanInfo, IChatProgressMessage, IChatResponseErrorDetails, IChatStreamingState, IChatTask, IChatUsedContext } from './aideAgentService.js';
@@ -139,7 +139,7 @@ export interface IChatCodeCitations {
  * Content type for edits used during rendering, not in the model
  */
 export interface IChatCodeEdits {
-	edits: Map<string, IAideAgentEdits>;
+	edits: Map<URI, Range[]>;
 	kind: 'codeEdits';
 }
 
@@ -172,7 +172,7 @@ export interface IChatResponseViewModel {
 	readonly usedContext: IChatUsedContext | undefined;
 	readonly contentReferences: ReadonlyArray<IChatContentReference>;
 	readonly codeCitations: ReadonlyArray<IChatCodeCitation>;
-	readonly codeEdits: Map<string, IAideAgentEdits> | undefined;
+	readonly codeEdits: Map<URI, Range[]> | undefined;
 	readonly progressMessages: ReadonlyArray<IChatProgressMessage>;
 	readonly editsInfo: IChatEditsInfo | undefined;
 	readonly planInfo: IChatPlanInfo | undefined;
