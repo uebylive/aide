@@ -11,6 +11,10 @@ import { Disposable, DisposableStore, IDisposable } from '../../../../../base/co
 import { basename, dirname } from '../../../../../base/common/path.js';
 import { URI } from '../../../../../base/common/uri.js';
 import { Range } from '../../../../../editor/common/core/range.js';
+import { isLocation } from '../../../../../editor/common/languages.js';
+import { ILanguageService } from '../../../../../editor/common/languages/language.js';
+import { getIconClasses } from '../../../../../editor/common/services/getIconClasses.js';
+import { IModelService } from '../../../../../editor/common/services/model.js';
 import { localize } from '../../../../../nls.js';
 import { FileKind } from '../../../../../platform/files/common/files.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
@@ -21,6 +25,7 @@ import { IResourceLabel, ResourceLabels } from '../../../../browser/labels.js';
 import { createFileIconThemableTreeContainerScope } from '../../../files/browser/views/explorerView.js';
 import { IChatRequestVariableEntry } from '../../common/aideAgentModel.js';
 import { ChatResponseReferencePartStatusKind, IChatContentReference } from '../../common/aideAgentService.js';
+import { IChatRequestVariableValue } from '../../common/aideAgentVariables.js';
 import { IDisposableReference, ResourcePool } from './aideAgentCollections.js';
 
 const $ = dom.$;
@@ -36,6 +41,8 @@ export class ChatAttachmentsContentPart extends Disposable {
 		private readonly variables: IChatRequestVariableEntry[],
 		private readonly contentReferences: readonly IChatContentReference[] | undefined,
 		private readonly attachmentsCollapsibleListPool: AttachmentsCollapsibleListPool,
+		@IModelService private readonly modelService: IModelService,
+		@ILanguageService private readonly languageService: ILanguageService,
 	) {
 		super();
 
@@ -52,6 +59,15 @@ export class ChatAttachmentsContentPart extends Disposable {
 			const attachmentsLabel = this.variables.length > 1 ?
 				localize('attachmentsPlural', "{0} attachments", this.variables.length) :
 				localize('attachmentsSingular', "1 attachment");
+			const iconsContainer = $('.aideagent-attachment-icons');
+			for (const item of this.variables) {
+				const reference = this.getReferenceUri(item.value);
+				if (reference) {
+					const iconElement = $('span.icon');
+					iconElement.classList.add(...getIconClasses(this.modelService, this.languageService, reference, FileKind.FILE));
+					iconsContainer.appendChild(iconElement);
+				}
+			}
 
 			const buttonElement = $('.aideagent-attachments-label.show-file-icons', undefined);
 			let listExpanded = false;
@@ -66,7 +82,7 @@ export class ChatAttachmentsContentPart extends Disposable {
 				buttonSeparator: undefined
 			}));
 			container.appendChild(buttonElement);
-			collapseButton.element.textContent = attachmentsLabel;
+			collapseButton.element.replaceChildren(iconsContainer, dom.$('span.icon-label', {}, attachmentsLabel));
 			this.updateAriaLabel(collapseButton.element, attachmentsLabel, listExpanded);
 			this.domNode.classList.toggle('aideagent-attachments-list-collapsed', !listExpanded);
 			this._register(collapseButton.onDidClick(() => {
@@ -91,6 +107,16 @@ export class ChatAttachmentsContentPart extends Disposable {
 
 	private updateAriaLabel(element: HTMLElement, label: string, expanded: boolean): void {
 		element.ariaLabel = expanded ? localize('attachmentsExpanded', "{0}, expanded", label) : localize('attachmentsCollapsed', "{0}, collapsed", label);
+	}
+
+	private getReferenceUri(value: IChatRequestVariableValue): URI | undefined {
+		if (typeof value === 'string' || URI.isUri(value)) {
+			return value as URI;
+		} else if (isLocation(value)) {
+			return value.uri;
+		}
+
+		return undefined;
 	}
 
 	addDisposable(disposable: IDisposable): void {
