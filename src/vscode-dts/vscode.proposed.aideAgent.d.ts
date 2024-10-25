@@ -38,6 +38,11 @@ declare module 'vscode' {
 		Loading = 'loading',
 		WaitingFeedback = 'waitingFeedback',
 		Finished = 'finished',
+		// NOTE: This is a dynamic properly, ideally we should be using either of
+		// finished or waitingFeedback, but since that part is not built yet
+		// we will derive our state from the Cancelled
+		// Cancelled can go to Finished | WaitingFeedback
+		Cancelled = 'cancelled',
 	}
 
 	export type AideAgentStreamingStateType = `${AideAgentStreamingStateEnum}`;

@@ -42,7 +42,7 @@ import { IChatCodeCitations, IChatCodeEdits, IChatReferences, IChatRendererConte
 import { annotateSpecialMarkdownContent } from '../common/annotations.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
 import { MarkUnhelpfulActionId } from './actions/aideAgentTitleActions.js';
-import { ChatTreeItem, GeneratingPhrase, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions, IChatPlanStepsInfo, IEditPreviewCodeBlockInfo } from './aideAgent.js';
+import { ChatTreeItem, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions, IChatPlanStepsInfo, IEditPreviewCodeBlockInfo } from './aideAgent.js';
 import { AttachmentsCollapsibleListPool, ChatAttachmentsContentPart } from './aideAgentContentParts/aideAgentAttachmentsContentPart.js';
 import { ChatCodeCitationContentPart } from './aideAgentContentParts/aideAgentCodeCitationContentPart.js';
 import { AideAgentCodeEditContentPart, CodeEditsPool } from './aideAgentContentParts/aideAgentCodeEditParts.js';
@@ -50,7 +50,8 @@ import { ChatCommandButtonContentPart, ChatCommandGroupContentPart } from './aid
 import { ChatConfirmationContentPart } from './aideAgentContentParts/aideAgentConfirmationContentPart.js';
 import { IChatContentPart, IChatContentPartRenderContext } from './aideAgentContentParts/aideAgentContentParts.js';
 import { EditsContentPart } from './aideAgentContentParts/aideAgentEditsContentPart.js';
-import { ChatMarkdownContentPart, EditorPool, EditPreviewEditorPool } from './aideAgentContentParts/aideAgentMarkdownContentPart.js';
+import { ChatMarkdownContentPart, EditPreviewEditorPool, EditorPool } from './aideAgentContentParts/aideAgentMarkdownContentPart.js';
+import { PlanContentPart } from './aideAgentContentParts/aideAgentPlanContentPart.js';
 import { ChatPlanStepPart } from './aideAgentContentParts/aideAgentPlanStepPart.js';
 import { ChatProgressContentPart } from './aideAgentContentParts/aideAgentProgressContentPart.js';
 import { ChatCollapsibleListContentPart, CollapsibleListPool } from './aideAgentContentParts/aideAgentReferencesContentPart.js';
@@ -63,7 +64,6 @@ import { ChatMarkdownDecorationsRenderer } from './aideAgentMarkdownDecorationsR
 import { ChatMarkdownRenderer } from './aideAgentMarkdownRenderer.js';
 import { ChatEditorOptions } from './aideAgentOptions.js';
 import { ChatCodeBlockContentProvider, CodeBlockPart } from './codeBlockPart.js';
-import { PlanContentPart } from './aideAgentContentParts/aideAgentPlanContentPart.js';
 
 
 const $ = dom.$;
