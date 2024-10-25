@@ -549,6 +549,7 @@ export interface IAideAgentService {
 
 	transferChatSession(transferredSessionData: IChatTransferredSessionData, toWorkspace: URI): void;
 	handleUserActionForSession(sessionId: string, exchangeId: string, agentId: string | undefined, accepted: boolean): void;
+	handleUserActionUndoSession(sessionId: string, exchangeId: string): Promise<void>;
 }
 
 export const KEYWORD_ACTIVIATION_SETTING_ID = 'accessibility.voice.keywordActivation';

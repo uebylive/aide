@@ -86,6 +86,7 @@ export interface IChatAgentImplementation {
 	provideChatTitle?: (history: IChatAgentHistoryEntry[], token: CancellationToken) => Promise<string | undefined>;
 	provideSampleQuestions?(location: ChatAgentLocation, token: CancellationToken): ProviderResult<IChatFollowup[] | undefined>;
 	handleUserFeedbackSession(sessionId: string, exchangeId: string, accepted: boolean): void;
+	handleSessionUndo(sessionId: string, exchangeId: string): void;
 }
 
 export interface IChatParticipantDetectionResult {
@@ -225,6 +226,7 @@ export interface IAideAgentAgentService {
 	getSecondaryAgent(): IChatAgentData | undefined;
 	updateAgent(id: string, updateMetadata: IChatAgentMetadata): void;
 	handleUserFeedbackForSession(sessionId: string, exchangeId: string, agentId: string | undefined, accepted: boolean): void;
+	handleUserActionUndoSession(sessionId: string, exchangeId: string): void;
 }
 
 export class ChatAgentService implements IAideAgentAgentService {
@@ -508,6 +510,13 @@ export class ChatAgentService implements IAideAgentAgentService {
 			agent.handleUserFeedbackSession(sessionId, exchangeId, accepted);
 		}
 	}
+
+	handleUserActionUndoSession(sessionId: string, exchangeId: string): void {
+		const agent = this.getDefaultAgent(ChatAgentLocation.Panel);
+		if (agent) {
+			agent.handleSessionUndo(sessionId, exchangeId);
+		}
+	}
 }
 
 export class MergedChatAgent implements IChatAgent {
@@ -567,6 +576,10 @@ export class MergedChatAgent implements IChatAgent {
 
 	handleUserFeedbackSession(sessionId: string, exchangeId: string, accepted: boolean): void {
 		return this.impl.handleUserFeedbackSession(sessionId, exchangeId, accepted);
+	}
+
+	handleSessionUndo(sessionId: string, exchangeId: string): void {
+		return this.impl.handleSessionUndo(sessionId, exchangeId);
 	}
 
 	toJSON(): IChatAgentData {

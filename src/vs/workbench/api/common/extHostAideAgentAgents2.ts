@@ -327,7 +327,7 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 			extension, id, this._proxy, handle,
 			// Preserve the correct 'this' context
 			(sessionId: string) => this.initResponse(sessionId),
-			handler.newSession, handler.handleEvent, handler.handleExchangeUserAction,
+			handler.newSession, handler.handleEvent, handler.handleExchangeUserAction, handler.handleSessionUndo
 		);
 		this._agents.set(handle, agent);
 
@@ -403,6 +403,13 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 		const agent = this._agents.get(handle);
 		if (agent) {
 			agent.handleUserFeedbackForSession(sessionId, exchangeId, accepted);
+		}
+	}
+
+	$handleSessionUndo(handle: number, sessionId: string, exchangeId: string): void {
+		const agent = this._agents.get(handle);
+		if (agent) {
+			agent.handleSessionUndo(sessionId, exchangeId);
 		}
 	}
 
@@ -652,6 +659,7 @@ class ExtHostChatAgent {
 		private _sessionHandler: vscode.AideSessionHandler,
 		private _requestHandler: vscode.AideSessionEventHandler,
 		private _sessionHandleUserActionHandler: vscode.AideSessionHandleUserAction,
+		private _sessionHandleSessionUndo: vscode.AideSessionUndoAction,
 	) { }
 
 	initSession(sessionId: string): void {
@@ -696,6 +704,10 @@ class ExtHostChatAgent {
 			action = extHostTypes.AideSessionExchangeUserAction.RejectAll;
 		}
 		this._sessionHandleUserActionHandler(sessionId, exchangeId, action);
+	}
+
+	handleSessionUndo(sessionId: string, exchangeId: string): void {
+		this._sessionHandleSessionUndo(sessionId, exchangeId);
 	}
 
 	async provideWelcomeMessage(location: vscode.ChatLocation, token: CancellationToken): Promise<(string | IMarkdownString)[] | undefined> {
