@@ -916,7 +916,8 @@ have to be updated for changes to the rules above, or to support more deeply nes
 .interactive-session .aideagent-used-context-label .monaco-button,
 .interactive-session .aideagent-attachments-label .monaco-button {
 	/* unset Button styles */
-	display: inline-flex;
+	display: flex;
+	align-items: center;
 	/* gap: 4px; */
 	height: 18px;
 	cursor: pointer;
