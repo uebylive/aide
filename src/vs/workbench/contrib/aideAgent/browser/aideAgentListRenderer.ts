@@ -43,7 +43,7 @@ import { annotateSpecialMarkdownContent } from '../common/annotations.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
 import { MarkUnhelpfulActionId } from './actions/aideAgentTitleActions.js';
 import { ChatTreeItem, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions, IChatPlanStepsInfo, IEditPreviewCodeBlockInfo } from './aideAgent.js';
-import { AttachmentsCollapsibleListPool, ChatAttachmentsContentPart } from './aideAgentContentParts/aideAgentAttachmentsContentPart.js';
+import { ChatAttachmentsContentPart } from './aideAgentContentParts/aideAgentAttachmentsContentPart.js';
 import { ChatCodeCitationContentPart } from './aideAgentContentParts/aideAgentCodeCitationContentPart.js';
 import { AideAgentCodeEditContentPart, CodeEditsPool } from './aideAgentContentParts/aideAgentCodeEditParts.js';
 import { ChatCommandButtonContentPart, ChatCommandGroupContentPart } from './aideAgentContentParts/aideAgentCommandContentPart.js';
@@ -127,7 +127,6 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	private readonly _editPreviewEditorPool: EditPreviewEditorPool;
 	private readonly _treePool: TreePool;
 	private readonly _contentReferencesListPool: CollapsibleListPool;
-	private readonly _attachmentsCollapsibleListPool: AttachmentsCollapsibleListPool;
 	private readonly _codeEditsPool: CodeEditsPool;
 
 	private _currentLayoutWidth: number = 0;
@@ -155,7 +154,6 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		this._editPreviewEditorPool = this._register(this.instantiationService.createInstance(EditPreviewEditorPool, editorOptions, delegate, overflowWidgetsDomNode));
 		this._treePool = this._register(this.instantiationService.createInstance(TreePool, this._onDidChangeVisibility.event));
 		this._contentReferencesListPool = this._register(this.instantiationService.createInstance(CollapsibleListPool, this._onDidChangeVisibility.event));
-		this._attachmentsCollapsibleListPool = this._register(this.instantiationService.createInstance(AttachmentsCollapsibleListPool, this._onDidChangeVisibility.event));
 		this._codeEditsPool = this._register(this.instantiationService.createInstance(CodeEditsPool, this._onDidChangeVisibility.event));
 
 		this._register(this.instantiationService.createInstance(ChatCodeBlockContentProvider));
@@ -802,7 +800,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	}
 
 	private renderAttachments(variables: IChatRequestVariableEntry[], contentReferences: ReadonlyArray<IChatContentReference> | undefined, templateData: IChatListItemTemplate) {
-		const attachmentPart = this.instantiationService.createInstance(ChatAttachmentsContentPart, variables, contentReferences, this._attachmentsCollapsibleListPool);
+		const attachmentPart = this.instantiationService.createInstance(ChatAttachmentsContentPart, variables, contentReferences);
 		attachmentPart.addDisposable(attachmentPart.onDidChangeHeight(() => {
 			this.updateItemHeight(templateData);
 		}));

@@ -6,7 +6,7 @@
 import * as dom from '../../../../../base/browser/dom.js';
 import { Button } from '../../../../../base/browser/ui/button/button.js';
 import { IListRenderer, IListVirtualDelegate } from '../../../../../base/browser/ui/list/list.js';
-import { Emitter, Event } from '../../../../../base/common/event.js';
+import { Emitter } from '../../../../../base/common/event.js';
 import { Disposable, DisposableStore, IDisposable } from '../../../../../base/common/lifecycle.js';
 import { basename, dirname } from '../../../../../base/common/path.js';
 import { URI } from '../../../../../base/common/uri.js';
@@ -26,7 +26,6 @@ import { createFileIconThemableTreeContainerScope } from '../../../files/browser
 import { IChatRequestVariableEntry } from '../../common/aideAgentModel.js';
 import { ChatResponseReferencePartStatusKind, IChatContentReference } from '../../common/aideAgentService.js';
 import { IChatRequestVariableValue } from '../../common/aideAgentVariables.js';
-import { IDisposableReference, ResourcePool } from './aideAgentCollections.js';
 
 const $ = dom.$;
 
@@ -34,15 +33,21 @@ export class ChatAttachmentsContentPart extends Disposable {
 	public readonly domNode: HTMLElement;
 
 	private readonly attachedContextDisposables = this._register(new DisposableStore());
+
+
 	private readonly _onDidChangeHeight = this._register(new Emitter<void>());
 	public readonly onDidChangeHeight = this._onDidChangeHeight.event;
 
+	private readonly _onDidChangeVisibility = this._register(new Emitter<boolean>());
+	public readonly onDidChangeVisibility = this._onDidChangeVisibility.event;
+
 	constructor(
 		private readonly variables: IChatRequestVariableEntry[],
-		private readonly contentReferences: readonly IChatContentReference[] | undefined,
-		private readonly attachmentsCollapsibleListPool: AttachmentsCollapsibleListPool,
+		private readonly contentReferences: readonly IChatContentReference[] = [],
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IModelService private readonly modelService: IModelService,
 		@ILanguageService private readonly languageService: ILanguageService,
+		@IThemeService private readonly themeService: IThemeService,
 	) {
 		super();
 
@@ -92,9 +97,20 @@ export class ChatAttachmentsContentPart extends Disposable {
 				this.updateAriaLabel(collapseButton.element, attachmentsLabel, listExpanded);
 			}));
 
-			const ref = this._register(this.attachmentsCollapsibleListPool.get());
-			const list = ref.object;
-			this.domNode.appendChild(list.getHTMLElement().parentElement!);
+			const resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this.onDidChangeVisibility }));
+			const listContainer = $('.aideagent-attachments-list');
+			this._register(createFileIconThemableTreeContainerScope(listContainer, this.themeService));
+			const list = this.instantiationService.createInstance(
+				WorkbenchList<IChatRequestVariableEntry>,
+				'ChatAttachmentsListRenderer',
+				listContainer,
+				new CollapsibleListDelegate(),
+				[this.instantiationService.createInstance(CollapsibleListRenderer, resourceLabels, this.contentReferences)],
+				{
+					alwaysConsumeMouseWheel: false,
+				}
+			);
+			this.domNode.appendChild(listContainer);
 
 			const maxItemsShown = 6;
 			const itemsShown = Math.min(this.variables.length, maxItemsShown);
@@ -124,55 +140,6 @@ export class ChatAttachmentsContentPart extends Disposable {
 	}
 }
 
-export class AttachmentsCollapsibleListPool extends Disposable {
-	private _pool: ResourcePool<WorkbenchList<IChatRequestVariableEntry>>;
-
-	public get inUse(): ReadonlySet<WorkbenchList<IChatRequestVariableEntry>> {
-		return this._pool.inUse;
-	}
-
-	constructor(
-		private _onDidChangeVisibility: Event<boolean>,
-		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@IThemeService private readonly themeService: IThemeService,
-	) {
-		super();
-		this._pool = this._register(new ResourcePool(() => this.listFactory()));
-	}
-
-	private listFactory(): WorkbenchList<IChatRequestVariableEntry> {
-		const resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this._onDidChangeVisibility }));
-
-		const container = $('.aideagent-attachments-list');
-		this._register(createFileIconThemableTreeContainerScope(container, this.themeService));
-
-		const list = this.instantiationService.createInstance(
-			WorkbenchList<IChatRequestVariableEntry>,
-			'ChatAttachmentsListRenderer',
-			container,
-			new CollapsibleListDelegate(),
-			[this.instantiationService.createInstance(CollapsibleListRenderer, resourceLabels)],
-			{
-				alwaysConsumeMouseWheel: false,
-			}
-		);
-		return list;
-	}
-
-	get(): IDisposableReference<WorkbenchList<IChatRequestVariableEntry>> {
-		const object = this._pool.get();
-		let stale = false;
-		return {
-			object,
-			isStale: () => stale,
-			dispose: () => {
-				stale = true;
-				this._pool.release(object);
-			}
-		};
-	}
-}
-
 class CollapsibleListDelegate implements IListVirtualDelegate<IChatRequestVariableEntry> {
 	getHeight(element: IChatRequestVariableEntry): number {
 		return 22;
@@ -194,6 +161,7 @@ class CollapsibleListRenderer implements IListRenderer<IChatRequestVariableEntry
 
 	constructor(
 		private readonly labels: ResourceLabels,
+		private readonly contentReferences: readonly IChatContentReference[],
 		@IOpenerService private readonly openerService: IOpenerService,
 	) { }
 
@@ -208,7 +176,7 @@ class CollapsibleListRenderer implements IListRenderer<IChatRequestVariableEntry
 		const file = URI.isUri(element.value) ? element.value : element.value && typeof element.value === 'object' && 'uri' in element.value && URI.isUri(element.value.uri) ? element.value.uri : undefined;
 		const range = element.value && typeof element.value === 'object' && 'range' in element.value && Range.isIRange(element.value.range) ? element.value.range : undefined;
 
-		const correspondingContentReference = element.references?.find((ref) => typeof ref.reference === 'object' && 'variableName' in ref.reference && ref.reference.variableName === element.name);
+		const correspondingContentReference = this.contentReferences.find((ref) => typeof ref.reference === 'object' && 'variableName' in ref.reference && ref.reference.variableName === element.name);
 		const isAttachmentOmitted = correspondingContentReference?.options?.status?.kind === ChatResponseReferencePartStatusKind.Omitted;
 		const isAttachmentPartialOrOmitted = isAttachmentOmitted || correspondingContentReference?.options?.status?.kind === ChatResponseReferencePartStatusKind.Partial;
 
