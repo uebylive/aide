@@ -7,11 +7,11 @@ import { IListRenderer, IListVirtualDelegate } from '../../../../../base/browser
 import { Emitter, Event } from '../../../../../base/common/event.js';
 import { Disposable, DisposableStore, IDisposable } from '../../../../../base/common/lifecycle.js';
 import { basename, basenameOrAuthority, dirname } from '../../../../../base/common/resources.js';
-import { URI } from '../../../../../base/common/uri.js';
 import { localize } from '../../../../../nls.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { ILabelService } from '../../../../../platform/label/common/label.js';
 import { WorkbenchList } from '../../../../../platform/list/browser/listService.js';
+import { IOpenerService } from '../../../../../platform/opener/common/opener.js';
 import { IThemeService } from '../../../../../platform/theme/common/themeService.js';
 import { IResourceLabel, ResourceLabels } from '../../../../browser/labels.js';
 import { createFileIconThemableTreeContainerScope } from '../../../files/browser/views/explorerView.js';
@@ -39,16 +39,9 @@ export class AideAgentCodeEditContentPart extends Disposable implements IChatCon
 	}
 	private setInput(codeEdits: IChatCodeEdits) {
 		const data: IAideAgentCodeEditsItem[] = [];
-		for (const [uri, edits] of codeEdits.edits) {
-			const hunks = edits.hunkData.getInfo();
-			for (const hunk of hunks) {
-				const ranges = hunk.getRangesN();
-				if (ranges.length > 1) {
-					data.push({
-						uri: URI.parse(uri),
-						range: ranges[0]
-					});
-				}
+		for (const [uri, ranges] of codeEdits.edits) {
+			for (const range of ranges) {
+				data.push({ uri, range });
 			}
 		}
 		const height = data.length * 22;
@@ -129,30 +122,52 @@ interface IAideAgentCodeEditsListTemplate {
 class AideAgentCodeEditsListRenderer implements IListRenderer<IAideAgentCodeEditsItem, IAideAgentCodeEditsListTemplate> {
 	static TEMPLATE_ID = 'aideAgentCodeEditsListTemplate';
 	readonly templateId: string = AideAgentCodeEditsListRenderer.TEMPLATE_ID;
+
 	constructor(
 		private labels: ResourceLabels,
+		@IOpenerService private readonly openerService: IOpenerService,
 		@ILabelService private readonly labelService: ILabelService
 	) { }
+
 	renderTemplate(container: HTMLElement): IAideAgentCodeEditsListTemplate {
 		const templateDisposables = new DisposableStore();
 		const label = templateDisposables.add(this.labels.create(container, { supportHighlights: true, supportIcons: true }));
 		return { templateDisposables, label };
 	}
+
 	renderElement(element: IAideAgentCodeEditsItem, index: number, templateData: IAideAgentCodeEditsListTemplate, height: number | undefined): void {
-		templateData.label.element.style.display = 'flex';
+		const { label } = templateData;
+
+		label.element.style.display = 'flex';
 		const { uri: resource, range } = element;
 		let description: string | undefined;
 		const descriptionCandidate = this.labelService.getUriLabel(dirname(resource), { relative: true });
 		if (descriptionCandidate && descriptionCandidate !== '.') {
 			description = descriptionCandidate;
 		}
-		templateData.label.setResource({
+
+		label.setResource({
 			resource,
 			name: basenameOrAuthority(resource),
 			description,
 			range,
 		});
+		label.element.tabIndex = 0;
+		label.element.style.cursor = 'pointer';
+
+		templateData.templateDisposables.add(dom.addDisposableListener(label.element, dom.EventType.CLICK, async (e: MouseEvent) => {
+			dom.EventHelper.stop(e, true);
+			this.openerService.open(
+				resource,
+				{
+					fromUserGesture: true,
+					editorOptions: {
+						selection: range,
+					} as any
+				});
+		}));
 	}
+
 	disposeTemplate(templateData: IAideAgentCodeEditsListTemplate): void {
 		templateData.templateDisposables.dispose();
 	}
