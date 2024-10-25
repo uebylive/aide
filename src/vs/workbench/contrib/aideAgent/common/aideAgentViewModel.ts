@@ -185,6 +185,8 @@ export interface IChatResponseViewModel {
 	readonly errorDetails?: IChatResponseErrorDetails;
 	readonly result?: IChatAgentResult;
 	readonly contentUpdateTimings?: IChatLiveUpdateData;
+	readonly planSessionId: string | null;
+	readonly planExchangeId: string | null;
 	renderData?: IChatResponseRenderData;
 	currentRenderedHeight: number | undefined;
 	setVote(vote: ChatAgentVoteDirection): void;
@@ -540,6 +542,14 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 	private _contentUpdateTimings: IChatLiveUpdateData | undefined = undefined;
 	get contentUpdateTimings(): IChatLiveUpdateData | undefined {
 		return this._contentUpdateTimings;
+	}
+
+	get planExchangeId(): string | null {
+		return this._model.planExchangeId;
+	}
+
+	get planSessionId(): string | null {
+		return this._model.planSessionId;
 	}
 
 	constructor(

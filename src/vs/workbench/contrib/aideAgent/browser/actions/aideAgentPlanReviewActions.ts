@@ -15,6 +15,8 @@ export interface IPlanReviewViewTitleActionContext {
 
 export interface IPlanReviewStepActionContext {
 	stepIndex: number;
+	exchangeId: string;
+	sessionId: string;
 }
 
 export const PLAN_REVIEW_CATEGORY = localize2('aideAgent.category', 'Aide');
@@ -107,7 +109,7 @@ export function registerPlanReviewActions() {
 
 		run(accessor: any, context: IPlanReviewStepActionContext) {
 			console.log(context);
-			console.log('Save up to step ', context.stepIndex);
+			console.log('Save up to step ', context.stepIndex, context.sessionId, context.exchangeId);
 		}
 	});
 
