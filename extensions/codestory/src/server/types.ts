@@ -119,7 +119,7 @@ type ExchangeMessageEvent = {
 	ExecutionState: ExecutionExchangeStateEvent;
 };
 
-type ExecutionExchangeStateEvent = 'Inference' | 'InReview';
+type ExecutionExchangeStateEvent = 'Inference' | 'InReview' | 'Cancelled';
 
 interface EditsExchangeEditsState {
 	EditsState: 'Loading' | 'Cancelled' | 'InReview' | 'MarkedComplete';
