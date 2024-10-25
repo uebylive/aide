@@ -19,6 +19,9 @@ const $ = dom.$;
 
 type StreamingState = Omit<IChatStreamingState, 'kind' | 'sessionId' | 'exchangeId'> & Partial<Pick<IChatStreamingState, 'sessionId' | 'exchangeId'>>;
 
+// If you end up here and are confued about the buttons and where they are coming from
+// grep for `MenuId.AideAgentStreamingState` and follow the hits, the registration of commands
+// happens using the `MenuId.AideAgentStreamingState` state
 export class StreamingStateWidget extends Disposable {
 
 	private rootElement: HTMLElement;
