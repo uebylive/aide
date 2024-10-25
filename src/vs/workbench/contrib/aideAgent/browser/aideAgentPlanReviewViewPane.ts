@@ -46,6 +46,7 @@ import { ITextResourceEditorInput } from '../../../../platform/editor/common/edi
 import { ICodeEditor } from '../../../../editor/browser/editorBrowser.js';
 import { Schemas } from '../../../../base/common/network.js';
 import { ICodeEditorService } from '../../../../editor/browser/services/codeEditorService.js';
+import { IAideAgentPlanService } from '../common/aideAgentPlanService.js';
 
 const $ = dom.$;
 
@@ -82,6 +83,14 @@ export class PlanReviewPane extends ViewPane {
 	readonly onDidChangeContent = this._onDidChangeContent.event;
 
 	private previousTreeScrollHeight: number = 0;
+	private _sessionId: string | null = null;
+	public set sessionId(sessionId: string) {
+		this._sessionId = sessionId;
+	}
+	private _exchangeId: string | null = null;
+	public set exchangeId(exchangeId: string) {
+		this._exchangeId = exchangeId;
+	}
 
 	private _visible = false;
 	public get visible() {
@@ -116,6 +125,7 @@ export class PlanReviewPane extends ViewPane {
 		options: IViewPaneOptions,
 		@ICodeEditorService codeEditorService: ICodeEditorService,
 		@IAideAgentService private readonly chatService: IAideAgentService,
+		@IAideAgentPlanService private readonly planService: IAideAgentPlanService,
 		@IKeybindingService keybindingService: IKeybindingService,
 		@IContextMenuService contextMenuService: IContextMenuService,
 		@IConfigurationService configurationService: IConfigurationService,
@@ -207,6 +217,17 @@ export class PlanReviewPane extends ViewPane {
 		if (planChatModel === undefined) {
 			return;
 		}
+		this.sessionId = sessionId;
+		this.exchangeId = exchangeId;
+
+		// The renderer is created once and not updated all the time
+		// so this wont work
+		let treeUser = TreeUser.ReviewPlan;
+		if (this._sessionId && this._exchangeId && !this.planService.isPlanSession(this._sessionId, this._exchangeId)) {
+			treeUser = TreeUser.Chat;
+		}
+		// update our renderer over here
+		this.renderer.rendererUser = treeUser;
 		// update the view model to the one over here
 		this._viewModel = this.instantiationService.createInstance(ChatViewModel, planChatModel, this._codeBlockModelCollection);
 		this.setVisible(true);
@@ -241,7 +262,9 @@ export class PlanReviewPane extends ViewPane {
 							(isResponseVM(element) ? `_${element.contentReferences.length}` : '') +
 							// Rerender request if we got new content references in the response
 							// since this may change how we render the corresponding attachments in the request
-							(isRequestVM(element) && element.contentReferences ? `_${element.contentReferences?.length}` : '');
+							(isRequestVM(element) && element.contentReferences ? `_${element.contentReferences?.length}` : '') +
+							// rerender if we have changed the user over here
+							(this.renderer.rendererUser);
 					},
 				}
 			});
@@ -397,7 +420,7 @@ export class PlanReviewPane extends ViewPane {
 		const supportsFileReferences: IChatWidgetViewOptions = { supportsFileReferences: true };
 		this.renderer = this._register(scopedInstantiationService.createInstance(
 			ChatListItemRenderer, // same renderer from chat
-			TreeUser.ReviewPlan,
+			'PlanReview',
 			this._register(this.instantiationService.createInstance(ChatEditorOptions, 'planReview', AideEditorStyleOptions.listForeground, AideEditorStyleOptions.inputEditorBackground, AideEditorStyleOptions.resultEditorBackground)),
 			// fuck it we ball
 			ChatAgentLocation.Notebook,
@@ -414,7 +437,7 @@ export class PlanReviewPane extends ViewPane {
 			delegate,
 			[this.renderer],
 			{
-				identityProvider: { getId: (e: ChatTreeItem) => e.id },
+				identityProvider: { getId: (e: ChatTreeItem) => e.id + this.renderer.rendererUser },
 				horizontalScrolling: false,
 				alwaysConsumeMouseWheel: false,
 				supportDynamicHeights: true,
@@ -446,6 +469,11 @@ export class PlanReviewPane extends ViewPane {
 			this.onDidChangeTreeContentHeight();
 		}));
 
+		// If we are changing the renderer user we should also change the items
+		// over here
+		this._register(this.renderer.onDidChangeRendererUser(e => {
+			this.onDidChangeItems();
+		}));
 		this._register(this.renderer.onDidChangeItemHeight(e => {
 			this.tree.updateElementHeight(e.element, e.height);
 		}));

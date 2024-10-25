@@ -143,13 +143,27 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	private readonly _treePool: TreePool;
 	private readonly _contentReferencesListPool: CollapsibleListPool;
 	private readonly _codeEditsPool: CodeEditsPool;
+	protected readonly _onDidChangeRendererUser = this._register(new Emitter<ITreeUser>());
+	readonly onDidChangeRendererUser: Event<ITreeUser> = this._onDidChangeRendererUser.event;
+	private _uniqueId: string | null = null;
+	get uniqueId(): string {
+		return this._uniqueId ?? 'not Set';
+	}
+
+	private _rendererUser: ITreeUser = 'Chat';
+	set rendererUser(treeUser: ITreeUser) {
+		if (this._rendererUser !== treeUser) {
+			this._rendererUser = treeUser;
+			this._onDidChangeRendererUser.fire(treeUser);
+		}
+	}
 
 	private _currentLayoutWidth: number = 0;
 	private _isVisible = true;
 	private _onDidChangeVisibility = this._register(new Emitter<boolean>());
 
 	constructor(
-		readonly user: ITreeUser,
+		uniqueId: string,
 		editorOptions: ChatEditorOptions,
 		private readonly location: ChatAgentLocation,
 		private readonly rendererOptions: IChatListItemRendererOptions,
@@ -162,6 +176,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 	) {
 		super();
+		this._uniqueId = uniqueId;
 
 		this.renderer = this._register(this.instantiationService.createInstance(ChatMarkdownRenderer, undefined));
 		this.markdownDecorationsRenderer = this.instantiationService.createInstance(ChatMarkdownDecorationsRenderer);
@@ -247,10 +262,11 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	}
 
 	renderTemplate(container: HTMLElement): IAgentListItemTemplate {
-		if (this.user === TreeUser.Chat) {
+		console.log(this._rendererUser, this.uniqueId);
+		if (this._rendererUser === TreeUser.Chat) {
 			return this.renderChatTemplate(container);
 		}
-		if (this.user === TreeUser.ReviewPlan) {
+		if (this._rendererUser === TreeUser.ReviewPlan) {
 			return this.renderReviewItemTemplate(container);
 		}
 		throw new Error('Unknown list user');
@@ -370,6 +386,17 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	}
 
 	renderElement(node: ITreeNode<ChatTreeItem, FuzzyScore>, index: number, templateData: IAgentListItemTemplate): void {
+		const expectedKind = this._rendererUser === TreeUser.Chat ? 'chatTemplate' : 'planReviewTemplate';
+		if (templateData.kind !== expectedKind) {
+			// Dispose of the old template data
+			this.disposeTemplate(templateData);
+			// Create a new template
+			const container = templateData.rowContainer.parentElement!;
+			dom.clearNode(container);
+			const newTemplateData = this.renderTemplate(container);
+			// Update the templateData reference
+			Object.assign(templateData, newTemplateData);
+		}
 		this.renderChatTreeItem(node.element, index, templateData);
 	}
 
@@ -544,7 +571,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		if (!isFiltered) {
 			value.forEach((data, index) => {
 				const context: IChatContentPartRenderContext = {
-					user: this.user,
+					user: this._rendererUser,
 					element,
 					index,
 					content: value,
@@ -619,7 +646,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 						followup => this._onDidClickFollowup.fire(followup)));
 			} else {
 				const context: IChatContentPartRenderContext = {
-					user: this.user,
+					user: this._rendererUser,
 					element,
 					index: i,
 					// NA for welcome msg
@@ -694,7 +721,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 			const preceedingContentParts = renderedParts.slice(0, index);
 			const context: IChatContentPartRenderContext = {
-				user: this.user,
+				user: this._rendererUser,
 				element,
 				content: contentForThisTurn,
 				preceedingContentParts,

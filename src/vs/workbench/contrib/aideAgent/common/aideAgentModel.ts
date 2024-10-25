@@ -1242,6 +1242,8 @@ export class ChatModel extends Disposable implements IChatModel {
 		if (progress.kind !== 'planStep') {
 			return;
 		}
+		// make sure we are tracking this as a plan
+		this.aideAgentPlanService.getOrStartPlanSession(progress.sessionId, progress.exchangeId);
 		const planId = `${progress.sessionId}-${progress.exchangeId}`;
 		let planMaybe = this._planChatModels.get(planId);
 		if (planMaybe === undefined) {
