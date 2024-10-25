@@ -20,12 +20,10 @@ import { IOffsetRange, OffsetRange } from '../../../../editor/common/core/offset
 import { IRange } from '../../../../editor/common/core/range.js';
 import { IWorkspaceFileEdit, IWorkspaceTextEdit, TextEdit, WorkspaceEdit } from '../../../../editor/common/languages.js';
 import { localize } from '../../../../nls.js';
-import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgentData, IChatAgentResult, reviveSerializedAgent } from './aideAgentAgents.js';
 import { IAideAgentCodeEditingService, IAideAgentCodeEditingSession } from './aideAgentCodeEditingService.js';
-import { CONTEXT_STREAMING_STATE } from './aideAgentContextKeys.js';
 import { IAideAgentEdits } from './aideAgentEditingSession.js';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from './aideAgentParserTypes.js';
 import { IAideAgentPlanService, IAideAgentPlanSession } from './aideAgentPlanService.js';
@@ -632,7 +630,6 @@ export interface IChatModel {
 	readonly title: string;
 	readonly welcomeMessage: IChatWelcomeMessageModel | undefined;
 	readonly requestInProgress: boolean;
-	readonly lastStreamingState: IChatStreamingState | undefined;
 	readonly inputPlaceholder?: string;
 	getExchanges(): IChatExchangeModel[];
 	toExport(): IExportableChatData;
@@ -781,7 +778,8 @@ export type IChatChangeEvent =
 	| IChatAddResponseEvent
 	| IChatSetAgentEvent
 	| IChatMoveEvent
-	| IChatCodeEditEvent;
+	| IChatCodeEditEvent
+	| IChatStreamingState;
 
 export interface IChatAddRequestEvent {
 	kind: 'addRequest';
@@ -983,7 +981,6 @@ export class ChatModel extends Disposable implements IChatModel {
 		@IAideAgentCodeEditingService private readonly aideAgentCodeEditingService: IAideAgentCodeEditingService,
 		@IAideAgentPlanService private readonly aideAgentPlanService: IAideAgentPlanService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 	) {
 		super();
 
@@ -1298,12 +1295,13 @@ export class ChatModel extends Disposable implements IChatModel {
 			);
 		}
 
+		// Instead of doing so much state management over here, we can just send the event
+		// over to the viewModel by firing the event over here and letting the onDidChange
+		// handlers for the view models (ChatModelView) react to this, they know what to do with this
 		if (progress.kind === 'streamingState') {
-			this._lastStreamingState = progress;
-			CONTEXT_STREAMING_STATE.bindTo(this.contextKeyService).set(progress.state);
-		} else if (progress.kind === 'endResponse') {
-			this._lastStreamingState = undefined;
-			CONTEXT_STREAMING_STATE.bindTo(this.contextKeyService).set(undefined);
+			this._onDidChange.fire(progress);
+			// early return over here
+			return;
 		}
 
 		// These events are special as they directed towards the side panel

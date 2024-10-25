@@ -4716,6 +4716,7 @@ export enum AideAgentEditsState {
 export enum AideAgentStreamingStateEnum {
 	Loading = 'loading',
 	WaitingFeedback = 'waitingFeedback',
+	Finished = 'finished',
 }
 
 export enum AideAgentStreamingStateLoadingLabel {
