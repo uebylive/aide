@@ -169,6 +169,7 @@ export interface IChatResponseViewModel {
 	readonly slashCommand?: IChatAgentCommand;
 	readonly agentOrSlashCommandDetected: boolean;
 	readonly response: IResponse;
+	readonly items: (ChatRequestViewModel | ChatResponseViewModel)[];
 	readonly usedContext: IChatUsedContext | undefined;
 	readonly contentReferences: ReadonlyArray<IChatContentReference>;
 	readonly codeCitations: ReadonlyArray<IChatCodeCitation>;
@@ -294,7 +295,7 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 	}
 
 	private onAddResponse(responseModel: IChatResponseModel) {
-		const response = this.instantiationService.createInstance(ChatResponseViewModel, responseModel);
+		const response = this.instantiationService.createInstance(ChatResponseViewModel, responseModel, this._items);
 		this._register(response.onDidChange(() => {
 			if (response.isComplete) {
 				this.updateCodeBlockTextModels(response);
@@ -554,6 +555,7 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 
 	constructor(
 		private readonly _model: IChatResponseModel,
+		private readonly _items: (ChatRequestViewModel | ChatResponseViewModel)[],
 		@ILogService private readonly logService: ILogService,
 		@IAideAgentAgentNameService private readonly chatAgentNameService: IAideAgentAgentNameService,
 	) {
@@ -593,6 +595,10 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 
 			this._onDidChange.fire();
 		}));
+	}
+
+	get items() {
+		return this._items;
 	}
 
 	private trace(tag: string, message: string) {

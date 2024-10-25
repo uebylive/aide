@@ -21,6 +21,10 @@
 	position: relative;
 }
 
+.aideagent-review-plan.will-be-dropped {
+	opacity: 0.5;
+}
+
 .aideagent-item-container.aideagent-review-plan .header {
 	position: absolute;
 	right: 20px;
@@ -37,20 +41,52 @@
 	place-items: center;
 	width: 16px;
 	height: 16px;
-	/* Max dot size is 16px, so we need to distance it from the top by 2px to center with the title line height */
-	margin-top: 2px;
+	margin-top: 5px;
 }
 
 .aideagent-timeline-dot-container :is(.aideagent-timeline-dot, .aideagent-timeline-save-icon, .aideagent-timeline-drop-icon) {
 	grid-area: 1 / -1 / 1 / -1;
+	transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .aideagent-timeline-dot-container .aideagent-timeline-save-icon {
 	opacity: 0;
+	transform: scale(0.9);
 }
 
 .aideagent-timeline-dot-container .aideagent-timeline-drop-icon {
 	opacity: 0;
+	transform: scale(0.9);
+}
+
+/* Show x mark on first item */
+.aideagent-review-plan.will-be-dropped.first-item .aideagent-timeline-drop-icon {
+	opacity: 1;
+	transform: scale(1);
+	color: var(--vscode-charts-red);
+}
+
+/* Keep first item title well visible */
+.aideagent-review-plan.will-be-dropped.first-item .rendered-markdown:first-child h2 {
+	opacity: 1;
+}
+
+.aideagent-review-plan.will-be-saved .aideagent-timeline-save-icon {
+	opacity: 1;
+	color: var(--vscode-charts-blue);
+}
+
+.aideagent-review-plan.is-saved .aideagent-timeline-save-icon {
+	opacity: 1;
+	color: var(--vscode-charts-blue);
+}
+
+.aideagent-review-plan.will-be-saved.first-item .aideagent-timeline-save-icon {
+	transform: scale(1);
+}
+
+.aideagent-review-plan.is-saved.first-item .aideagent-timeline-save-icon {
+	transform: scale(1);
 }
 
 .aideagent-timeline-dot-container .aideagent-timeline-dot {
@@ -69,13 +105,19 @@
 .aideagent-timeline-line {
 	position: absolute;
 	top: 2px;
-	bottom: -12px;
+	bottom: -16px;
 	margin: auto;
 	left: 0;
 	right: 0;
 	width: 1px;
 	height: auto;
 	background-color: var(--vscode-input-border);
+	transform: scaleY(0);
+	transition: transform 0.2s ease;
+}
+
+.aideagent-timeline-line-forerunner .aideagent-timeline-line{
+	transform: scaleY(1);
 }
 
 .aideagent-plan-content {

@@ -73,7 +73,6 @@ interface IBaseListItemTemplate {
 	currentElement?: ChatTreeItem;
 	renderedParts?: IChatContentPart[];
 	readonly rowContainer: HTMLElement;
-
 	readonly value: HTMLElement;
 	readonly contextKeyService: IContextKeyService;
 	readonly instantiationService: IInstantiationService;
@@ -376,8 +375,6 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	renderChatTreeItem(element: ChatTreeItem, index: number, templateData: IAgentListItemTemplate): void {
 		templateData.currentElement = element;
 
-
-
 		const kind = isRequestVM(element) ? 'request' :
 			isResponseVM(element) ? 'response' :
 				'welcome';
@@ -409,6 +406,12 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 					sessionId: planSessionId,
 					exchangeId: planExchangeId,
 				};
+			}
+		}
+
+		if (templateData.kind === 'planReviewTemplate' && isResponseVM(element)) {
+			if (index < element.items.length - 1) {
+				templateData.rowContainer.classList.add('aideagent-timeline-line-forerunner');
 			}
 		}
 
