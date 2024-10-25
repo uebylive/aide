@@ -7,7 +7,7 @@ import * as dom from '../../../../../base/browser/dom.js';
 import { Button } from '../../../../../base/browser/ui/button/button.js';
 import { IListRenderer, IListVirtualDelegate } from '../../../../../base/browser/ui/list/list.js';
 import { Emitter, Event } from '../../../../../base/common/event.js';
-import { Disposable, DisposableStore } from '../../../../../base/common/lifecycle.js';
+import { Disposable, DisposableStore, IDisposable } from '../../../../../base/common/lifecycle.js';
 import { basename, dirname } from '../../../../../base/common/path.js';
 import { URI } from '../../../../../base/common/uri.js';
 import { Range } from '../../../../../editor/common/core/range.js';
@@ -36,7 +36,6 @@ export class ChatAttachmentsContentPart extends Disposable {
 		private readonly variables: IChatRequestVariableEntry[],
 		private readonly contentReferences: readonly IChatContentReference[] | undefined,
 		private readonly attachmentsCollapsibleListPool: AttachmentsCollapsibleListPool,
-		@IThemeService private readonly themeService: IThemeService,
 	) {
 		super();
 
@@ -55,6 +54,7 @@ export class ChatAttachmentsContentPart extends Disposable {
 				localize('attachmentsSingular', "1 attachment");
 
 			const buttonElement = $('.aideagent-attachments-label.show-file-icons', undefined);
+			let listExpanded = false;
 			const collapseButton = this._register(new Button(buttonElement, {
 				buttonBackground: undefined,
 				buttonBorder: undefined,
@@ -67,21 +67,17 @@ export class ChatAttachmentsContentPart extends Disposable {
 			}));
 			container.appendChild(buttonElement);
 			collapseButton.element.textContent = attachmentsLabel;
-			this.updateAriaLabel(collapseButton.element, attachmentsLabel, true);
-			let expanded = false;
+			this.updateAriaLabel(collapseButton.element, attachmentsLabel, listExpanded);
 			this._register(collapseButton.onDidClick(() => {
-				expanded = !expanded;
-				listContainer.classList.toggle('hidden', !expanded);
+				listExpanded = !listExpanded;
+				this.domNode.classList.toggle('aideagent-attachments-list-collapsed', !listExpanded);
 				this._onDidChangeHeight.fire();
-				this.updateAriaLabel(collapseButton.element, attachmentsLabel, expanded);
+				this.updateAriaLabel(collapseButton.element, attachmentsLabel, listExpanded);
 			}));
-
-			const listContainer = dom.append(container, $('.chat-attachments-list'));
-			this._register(createFileIconThemableTreeContainerScope(listContainer, this.themeService));
 
 			const ref = this._register(this.attachmentsCollapsibleListPool.get());
 			const list = ref.object;
-			listContainer.appendChild(list.getHTMLElement().parentElement!);
+			this.domNode.appendChild(list.getHTMLElement().parentElement!);
 
 			const maxItemsShown = 6;
 			const itemsShown = Math.min(this.variables.length, maxItemsShown);
@@ -94,6 +90,10 @@ export class ChatAttachmentsContentPart extends Disposable {
 
 	private updateAriaLabel(element: HTMLElement, label: string, expanded: boolean): void {
 		element.ariaLabel = expanded ? localize('attachmentsExpanded', "{0}, expanded", label) : localize('attachmentsCollapsed', "{0}, collapsed", label);
+	}
+
+	addDisposable(disposable: IDisposable): void {
+		this._register(disposable);
 	}
 }
 
@@ -116,7 +116,7 @@ export class AttachmentsCollapsibleListPool extends Disposable {
 	private listFactory(): WorkbenchList<IChatRequestVariableEntry> {
 		const resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this._onDidChangeVisibility }));
 
-		const container = $('.chat-attachments-list');
+		const container = $('.aideagent-attachments-list');
 		this._register(createFileIconThemableTreeContainerScope(container, this.themeService));
 
 		const list = this.instantiationService.createInstance(
