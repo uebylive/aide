@@ -28,6 +28,7 @@ export function registerChatEditsActions() {
 			});
 		}
 		run(accessor: ServicesAccessor, ...args: any[]) {
+			// ??? wtf is this shit
 			console.log('Stop edits');
 		}
 	});

@@ -41,4 +41,9 @@ export interface IAideAgentCodeEditingService {
 	_serviceBrand: undefined;
 
 	getOrStartCodeEditingSession(sessionId: string): IAideAgentCodeEditingSession;
+
+	/**
+	 * Helper fucntion to check if there are edits associated with the session and the exchange
+	 */
+	doesExchangeHaveEdits(sessionId: string, exchangeId: string): boolean;
 }

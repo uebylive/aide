@@ -588,6 +588,16 @@ export class AideAgentCodeEditingService extends Disposable implements IAideAgen
 		super();
 	}
 
+	doesExchangeHaveEdits(sessionId: string, exchangeId: string): boolean {
+		const editingSession = this._sessions.get(sessionId);
+		if (!editingSession) {
+			return false;
+		}
+		const fileLocationWithEdits = editingSession.fileLocationForEditsMade(sessionId, exchangeId);
+		// If the edits location is not empty, then we for sure have some edits
+		return fileLocationWithEdits.size !== 0;
+	}
+
 	getOrStartCodeEditingSession(sessionId: string): IAideAgentCodeEditingSession {
 		if (this._sessions.get(sessionId)) {
 			return this._sessions.get(sessionId)!;
