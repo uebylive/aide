@@ -403,9 +403,10 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 				}
 			}));
 
-		} else if (!element.isComplete) {
-			templateData.detail.textContent = GeneratingPhrase;
 		}
+		// else if (!element.isComplete) {
+		// 	templateData.detail.textContent = GeneratingPhrase;
+		// }
 	}
 
 	private renderConfirmationAction(element: IChatRequestViewModel, templateData: IChatListItemTemplate) {
