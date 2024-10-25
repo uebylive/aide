@@ -1416,6 +1416,13 @@ export class ChatModel extends Disposable implements IChatModel {
 		this.chatAgentService.handleUserFeedbackForSession(sessionId, exchangeId, agentId, accepted);
 	}
 
+	async handleUserActionUndoSession(sessionId: string, exchangeId: string): Promise<void> {
+		const editingSession = this.aideAgentCodeEditingService.getOrStartCodeEditingSession(sessionId);
+		await editingSession.rejectForExchange(sessionId, exchangeId);
+		this.chatAgentService.handleUserActionUndoSession(sessionId, exchangeId);
+		// TODO(ghostwriternr): Do the updates for the UI over here, including changing the responses etc
+	}
+
 	/* TODO(@ghostwriternr): Honestly, don't care about followups at the moment.
 	setFollowups(request: ChatRequestModel, followups: IChatFollowup[] | undefined): void {
 		if (!request.response) {

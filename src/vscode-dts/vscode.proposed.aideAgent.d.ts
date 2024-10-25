@@ -241,6 +241,7 @@ declare module 'vscode' {
 
 	export type AideSessionHandler = (id: string) => void;
 	export type AideSessionHandleUserAction = (sessionId: string, exchangeId: string, action: AideSessionExchangeUserAction) => void;
+	export type AideSessionUndoAction = (sessionId: string, exchangeId: string) => void;
 	export type AideSessionEventHandler = (event: AideAgentRequest, token: CancellationToken) => ProviderResult<ChatResult | void>;
 	export type AideSessionEventSender = (sessionId: string) => Thenable<AideAgentEventSenderResponse | undefined>;
 
@@ -251,6 +252,7 @@ declare module 'vscode' {
 		// NOTE: This might not be correct, but we are in a time-crunch and this will work, refrain from doing
 		// changes until necessary
 		handleExchangeUserAction: AideSessionHandleUserAction;
+		handleSessionUndo: AideSessionUndoAction;
 	}
 
 	interface AideSessionAgent extends Omit<ChatParticipant, 'requestHandler'> {

@@ -7,6 +7,7 @@ import { Codicon } from '../../../../../base/common/codicons.js';
 import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions.js';
 import { localize2 } from '../../../../../nls.js';
 import { registerAction2, Action2, MenuId } from '../../../../../platform/actions/common/actions.js';
+import { IAideAgentService } from '../../common/aideAgentService.js';
 
 export function registerAgentActions() {
 	registerAction2(class RevertAction extends Action2 {
@@ -24,6 +25,16 @@ export function registerAgentActions() {
 			});
 		}
 		run(accessor: ServicesAccessor, ...args: any[]) {
+			const context = args[0];
+			const exchangeId = context['aideAgentExchangeId'];
+			const sessionId = context['aideAgentSessionId'];
+			try {
+				const aideAgentSession = accessor.get(IAideAgentService);
+				aideAgentSession.handleUserActionUndoSession(sessionId, exchangeId);
+			} catch (exception) {
+				console.error(exception);
+			}
+			// here we have the callback for the various services over here
 			console.log('Stop edits');
 		}
 	});

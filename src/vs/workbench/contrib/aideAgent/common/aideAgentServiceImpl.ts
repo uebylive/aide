@@ -856,4 +856,9 @@ export class ChatService extends Disposable implements IAideAgentService {
 		const model = Iterable.find(this._sessionModels.values(), model => model.sessionId === sessionId);
 		model?.handleUserActionForSession(sessionId, exchangeId, agentId, accepted);
 	}
+
+	async handleUserActionUndoSession(sessionId: string, exchangeId: string): Promise<void> {
+		const model = Iterable.find(this._sessionModels.values(), model => model.sessionId === sessionId);
+		await model?.handleUserActionUndoSession(sessionId, exchangeId);
+	}
 }
