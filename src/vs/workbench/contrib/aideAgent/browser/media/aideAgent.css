@@ -197,8 +197,9 @@
 }
 
 /* Should handle this one separately */
+/* TODO(@ghostwriternr): Why? */
 .aideagent-item-container > .value .chat-used-context {
-	margin-top: 6px;
+	margin-top: 8px;
 }
 
 .aideagent-item-container .value .rendered-markdown blockquote {
@@ -611,14 +612,14 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	color: var(--vscode-interactive-session-foreground);
 }
 
-.chat-attached-context .chat-attached-context-attachment .monaco-icon-name-container.warning,
-.chat-attached-context .chat-attached-context-attachment .monaco-icon-suffix-container.warning,
+.aideagent-attached-context .aideagent-attached-context-attachment .monaco-icon-name-container.warning,
+.aideagent-attached-context .aideagent-attached-context-attachment .monaco-icon-suffix-container.warning,
 .chat-used-context-list .monaco-icon-name-container.warning,
 .chat-used-context-list .monaco-icon-suffix-container.warning {
 	color: var(--vscode-notificationsWarningIcon-foreground);
 }
 
-.chat-attached-context .chat-attached-context-attachment.show-file-icons.warning {
+.aideagent-attached-context .aideagent-attached-context-attachment.show-file-icons.warning {
 	border-color: var(--vscode-notificationsWarningIcon-foreground);
 }
 
@@ -649,54 +650,74 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	padding: 8px 0 0 0
 }
 
-.interactive-session .chat-attached-context .chat-attached-context-attachment {
+.interactive-session .aideagent-attached-context {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.interactive-session .aideagent-attached-context .aideagent-attachments-list .monaco-list {
+	border: none;
+	border-radius: 4px;
+	width: auto;
+}
+
+.interactive-session .aideagent-attached-context.aideagent-attachments-list-collapsed .aideagent-attachments-list {
+	display: none;
+}
+
+.interactive-session .aideagent-attached-context .aideagent-attachments-list .monaco-list .monaco-list-row {
+	border-radius: 2px;
+}
+
+.interactive-session .aideagent-attached-context .aideagent-attached-context-attachment {
 	display: flex;
 	gap: 4px;
 }
 
-.interactive-session .chat-attached-context .chat-attached-context-attachment .monaco-button:hover {
+.interactive-session .aideagent-attached-context .aideagent-attached-context-attachment .monaco-button:hover {
 	cursor: pointer;
 }
 
-.interactive-session .chat-attached-context .chat-attached-context-attachment .monaco-button {
+.interactive-session .aideagent-attached-context .aideagent-attached-context-attachment .monaco-button {
 	display: flex;
 	align-items: center;
 }
 
-.interactive-session .chat-attached-context .chat-attached-context-attachment .monaco-icon-label-container {
+.interactive-session .aideagent-attached-context .aideagent-attached-context-attachment .monaco-icon-label-container {
 	display: flex;
 }
 
-.interactive-session .chat-attached-context .chat-attached-context-attachment .monaco-icon-label-container .monaco-highlighted-label {
+.interactive-session .aideagent-attached-context .aideagent-attached-context-attachment .monaco-icon-label-container .monaco-highlighted-label {
 	display: flex !important;
 	align-items: center !important;
 }
 
-.interactive-session .chat-attached-context .chat-attached-context-attachment .monaco-icon-label .monaco-button.codicon.codicon-close,
-.interactive-session .chat-attached-context .chat-attached-context-attachment .monaco-button.codicon.codicon-close {
+.interactive-session .aideagent-attached-context .aideagent-attached-context-attachment .monaco-icon-label .monaco-button.codicon.codicon-close,
+.interactive-session .aideagent-attached-context .aideagent-attached-context-attachment .monaco-button.codicon.codicon-close {
 	color: var(--vscode-descriptionForeground);
 	cursor: pointer;
 }
 
-.interactive-session .chat-attached-context .chat-attached-context-attachment .monaco-icon-label .codicon {
+.interactive-session .aideagent-attached-context .aideagent-attached-context-attachment .monaco-icon-label .codicon {
 	padding-left: 4px;
 }
 
-.interactive-session .chat-attached-context {
+.interactive-session .aideagent-attached-context {
 	padding: 0 0 8px 0;
 	display: flex;
 	gap: 4px;
 	flex-wrap: wrap;
 }
 
-.interactive-session .interactive-input-part.compact .chat-attached-context {
+.interactive-session .interactive-input-part.compact .aideagent-attached-context {
 	padding-top: 8px;
 	display: flex;
 	gap: 4px;
 	flex-wrap: wrap;
 }
 
-.interactive-session .chat-attached-context .chat-attached-context-attachment {
+.interactive-session .aideagent-attached-context .aideagent-attached-context-attachment {
 	padding: 2px;
 	border: 1px solid var(--vscode-chat-requestBorder, var(--vscode-input-background, transparent));
 	border-radius: 4px;
@@ -704,7 +725,7 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	max-width: 100%;
 }
 
-.interactive-session .aideagent-item-container.interactive-request .chat-attached-context .chat-attached-context-attachment {
+.interactive-session .aideagent-item-container.interactive-request .aideagent-attached-context .aideagent-attached-context-attachment {
 	padding-right: 6px;
 }
 
@@ -863,7 +884,8 @@ have to be updated for changes to the rules above, or to support more deeply nes
 
 .interactive-response-progress-tree,
 .aideagent-item-container .chat-notification-widget,
-.interactive-session .chat-used-context-list {
+.interactive-session .chat-used-context-list,
+.interactive-session .aideagent-attached-context .aideagent-attachments-list {
 	border: 1px solid var(--vscode-chat-requestBorder);
 	border-radius: 4px;
 	margin-bottom: 8px;
@@ -878,20 +900,24 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	border-radius: 2px;
 }
 
-.interactive-session .aideagent-used-context-label {
+.interactive-session .aideagent-used-context-label,
+.interactive-session .aideagent-attachments-label {
 	font-size: 12px;
 	color: var(--vscode-descriptionForeground);
 	opacity: 0.8;
 	user-select: none;
 }
 
-.interactive-session .aideagent-used-context-label:hover {
+.interactive-session .aideagent-used-context-label:hover,
+.interactive-session .aideagent-attachments-label:hover {
 	opacity: unset;
 }
 
-.interactive-session .aideagent-used-context-label .monaco-button {
+.interactive-session .aideagent-used-context-label .monaco-button,
+.interactive-session .aideagent-attachments-label .monaco-button {
 	/* unset Button styles */
-	display: inline-flex;
+	display: flex;
+	align-items: center;
 	/* gap: 4px; */
 	height: 18px;
 	cursor: pointer;
@@ -903,20 +929,24 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	justify-content: initial;
 }
 
-.interactive-session .aideagent-used-context-label .monaco-button:hover {
+.interactive-session .aideagent-used-context-label .monaco-button:hover,
+.interactive-session .aideagent-attachments-label .monaco-button:hover {
 	background-color: var(--vscode-list-hoverBackground);
 	color: var(--vscode-foreground);
 }
 
-.interactive-session .aideagent-used-context-label .monaco-text-button:focus {
+.interactive-session .aideagent-used-context-label .monaco-text-button:focus,
+.interactive-session .aideagent-attachments-label .monaco-text-button:focus {
 	outline: none;
 }
 
-.interactive-session .aideagent-used-context-label .monaco-text-button:focus-visible {
+.interactive-session .aideagent-used-context-label .monaco-text-button:focus-visible,
+.interactive-session .aideagent-attachments-label .monaco-text-button:focus-visible {
 	outline: 1px solid var(--vscode-focusBorder);
 }
 
-.interactive-session .chat-used-context .aideagent-used-context-label .monaco-button .codicon {
+.interactive-session .chat-used-context .aideagent-used-context-label .monaco-button .codicon,
+.interactive-session .aideagent-attached-context .aideagent-attachments-label .monaco-button .codicon {
 	margin: 0 0 0 4px;
 }
 
@@ -992,9 +1022,28 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	color: var(--vscode-textLink-foreground);
 }
 
-
-/* Chat overrides */
-
 .aideagent-item-container.interactive-request {
 	border-block: none;
+}
+
+.aideagent-item-container .aideagent-attachment-icons .icon {
+	height: 18px;
+	display: inline-block;
+	vertical-align: middle;
+}
+
+.aideagent-item-container .aideagent-attachment-icons .icon::before {
+	color: var(--vscode-descriptionForeground) !important;
+	display: inline-block;
+	background-size: 100%;
+	background-position: left center;
+	background-repeat: no-repeat;
+}
+
+.aideagent-item-container .aideagent-attachment-icons .file-icon::before {
+	font-size: 175% !important;
+}
+
+.aideagent-item-container .aideagent-attachment-icons .icon-label {
+	text-wrap: wrap;
 }

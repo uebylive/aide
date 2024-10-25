@@ -50,7 +50,8 @@ import { ChatCommandButtonContentPart, ChatCommandGroupContentPart } from './aid
 import { ChatConfirmationContentPart } from './aideAgentContentParts/aideAgentConfirmationContentPart.js';
 import { IChatContentPart, IChatContentPartRenderContext } from './aideAgentContentParts/aideAgentContentParts.js';
 import { EditsContentPart } from './aideAgentContentParts/aideAgentEditsContentPart.js';
-import { ChatMarkdownContentPart, EditorPool, EditPreviewEditorPool } from './aideAgentContentParts/aideAgentMarkdownContentPart.js';
+import { ChatMarkdownContentPart, EditPreviewEditorPool, EditorPool } from './aideAgentContentParts/aideAgentMarkdownContentPart.js';
+import { PlanContentPart } from './aideAgentContentParts/aideAgentPlanContentPart.js';
 import { ChatPlanStepPart } from './aideAgentContentParts/aideAgentPlanStepPart.js';
 import { ChatProgressContentPart } from './aideAgentContentParts/aideAgentProgressContentPart.js';
 import { ChatCollapsibleListContentPart, CollapsibleListPool } from './aideAgentContentParts/aideAgentReferencesContentPart.js';
@@ -63,7 +64,6 @@ import { ChatMarkdownDecorationsRenderer } from './aideAgentMarkdownDecorationsR
 import { ChatMarkdownRenderer } from './aideAgentMarkdownRenderer.js';
 import { ChatEditorOptions } from './aideAgentOptions.js';
 import { ChatCodeBlockContentProvider, CodeBlockPart } from './codeBlockPart.js';
-import { PlanContentPart } from './aideAgentContentParts/aideAgentPlanContentPart.js';
 
 
 const $ = dom.$;
@@ -800,7 +800,11 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	}
 
 	private renderAttachments(variables: IChatRequestVariableEntry[], contentReferences: ReadonlyArray<IChatContentReference> | undefined, templateData: IChatListItemTemplate) {
-		return this.instantiationService.createInstance(ChatAttachmentsContentPart, variables, contentReferences, undefined);
+		const attachmentPart = this.instantiationService.createInstance(ChatAttachmentsContentPart, variables, contentReferences);
+		attachmentPart.addDisposable(attachmentPart.onDidChangeHeight(() => {
+			this.updateItemHeight(templateData);
+		}));
+		return attachmentPart;
 	}
 
 	private renderTextEdit(context: IChatContentPartRenderContext, chatTextEdit: IChatTextEditGroup, templateData: IChatListItemTemplate): IChatContentPart {

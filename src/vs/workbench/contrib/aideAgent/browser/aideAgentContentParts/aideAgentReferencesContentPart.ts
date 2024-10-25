@@ -41,7 +41,6 @@ import { IChatRendererContent, IChatResponseViewModel } from '../../common/aideA
 import { ChatTreeItem } from '../aideAgent.js';
 import { IDisposableReference, ResourcePool } from './aideAgentCollections.js';
 import { IChatContentPart } from './aideAgentContentParts.js';
-import './media/aideAgentReferencesContentPart.css';
 
 const $ = dom.$;
 
@@ -84,7 +83,7 @@ export class ChatCollapsibleListContentPart extends Disposable implements IChatC
 		const referencesLabel = labelOverride ?? (data.length > 1 ?
 			localize('usedReferencesPlural', "used {0} references", data.length) :
 			localize('usedReferencesSingular', "used {0} reference", 1));
-		const iconsContainer = $('.chat-used-context-icons');
+		const iconsContainer = $('.aideagent-attachment-icons');
 		for (const item of data) {
 			if (item.kind === 'reference') {
 				const iconElement = $('span.icon');
