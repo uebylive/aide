@@ -209,7 +209,7 @@ export async function provideInteractiveEditorResponse(
 	const context: InEditorRequest = {
 		repoRef: repoRef.getRepresentation(),
 		query: request.prompt,
-		threadId: request.id,
+		threadId: request.exchangeId,
 		language: textDocument.languageId,
 		snippetInformation: {
 			startPosition: {
