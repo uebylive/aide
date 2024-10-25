@@ -116,7 +116,10 @@ type ExchangeMessageEvent = {
 	FinishedExchange: FinishedExchangeEvent;
 	EditsExchangeState: EditsExchangeEditsState;
 	PlansExchangeState: EditsExchangeEditsState;
+	ExecutionState: ExecutionExchangeStateEvent;
 };
+
+type ExecutionExchangeStateEvent = 'Inference' | 'InReview';
 
 interface EditsExchangeEditsState {
 	EditsState: 'Loading' | 'Cancelled' | 'InReview' | 'MarkedComplete';

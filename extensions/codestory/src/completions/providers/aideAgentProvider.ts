@@ -222,6 +222,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			sessionId: request.session_id,
 		});
 
+		console.log('provideEditsStreamed');
 		// This is our uniqueEditId which we are using to tag the edits and make
 		// sure that we can roll-back if required on the undo-stack
 		let uniqueEditId = request.exchange_id;
@@ -693,7 +694,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					exchangeId,
 				});
 				if (responseStream === undefined) {
-					console.log('resonseStreamNotFound::ExchangeEvent::ExchangeEvent', exchangeId, sessionId);
+					console.log('resonseStreamNotFound::ExchangeEvent::ExchangeEvent::exchangeId::sessionId', exchangeId, sessionId);
 				}
 				if (event.event.ExchangeEvent.PlansExchangeState) {
 					const editsState = event.event.ExchangeEvent.PlansExchangeState.EditsState;
@@ -767,9 +768,40 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					}
 					continue;
 				}
+				if (event.event.ExchangeEvent.ExecutionState) {
+					const executionState = event.event.ExchangeEvent.ExecutionState;
+					if (executionState === 'Inference') {
+						responseStream?.stream.streamingState({
+							exchangeId,
+							sessionId,
+							isError: false,
+							state: 'loading',
+							loadingLabel: 'reasoning',
+							message: 'Thinking...',
+						});
+					} else if (executionState === 'InReview') {
+						responseStream?.stream.streamingState({
+							exchangeId,
+							sessionId,
+							isError: false,
+							state: 'waitingFeedback',
+							loadingLabel: 'generating',
+							message: 'Waiting for feedback...',
+						});
+					}
+					continue;
+				}
 				if (event.event.ExchangeEvent.FinishedExchange) {
+					// Update our streaming state that we are finished
+					responseStream?.stream.streamingState({
+						exchangeId,
+						sessionId,
+						isError: false,
+						state: 'finished',
+						loadingLabel: 'generating',
+						message: 'finished',
+					});
 					if (responseStream) {
-						// close the stream if we have finished the exchange
 						responseStream.stream.close();
 					}
 				}

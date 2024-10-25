@@ -218,6 +218,7 @@ export interface IChatConfirmation {
 export enum ChatStreamingState {
 	Loading = 'loading',
 	WaitingFeedback = 'waitingFeedback',
+	Finished = 'finished',
 }
 
 export enum ChatStreamingStateLoadingLabel {

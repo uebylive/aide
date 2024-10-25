@@ -26,11 +26,11 @@ import { ILogService } from '../../../../platform/log/common/log.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgentData } from '../common/aideAgentAgents.js';
-import { CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_RESPONSE_WITH_PLAN_STEPS, CONTEXT_IN_CHAT_SESSION, CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER, CONTEXT_RESPONSE_FILTERED } from '../common/aideAgentContextKeys.js';
+import { CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_RESPONSE_WITH_PLAN_STEPS, CONTEXT_IN_CHAT_SESSION, CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER, CONTEXT_RESPONSE_FILTERED, CONTEXT_STREAMING_STATE } from '../common/aideAgentContextKeys.js';
 import { AgentMode, AgentScope, ChatModelInitState, IChatModel, IChatRequestVariableEntry, IChatResponseModel } from '../common/aideAgentModel.js';
 import { ChatRequestAgentPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader, formatChatQuestion } from '../common/aideAgentParserTypes.js';
 import { ChatRequestParser } from '../common/aideAgentRequestParser.js';
-import { IAideAgentService, IChatFollowup, IChatLocationData } from '../common/aideAgentService.js';
+import { IAideAgentService, IChatFollowup, IChatLocationData, IChatStreamingState } from '../common/aideAgentService.js';
 import { IAideAgentSlashCommandService } from '../common/aideAgentSlashCommands.js';
 import { ChatViewModel, IChatResponseViewModel, isRequestVM, isResponseVM, isWelcomeVM } from '../common/aideAgentViewModel.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
@@ -716,14 +716,11 @@ export class ChatWidget extends Disposable implements IChatWidget {
 				return;
 			}
 
-
-			// React to changes in the viewmodel here
-
-			if (this.viewModel.lastStreamingState) {
-				this.inputPart.updateStreamingState(this.viewModel.lastStreamingState);
-			} else {
-				// this.inputPart.hideStreamingState();
-			}
+			// Reacting to the streamingState over here since these influence the
+			// streamingStateWidget which is part of the ChatWidget
+			events.filter((event) => event?.kind === 'streamingState').forEach((event) => {
+				this.updateStreamingState(event);
+			});
 
 			this.requestInProgress.set(this.viewModel.requestInProgress);
 
@@ -810,6 +807,18 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	// Leftover from the old chat view, not sure if this is still needed
 	async acceptInputWithPrefix(prefix: string): Promise<void> {
 		this._acceptInput({ prefix });
+	}
+
+	private updateStreamingState(event: IChatStreamingState) {
+		const state = event.state;
+		// If we are finished with the exchange, then set the streaming state to undefined
+		if (state === 'finished') {
+			CONTEXT_STREAMING_STATE.bindTo(this.contextKeyService).set(undefined);
+			this.inputPart.hideStreamingState();
+		} else {
+			CONTEXT_STREAMING_STATE.bindTo(this.contextKeyService).set(state);
+			this.inputPart.updateStreamingState(event);
+		}
 	}
 
 	private collectInputState(): IChatInputState {
