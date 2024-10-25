@@ -3,6 +3,18 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+.aide-review-plan-list-container .monaco-list-rows {
+	counter-reset: aideagent-review-item;
+}
+
+.aide-review-plan-list-container .monaco-list-rows .monaco-list-row {
+	counter-increment: aideagent-review-item;
+	overflow: visible;
+}
+
+.aide-review-plan-list-container .monaco-list-rows .monaco-list-row .monaco-tl-contents {
+	overflow: visible;
+}
 
 .aideagent-item-container.aideagent-review-plan {
 	flex-direction: row;
@@ -11,8 +23,8 @@
 
 .aideagent-item-container.aideagent-review-plan .header {
 	position: absolute;
-	right: 8px;
-	top: 16px;
+	right: 20px;
+  top: 16px;
 }
 
 .aideagent-timeline {
@@ -45,7 +57,7 @@
 	width: 5px;
 	height: 5px;
 	background-color: var(--vscode-editorPane-background);
-	border: 1px solid var(--vscode-descriptionForeground);
+	border: 1px solid var(--vscode-input-border);
 	border-radius: 9999px;
 }
 
@@ -56,14 +68,14 @@
 
 .aideagent-timeline-line {
 	position: absolute;
-	top: 0px;
-	bottom: -3px;
+	top: 2px;
+	bottom: -12px;
 	margin: auto;
 	left: 0;
 	right: 0;
 	width: 1px;
 	height: auto;
-	background-color: var(--vscode-descriptionForeground);
+	background-color: var(--vscode-input-border);
 }
 
 .aideagent-plan-content {
@@ -72,31 +84,35 @@
 	flex-grow: 1;
 }
 
-/*
-.aideagent-header {
-	display: flex;
-	align-items: baseline;
+.aideagent-item-container.aideagent-review-plan .value {
+	margin-top: 0;
 	padding-block: 4px;
 	padding-inline: 6px;
 }
 
-.aideagent-title {
-	font-size: 13px;
-	line-height: 18px;
-	font-weight: 500;
-	color: var(--vscode-interactive-session-foreground);
-}
-
-.aideagent-title::before {
-	content: counter(plan-item) ".";
-	margin-right: 2px;
-	counter-increment: plan-item;
-	color: var(--vscode-editorLineNumber-foreground);
-}
-
-.aideagent-description {
-	margin-inline: 6px;
-	margin-block-end: 4px;
+/* Description */
+.aideagent-item-container.aideagent-review-plan .rendered-markdown {
 	color: var(--vscode-list-deemphasizedForeground);
 }
-*/
+
+/* Title */
+.aideagent-item-container.aideagent-review-plan .rendered-markdown:first-child h2 {
+	font-size: 13px;
+	line-height: 18px;
+	font-weight: 400;
+	color: var(--vscode-foreground);
+	margin-block: 0;
+	display: inline;
+}
+
+.aideagent-item-container.aideagent-review-plan .rendered-markdown:first-child::before {
+	content: counter(aideagent-review-item) '.';
+	margin-inline-end: 2px;
+	color: var(--vscode-list-deemphasizedForeground);
+}
+
+.aideagent-header {
+	display: flex;
+	align-items: baseline;
+}
+

@@ -777,7 +777,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 							isError: false,
 							state: 'loading',
 							loadingLabel: 'reasoning',
-							message: 'Thinking...',
 						});
 					} else if (executionState === 'InReview') {
 						responseStream?.stream.streamingState({
@@ -786,7 +785,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 							isError: false,
 							state: 'waitingFeedback',
 							loadingLabel: 'generating',
-							message: 'Waiting for feedback...',
 						});
 					} else if (executionState === 'Cancelled') {
 						responseStream?.stream.streamingState({
@@ -795,7 +793,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 							isError: false,
 							state: 'cancelled',
 							loadingLabel: 'generating',
-							message: 'Cancelled...',
+							message: 'Cancelled',
 						});
 					}
 					continue;
@@ -807,8 +805,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						sessionId,
 						isError: false,
 						state: 'finished',
-						loadingLabel: 'generating',
-						message: 'finished',
+						message: 'Finished',
 					});
 					if (responseStream) {
 						responseStream.stream.close();
