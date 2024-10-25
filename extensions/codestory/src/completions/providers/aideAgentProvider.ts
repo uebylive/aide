@@ -788,6 +788,15 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 							loadingLabel: 'generating',
 							message: 'Waiting for feedback...',
 						});
+					} else if (executionState === 'Cancelled') {
+						responseStream?.stream.streamingState({
+							exchangeId,
+							sessionId,
+							isError: false,
+							state: 'cancelled',
+							loadingLabel: 'generating',
+							message: 'Cancelled...',
+						});
 					}
 					continue;
 				}

@@ -219,6 +219,7 @@ export enum ChatStreamingState {
 	Loading = 'loading',
 	WaitingFeedback = 'waitingFeedback',
 	Finished = 'finished',
+	Cancelled = 'cancelled',
 }
 
 export enum ChatStreamingStateLoadingLabel {
