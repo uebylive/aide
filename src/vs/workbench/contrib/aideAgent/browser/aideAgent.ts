@@ -148,6 +148,7 @@ export interface IChatWidget {
 	lastSelectedAgent: IChatAgentData | undefined;
 	readonly scopedContextKeyService: IContextKeyService;
 	completionContext: IChatWidgetCompletionContext;
+	readonly planningEnabled: boolean;
 
 	getContrib<T extends IChatWidgetContrib>(id: string): T | undefined;
 	reveal(item: ChatTreeItem): void;
@@ -174,6 +175,7 @@ export interface IChatWidget {
 	clear(): void;
 	getViewState(): IChatViewState;
 	transferQueryState(mode: AgentMode, scope: AgentScope): void;
+	togglePlanning(): void;
 }
 
 
