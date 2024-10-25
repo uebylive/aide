@@ -27,10 +27,6 @@ export class StreamingStateWidget extends Disposable {
 	private toolbar: MenuWorkbenchToolBar;
 	private _isVisible: boolean;
 
-	get isVisible() {
-		return this._isVisible;
-	}
-
 	constructor(
 		streamingState: StreamingState,
 		container: HTMLElement,
@@ -135,8 +131,7 @@ export class StreamingStateWidget extends Disposable {
 	hide() {
 		this.rootElement.ariaHidden = 'true';
 		this.rootElement.classList.add('aide-streaming-state-hidden');
-		this._register(dom.addDisposableListener(this.rootElement, dom.EventType.ANIMATION_END, async (e: AnimationEvent) => {
-			this._isVisible = false;
-		}));
+		// manually set the _isVisible toggle over here
+		this._isVisible = false;
 	}
 }
