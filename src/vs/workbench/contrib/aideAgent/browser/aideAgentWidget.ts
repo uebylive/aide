@@ -497,11 +497,12 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		const overflowWidgetsContainer = document.createElement('div');
 		overflowWidgetsContainer.classList.add('chat-overflow-widget-container', 'monaco-editor');
 		listContainer.append(overflowWidgetsContainer);
-		const user = TreeUser.Chat;
 
+		const user = TreeUser.Chat;
+		// Update our renderer to be chat only over here in the widget
 		this.renderer = this._register(scopedInstantiationService.createInstance(
 			ChatListItemRenderer,
-			user,
+			'ChatWidget',
 			this.editorOptions,
 			this.location,
 			options,
@@ -509,6 +510,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			this._codeBlockModelCollection,
 			overflowWidgetsContainer,
 		));
+		this.renderer.rendererUser = user;
 		this._register(this.renderer.onDidClickFollowup(item => {
 			// is this used anymore?
 			// this.acceptInput(item.message);
