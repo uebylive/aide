@@ -27,7 +27,7 @@ export interface IAideAgentCodeEditingSession {
 	accept(): void;
 	reject(): void;
 	rejectForExchange(sessionId: string, exchangeId: string): Promise<void>;
-	fileLocationForEditsMade(sessionId: string, exchangeId: string): Promise<Map<URI, Range[]>>;
+	fileLocationForEditsMade(sessionId: string, exchangeId: string): Map<URI, Range[]>;
 	filesChangedForExchange(sessionId: string, exchangeId: string): Promise<URI[]>;
 	/**
 	 * Will lead to this object getting disposed
@@ -41,4 +41,9 @@ export interface IAideAgentCodeEditingService {
 	_serviceBrand: undefined;
 
 	getOrStartCodeEditingSession(sessionId: string): IAideAgentCodeEditingSession;
+
+	/**
+	 * Helper fucntion to check if there are edits associated with the session and the exchange
+	 */
+	doesExchangeHaveEdits(sessionId: string, exchangeId: string): boolean;
 }
