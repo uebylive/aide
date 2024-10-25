@@ -68,6 +68,7 @@ export class ChatAttachmentsContentPart extends Disposable {
 			container.appendChild(buttonElement);
 			collapseButton.element.textContent = attachmentsLabel;
 			this.updateAriaLabel(collapseButton.element, attachmentsLabel, listExpanded);
+			this.domNode.classList.toggle('aideagent-attachments-list-collapsed', !listExpanded);
 			this._register(collapseButton.onDidClick(() => {
 				listExpanded = !listExpanded;
 				this.domNode.classList.toggle('aideagent-attachments-list-collapsed', !listExpanded);
