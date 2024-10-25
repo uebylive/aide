@@ -9,7 +9,7 @@ import { IInstantiationService } from '../../../../../platform/instantiation/com
 import { IKeybindingService } from '../../../../../platform/keybinding/common/keybinding.js';
 import { IChatProgressRenderableResponseContent } from '../../common/aideAgentModel.js';
 import { IAideAgentPlanService } from '../../common/aideAgentPlanService.js';
-import { IChatPlanInfo } from '../../common/aideAgentService.js';
+import { ChatPlanState, IChatPlanInfo } from '../../common/aideAgentService.js';
 import { ChatMarkdownContentPart } from './aideAgentMarkdownContentPart.js';
 import { AideAgentRichItem as AideAgentRichItemContent, IActionsPreviewOptions } from './aideAgentRichItem.js';
 
@@ -36,7 +36,7 @@ export class PlanContentPart extends AideAgentRichItemContent {
 			exchangeId,
 			menuId,
 			// changing this to true for now, we will change it back later on
-			true,
+			plan.state === ChatPlanState.Complete,
 			previewOptions,
 			descriptionPart,
 			instantiationService,
