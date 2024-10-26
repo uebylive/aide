@@ -188,6 +188,7 @@ export interface IChatResponseViewModel {
 	readonly contentUpdateTimings?: IChatLiveUpdateData;
 	readonly planSessionId: string | null;
 	readonly planExchangeId: string | null;
+	readonly responseIndex: number;
 	renderData?: IChatResponseRenderData;
 	currentRenderedHeight: number | undefined;
 	setVote(vote: ChatAgentVoteDirection): void;
@@ -553,6 +554,11 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 		return this._model.planSessionId;
 	}
 
+	_responseIndex: number;
+	get responseIndex(): number {
+		return this._responseIndex;
+	}
+
 	constructor(
 		private readonly _model: IChatResponseModel,
 		private readonly _items: (ChatRequestViewModel | ChatResponseViewModel)[],
@@ -560,6 +566,7 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 		@IAideAgentAgentNameService private readonly chatAgentNameService: IAideAgentAgentNameService,
 	) {
 		super();
+		this._responseIndex = _items.filter(isResponseVM).length;
 
 		if (!_model.isComplete) {
 			this._contentUpdateTimings = {

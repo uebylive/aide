@@ -439,6 +439,8 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		if (templateData.kind === 'planReviewTemplate' && isResponseVM(element)) {
 			if (index < element.items.length - 1) {
 				templateData.rowContainer.classList.add('aideagent-timeline-line-forerunner');
+			} else {
+				templateData.rowContainer.classList.remove('aideagent-timeline-line-forerunner');
 			}
 		}
 
@@ -837,7 +839,14 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		} else if (content.kind === 'warning') {
 			return this.instantiationService.createInstance(ChatWarningContentPart, 'warning', content.content, this.renderer);
 		} else if (content.kind === 'markdownContent') {
-			return this.renderMarkdown(content.content, templateData, context);
+			const markdownPart = this.renderMarkdown(content.content, templateData, context);
+			if (templateData.kind === 'planReviewTemplate' && isResponseVM(templateData.currentElement) && index === 0) {
+				// We use markdown to progressively render the plan step heading in plan review
+				// this attr is used in CSS to prepend the plan step
+				const stepNumber = templateData.currentElement.responseIndex + 1;
+				markdownPart.domNode.setAttribute('data-index', stepNumber.toString());
+			}
+			return markdownPart;
 		} else if (content.kind === 'references') {
 			return this.renderContentReferencesListData(content, undefined, context, templateData);
 		} else if (content.kind === 'codeCitations') {

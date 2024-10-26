@@ -3,12 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-.aide-review-plan-list-container .monaco-list-rows {
-	counter-reset: aideagent-review-item;
-}
-
 .aide-review-plan-list-container .monaco-list-rows .monaco-list-row {
-	counter-increment: aideagent-review-item;
 	overflow: visible;
 }
 
@@ -148,7 +143,7 @@
 }
 
 .aideagent-item-container.aideagent-review-plan .rendered-markdown:first-child::before {
-	content: counter(aideagent-review-item) '.';
+	content: attr(data-index) '.';
 	margin-inline-end: 2px;
 	color: var(--vscode-list-deemphasizedForeground);
 }
