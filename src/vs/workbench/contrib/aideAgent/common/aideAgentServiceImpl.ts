@@ -482,6 +482,17 @@ export class ChatService extends Disposable implements IAideAgentService {
 	}
 	*/
 
+	pushProgress(sessionId: string, progress: IChatProgress): void {
+		const model = this._sessionModels.get(sessionId);
+		model?.accepResponseProgressMutable(progress);
+		// I have to do either of the 2 things over here.. which makes this very non-trivial
+		// - somehow make the model accept forcefully a request to a particular exchangeId
+		// - the model here is readonly since we have a progress callback which should be used
+		// to solve it
+		// - the breaking paradigm here is that we are getting write access to something which is
+		// inherently readonly at this layer and talks in terms of interfaces
+	}
+
 	async sendRequest(sessionId: string, request: string, options?: IChatSendRequestOptions): Promise<IChatSendRequestData | undefined> {
 		this.trace('sendRequest', `sessionId: ${sessionId}, message: ${request.substring(0, 20)}${request.length > 20 ? '[...]' : ''}}`);
 		if (!request.trim() && !options?.slashCommand && !options?.agentId) {

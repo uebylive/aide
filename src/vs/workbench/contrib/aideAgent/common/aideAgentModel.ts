@@ -891,6 +891,7 @@ export class ChatModel extends Disposable implements IChatModel {
 	private readonly _onDidChange = this._register(new Emitter<IChatChangeEvent>());
 	readonly onDidChange = this._onDidChange.event;
 
+	private _mutableExchanges: ChatResponseModel[];
 	private _exchanges: IChatExchangeModel[];
 	private _initState: ChatModelInitState = ChatModelInitState.Created;
 	private _isInitializedDeferred = new DeferredPromise<void>();
@@ -1010,6 +1011,7 @@ export class ChatModel extends Disposable implements IChatModel {
 			this._sessionId = (isSerializableSessionData(initialData) && initialData.sessionId) || generateUuid();
 		}
 		this._exchanges = initialData ? this._deserialize(initialData) : [];
+		this._mutableExchanges = [];
 		this._creationDate = (isSerializableSessionData(initialData) && initialData.creationDate) || Date.now();
 		this._lastMessageDate = (isSerializableSessionData(initialData) && initialData.lastMessageDate) || this._creationDate;
 		this._customTitle = isSerializableSessionData(initialData) ? initialData.customTitle : undefined;
@@ -1169,6 +1171,7 @@ export class ChatModel extends Disposable implements IChatModel {
 			[], this, undefined, undefined
 		);
 		this._exchanges.push(response);
+		this._mutableExchanges.push(response);
 		// TODO(@ghostwriternr): Just looking at the above, do we need to update the last message date here? What is it used for?
 		this._onDidChange.fire({ kind: 'addResponse', response });
 		return response;
@@ -1297,6 +1300,29 @@ export class ChatModel extends Disposable implements IChatModel {
 		// For now we can also make sure that we bring the review pane over here into the view
 		// automagically since the plan is getting generated
 		this.aideAgentPlanService.anchorPlanViewPane(progress.sessionId, progress.exchangeId);
+	}
+
+	/**
+	 * We can accept response for progress but mutate the states here in a very weird
+	 * way with our response model
+	 * We have to make sure that it does end up calling acceptResponseProgress which takes
+	 * care of all the updates for us
+	 *
+	 * We can figure out what kind of events to accept here which is nice but also not fun
+	 * log over here if we are reacting to events we do not want to support
+	 */
+	accepResponseProgressMutable(progress: IChatProgress, quiet?: boolean): void {
+		if (progress.kind === 'planInfo') {
+			const runningResponseModel = this._mutableExchanges.find((exchange) => {
+				return exchange.id === progress.exchangeId;
+			});
+			if (runningResponseModel === undefined) {
+				return;
+			}
+			this.acceptResponseProgress(runningResponseModel, progress, quiet);
+		} else {
+			console.log(`${progress.kind} not supported for mutable progress`);
+		}
 	}
 
 	acceptResponseProgress(response: ChatResponseModel | undefined, progress: IChatProgress, quiet?: boolean): void {
