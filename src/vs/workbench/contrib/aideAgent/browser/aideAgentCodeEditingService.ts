@@ -12,6 +12,7 @@ import { URI } from '../../../../base/common/uri.js';
 import { generateUuid } from '../../../../base/common/uuid.js';
 import { ICodeEditor, isCodeEditor } from '../../../../editor/browser/editorBrowser.js';
 import { Range } from '../../../../editor/common/core/range.js';
+import { DetailedLineRangeMapping } from '../../../../editor/common/diff/rangeMapping.js';
 import { IWorkspaceTextEdit } from '../../../../editor/common/languages.js';
 import { ITextModel, ITextSnapshot, MinimapPosition, OverviewRulerLane, TrackedRangeStickiness } from '../../../../editor/common/model.js';
 import { createTextBufferFactoryFromSnapshot, ModelDecorationOptions } from '../../../../editor/common/model/textModel.js';
@@ -24,7 +25,7 @@ import { IInstantiationService } from '../../../../platform/instantiation/common
 import { IEditorService } from '../../../services/editor/common/editorService.js';
 import { minimapInlineChatDiffInserted, overviewRulerInlineChatDiffInserted } from '../../inlineChat/common/inlineChat.js';
 import { IAideAgentCodeEditingService, IAideAgentCodeEditingSession } from '../common/aideAgentCodeEditingService.js';
-import { HunkData, HunkDisplayData, HunkInformation, HunkState, IAideAgentEdits } from '../common/aideAgentEditingSession.js';
+import { HunkData, HunkDisplayData, HunkInformation, HunkState, IAideAgentEdits, lineRangeAsRange, RawHunk } from '../common/aideAgentEditingSession.js';
 import { IChatTextEditGroupState } from '../common/aideAgentModel.js';
 
 
@@ -62,6 +63,38 @@ interface TextModelSnapshotUntilPoint {
 interface TextModelSnapshotReference {
 	response_idx: number;
 	step_idx: number | null;
+}
+
+// Include the compareLabels function
+function compareLabels(a: TextModelSnapshotReference, b: TextModelSnapshotReference): number {
+	if (a.response_idx !== b.response_idx) {
+		return a.response_idx - b.response_idx;
+	}
+
+	if (a.step_idx === null && b.step_idx === null) {
+		return 0;
+	} else if (a.step_idx === null) {
+		return -1; // null step_idx comes before non-null
+	} else if (b.step_idx === null) {
+		return 1;
+	} else {
+		return a.step_idx - b.step_idx;
+	}
+}
+
+// Include the findSnapshotAtOrBefore function
+function findSnapshotAtOrBefore(snapshots: TextModelSnapshotUntilPoint[], reference: TextModelSnapshotReference): TextModelSnapshotUntilPoint | undefined {
+	// Find the snapshot with the greatest label that is less than or equal to the reference
+	let result: TextModelSnapshotUntilPoint | undefined = undefined;
+	for (const snapshot of snapshots) {
+		const snapshotLabel = parseLabel(snapshot.reference)!;
+		if (compareLabels(snapshotLabel, reference) <= 0) {
+			result = snapshot;
+		} else {
+			break;
+		}
+	}
+	return result;
 }
 
 function parseLabel(label: string): TextModelSnapshotReference | null {
@@ -301,6 +334,160 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 		await this._progressiveEditsQueue.queue(async () => {
 			await this.processWorkspaceEdit(codeEdit);
 		});
+	}
+
+	async editsBetweenExchangesInSession(sessionId: string, startExchangeId: string, nextExchangeId: string): Promise<Map<URI, Range[]>> {
+		// Over here the assumption is that our exchanges are in the format we want them to be in
+		// which is defined above for TextModelSnapshotReference
+		// return the hunks we are interested in
+		// here we do have the text models we want to figure out how to get the changed
+		// hunks now, the hunks are driven because of the decorations ...
+		// This can be in the following state:
+		// - find all set of files from the start position which has their textModel0 representation (start from the startIndex -> endIndex)
+		// - find the final set of files which are at the end position with their textModelN representation (start from the endIndex -> startIndex)
+		// - compute the hunks using the editorService over here
+		// - return the data
+		if (this.sessionId !== sessionId) {
+			return new Map();
+		}
+
+		const startReference = parseLabel(startExchangeId);
+		const endReference = parseLabel(nextExchangeId);
+
+		if (!startReference || !endReference) {
+			// Invalid exchange IDs
+			return new Map();
+		}
+
+		const resourceSnapshots = new Map<string, TextModelSnapshotUntilPoint[]>();
+		for (const snapshot of this._textModelSnapshotUntilPoint) {
+			const resourceName = snapshot.resourceName;
+			if (!resourceSnapshots.has(resourceName)) {
+				resourceSnapshots.set(resourceName, []);
+			}
+			resourceSnapshots.get(resourceName)!.push(snapshot);
+		}
+
+		const result = new Map<URI, Range[]>();
+
+		for (const [resourceName, snapshots] of resourceSnapshots) {
+			const snapshotsForResource = snapshots.filter(snap => parseLabel(snap.reference) !== null);
+			// Sort the snapshots by label
+			snapshotsForResource.sort((a, b) => {
+				const labelA = parseLabel(a.reference)!;
+				const labelB = parseLabel(b.reference)!;
+				return compareLabels(labelA, labelB);
+			});
+
+			const codeEdits = this._codeEdits.get(resourceName);
+
+			if (!codeEdits) {
+				continue;
+			}
+
+			const snapshotStart = findSnapshotAtOrBefore(snapshotsForResource, startReference);
+			const snapshotEnd = findSnapshotAtOrBefore(snapshotsForResource, endReference);
+
+			if (!snapshotEnd || snapshotStart === snapshotEnd) {
+				continue;
+			}
+
+			let snapshotStartSnapshot: ITextSnapshot;
+			if (snapshotStart) {
+				snapshotStartSnapshot = snapshotStart.textModel;
+			} else {
+				snapshotStartSnapshot = codeEdits.textModel0.createSnapshot();
+			}
+
+			const snapshotEndSnapshot = snapshotEnd.textModel;
+
+			// Create temporary text models from snapshots
+			const textBufferFactoryStart = createTextBufferFactoryFromSnapshot(snapshotStartSnapshot);
+			const textBufferFactoryEnd = createTextBufferFactoryFromSnapshot(snapshotEndSnapshot);
+
+			const uriStart = URI.parse(resourceName).with({ scheme: 'inmemory', fragment: 'start' });
+			const uriEnd = URI.parse(resourceName).with({ scheme: 'inmemory', fragment: 'end' });
+
+			const textModelStart = this._modelService.createModel(
+				textBufferFactoryStart,
+				null,
+				uriStart,
+				true
+			);
+			const textModelEnd = this._modelService.createModel(
+				textBufferFactoryEnd,
+				null,
+				uriEnd,
+				true
+			);
+
+			// Compute diff
+			const diff = await this._editorWorkerService.computeDiff(textModelStart.uri, textModelEnd.uri, {
+				ignoreTrimWhitespace: false,
+				maxComputationTimeMs: Number.MAX_SAFE_INTEGER,
+				computeMoves: false,
+			}, 'advanced');
+
+			if (diff) {
+				// merge changes neighboring changes
+				const mergedChanges = [diff.changes[0]];
+				for (let i = 1; i < diff.changes.length; i++) {
+					const lastChange = mergedChanges[mergedChanges.length - 1];
+					const thisChange = diff.changes[i];
+					if (thisChange.modified.startLineNumber - lastChange.modified.endLineNumberExclusive <= HunkData._HUNK_THRESHOLD) {
+						mergedChanges[mergedChanges.length - 1] = new DetailedLineRangeMapping(
+							lastChange.original.join(thisChange.original),
+							lastChange.modified.join(thisChange.modified),
+							(lastChange.innerChanges ?? []).concat(thisChange.innerChanges ?? [])
+						);
+					} else {
+						mergedChanges.push(thisChange);
+					}
+				}
+
+				const hunks = mergedChanges.map(change => new RawHunk(change.original, change.modified, change.innerChanges ?? []));
+				// add decorations to these textModels
+				textModelEnd.changeDecorations(accessorN => {
+
+					textModelStart.changeDecorations(accessor0 => {
+
+						// this throws if we are writing more code than EOF
+						try {
+
+							// add new decorations
+							for (const hunk of hunks) {
+
+								const textModelNDecorations: string[] = [];
+								const textModel0Decorations: string[] = [];
+
+								textModelNDecorations.push(accessorN.addDecoration(lineRangeAsRange(hunk.modified, textModelEnd), HunkData._HUNK_TRACKED_RANGE));
+								textModel0Decorations.push(accessor0.addDecoration(lineRangeAsRange(hunk.original, textModelStart), HunkData._HUNK_TRACKED_RANGE));
+
+								for (const change of hunk.changes) {
+									textModelNDecorations.push(accessorN.addDecoration(change.modifiedRange, HunkData._HUNK_TRACKED_RANGE));
+									textModel0Decorations.push(accessor0.addDecoration(change.originalRange, HunkData._HUNK_TRACKED_RANGE));
+								}
+							}
+						} catch (exception) {
+							console.error(exception);
+						}
+					});
+				});
+			}
+
+			// Now over here gather all the decoration ranges and then grab the ranges
+			// for it
+			const textModelEndRanges = textModelEnd.getAllDecorations().map((decoration) => {
+				return decoration.range;
+			});
+			result.set(URI.parse(resourceName), textModelEndRanges);
+
+			// Dispose the temporary models
+			textModelStart.dispose();
+			textModelEnd.dispose();
+		}
+
+		return result;
 	}
 
 	private async processWorkspaceEdit(workspaceEdit: IWorkspaceTextEdit) {
@@ -606,5 +793,14 @@ export class AideAgentCodeEditingService extends Disposable implements IAideAgen
 		const session = this.instantiationService.createInstance(AideAgentCodeEditingSession, sessionId);
 		this._sessions.set(sessionId, session);
 		return session;
+	}
+
+	async editsBetweenExchanges(sessionId: string, startExchangeId: string, nextExchangeId: string): Promise<Map<URI, Range[]> | undefined> {
+		const editingSession = this._sessions.get(sessionId);
+		if (!editingSession) {
+			return undefined;
+		}
+		const editedHunks = await editingSession.editsBetweenExchangesInSession(sessionId, startExchangeId, nextExchangeId);
+		return editedHunks;
 	}
 }

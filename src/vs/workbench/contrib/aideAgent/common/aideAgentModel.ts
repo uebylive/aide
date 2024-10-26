@@ -459,6 +459,13 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 	}
 
 	private _editingSession: IAideAgentCodeEditingSession | undefined;
+	/**
+	 * Returns the code edits for the response model based on the sessionId and the exchangeId
+	 *
+	 * the only gotcha here is that this makes it very stateful... so we are not able to update it
+	 * dynamically, we have to do something smart over here to grab it properly
+	 * or make sure that this gets returned properly
+	 */
 	public get codeEdits(): Map<URI, Range[]> | undefined {
 		return this._editingSession?.fileLocationForEditsMade(this.session.sessionId, this.id);
 	}

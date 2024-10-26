@@ -30,7 +30,7 @@ export type HunkDisplayData = {
 	remove(): void;
 };
 
-class RawHunk {
+export class RawHunk {
 	constructor(
 		readonly original: LineRange,
 		readonly modified: LineRange,
@@ -75,12 +75,12 @@ export interface HunkInformation {
 
 export class HunkData {
 
-	private static readonly _HUNK_TRACKED_RANGE = ModelDecorationOptions.register({
+	static readonly _HUNK_TRACKED_RANGE = ModelDecorationOptions.register({
 		description: 'aide-agent-hunk-tracked-range',
 		stickiness: TrackedRangeStickiness.AlwaysGrowsWhenTypingAtEdges
 	});
 
-	private static readonly _HUNK_THRESHOLD = 8;
+	static readonly _HUNK_THRESHOLD = 8;
 
 	private readonly _store = new DisposableStore();
 	private readonly _data = new Map<RawHunk, RawHunkData>();
@@ -379,7 +379,7 @@ export class HunkData {
 	}
 }
 
-function lineRangeAsRange(lineRange: LineRange, model: ITextModel): Range {
+export function lineRangeAsRange(lineRange: LineRange, model: ITextModel): Range {
 	return lineRange.isEmpty
 		? new Range(lineRange.startLineNumber, 1, lineRange.startLineNumber, model.getLineLength(lineRange.startLineNumber))
 		: new Range(lineRange.startLineNumber, 1, lineRange.endLineNumberExclusive - 1, model.getLineLength(lineRange.endLineNumberExclusive - 1));
