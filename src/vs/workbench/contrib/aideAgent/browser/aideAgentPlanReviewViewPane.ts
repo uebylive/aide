@@ -36,7 +36,7 @@ import { ChatAccessibilityProvider } from './aideAgentAccessibilityProvider.js';
 import { IPlanReviewViewTitleActionContext } from './actions/aideAgentPlanReviewActions.js';
 
 import './media/aideAgentPlanReview.css';
-import { ChatListDelegate, ChatListItemRenderer, IChatRendererDelegate } from './aideAgentListRenderer.js';
+import { ChatListDelegate, ChatListItemRenderer, IReviewPlanRendererDelegate } from './aideAgentListRenderer.js';
 import { AideEditorStyleOptions } from './aideAgentEditor.js';
 import { ChatAgentLocation } from '../common/aideAgentAgents.js';
 import { disposableTimeout, timeout } from '../../../../base/common/async.js';
@@ -407,7 +407,8 @@ export class PlanReviewPane extends ViewPane {
 	private createList(listContainer: HTMLElement) {
 		const scopedInstantiationService = this._register(this._register(this.instantiationService.createChild(new ServiceCollection([IContextKeyService, this.contextKeyService]))));
 		const delegate = scopedInstantiationService.createInstance(ChatListDelegate, 200);
-		const rendererDelegate: IChatRendererDelegate = {
+		const rendererDelegate: IReviewPlanRendererDelegate = {
+			kind: 'planReview',
 			getListLength: () => this.tree.getNode(null).visibleChildrenCount,
 			onDidScroll: this.onDidScroll,
 		};

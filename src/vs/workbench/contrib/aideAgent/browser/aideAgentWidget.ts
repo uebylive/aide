@@ -485,11 +485,27 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		}
 	}
 
+	setWillBeDroppedStep(index: number): void {
+		this.viewModel?.setWillBeDroppedStep(index);
+	}
+
+	setWillBeSavedStep(index: number): void {
+		this.viewModel?.setWillBeSavedStep(index);
+	}
+
+	setSavedStep(index: number): void {
+		this.viewModel?.setSavedStep(index);
+	}
+
 	private createList(listContainer: HTMLElement, options: IChatListItemRendererOptions): void {
 		const scopedInstantiationService = this._register(this._register(this.instantiationService.createChild(new ServiceCollection([IContextKeyService, this.contextKeyService]))));
 		const delegate = scopedInstantiationService.createInstance(ChatListDelegate, this.viewOptions.defaultElementHeight ?? 200);
 		const rendererDelegate: IChatRendererDelegate = {
+			kind: 'chat',
 			getListLength: () => this.tree.getNode(null).visibleChildrenCount,
+			setWillBeDroppedStep: this.setWillBeDroppedStep,
+			setWillBeSavedStep: this.setWillBeSavedStep,
+			setSavedStep: this.setSavedStep,
 			onDidScroll: this.onDidScroll,
 		};
 

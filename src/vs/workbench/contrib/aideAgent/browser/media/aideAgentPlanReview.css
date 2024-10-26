@@ -95,6 +95,7 @@
 .aideagent-timeline-line-container {
 	flex-grow: 2;
 	position: relative;
+	z-index: 1;
 }
 
 .aideagent-timeline-line {
@@ -107,12 +108,22 @@
 	width: 1px;
 	height: auto;
 	background-color: var(--vscode-input-border);
+	transform-origin: top;
 	transform: scaleY(0);
-	transition: transform 0.2s ease;
 }
 
-.aideagent-timeline-line-forerunner .aideagent-timeline-line{
+.aideagent-timeline-line-forerunner .aideagent-timeline-line {
 	transform: scaleY(1);
+	/* animation: scale-in 0.2s ease forwards; */
+}
+
+@keyframes scale-in {
+	0% {
+		transform: scale(0);
+	}
+	100% {
+		transform: scale(1);
+	}
 }
 
 .aideagent-plan-content {

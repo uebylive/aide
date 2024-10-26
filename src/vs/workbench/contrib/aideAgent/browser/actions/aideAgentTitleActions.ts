@@ -3,6 +3,12 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { Codicon } from '../../../../../base/common/codicons.js';
+import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions.js';
+import { localize2 } from '../../../../../nls.js';
+import { registerAction2, Action2, MenuId } from '../../../../../platform/actions/common/actions.js';
+import { CHAT_CATEGORY } from './aideAgentChatActions.js';
+
 export const MarkUnhelpfulActionId = 'workbench.action.aideAgent.markUnhelpful';
 
 export function registerChatTitleActions() {
@@ -53,6 +59,7 @@ export function registerChatTitleActions() {
 
 	/* TODO(@ghostwriternr): This is actually useful, but because the response part re-renders entirely when streaming, the button is impossible
 	to click in the midst of it - which is when it's actually needed. Add this back when we fix the re-render logic for good (which is... not easy).
+		*/
 	registerAction2(class StopAction extends Action2 {
 		constructor() {
 			super({
@@ -65,16 +72,16 @@ export function registerChatTitleActions() {
 					id: MenuId.AideAgentMessageTitle,
 					group: 'navigation',
 					order: 1,
-					when: ContextKeyExpr.and(CONTEXT_RESPONSE, CONTEXT_RESPONSE_FILTERED.negate())
+					//when: ContextKeyExpr.and(CONTEXT_RESPONSE, CONTEXT_RESPONSE_FILTERED.negate())
 				}
 			});
 		}
 
 		run(accessor: ServicesAccessor, ...args: any[]) {
-			const item = args[0];
-			const chatService = accessor.get(IAideAgentService);
-			chatService.cancelExchange(item.id);
+			// const item = args[0];
+			// const chatService = accessor.get(IAideAgentService);
+			// chatService.cancelExchange(item.id);
 		}
 	});
-	*/
+
 }

@@ -150,6 +150,10 @@ export interface IChatWidget {
 	completionContext: IChatWidgetCompletionContext;
 	readonly planningEnabled: boolean;
 
+	setSavedStep(stepIndex: number): void;
+	setWillBeSavedStep(stepIndex: number): void;
+	setWillBeDroppedStep(stepIndex: number): void;
+
 	getContrib<T extends IChatWidgetContrib>(id: string): T | undefined;
 	reveal(item: ChatTreeItem): void;
 	focus(item: ChatTreeItem): void;

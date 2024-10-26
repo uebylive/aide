@@ -58,6 +58,9 @@ export interface IChatViewModel {
 	getItems(): (IChatRequestViewModel | IChatResponseViewModel | IChatWelcomeMessageViewModel)[];
 	setInputPlaceholder(text: string): void;
 	resetInputPlaceholder(): void;
+	setWillBeSavedStep(index: number): void;
+	setWillBeDroppedStep(index: number): void;
+	setSavedStep(index: number): void;
 }
 
 export interface IChatRequestViewModel {
@@ -169,7 +172,6 @@ export interface IChatResponseViewModel {
 	readonly slashCommand?: IChatAgentCommand;
 	readonly agentOrSlashCommandDetected: boolean;
 	readonly response: IResponse;
-	readonly items: (ChatRequestViewModel | ChatResponseViewModel)[];
 	readonly usedContext: IChatUsedContext | undefined;
 	readonly contentReferences: ReadonlyArray<IChatContentReference>;
 	readonly codeCitations: ReadonlyArray<IChatCodeCitation>;
@@ -180,6 +182,9 @@ export interface IChatResponseViewModel {
 	readonly isComplete: boolean;
 	readonly isCanceled: boolean;
 	readonly isStale: boolean;
+	readonly willBeDropped: boolean;
+	readonly isSaved: boolean;
+	readonly willBeSaved: boolean;
 	readonly vote: ChatAgentVoteDirection | undefined;
 	readonly voteDownReason: ChatAgentVoteDownReason | undefined;
 	readonly replyFollowups?: IChatFollowup[];
@@ -215,6 +220,30 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 
 	get model(): IChatModel {
 		return this._model;
+	}
+
+	setWillBeDroppedStep(willBeDropedStep: number) {
+		for (const item of this._items) {
+			if (isResponseVM(item)) {
+				item.isSaved = item.responseIndex >= willBeDropedStep;
+			}
+		}
+	}
+
+	setWillBeSavedStep(willBeSavedStep: number) {
+		for (const item of this._items) {
+			if (isResponseVM(item)) {
+				item.isSaved = item.responseIndex <= willBeSavedStep;
+			}
+		}
+	}
+
+	setSavedStep(savedIndex: number) {
+		for (const item of this._items) {
+			if (isResponseVM(item)) {
+				item.isSaved = item.responseIndex <= savedIndex;
+			}
+		}
 	}
 
 	setInputPlaceholder(text: string): void {
@@ -296,7 +325,8 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 	}
 
 	private onAddResponse(responseModel: IChatResponseModel) {
-		const response = this.instantiationService.createInstance(ChatResponseViewModel, responseModel, this._items);
+		const responseIndex = this._items.filter(isResponseVM).length;
+		const response = this.instantiationService.createInstance(ChatResponseViewModel, responseModel, responseIndex);
 		this._register(response.onDidChange(() => {
 			if (response.isComplete) {
 				this.updateCodeBlockTextModels(response);
@@ -396,6 +426,10 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 
 	private readonly _onDidChange = this._register(new Emitter<void>());
 	readonly onDidChange = this._onDidChange.event;
+
+	willBeDropped = false;
+	willBeSaved = false;
+	isSaved = false;
 
 	get model() {
 		return this._model;
@@ -554,19 +588,17 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 		return this._model.planSessionId;
 	}
 
-	_responseIndex: number;
 	get responseIndex(): number {
 		return this._responseIndex;
 	}
 
 	constructor(
 		private readonly _model: IChatResponseModel,
-		private readonly _items: (ChatRequestViewModel | ChatResponseViewModel)[],
+		private readonly _responseIndex: number,
 		@ILogService private readonly logService: ILogService,
 		@IAideAgentAgentNameService private readonly chatAgentNameService: IAideAgentAgentNameService,
 	) {
 		super();
-		this._responseIndex = _items.filter(isResponseVM).length;
 
 		if (!_model.isComplete) {
 			this._contentUpdateTimings = {
@@ -602,10 +634,6 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 
 			this._onDidChange.fire();
 		}));
-	}
-
-	get items() {
-		return this._items;
 	}
 
 	private trace(tag: string, message: string) {

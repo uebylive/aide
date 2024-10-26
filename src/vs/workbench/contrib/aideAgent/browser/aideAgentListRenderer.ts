@@ -22,7 +22,7 @@ import { ThemeIcon } from '../../../../base/common/themables.js';
 import { URI } from '../../../../base/common/uri.js';
 import { MarkdownRenderer } from '../../../../editor/browser/widget/markdownRenderer/browser/markdownRenderer.js';
 import { localize } from '../../../../nls.js';
-import { IMenuEntryActionViewItemOptions, createActionViewItem } from '../../../../platform/actions/browser/menuEntryActionViewItem.js';
+import { IMenuEntryActionViewItemOptions, MenuEntryActionViewItem, createActionViewItem } from '../../../../platform/actions/browser/menuEntryActionViewItem.js';
 import { MenuWorkbenchToolBar } from '../../../../platform/actions/browser/toolbar.js';
 import { MenuId, MenuItemAction } from '../../../../platform/actions/common/actions.js';
 import { ICommandService } from '../../../../platform/commands/common/commands.js';
@@ -65,6 +65,10 @@ import { ChatEditorOptions } from './aideAgentOptions.js';
 import { ChatCodeBlockContentProvider, CodeBlockPart } from './codeBlockPart.js';
 import { PlanContentPart } from './aideAgentContentParts/aideAgentPlanContentPart.js';
 import { Heroicon } from '../../../browser/heroicon.js';
+import { IKeybindingService } from '../../../../platform/keybinding/common/keybinding.js';
+import { INotificationService } from '../../../../platform/notification/common/notification.js';
+import { IThemeService } from '../../../../platform/theme/common/themeService.js';
+import { IAccessibilityService } from '../../../../platform/accessibility/common/accessibility.js';
 
 
 const $ = dom.$;
@@ -105,10 +109,21 @@ const forceVerboseLayoutTracing = false
 	// || Boolean("TRUE") // causes a linter warning so that it cannot be pushed
 	;
 
-export interface IChatRendererDelegate {
-	getListLength(): number;
 
+export interface IBaseRenderDelegate {
+	getListLength(): number;
 	readonly onDidScroll?: Event<void>;
+}
+export interface IChatRendererDelegate extends IBaseRenderDelegate {
+	kind: 'chat';
+	setWillBeDroppedStep(index: number): void;
+	setWillBeSavedStep(index: number): void;
+	setSavedStep(index: number): void;
+}
+
+export interface IReviewPlanRendererDelegate extends IBaseRenderDelegate {
+	kind: 'planReview';
+	// Should contain above methods
 }
 
 export class ChatListItemRenderer extends Disposable implements ITreeRenderer<ChatTreeItem, FuzzyScore, IAgentListItemTemplate> {
@@ -166,7 +181,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		editorOptions: ChatEditorOptions,
 		private readonly location: ChatAgentLocation,
 		private readonly rendererOptions: IChatListItemRendererOptions,
-		private readonly delegate: IChatRendererDelegate,
+		private readonly delegate: IChatRendererDelegate | IReviewPlanRendererDelegate,
 		private readonly codeBlockModelCollection: CodeBlockModelCollection,
 		overflowWidgetsDomNode: HTMLElement | undefined,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
@@ -261,7 +276,6 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	}
 
 	renderTemplate(container: HTMLElement): IAgentListItemTemplate {
-		console.log(this._rendererUser, this.uniqueId);
 		if (this._rendererUser === TreeUser.Chat) {
 			return this.renderChatTemplate(container);
 		}
@@ -332,10 +346,17 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 					shouldInlineSubmenu: submenu => submenu.actions.length <= 1
 				},
 				actionViewItemProvider: (action: IAction, options: IActionViewItemOptions) => {
-					if (action instanceof MenuItemAction && action.item.id === MarkUnhelpfulActionId) {
-						return scopedInstantiationService.createInstance(ChatVoteDownButton, action, options as IMenuEntryActionViewItemOptions);
+					if (action instanceof MenuItemAction) {
+
+						// if (action.item.id === MarkUnhelpfulActionId) {
+						// 	return scopedInstantiationService.createInstance(ChatVoteDownButton, action, options as IMenuEntryActionViewItemOptions);
+						// }
+						if (this.delegate.kind === 'chat') {
+							return this.instantiationService.createInstance(PlanStepViewActionItem, action, options as IMenuEntryActionViewItemOptions, this.delegate);
+						}
 					}
-					return createActionViewItem(scopedInstantiationService, action, options);
+
+					return undefined;
 				}
 			}));
 		}
@@ -376,9 +397,17 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 				if (action instanceof MenuItemAction && action.item.id === MarkUnhelpfulActionId) {
 					return scopedInstantiationService.createInstance(ChatVoteDownButton, action, options as IMenuEntryActionViewItemOptions);
 				}
-				return createActionViewItem(scopedInstantiationService, action, options);
+				const actionViewItem = createActionViewItem(scopedInstantiationService, action, options);
+
+
+				if (actionViewItem && actionViewItem.element) {
+					dom.addDisposableListener(actionViewItem.element, dom.EventType.MOUSE_ENTER, () => { console.log(actionViewItem.element); });
+				}
+
+				return actionViewItem;
 			}
 		}));
+
 		const template: IPlanReviewListItemTemplate = { kind: 'planReviewTemplate', saveIcon, dropIcon, value, rowContainer, elementDisposables, templateDisposables, contextKeyService, instantiationService: scopedInstantiationService, titleToolbar };
 		return template;
 
@@ -386,6 +415,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 	renderElement(node: ITreeNode<ChatTreeItem, FuzzyScore>, index: number, templateData: IAgentListItemTemplate): void {
 		const expectedKind = this._rendererUser === TreeUser.Chat ? 'chatTemplate' : 'planReviewTemplate';
+		console.log('rendering element');
 		if (templateData.kind !== expectedKind) {
 			// Dispose of the old template data
 			this.disposeTemplate(templateData);
@@ -437,8 +467,10 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		}
 
 		if (templateData.kind === 'planReviewTemplate' && isResponseVM(element)) {
-			if (index < element.items.length - 1) {
-				templateData.rowContainer.classList.add('aideagent-timeline-line-forerunner');
+			if (index < this.delegate.getListLength() - 1) {
+				if (!templateData.rowContainer.classList.contains('aideagent-timeline-line-forerunner')) {
+					templateData.rowContainer.classList.add('aideagent-timeline-line-forerunner');
+				}
 			} else {
 				templateData.rowContainer.classList.remove('aideagent-timeline-line-forerunner');
 			}
@@ -1057,6 +1089,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		}));
 		return planContentPart;
 	}
+
 	private renderPlanStep(step: IChatPlanStep, templateData: IAgentListItemTemplate, context: IChatContentPartRenderContext): IChatContentPart {
 
 		const descriptionPart = this.renderMarkdown(step.description, templateData, context) as ChatMarkdownContentPart;
@@ -1169,6 +1202,32 @@ const voteDownDetailLabels: Record<ChatAgentVoteDownReason, string> = {
 	[ChatAgentVoteDownReason.WillReportIssue]: localize('reportIssue', "Report an issue"),
 	[ChatAgentVoteDownReason.Other]: localize('other', "Other"),
 };
+
+
+export class PlanStepViewActionItem extends MenuEntryActionViewItem {
+	constructor(
+		action: MenuItemAction,
+		options: IMenuEntryActionViewItemOptions | undefined,
+		reviewListDelegate: IChatRendererDelegate,
+		@IKeybindingService keybindingService: IKeybindingService,
+		@INotificationService notificationService: INotificationService,
+		@IContextKeyService contextKeyService: IContextKeyService,
+		@IThemeService themeService: IThemeService,
+		@IContextMenuService contextMenuService: IContextMenuService,
+		@IAccessibilityService accessibilityService: IAccessibilityService,
+	) {
+		super(
+			action,
+			options,
+			keybindingService,
+			notificationService,
+			contextKeyService,
+			themeService,
+			contextMenuService,
+			accessibilityService
+		);
+	}
+}
 
 export class ChatVoteDownButton extends DropdownMenuActionViewItem {
 	constructor(

@@ -20,7 +20,7 @@ import { isRequestVM, isResponseVM } from '../../common/aideAgentViewModel.js';
 import { IMarkdownVulnerability } from '../../common/annotations.js';
 import { CodeBlockModelCollection } from '../../common/codeBlockModelCollection.js';
 import { IChatCodeBlockInfo, IChatListItemRendererOptions, IEditPreviewCodeBlockInfo } from '../aideAgent.js';
-import { IChatRendererDelegate } from '../aideAgentListRenderer.js';
+import { IBaseRenderDelegate } from '../aideAgentListRenderer.js';
 import { ChatMarkdownDecorationsRenderer } from '../aideAgentMarkdownDecorationsRenderer.js';
 import { ChatEditorOptions } from '../aideAgentOptions.js';
 import { CodeBlockPart, ICodeBlockData, localFileLanguageId, parseLocalFileData } from '../codeBlockPart.js';
@@ -276,7 +276,7 @@ export class EditorPool extends Disposable {
 
 	constructor(
 		options: ChatEditorOptions,
-		delegate: IChatRendererDelegate,
+		delegate: IBaseRenderDelegate,
 		overflowWidgetsDomNode: HTMLElement | undefined,
 		@IInstantiationService instantiationService: IInstantiationService,
 	) {
@@ -310,7 +310,7 @@ export class EditPreviewEditorPool extends Disposable {
 
 	constructor(
 		options: ChatEditorOptions,
-		delegate: IChatRendererDelegate,
+		delegate: IBaseRenderDelegate,
 		overflowWidgetsDomNode: HTMLElement | undefined,
 		@IInstantiationService instantiationService: IInstantiationService,
 	) {
