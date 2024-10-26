@@ -9,6 +9,7 @@ import { localize2 } from '../../../../../nls.js';
 import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
 import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
 import { ServicesAccessor } from '../../../../../platform/instantiation/common/instantiation.js';
+import { IAideAgentCodeEditingService } from '../../common/aideAgentCodeEditingService.js';
 import { IAideAgentService } from '../../common/aideAgentService.js';
 import { PLAN_REVIEW_PANEL_ID, PlanReviewPane } from '../aideAgentPlanReviewViewPane.js';
 
@@ -136,7 +137,6 @@ export function registerPlanReviewActions() {
 		}
 
 		run(accessor: ServicesAccessor, context: IPlanReviewStepActionContext) {
-			// console.log(context);
 			console.log('Save up to step ', context.stepIndex, context.sessionId, context.exchangeId);
 			// a couple of things which we want to do because of this
 			// 1. update our plan review state on the sidepanel to reflect the changes
@@ -147,7 +147,7 @@ export function registerPlanReviewActions() {
 			// 4. once the state changes to complete we should only show the selection by the user
 			// 5. the selection should be smart to only show the latest change which is present
 			const aideAgentService = accessor.get(IAideAgentService);
-			// push update so we can update our rich element [1]
+			// [1] push update so we can update our rich element
 			aideAgentService.pushProgress(context.sessionId, {
 				kind: 'planInfo',
 				exchangeId: context.exchangeId,
@@ -155,6 +155,16 @@ export function registerPlanReviewActions() {
 				sessionId: context.sessionId,
 				state: `InReview`,
 				description: new MarkdownString(`Accepting changes until ${context.stepIndex + 1}`),
+			});
+
+			const aideAgentEditingService = accessor.get(IAideAgentCodeEditingService);
+			const planStartExchangeId = `${context.exchangeId}-0`;
+			const planEndExchangeId = `${context.exchangeId}-${context.stepIndex}`;
+			aideAgentEditingService.editsBetweenExchanges(context.sessionId, planStartExchangeId, planEndExchangeId).then((editedHunks) => {
+				// send the event over here properly... altho this can get trickly quickly
+				// pick up from here to complete this properly
+				console.log('planreviewactions::editedHunks');
+				console.log(editedHunks);
 			});
 		}
 	});

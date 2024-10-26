@@ -28,6 +28,7 @@ export interface IAideAgentCodeEditingSession {
 	reject(): void;
 	rejectForExchange(sessionId: string, exchangeId: string): Promise<void>;
 	fileLocationForEditsMade(sessionId: string, exchangeId: string): Map<URI, Range[]>;
+	editsBetweenExchangesInSession(sessionId: string, startExchangeId: string, nextExchangeId: string): Promise<Map<URI, Range[]>>;
 	filesChangedForExchange(sessionId: string, exchangeId: string): URI[];
 	/**
 	 * Will lead to this object getting disposed
@@ -46,4 +47,10 @@ export interface IAideAgentCodeEditingService {
 	 * Helper fucntion to check if there are edits associated with the session and the exchange
 	 */
 	doesExchangeHaveEdits(sessionId: string, exchangeId: string): boolean;
+
+	/**
+	 * Gets the edits which have been done from a certain checkpoint in our session
+	 * This allows us to get the real changes which are effected by the plan
+	 */
+	editsBetweenExchanges(sessionId: string, startExchangeId: string, nextExchangeId: string): Promise<Map<URI, Range[]> | undefined>;
 }
