@@ -530,6 +530,14 @@ export interface IAideAgentService {
 	// resendRequest(request: IChatRequestModel, options?: IChatSendRequestOptions): Promise<void>;
 	// TODO(@ghostwriternr): Remove this if we no longer need to remove requests.
 	// removeRequest(sessionid: string, requestId: string): Promise<void>;
+	/**
+	 * Push incremental progress events here to a sessionId and exchangeId implicitly
+	 * from the system
+	 *
+	 * Such requests can only update the UI elements and not change the storage layer at all
+	 * (nothing happens to the sidecar)
+	 */
+	pushProgress(sessionId: string, progress: IChatProgress): void;
 
 	cancelExchange(exchangeId: string): void;
 	cancelAllExchangesForSession(): void;

@@ -4,10 +4,12 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { Codicon } from '../../../../../base/common/codicons.js';
+import { MarkdownString } from '../../../../../base/common/htmlContent.js';
 import { localize2 } from '../../../../../nls.js';
 import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
 import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
 import { ServicesAccessor } from '../../../../../platform/instantiation/common/instantiation.js';
+import { IAideAgentService } from '../../common/aideAgentService.js';
 import { PLAN_REVIEW_PANEL_ID, PlanReviewPane } from '../aideAgentPlanReviewViewPane.js';
 
 export interface IPlanReviewViewTitleActionContext {
@@ -89,6 +91,30 @@ export function registerPlanReviewActions() {
 
 		run(accessor: ServicesAccessor, context: IPlanReviewStepActionContext) {
 			console.log('Drop from step', context.stepIndex, context.sessionId, context.exchangeId);
+			// a couple of things which should happen over here:
+			// 1. if we are dropping at step 0 then we should show that all steps until the end are dropped :O
+			// 2. if we are dropping from a point then we need to know what other steps there are, what if they are streaming
+			// how do we make sure that it stays updated? (maybe we keep it until a point)
+			const aideAgentService = accessor.get(IAideAgentService);
+			if (context.stepIndex === 0) {
+				aideAgentService.pushProgress(context.sessionId, {
+					kind: 'planInfo',
+					exchangeId: context.exchangeId,
+					isStale: false,
+					sessionId: context.sessionId,
+					state: 'Cancelled',
+					description: new MarkdownString('Dropping the whole plan'),
+				});
+			} else {
+				aideAgentService.pushProgress(context.sessionId, {
+					kind: 'planInfo',
+					exchangeId: context.exchangeId,
+					isStale: false,
+					sessionId: context.sessionId,
+					state: 'InReview',
+					description: new MarkdownString(`Accepting changes until ${context.stepIndex}`)
+				});
+			}
 		}
 	});
 
@@ -110,8 +136,26 @@ export function registerPlanReviewActions() {
 		}
 
 		run(accessor: ServicesAccessor, context: IPlanReviewStepActionContext) {
-			console.log(context);
+			// console.log(context);
 			console.log('Save up to step ', context.stepIndex, context.sessionId, context.exchangeId);
+			// a couple of things which we want to do because of this
+			// 1. update our plan review state on the sidepanel to reflect the changes
+			// which have been accepted
+			// 2. make sure that once that's done, we also update the hunks accordingly
+			// Things to figure out:
+			// 3. how to show the status of the plan even when new requests are coming in (say the plan is long)
+			// 4. once the state changes to complete we should only show the selection by the user
+			// 5. the selection should be smart to only show the latest change which is present
+			const aideAgentService = accessor.get(IAideAgentService);
+			// push update so we can update our rich element [1]
+			aideAgentService.pushProgress(context.sessionId, {
+				kind: 'planInfo',
+				exchangeId: context.exchangeId,
+				isStale: false,
+				sessionId: context.sessionId,
+				state: `InReview`,
+				description: new MarkdownString(`Accepting changes until ${context.stepIndex + 1}`),
+			});
 		}
 	});
 
