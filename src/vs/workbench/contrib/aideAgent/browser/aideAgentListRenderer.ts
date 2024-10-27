@@ -86,6 +86,7 @@ interface IBaseListItemTemplate {
 
 interface IChatListItemTemplate extends IBaseListItemTemplate {
 	kind: 'chatTemplate';
+	actionViewItem?: PlanStepViewActionItem;
 	readonly username: HTMLElement;
 	readonly detail: HTMLElement;
 	readonly titleToolbar?: MenuWorkbenchToolBar;
@@ -114,11 +115,13 @@ export interface IBaseRenderDelegate {
 	getListLength(): number;
 	readonly onDidScroll?: Event<void>;
 }
+
+
 export interface IChatRendererDelegate extends IBaseRenderDelegate {
 	kind: 'chat';
-	setWillBeDroppedStep(index: number): void;
-	setWillBeSavedStep(index: number): void;
-	setSavedStep(index: number): void;
+	setWillBeDroppedStep(index: number | undefined): void;
+	setWillBeSavedStep(index: number | undefined): void;
+	setSavedStep(index: number | undefined): void;
 }
 
 export interface IReviewPlanRendererDelegate extends IBaseRenderDelegate {
@@ -335,6 +338,8 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		const scopedInstantiationService = templateDisposables.add(this.instantiationService.createChild(new ServiceCollection([IContextKeyService, contextKeyService])));
 
 		let titleToolbar: MenuWorkbenchToolBar | undefined;
+		let actionViewItem: PlanStepViewActionItem | undefined;
+
 		if (this.rendererOptions.noHeader) {
 			header.classList.add('hidden');
 		} else {
@@ -352,7 +357,8 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 						// 	return scopedInstantiationService.createInstance(ChatVoteDownButton, action, options as IMenuEntryActionViewItemOptions);
 						// }
 						if (this.delegate.kind === 'chat') {
-							return this.instantiationService.createInstance(PlanStepViewActionItem, action, options as IMenuEntryActionViewItemOptions, this.delegate);
+							actionViewItem = templateDisposables.add(this.instantiationService.createInstance(PlanStepViewActionItem, action, options as IMenuEntryActionViewItemOptions));
+							return actionViewItem;
 						}
 					}
 
@@ -361,7 +367,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			}));
 		}
 
-		const template: IChatListItemTemplate = { kind: 'chatTemplate', username, detail, value, rowContainer, elementDisposables, templateDisposables, contextKeyService, instantiationService: scopedInstantiationService, titleToolbar };
+		const template: IChatListItemTemplate = { kind: 'chatTemplate', actionViewItem, username, detail, value, rowContainer, elementDisposables, templateDisposables, contextKeyService, instantiationService: scopedInstantiationService, titleToolbar };
 		return template;
 	}
 
@@ -396,15 +402,9 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			actionViewItemProvider: (action: IAction, options: IActionViewItemOptions) => {
 				if (action instanceof MenuItemAction && action.item.id === MarkUnhelpfulActionId) {
 					return scopedInstantiationService.createInstance(ChatVoteDownButton, action, options as IMenuEntryActionViewItemOptions);
+				} else {
+					return createActionViewItem(scopedInstantiationService, action, options);
 				}
-				const actionViewItem = createActionViewItem(scopedInstantiationService, action, options);
-
-
-				if (actionViewItem && actionViewItem.element) {
-					dom.addDisposableListener(actionViewItem.element, dom.EventType.MOUSE_ENTER, () => { console.log(actionViewItem.element); });
-				}
-
-				return actionViewItem;
 			}
 		}));
 
@@ -467,6 +467,11 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		}
 
 		if (templateData.kind === 'planReviewTemplate' && isResponseVM(element)) {
+
+			templateData.rowContainer.classList.toggle('will-be-dropped', element.willBeDropped);
+			templateData.rowContainer.classList.toggle('will-be-saved', element.willBeSaved);
+			templateData.rowContainer.classList.toggle('is-saved', element.isSaved);
+
 			if (index < this.delegate.getListLength() - 1) {
 				if (!templateData.rowContainer.classList.contains('aideagent-timeline-line-forerunner')) {
 					templateData.rowContainer.classList.add('aideagent-timeline-line-forerunner');
@@ -496,6 +501,21 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 		if (isResponseVM(element) && templateData.kind === 'chatTemplate') {
 			this.renderDetail(element, templateData);
+
+			if (templateData.actionViewItem) {
+				templateData.actionViewItem.onPreview = () => {
+					console.log('preview ', index);
+					if (this.delegate.kind === 'chat') {
+						this.delegate.setWillBeSavedStep(index);
+					}
+				};
+				templateData.actionViewItem.onDismiss = () => {
+					console.log('preview ', index);
+					if (this.delegate.kind === 'chat') {
+						this.delegate.setWillBeSavedStep(undefined);
+					}
+				};
+			}
 		}
 
 		if (isRequestVM(element) && templateData.kind === 'chatTemplate' && element.confirmation) {
@@ -1205,10 +1225,30 @@ const voteDownDetailLabels: Record<ChatAgentVoteDownReason, string> = {
 
 
 export class PlanStepViewActionItem extends MenuEntryActionViewItem {
+
+	_providedOnPreview?: () => void;
+	set onPreview(value: () => void) {
+		this._providedOnPreview = value;
+	}
+	_onPreview() {
+		if (this._providedOnPreview) {
+			this._providedOnPreview();
+		}
+	}
+
+	set onDismiss(value: () => void) {
+		this._providedOnDismiss = value;
+	}
+	_providedOnDismiss?: () => void;
+	_onDismiss() {
+		if (this._providedOnDismiss) {
+			this._providedOnDismiss();
+		}
+	}
+
 	constructor(
 		action: MenuItemAction,
 		options: IMenuEntryActionViewItemOptions | undefined,
-		reviewListDelegate: IChatRendererDelegate,
 		@IKeybindingService keybindingService: IKeybindingService,
 		@INotificationService notificationService: INotificationService,
 		@IContextKeyService contextKeyService: IContextKeyService,
@@ -1226,6 +1266,18 @@ export class PlanStepViewActionItem extends MenuEntryActionViewItem {
 			contextMenuService,
 			accessibilityService
 		);
+	}
+
+
+
+	override render(container: HTMLElement) {
+		super.render(container);
+
+		this._register(dom.addDisposableListener(container, dom.EventType.MOUSE_ENTER, this._onPreview));
+		this._register(dom.addDisposableListener(container, dom.EventType.FOCUS, this._onPreview));
+
+		this._register(dom.addDisposableListener(container, dom.EventType.MOUSE_LEAVE, this._onDismiss));
+		this._register(dom.addDisposableListener(container, dom.EventType.BLUR, this._onDismiss));
 	}
 }
 

@@ -41,7 +41,6 @@ import { ChatInputPart } from './aideAgentInputPart.js';
 import { ChatListDelegate, ChatListItemRenderer, IChatRendererDelegate } from './aideAgentListRenderer.js';
 import { ChatEditorOptions } from './aideAgentOptions.js';
 import './media/aideAgent.css';
-import './media/aideReviewPane.css';
 
 const $ = dom.$;
 
@@ -485,15 +484,15 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		}
 	}
 
-	setWillBeDroppedStep(index: number): void {
+	setWillBeDroppedStep(index: number | undefined): void {
 		this.viewModel?.setWillBeDroppedStep(index);
 	}
 
-	setWillBeSavedStep(index: number): void {
+	setWillBeSavedStep(index: number | undefined): void {
 		this.viewModel?.setWillBeSavedStep(index);
 	}
 
-	setSavedStep(index: number): void {
+	setSavedStep(index: number | undefined): void {
 		this.viewModel?.setSavedStep(index);
 	}
 

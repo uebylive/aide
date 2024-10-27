@@ -222,26 +222,38 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 		return this._model;
 	}
 
-	setWillBeDroppedStep(willBeDropedStep: number) {
+	setWillBeDroppedStep(willBeDropedStep: number | undefined) {
 		for (const item of this._items) {
 			if (isResponseVM(item)) {
-				item.isSaved = item.responseIndex >= willBeDropedStep;
+				if (willBeDropedStep === undefined) {
+					item.willBeDropped = false;
+				} else {
+					item.willBeDropped = item.responseIndex >= willBeDropedStep;
+				}
 			}
 		}
 	}
 
-	setWillBeSavedStep(willBeSavedStep: number) {
+	setWillBeSavedStep(willBeSavedStep: number | undefined) {
 		for (const item of this._items) {
 			if (isResponseVM(item)) {
-				item.isSaved = item.responseIndex <= willBeSavedStep;
+				if (willBeSavedStep === undefined) {
+					item.willBeSaved = false;
+				} else {
+					item.willBeSaved = item.responseIndex <= willBeSavedStep;
+				}
 			}
 		}
 	}
 
-	setSavedStep(savedIndex: number) {
+	setSavedStep(savedIndex: number | undefined) {
 		for (const item of this._items) {
 			if (isResponseVM(item)) {
-				item.isSaved = item.responseIndex <= savedIndex;
+				if (savedIndex === undefined) {
+					item.isSaved = false;
+				} else {
+					item.isSaved = item.responseIndex <= savedIndex;
+				}
 			}
 		}
 	}

@@ -3,6 +3,12 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+
+.aide-review-plan-list-container .monaco-list > .monaco-scrollable-element > .monaco-list-rows > .monaco-list-row > .monaco-tl-row > .monaco-tl-twistie {
+	display: none !important;
+}
+
+
 .aide-review-plan-list-container .monaco-list-rows .monaco-list-row {
 	overflow: visible;
 }
