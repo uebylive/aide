@@ -12,10 +12,9 @@ import { URI } from '../../../../base/common/uri.js';
 import { generateUuid } from '../../../../base/common/uuid.js';
 import { ICodeEditor, isCodeEditor } from '../../../../editor/browser/editorBrowser.js';
 import { Range } from '../../../../editor/common/core/range.js';
-import { DetailedLineRangeMapping } from '../../../../editor/common/diff/rangeMapping.js';
 import { IWorkspaceTextEdit } from '../../../../editor/common/languages.js';
 import { ITextModel, ITextSnapshot, MinimapPosition, OverviewRulerLane, TrackedRangeStickiness } from '../../../../editor/common/model.js';
-import { createTextBufferFactoryFromSnapshot, ModelDecorationOptions } from '../../../../editor/common/model/textModel.js';
+import { createTextBufferFactory, createTextBufferFactoryFromSnapshot, ModelDecorationOptions } from '../../../../editor/common/model/textModel.js';
 import { IEditorWorkerService } from '../../../../editor/common/services/editorWorker.js';
 import { IModelService } from '../../../../editor/common/services/model.js';
 import { DefaultModelSHA1Computer } from '../../../../editor/common/services/modelService.js';
@@ -25,7 +24,7 @@ import { IInstantiationService } from '../../../../platform/instantiation/common
 import { IEditorService } from '../../../services/editor/common/editorService.js';
 import { minimapInlineChatDiffInserted, overviewRulerInlineChatDiffInserted } from '../../inlineChat/common/inlineChat.js';
 import { IAideAgentCodeEditingService, IAideAgentCodeEditingSession } from '../common/aideAgentCodeEditingService.js';
-import { HunkData, HunkDisplayData, HunkInformation, HunkState, IAideAgentEdits, lineRangeAsRange, RawHunk } from '../common/aideAgentEditingSession.js';
+import { HunkData, HunkDisplayData, HunkInformation, HunkState, IAideAgentEdits } from '../common/aideAgentEditingSession.js';
 import { IChatTextEditGroupState } from '../common/aideAgentModel.js';
 
 
@@ -58,6 +57,9 @@ interface TextModelSnapshotUntilPoint {
 	// grows quite a bit
 	reference: string;
 	textModel: ITextSnapshot;
+	// if we invoke .read on the snapshot we drain it, so we have to store the raw
+	// content over here to make sure we do not drain it
+	textContent: string;
 }
 
 interface TextModelSnapshotReference {
@@ -80,6 +82,20 @@ function compareLabels(a: TextModelSnapshotReference, b: TextModelSnapshotRefere
 	} else {
 		return a.step_idx - b.step_idx;
 	}
+}
+
+function findSnapshotAtOrAfter(snapshots: TextModelSnapshotUntilPoint[], reference: TextModelSnapshotReference): TextModelSnapshotUntilPoint | undefined {
+	// Find the snapshot with the greatest label that is less than or equal to the reference
+	let result: TextModelSnapshotUntilPoint | undefined = undefined;
+	for (const snapshot of snapshots) {
+		const snapshotLabel = parseLabel(snapshot.reference)!;
+		if (compareLabels(snapshotLabel, reference) >= 0) {
+			result = snapshot;
+		} else {
+			break;
+		}
+	}
+	return result;
 }
 
 // Include the findSnapshotAtOrBefore function
@@ -239,6 +255,9 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 	private readonly _workingSet = new Set<string>();
 	// keeps track of the snapshots until a point
 	private _textModelSnapshotUntilPoint: TextModelSnapshotUntilPoint[] = [];
+	// keeps track of the snapshot due to the point (this has all the changes for that
+	// point in its textModel)
+	private _trackModelSanpshotsDueToPoint: TextModelSnapshotUntilPoint[] = [];
 
 	get codeEdits() {
 		return this._codeEdits;
@@ -359,18 +378,26 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 			return new Map();
 		}
 
-		const resourceSnapshots = new Map<string, TextModelSnapshotUntilPoint[]>();
+		const resourceSnapshotsAtPoint = new Map<string, TextModelSnapshotUntilPoint[]>();
 		for (const snapshot of this._textModelSnapshotUntilPoint) {
 			const resourceName = snapshot.resourceName;
-			if (!resourceSnapshots.has(resourceName)) {
-				resourceSnapshots.set(resourceName, []);
+			if (!resourceSnapshotsAtPoint.has(resourceName)) {
+				resourceSnapshotsAtPoint.set(resourceName, []);
 			}
-			resourceSnapshots.get(resourceName)!.push(snapshot);
+			resourceSnapshotsAtPoint.get(resourceName)!.push(snapshot);
+		}
+		const resourceSnapshotsDueToPoint = new Map<string, TextModelSnapshotUntilPoint[]>();
+		for (const snapshot of this._trackModelSanpshotsDueToPoint) {
+			const resourceName = snapshot.resourceName;
+			if (!resourceSnapshotsDueToPoint.has(resourceName)) {
+				resourceSnapshotsDueToPoint.set(resourceName, []);
+			}
+			resourceSnapshotsDueToPoint.get(resourceName)!.push(snapshot);
 		}
 
 		const result = new Map<URI, Range[]>();
 
-		for (const [resourceName, snapshots] of resourceSnapshots) {
+		for (const [resourceName, snapshots] of resourceSnapshotsAtPoint) {
 			const snapshotsForResource = snapshots.filter(snap => parseLabel(snap.reference) !== null);
 			// Sort the snapshots by label
 			snapshotsForResource.sort((a, b) => {
@@ -378,32 +405,25 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 				const labelB = parseLabel(b.reference)!;
 				return compareLabels(labelA, labelB);
 			});
+			const snapshotsForResourceDueToPoint = resourceSnapshotsDueToPoint.get(resourceName) ?? [];
+			snapshotsForResourceDueToPoint.sort((a, b) => {
+				const labelA = parseLabel(a.reference)!;
+				const labelB = parseLabel(b.reference)!;
+				return compareLabels(labelA, labelB);
+			});
 
-			const codeEdits = this._codeEdits.get(resourceName);
+			const snapshotEnd = findSnapshotAtOrBefore(snapshotsForResourceDueToPoint, endReference);
+			const snapshotStart = findSnapshotAtOrAfter(snapshotsForResource, startReference);
 
-			if (!codeEdits) {
+			if (!snapshotEnd || !snapshotStart) {
 				continue;
 			}
 
-			const snapshotStart = findSnapshotAtOrBefore(snapshotsForResource, startReference);
-			const snapshotEnd = findSnapshotAtOrBefore(snapshotsForResource, endReference);
+			const snapshotStartSnapshot = snapshotStart.textContent;
+			const snapshotEndSnapshot = snapshotEnd.textContent;
 
-			if (!snapshotEnd || snapshotStart === snapshotEnd) {
-				continue;
-			}
-
-			let snapshotStartSnapshot: ITextSnapshot;
-			if (snapshotStart) {
-				snapshotStartSnapshot = snapshotStart.textModel;
-			} else {
-				snapshotStartSnapshot = codeEdits.textModel0.createSnapshot();
-			}
-
-			const snapshotEndSnapshot = snapshotEnd.textModel;
-
-			// Create temporary text models from snapshots
-			const textBufferFactoryStart = createTextBufferFactoryFromSnapshot(snapshotStartSnapshot);
-			const textBufferFactoryEnd = createTextBufferFactoryFromSnapshot(snapshotEndSnapshot);
+			const textBufferFactoryStart = createTextBufferFactory(snapshotStartSnapshot);
+			const textBufferFactoryEnd = createTextBufferFactory(snapshotEndSnapshot);
 
 			const uriStart = URI.parse(resourceName).with({ scheme: 'inmemory', fragment: 'start' });
 			const uriEnd = URI.parse(resourceName).with({ scheme: 'inmemory', fragment: 'end' });
@@ -421,68 +441,26 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 				true
 			);
 
-			// Compute diff
-			const diff = await this._editorWorkerService.computeDiff(textModelStart.uri, textModelEnd.uri, {
-				ignoreTrimWhitespace: false,
-				maxComputationTimeMs: Number.MAX_SAFE_INTEGER,
-				computeMoves: false,
-			}, 'advanced');
+			const { editState, diff } = await this.calculateDiff(textModelStart, textModelEnd);
 
-			if (diff) {
-				// merge changes neighboring changes
-				const mergedChanges = [diff.changes[0]];
-				for (let i = 1; i < diff.changes.length; i++) {
-					const lastChange = mergedChanges[mergedChanges.length - 1];
-					const thisChange = diff.changes[i];
-					if (thisChange.modified.startLineNumber - lastChange.modified.endLineNumberExclusive <= HunkData._HUNK_THRESHOLD) {
-						mergedChanges[mergedChanges.length - 1] = new DetailedLineRangeMapping(
-							lastChange.original.join(thisChange.original),
-							lastChange.modified.join(thisChange.modified),
-							(lastChange.innerChanges ?? []).concat(thisChange.innerChanges ?? [])
-						);
-					} else {
-						mergedChanges.push(thisChange);
-					}
-				}
 
-				const hunks = mergedChanges.map(change => new RawHunk(change.original, change.modified, change.innerChanges ?? []));
-				// add decorations to these textModels
-				textModelEnd.changeDecorations(accessorN => {
-
-					textModelStart.changeDecorations(accessor0 => {
-
-						// this throws if we are writing more code than EOF
-						try {
-
-							// add new decorations
-							for (const hunk of hunks) {
-
-								const textModelNDecorations: string[] = [];
-								const textModel0Decorations: string[] = [];
-
-								textModelNDecorations.push(accessorN.addDecoration(lineRangeAsRange(hunk.modified, textModelEnd), HunkData._HUNK_TRACKED_RANGE));
-								textModel0Decorations.push(accessor0.addDecoration(lineRangeAsRange(hunk.original, textModelStart), HunkData._HUNK_TRACKED_RANGE));
-
-								for (const change of hunk.changes) {
-									textModelNDecorations.push(accessorN.addDecoration(change.modifiedRange, HunkData._HUNK_TRACKED_RANGE));
-									textModel0Decorations.push(accessor0.addDecoration(change.originalRange, HunkData._HUNK_TRACKED_RANGE));
-								}
-							}
-						} catch (exception) {
-							console.error(exception);
-						}
-					});
-				});
-			}
-
-			// Now over here gather all the decoration ranges and then grab the ranges
-			// for it
-			const textModelEndRanges = textModelEnd.getAllDecorations().map((decoration) => {
-				return decoration.range;
-			});
-			result.set(URI.parse(resourceName), textModelEndRanges);
-
-			// Dispose the temporary models
+			// Reduce-reuse-recycle ♻️
+			const codeEdits = {
+				targetUri: resourceName,
+				textModel0: textModelStart,
+				textModelN: textModelEnd,
+				hunkData: this._register(new HunkData(this._editorWorkerService, textModelStart, textModelEnd)),
+			};
+			await codeEdits.hunkData.recompute(editState, diff);
+			const hunkInformation = codeEdits.hunkData.getInfo();
+			const changedRanges = hunkInformation.map((hunkInfo) => {
+				const allRanges = hunkInfo.getRangesN();
+				// The first range is the whole hunk range after adjusting for gaps.
+				return allRanges.length > 0 ? [allRanges[0]] : [];
+			}).flat();
+			result.set(URI.parse(resourceName), changedRanges);
+			// Dispose everything we created...
+			codeEdits.hunkData.dispose();
 			textModelStart.dispose();
 			textModelEnd.dispose();
 		}
@@ -579,8 +557,15 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 		if (textModelAtSnapshot === undefined && workspaceLabel !== undefined) {
 			this._textModelSnapshotUntilPoint.push({
 				resourceName: resource.toString(),
+				textModel: codeEdits.textModel0.createSnapshot(),
+				reference: workspaceLabel,
+				textContent: codeEdits.textModel0.getValue(),
+			});
+			this._trackModelSanpshotsDueToPoint.push({
+				resourceName: resource.toString(),
 				textModel: codeEdits.textModelN.createSnapshot(),
 				reference: workspaceLabel,
+				textContent: codeEdits.textModelN.getValue(),
 			});
 		}
 
@@ -592,6 +577,15 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 				this.handleUndoEditEvent(resource, e.changes);
 			}
 		}));
+		// Over here we want to keep track of our snapshotsDueToPoint changes using the textModelN
+		const textModelIndex = this._trackModelSanpshotsDueToPoint.findIndex((element) => {
+			return element.resourceName === resource.toString() && element.reference === workspaceLabel;
+		});
+		// We can happily update our textModel over here
+		if (textModelIndex !== -1) {
+			this._trackModelSanpshotsDueToPoint[textModelIndex].textModel = codeEdits.textModelN.createSnapshot();
+			this._trackModelSanpshotsDueToPoint[textModelIndex].textContent = codeEdits.textModelN.getValue();
+		}
 		const { editState, diff } = await this.calculateDiff(codeEdits.textModel0, codeEdits.textModelN);
 		await codeEdits.hunkData.recompute(editState, diff);
 		codeEdits.hunkData.ignoreTextModelNChanges = false;
