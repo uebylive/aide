@@ -158,8 +158,10 @@ export function registerPlanReviewActions() {
 			});
 
 			const aideAgentEditingService = accessor.get(IAideAgentCodeEditingService);
-			const planStartExchangeId = `${context.exchangeId}-0`;
-			const planEndExchangeId = `${context.exchangeId}-${context.stepIndex}`;
+			// This format is dicatated on the Aide extension layer
+			// I know bad case of not being explicit enough
+			const planStartExchangeId = `${context.exchangeId}::0`;
+			const planEndExchangeId = `${context.exchangeId}::${context.stepIndex}`;
 			aideAgentEditingService.editsBetweenExchanges(context.sessionId, planStartExchangeId, planEndExchangeId).then((editedHunks) => {
 				// send the event over here properly... altho this can get trickly quickly
 				// pick up from here to complete this properly
