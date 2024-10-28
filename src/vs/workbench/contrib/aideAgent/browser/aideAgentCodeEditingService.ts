@@ -554,10 +554,15 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 			return textModelSnapshot.resourceName === resource.toString() && textModelSnapshotLabel?.response_idx === workspaceLabelParsed?.response_idx && textModelSnapshotLabel?.step_idx === workspaceLabelParsed?.step_idx;
 		});
 		// this allows us to keep track of the text model at that reference location
+		// this is slightly wrong because we pick the same textModel0 here if we are
+		// tracking it, instead what we want to get is the textModel at the current snapshot
+		// always
 		if (textModelAtSnapshot === undefined && workspaceLabel !== undefined) {
 			this._textModelSnapshotUntilPoint.push({
 				resourceName: resource.toString(),
-				textModel: codeEdits.textModel0.createSnapshot(),
+				// we should store the latest value of the text model over here
+				// since thats the view of the world we want to go back to
+				textModel: codeEdits.textModelN.createSnapshot(),
 				reference: workspaceLabel,
 				textContent: codeEdits.textModel0.getValue(),
 			});
