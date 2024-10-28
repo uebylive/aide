@@ -192,6 +192,22 @@ declare module 'vscode' {
 		readonly exchangeId: string;
 	}
 
+
+	export interface AideRollbackCompleted {
+		/*
+	 * The session id of the plan
+	 */
+		readonly sessionId: string;
+		/*
+		 * The session id of the plan
+		 */
+		readonly exchangeId: string;
+		/*
+		 * The number of edits added
+		 */
+		readonly exchangesRemoved: number;
+	}
+
 	export interface AideCommand {
 		/**
 		 * VSCode command to execute

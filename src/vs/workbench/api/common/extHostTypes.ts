@@ -4790,6 +4790,17 @@ export class AideAgentResponseEditsInfoPart {
 	}
 }
 
+export class AideAgentRollbackCompletedPart {
+	sessionId: string;
+	exchangeId: string;
+	exchangesRemoved: number;
+	constructor(value: vscode.AideRollbackCompleted) {
+		this.sessionId = value.sessionId;
+		this.exchangeId = value.exchangeId;
+		this.exchangesRemoved = value.exchangesRemoved;
+	}
+}
+
 export class AideAgentResponsePlanInfoPart {
 	state: vscode.AideAgentPlanStateType;
 	isStale: boolean;

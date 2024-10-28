@@ -29,11 +29,11 @@ export class CollapsedExchangesContentPart extends Disposable {
 
 		const rollbackInfo = domNode.appendChild($('.aide-collapsed-exchanges-info'));
 		const rollbackLabel = rollbackInfo.appendChild($('.aide-rollback-label'));
-		rollbackLabel.textContent = rollback.exchangesRemoved.length === 1 ? localize('agent.singleRollback', "Rolled back {0} exchange", 1) : localize('agent.rollbacks', "Rolled back {0} exchanges", rollback.exchangesRemoved.length);
+		rollbackLabel.textContent = rollback.exchangesRemoved === 1 ? localize('agent.singleRollback', "Rolled back {0} exchange", 1) : localize('agent.rollbacks', "Rolled back {0} exchanges", rollback.exchangesRemoved);
 	}
 
 	hasSameContent(other: IChatProgressRenderableResponseContent): boolean {
 		return other.kind === 'rollbackCompleted'
-			&& other.exchangesRemoved.length === other.exchangesRemoved.length;
+			&& other.exchangesRemoved === other.exchangesRemoved;
 	}
 }

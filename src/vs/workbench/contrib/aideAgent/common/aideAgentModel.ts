@@ -1520,7 +1520,7 @@ export class ChatModel extends Disposable implements IChatModel {
 			const { removed } = this.removeExchanges(exchangeIndex);
 			// We will respond to this event entirely on the ide layer, but it should probably be triggered by sidecar
 			const response = this.addResponse();
-			this.acceptResponseProgress(response, { kind: 'rollbackCompleted', sessionId, exchangeId, exchangesRemoved: removed });
+			this.acceptResponseProgress(response, { kind: 'rollbackCompleted', sessionId, exchangeId, exchangesRemoved: removed.length });
 			this.acceptResponseProgress(response, { kind: 'endResponse' });
 		}
 
