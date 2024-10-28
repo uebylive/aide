@@ -858,6 +858,10 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			}
 		} else {
 			CONTEXT_STREAMING_STATE.bindTo(this.contextKeyService).set(state);
+			// waiting for the feedback always goes over here for some reason
+			// so we do end up showing the approve and reject buttons even
+			// when there are no edits selected
+			// we should have a way to figure that part out
 			this.inputPart.updateStreamingState(event);
 		}
 	}

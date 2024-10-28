@@ -51,7 +51,7 @@ export async function getOutlineNodes(request: SidecarGetOutlineNodesRequest): P
 		});
 		return {
 			file_content: textDocument.getText(),
-			outline_nodes: documentSymbols,
+			outline_nodes: documentSymbols ?? [],
 			language: textDocument.languageId,
 		};
 		// now we want to parse the document symbols and maybe map it back to outline
