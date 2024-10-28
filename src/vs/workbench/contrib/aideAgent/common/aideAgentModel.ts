@@ -680,7 +680,6 @@ export interface IChatModel {
 	readonly welcomeMessage: IChatWelcomeMessageModel | undefined;
 	readonly requestInProgress: boolean;
 	readonly inputPlaceholder?: string;
-	removeExchangesAfter(index: number): void;
 	getExchanges(): IChatExchangeModel[];
 	toExport(): IExportableChatData;
 	toJSON(): ISerializableChatData;
@@ -879,7 +878,7 @@ export interface IChatCodeEditEvent {
 
 export interface IChatRemoveExchangesEvent {
 	kind: 'removeExchanges';
-	index: number;
+	from: number;
 	remaining: IChatExchangeModel[];
 	removed: IChatExchangeModel[];
 }
@@ -1191,13 +1190,13 @@ export class ChatModel extends Disposable implements IChatModel {
 
 	addRequest(message: IParsedChatRequest, variableData: IChatRequestVariableData, attempt: number, chatAgent?: IChatAgentData, slashCommand?: IChatAgentCommand, confirmation?: string, locationData?: IChatLocationData, attachments?: IChatRequestVariableEntry[]): ChatRequestModel {
 		const request = new ChatRequestModel(this, message, variableData, attempt, confirmation, locationData, attachments);
-		const response = new ChatResponseModel(
-			this.aideAgentCodeEditingService,
-			this.aideAgentPlanService,
-			[], this, chatAgent, slashCommand
-		);
+		//const response = new ChatResponseModel(
+		//	this.aideAgentCodeEditingService,
+		//	this.aideAgentPlanService,
+		//	[], this, chatAgent, slashCommand
+		//);
 
-		this._exchanges.push(request, response);
+		this._exchanges.push(request);
 		this._lastMessageDate = Date.now();
 		this._onDidChange.fire({ kind: 'addRequest', request });
 		return request;
@@ -1216,12 +1215,12 @@ export class ChatModel extends Disposable implements IChatModel {
 		return response;
 	}
 
-	removeExchangesAfter(index: number) {
+	private removeExchanges(from: number) {
 		const exchanges = this._exchanges;
-		const remaining = exchanges.slice(0, index + 1);
-		const removed = exchanges.slice(index + 2, exchanges.length - 1);
+		const remaining = exchanges.slice(0, from);
+		const removed = exchanges.slice(from + 1, exchanges.length - 1);
 		this._exchanges = remaining;
-		this._onDidChange.fire({ kind: 'removeExchanges', index, remaining, removed });
+		this._onDidChange.fire({ kind: 'removeExchanges', from, remaining, removed });
 	}
 
 	setCustomTitle(title: string): void {
@@ -1511,6 +1510,10 @@ export class ChatModel extends Disposable implements IChatModel {
 		await editingSession.rejectForExchange(sessionId, exchangeId);
 		this.chatAgentService.handleUserActionUndoSession(sessionId, exchangeId);
 		// TODO(ghostwriternr): Do the updates for the UI over here, including changing the responses etc
+		const exchangeIndex = this._exchanges.findIndex((exchange) => exchange.id === exchangeId);
+		if (exchangeIndex > 0) {
+			this.removeExchanges(exchangeIndex);
+		}
 	}
 
 	/* TODO(@ghostwriternr): Honestly, don't care about followups at the moment.

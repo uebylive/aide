@@ -82,7 +82,7 @@ export function registerChatTitleActions() {
 
 			const agentService = accessor.get(IAideAgentService);
 			const model = agentService.getSession(context.sessionId);
-			model?.removeExchangesAfter(context.index);
+			//model?.removeExchangesAfter(context.index);
 
 			// const item = args[0];
 			// const chatService = accessor.get(IAideAgentService);

@@ -332,7 +332,7 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 			} else if (e.kind === 'streamingState') {
 				this._onDidChange.fire(e);
 			} else if (e.kind === 'removeExchanges') {
-				this._items.splice(e.index, this._items.length);
+				this._items.splice(e.from, this._items.length);
 				this._onDidChange.fire(e);
 			}
 
