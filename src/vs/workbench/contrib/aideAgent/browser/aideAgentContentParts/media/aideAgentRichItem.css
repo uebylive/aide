@@ -95,37 +95,3 @@
 .aide-rich-item-description.rendered-markdown p:is(:first-child, :last-child) {
 	margin-block: 0;
 }
-
-.aide-rich-item-checkpoint {
-	box-sizing: border-box;
-	padding-block: 6px;
-	padding-inline: 10px;
-	display: flex;
-	gap: 8px;
-	align-items: start;
-	border: 1px solid var(--vscode-editorPane-background);
-	border-radius: 3px;
-	background-color: var(--vscode-chat-list-background);
-	color: var(--vscode-descriptionForeground);
-}
-
-.aide-rich-item-checkpoint:is(.focused, :hover) {
-	color: revert;
-}
-
-.aide-rich-item-checkpoint-label {
-	flex-grow: 2;
-	margin-top: 2px;
-}
-
-.aide-rich-item-checkpoint-flag-icon {
-	margin-top: 3px;
-}
-
-.aide-rich-item-checkpoint-icon {
-	flex-shrink: 0;
-	width: 16px;
-	height: 16px;
-	padding: 3px;
-}
-

@@ -17,7 +17,8 @@ import { Emitter } from '../../../../../base/common/event.js';
 import { ChatMarkdownContentPart } from './aideAgentMarkdownContentPart.js';
 import { IAideAgentPlanService } from '../../common/aideAgentPlanService.js';
 import './media/aideAgentRichItem.css';
-import { localize } from '../../../../../nls.js';
+import { CheckpointFlag } from './aideAgentCheckpointFlag.js';
+import { ICommandService } from '../../../../../platform/commands/common/commands.js';
 
 const $ = dom.$;
 
@@ -27,11 +28,18 @@ export interface IActionsPreviewOptions {
 	end: number;
 }
 
+export interface IRichItemContext {
+	aideAgentSessionId: string;
+	aideAgentExchangeId: string;
+}
+
 export abstract class AideAgentRichItem extends Disposable implements IChatContentPart {
 	public readonly domNode: HTMLElement;
 
 	protected toolbar: MenuWorkbenchToolBar | undefined;
 	private actionsPreviewElement: HTMLElement;
+
+	private readonly context: IRichItemContext;
 
 	private readonly _onDidChangeHeight = this._register(new Emitter<void>());
 	public readonly onDidChangeHeight = this._onDidChangeHeight.event;
@@ -49,24 +57,24 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 		readonly instantiationService: IInstantiationService,
 		readonly keybindingService: IKeybindingService,
 		readonly aideAgentPlanService: IAideAgentPlanService,
+		readonly commandsService: ICommandService,
 	) {
 		super();
 		const domNode = this.domNode = $('.aide-rich-block');
 
+		this.context = {
+			aideAgentSessionId: this.sessionId,
+			aideAgentExchangeId: this.exchangeId
+		};
 
 		if (supportsCheckpoint) {
-			const checkPointButton = domNode.appendChild($('a.aide-rich-item-checkpoint'));
-			this._register(dom.addDisposableListener(checkPointButton, dom.EventType.CLICK, async (e: MouseEvent) => {
-				console.log('revert to checkpoint');
+			const checkpointButton = this._register(this.instantiationService.createInstance(CheckpointFlag, true, undefined));
+
+			this._register(dom.addDisposableListener(checkpointButton.domNode, dom.EventType.CLICK, async (e: MouseEvent) => {
+				this.commandsService.executeCommand('workbench.action.aideAgent.revert', this.context);
 			}));
 
-			this._register(this.instantiationService.createInstance(Heroicon, checkPointButton, 'micro/flag', { 'class': 'aide-rich-item-checkpoint-flag-icon' }));
-
-			const checkpointLabel = checkPointButton.appendChild($('.aide-rich-item-checkpoint-label'));
-			checkpointLabel.textContent = localize('agent.checkpoint', "Checkpoint before edits"); // TODO(g-danna) Include more information about the checkpoint
-
-			checkPointButton.appendChild($('.aide-rich-item-checkpoint-icon.codicon.codicon-discard'));
-
+			domNode.appendChild(checkpointButton.domNode);
 			// const planReviewButtonContainer = $('.aide-rich-item-plan');
 			// const planReviewButton = this._register(this.instantiationService.createInstance(Button, planReviewButtonContainer, defaultButtonStyles));
 			// planReviewButton.label = 'planView';

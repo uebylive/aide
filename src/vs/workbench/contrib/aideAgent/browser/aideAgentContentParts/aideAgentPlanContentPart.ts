@@ -5,6 +5,7 @@
 
 import { localize } from '../../../../../nls.js';
 import { MenuId } from '../../../../../platform/actions/common/actions.js';
+import { ICommandService } from '../../../../../platform/commands/common/commands.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { IKeybindingService } from '../../../../../platform/keybinding/common/keybinding.js';
 import { IChatProgressRenderableResponseContent } from '../../common/aideAgentModel.js';
@@ -22,6 +23,7 @@ export class PlanContentPart extends AideAgentRichItemContent {
 		@IInstantiationService instantiationService: IInstantiationService,
 		@IKeybindingService keybindingService: IKeybindingService,
 		@IAideAgentPlanService aideAgentPlanService: IAideAgentPlanService,
+		@ICommandService commandService: ICommandService
 	) {
 
 		const label = assignLabel(plan);
@@ -42,6 +44,7 @@ export class PlanContentPart extends AideAgentRichItemContent {
 			instantiationService,
 			keybindingService,
 			aideAgentPlanService,
+			commandService
 		);
 	}
 

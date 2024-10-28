@@ -69,6 +69,7 @@ import { IKeybindingService } from '../../../../platform/keybinding/common/keybi
 import { INotificationService } from '../../../../platform/notification/common/notification.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { IAccessibilityService } from '../../../../platform/accessibility/common/accessibility.js';
+import { CollapsedExchangesContentPart } from './aideAgentContentParts/aideAgentCollapsedExchangesPart.js';
 
 
 const $ = dom.$;
@@ -869,7 +870,6 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 				diff.push(null);
 			}
 		}
-
 		return diff;
 	}
 
@@ -955,13 +955,8 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	}
 
 	private renderRollbackCompleted(content: IChatRollbackCompleted, templateData: IAgentListItemTemplate, context: IChatContentPartRenderContext): IChatContentPart {
-		const domNode = dom.$('.chat-rollback-completed');
-		domNode.textContent = `Removed ${content.exchangesRemoved.length} exchanges`;
-		return ({
-			domNode, hasSameContent: () => true, dispose() {
-				// no-op
-			},
-		});
+		const collapsedExchangesPart = this.instantiationService.createInstance(CollapsedExchangesContentPart, content);
+		return collapsedExchangesPart;
 	}
 
 	private renderContentReferencesListData(references: IChatReferences, labelOverride: string | undefined, context: IChatContentPartRenderContext, templateData: IAgentListItemTemplate): ChatCollapsibleListContentPart {

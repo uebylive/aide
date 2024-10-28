@@ -6,7 +6,7 @@
 import { Codicon } from '../../../../../base/common/codicons.js';
 import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions.js';
 import { localize2 } from '../../../../../nls.js';
-import { registerAction2, Action2, MenuId } from '../../../../../platform/actions/common/actions.js';
+import { registerAction2, Action2 } from '../../../../../platform/actions/common/actions.js';
 import { IAideAgentService } from '../../common/aideAgentService.js';
 
 export function registerAgentActions() {
@@ -14,12 +14,12 @@ export function registerAgentActions() {
 		constructor() {
 			super({
 				id: 'workbench.action.aideAgent.revert',
-				title: localize2('interactiveSession.revert.label', "Revert to this step"),
-				menu: {
-					id: MenuId.AideAgentEditsCompleted,
-					group: 'navigation',
-					order: 2
-				},
+				title: localize2('interactiveSession.revert.label', "Revert to to changes before this step"),
+				// menu: {
+				// 	id: MenuId.AideAgentEditsCompleted,
+				// 	group: 'navigation',
+				// 	order: 2
+				// },
 				icon: Codicon.discard,
 				f1: false,
 			});
