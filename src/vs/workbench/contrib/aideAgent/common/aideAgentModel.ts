@@ -574,7 +574,7 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 				await this._editingSession.apply(edit);
 				// update our code edits here so we can keep update it automagically
 				// after applying an edit
-				this._codeEdits = this._editingSession.fileLocationForEditsMade(this.session.sessionId, this.id);
+				this._codeEdits = this._editingSession.fileLocationForEditsMade(this.session.sessionId, edit.metadata?.label ?? this.id);
 				// TODO(@ghostwriternr): This is a temporary hack to show the edited resource, until we build the UI component for showing this
 				// in a special manner for edits.
 				const resource = edit.resource;
