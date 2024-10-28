@@ -1091,6 +1091,7 @@ export class SideCarClient {
 			properties: {
 				platform: os.platform(),
 				email,
+				query,
 			},
 		});
 
