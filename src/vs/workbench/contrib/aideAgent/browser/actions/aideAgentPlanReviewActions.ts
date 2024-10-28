@@ -9,7 +9,6 @@ import { localize2 } from '../../../../../nls.js';
 import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
 import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
 import { ServicesAccessor } from '../../../../../platform/instantiation/common/instantiation.js';
-import { IAideAgentCodeEditingService } from '../../common/aideAgentCodeEditingService.js';
 import { IAideAgentService } from '../../common/aideAgentService.js';
 import { PLAN_REVIEW_PANEL_ID, PlanReviewPane } from '../aideAgentPlanReviewViewPane.js';
 
@@ -157,16 +156,15 @@ export function registerPlanReviewActions() {
 				description: new MarkdownString(`Accepting changes until ${context.stepIndex + 1}`),
 			});
 
-			const aideAgentEditingService = accessor.get(IAideAgentCodeEditingService);
-			// This format is dicatated on the Aide extension layer
-			// I know bad case of not being explicit enough
-			const planStartExchangeId = `${context.exchangeId}::0`;
-			const planEndExchangeId = `${context.exchangeId}::${context.stepIndex}`;
-			aideAgentEditingService.editsBetweenExchanges(context.sessionId, planStartExchangeId, planEndExchangeId).then((editedHunks) => {
-				// send the event over here properly... altho this can get trickly quickly
-				// pick up from here to complete this properly
-				console.log('planreviewactions::editedHunks');
-				console.log(editedHunks);
+			// [2] push an update for the hunks over here
+			// TODO(skcd): This is not yet working properly, debug why :|
+			// use a multi-file edit with at least 2 steps to triage this
+			aideAgentService.pushProgress(context.sessionId, {
+				kind: 'planEditInfo',
+				currentStepIndex: context.stepIndex,
+				startStepIndex: 0,
+				exchangeId: context.exchangeId,
+				sessionId: context.sessionId,
 			});
 		}
 	});
