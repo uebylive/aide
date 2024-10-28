@@ -217,6 +217,7 @@ export interface IChatConfirmation {
 
 export enum ChatStreamingState {
 	Loading = 'loading',
+	EditsStarted = 'editsStarted',
 	WaitingFeedback = 'waitingFeedback',
 	Finished = 'finished',
 	Cancelled = 'cancelled',

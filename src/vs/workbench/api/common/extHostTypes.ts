@@ -4715,6 +4715,7 @@ export enum AideAgentEditsState {
 
 export enum AideAgentStreamingStateEnum {
 	Loading = 'loading',
+	EditsStarted = 'editsStarted',
 	WaitingFeedback = 'waitingFeedback',
 	Finished = 'finished',
 	Cancelled = 'cancelled',
