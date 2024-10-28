@@ -122,7 +122,11 @@ export function registerChatEditsActions() {
 
 			const aideAgentCodeEditingService = accessor.get(IAideAgentCodeEditingService);
 			const editingSession = aideAgentCodeEditingService.getOrStartCodeEditingSession(sessionId);
-			editingSession.accept();
+			if (aidePlanReviewStateStepId !== undefined && aidePlanReviewStateSessionId === sessionId && aidePlanReviewStateExchangeId === exchangeId) {
+				editingSession.acceptUntilExchange(sessionId, exchangeId, aidePlanReviewStateStepId);
+			} else {
+				editingSession.accept();
+			}
 		}
 	});
 

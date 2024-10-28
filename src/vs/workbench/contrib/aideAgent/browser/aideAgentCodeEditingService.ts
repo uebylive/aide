@@ -235,6 +235,59 @@ function filterGreaterThanOrEqualToReference(
 	return resultMap;
 }
 
+/**
+ * Finds all the text model references which are strictly greater than
+ * the current text model reference label
+ */
+function filterGreaterThanReference(
+	textModels: TextModelSnapshotUntilPoint[],
+	filterStr: string
+): Map<string, TextModelSnapshotUntilPoint[]> {
+
+	const filterReference = parseLabel(filterStr);
+	if (!filterReference) {
+		// Invalid filterStr format, return empty Map
+		return new Map();
+	}
+
+	// Create a Map to hold the results
+	const resultMap = new Map<string, TextModelSnapshotUntilPoint[]>();
+
+	// Filter and group the textModels array
+	for (const model of textModels) {
+		const { resourceName, reference } = model;
+		const modelReference = parseLabel(reference);
+		if (!modelReference) {
+			continue; // Skip invalid references
+		}
+
+		const comparison = compareLabels(modelReference, filterReference);
+		if (comparison > 0) {
+			// modelReference > filterReference
+			if (!resultMap.has(resourceName)) {
+				resultMap.set(resourceName, []);
+			}
+			resultMap.get(resourceName)!.push(model);
+		}
+	}
+
+	// Sort the edits in each resourceName group
+	for (const [_resourceName, edits] of resultMap) {
+		edits.sort((a, b) => {
+			const refA = parseLabel(a.reference);
+			const refB = parseLabel(b.reference);
+
+			if (!refA || !refB) {
+				return 0;
+			}
+
+			return compareLabels(refA, refB);
+		});
+	}
+
+	return resultMap;
+}
+
 
 class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEditingSession {
 	private readonly _onDidChange = this._register(new Emitter<void>());
@@ -323,6 +376,10 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 							}
 						});
 					};
+
+					if (hunkRanges.length === 0) {
+						continue;
+					}
 
 					data = {
 						decorationIds,
@@ -662,6 +719,35 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 	 * remove any for which we have acknowleged that we are okay
 	 */
 	accept(): void {
+		this.removeDecorations();
+	}
+
+	/**
+	 * Allows us to accept the changes until a point rejecting everything that
+	 * happened after the fact
+	 * This is essential for the plan step where we might partially accept the changes
+	 * up until a point and then reject them afterwards
+	 */
+	acceptUntilExchange(sessionId: string, exchangeId: string, stepIndex: number | undefined): void {
+		// > Find all the text models which are strictly after this exchange id
+		// > reset them to their original value
+		// > fin
+		if (this.sessionId !== sessionId) {
+			return;
+		}
+		let workspaceLabel = exchangeId;
+		if (stepIndex !== undefined) {
+			workspaceLabel = `${workspaceLabel}::${stepIndex}`;
+		}
+		const filteredValues = filterGreaterThanReference(this._textModelSnapshotUntilPoint, workspaceLabel);
+		filteredValues.forEach((filteredValues, resourceName) => {
+			if (filteredValues.length === 0) {
+				return;
+			}
+			const codeEdits = this._codeEdits.get(resourceName);
+			codeEdits?.textModelN.setValue(filteredValues[0].textModel);
+		});
+		// remove the decorations at the end of this
 		this.removeDecorations();
 	}
 

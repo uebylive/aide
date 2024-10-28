@@ -25,6 +25,7 @@ export interface IAideAgentCodeEditingSession {
 	apply(edits: IWorkspaceTextEdit): Promise<void>;
 	complete(): void;
 	accept(): void;
+	acceptUntilExchange(sessionId: string, exchangeId: string, stepIndex: number | undefined): void;
 	reject(): void;
 	rejectForExchange(sessionId: string, exchangeId: string): Promise<void>;
 	fileLocationForEditsMade(sessionId: string, exchangeId: string): Map<URI, Range[]>;
