@@ -7,6 +7,7 @@ import { Codicon } from '../../../../../base/common/codicons.js';
 import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions.js';
 import { localize2 } from '../../../../../nls.js';
 import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
+import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
 import { IAideAgentCodeEditingService } from '../../common/aideAgentCodeEditingService.js';
 import { CONTEXT_STREAMING_STATE } from '../../common/aideAgentContextKeys.js';
 import { IAideAgentPlanService } from '../../common/aideAgentPlanService.js';
@@ -89,7 +90,7 @@ export function registerChatEditsActions() {
 					order: 1
 				}, {
 					id: MenuId.AideAgentStreamingState,
-					when: CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.WaitingFeedback),
+					when: ContextKeyExpr.or(CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.EditsStarted), CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.WaitingFeedback)),
 					order: 0,
 					group: 'navigation',
 				}],
@@ -126,7 +127,7 @@ export function registerChatEditsActions() {
 					order: 2
 				}, {
 					id: MenuId.AideAgentStreamingState,
-					when: CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.WaitingFeedback),
+					when: ContextKeyExpr.or(CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.EditsStarted), CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.WaitingFeedback)),
 					order: 2,
 					group: 'navigation',
 				}],

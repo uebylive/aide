@@ -414,7 +414,6 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 	renderElement(node: ITreeNode<ChatTreeItem, FuzzyScore>, index: number, templateData: IAgentListItemTemplate): void {
 		const expectedKind = this._rendererUser === TreeUser.Chat ? 'chatTemplate' : 'planReviewTemplate';
-		console.log('rendering element');
 		if (templateData.kind !== expectedKind) {
 			// Dispose of the old template data
 			this.disposeTemplate(templateData);

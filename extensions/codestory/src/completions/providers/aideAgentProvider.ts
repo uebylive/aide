@@ -236,6 +236,15 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				success: false,
 			};
 		}
+		// send a streamingstate widget over here that we have started editing
+		responseStream?.stream.streamingState({
+			exchangeId: request.exchange_id,
+			sessionId: request.session_id,
+			isError: false,
+			state: 'editsStarted',
+			loadingLabel: 'generating',
+			message: 'Started editing',
+		});
 		const editStreamEvent = request;
 		const fileDocument = editStreamEvent.fs_file_path;
 		if ('Start' === editStreamEvent.event) {
@@ -285,6 +294,15 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				await editsManager.streamProcessor.processLine(currentLine);
 			}
 			editsManager.streamProcessor.cleanup();
+
+			responseStream?.stream.streamingState({
+				exchangeId: request.exchange_id,
+				sessionId: request.session_id,
+				isError: false,
+				state: 'editsStarted',
+				loadingLabel: 'generating',
+				message: 'Finished editing',
+			});
 
 			await vscode.workspace.save(vscode.Uri.file(editStreamEvent.fs_file_path)); // save files upon stream completion
 			console.log('provideEditsStreamed::finished', editStreamEvent.fs_file_path);

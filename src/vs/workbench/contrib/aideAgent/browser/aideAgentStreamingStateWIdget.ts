@@ -93,10 +93,9 @@ export class StreamingStateWidget extends Disposable {
 					break;
 			}
 			this.textLabelElement.textContent = label;
-		} else if (state.state === ChatStreamingState.WaitingFeedback) {
+		} else if (state.state === ChatStreamingState.WaitingFeedback || state.state === ChatStreamingState.EditsStarted) {
 			this.textLabelElement.textContent = localize('aideAgent.streamingState.waitingFeedback', "Waiting for feedback");
 		}
-
 	}
 
 	update(newState: StreamingState, quiet = false) {
@@ -117,7 +116,7 @@ export class StreamingStateWidget extends Disposable {
 			this.iconContainer.ariaHidden = 'true';
 		}
 
-		if (newState.message || newState.isError || newState.state === ChatStreamingState.WaitingFeedback) {
+		if (newState.message || newState.isError || newState.state === ChatStreamingState.WaitingFeedback || newState.state === ChatStreamingState.EditsStarted) {
 			this.textLabelElement.classList.remove('aide-streaming-state-label-ellipsis');
 		} else {
 			this.textLabelElement.classList.add('aide-streaming-state-label-ellipsis');

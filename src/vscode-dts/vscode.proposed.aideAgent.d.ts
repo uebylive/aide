@@ -37,6 +37,8 @@ declare module 'vscode' {
 	export enum AideAgentStreamingStateEnum {
 		Loading = 'loading',
 		WaitingFeedback = 'waitingFeedback',
+		// We can show if the edits have started using this
+		EditsStarted = 'editsStarted',
 		Finished = 'finished',
 		// NOTE: This is a dynamic properly, ideally we should be using either of
 		// finished or waitingFeedback, but since that part is not built yet

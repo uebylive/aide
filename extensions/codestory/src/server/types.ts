@@ -627,7 +627,7 @@ export type SidecarGetOutlineNodesResponse = {
 
 export type SidecarCreateNewExchangeRequest = {
 	session_id: string;
-}
+};
 
 export type SidecarGoToDefinitionRequest = {
 	fs_file_path: string;
