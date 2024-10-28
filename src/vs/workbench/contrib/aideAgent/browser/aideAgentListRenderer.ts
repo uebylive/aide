@@ -361,7 +361,6 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 							return actionViewItem;
 						}
 					}
-
 					return undefined;
 				}
 			}));
@@ -449,7 +448,9 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 		if (templateData.titleToolbar) {
 			if (templateData.kind === 'chatTemplate') {
-				templateData.titleToolbar.context = element;
+				if (isResponseVM(element)) {
+					templateData.titleToolbar.context = { sessionId: element.sessionId, index };
+				}
 			}
 			if (templateData.kind === 'planReviewTemplate') {
 				let planSessionId = null;
@@ -503,6 +504,8 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			this.renderDetail(element, templateData);
 
 			if (templateData.actionViewItem) {
+				// TODO (g-danna) This won't work, probably should append event listeners to the DOM element here
+				// instead of setting a callback
 				templateData.actionViewItem.onPreview = () => {
 					console.log('preview ', index);
 					if (this.delegate.kind === 'chat') {

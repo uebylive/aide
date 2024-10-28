@@ -680,6 +680,7 @@ export interface IChatModel {
 	readonly welcomeMessage: IChatWelcomeMessageModel | undefined;
 	readonly requestInProgress: boolean;
 	readonly inputPlaceholder?: string;
+	removeExchangesAfter(index: number): void;
 	getExchanges(): IChatExchangeModel[];
 	toExport(): IExportableChatData;
 	toJSON(): ISerializableChatData;
@@ -828,7 +829,8 @@ export type IChatChangeEvent =
 	| IChatSetAgentEvent
 	| IChatMoveEvent
 	| IChatCodeEditEvent
-	| IChatStreamingState;
+	| IChatStreamingState
+	| IChatRemoveExchangesEvent;
 
 export interface IChatAddRequestEvent {
 	kind: 'addRequest';
@@ -873,6 +875,13 @@ export interface IChatMoveEvent {
 export interface IChatCodeEditEvent {
 	kind: 'codeEdit';
 	edits: WorkspaceEdit;
+}
+
+export interface IChatRemoveExchangesEvent {
+	kind: 'removeExchanges';
+	index: number;
+	remaining: IChatExchangeModel[];
+	removed: IChatExchangeModel[];
 }
 
 export interface IChatSetAgentEvent {
@@ -1205,6 +1214,14 @@ export class ChatModel extends Disposable implements IChatModel {
 		// TODO(@ghostwriternr): Just looking at the above, do we need to update the last message date here? What is it used for?
 		this._onDidChange.fire({ kind: 'addResponse', response });
 		return response;
+	}
+
+	removeExchangesAfter(index: number) {
+		const exchanges = this._exchanges;
+		const remaining = exchanges.slice(0, index + 1);
+		const removed = exchanges.slice(index + 2, exchanges.length - 1);
+		this._exchanges = remaining;
+		this._onDidChange.fire({ kind: 'removeExchanges', index, remaining, removed });
 	}
 
 	setCustomTitle(title: string): void {

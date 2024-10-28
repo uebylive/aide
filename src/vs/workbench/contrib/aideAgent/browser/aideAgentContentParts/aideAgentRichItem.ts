@@ -51,15 +51,46 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 		readonly aideAgentPlanService: IAideAgentPlanService,
 	) {
 		super();
-		const domNode = this.domNode = $('.aide-rich-item');
+		const domNode = this.domNode = $('.aide-rich-block');
+
+
+		if (supportsCheckpoint) {
+			const checkPointButton = domNode.appendChild($('a.aide-rich-item-checkpoint'));
+			this._register(dom.addDisposableListener(checkPointButton, dom.EventType.CLICK, async (e: MouseEvent) => {
+				console.log('revert to checkpoint');
+			}));
+
+			this._register(this.instantiationService.createInstance(Heroicon, checkPointButton, 'micro/flag', { 'class': 'aide-rich-item-checkpoint-flag-icon' }));
+
+			const checkpointLabel = checkPointButton.appendChild($('.aide-rich-item-checkpoint-label'));
+			checkpointLabel.textContent = localize('agent.checkpoint', "Checkpoint before edits"); // TODO(g-danna) Include more information about the checkpoint
+
+			checkPointButton.appendChild($('.aide-rich-item-checkpoint-icon.codicon.codicon-discard'));
+
+			// const planReviewButtonContainer = $('.aide-rich-item-plan');
+			// const planReviewButton = this._register(this.instantiationService.createInstance(Button, planReviewButtonContainer, defaultButtonStyles));
+			// planReviewButton.label = 'planView';
+			// planReviewButton.onDidClick(() => {
+			// 	// forces the view pane to open up
+			// 	this.aideAgentPlanService.anchorPlanViewPane(sessionId, exchangeId);
+			// });
+			//
+			// dom.addDisposableListener(planReviewButton.element, dom.EventType.CLICK, async (e: MouseEvent) => {
+			// 	dom.EventHelper.stop(e, true);
+			// 	this.aideAgentPlanService.anchorPlanViewPane(sessionId, exchangeId);
+			// });
+			// domNode.appendChild(planReviewButtonContainer);
+		}
+
+		const itemElement = domNode.appendChild($('.aide-rich-item'));
 
 		if (stale) {
-			domNode.classList.add('stale');
+			itemElement.classList.add('stale');
 		}
-		domNode.setAttribute('tabindex', '0');
+		itemElement.setAttribute('tabindex', '0');
 
 		const header = $('.aide-rich-item-header');
-		domNode.appendChild(header);
+		itemElement.appendChild(header);
 
 		const heading = $('.aide-rich-item-heading');
 		header.appendChild(heading);
@@ -71,7 +102,7 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 		title.textContent = headerTitle;
 
 		if (this.descriptionPart) {
-			domNode.appendChild(this.descriptionPart.domNode);
+			itemElement.appendChild(this.descriptionPart.domNode);
 			this.descriptionPart.domNode.classList.add('aide-rich-item-description');
 		}
 
@@ -105,13 +136,13 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 				'aideAgentExchangeId': this.exchangeId,
 			};
 
-			dom.addDisposableListener(domNode, dom.EventType.FOCUS_IN, () => {
+			dom.addDisposableListener(itemElement, dom.EventType.FOCUS_IN, () => {
 				//dom.EventHelper.stop(e, true);
-				this.domNode.classList.add('focused');
+				itemElement.classList.add('focused');
 			});
 
-			dom.addDisposableListener(domNode, dom.EventType.FOCUS_OUT, () => {
-				this.domNode.classList.remove('focused');
+			dom.addDisposableListener(itemElement, dom.EventType.FOCUS_OUT, () => {
+				itemElement.classList.remove('focused');
 			});
 
 			this.updatePreview();
@@ -119,36 +150,6 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 			this._register(this.toolbar.onDidChangeMenuItems(() => {
 				this.updatePreview();
 			}));
-		}
-
-		// TODO: Failing to render properly, we should figure out how to work on this
-		if (supportsCheckpoint) {
-
-			const checkPointButton = domNode.appendChild($('a.aide-rich-item-checkpoint'));
-			this._register(dom.addDisposableListener(checkPointButton, dom.EventType.CLICK, async (e: MouseEvent) => {
-				console.log('revert to checkpoint');
-			}));
-
-			this._register(this.instantiationService.createInstance(Heroicon, checkPointButton, 'micro/flag', { 'class': 'aide-rich-item-checkpoint-flag-icon' }));
-
-			const checkpointLabel = checkPointButton.appendChild($('.aide-rich-item-checkpoint-label'));
-			checkpointLabel.textContent = localize('agent.checkpoint', "Checkpoint"); // TODO(g-danna) Include more information about the checkpoint
-
-			checkPointButton.appendChild($('.aide-rich-item-checkpoint-icon.codicon.codicon-discard'));
-
-			// const planReviewButtonContainer = $('.aide-rich-item-plan');
-			// const planReviewButton = this._register(this.instantiationService.createInstance(Button, planReviewButtonContainer, defaultButtonStyles));
-			// planReviewButton.label = 'planView';
-			// planReviewButton.onDidClick(() => {
-			// 	// forces the view pane to open up
-			// 	this.aideAgentPlanService.anchorPlanViewPane(sessionId, exchangeId);
-			// });
-			//
-			// dom.addDisposableListener(planReviewButton.element, dom.EventType.CLICK, async (e: MouseEvent) => {
-			// 	dom.EventHelper.stop(e, true);
-			// 	this.aideAgentPlanService.anchorPlanViewPane(sessionId, exchangeId);
-			// });
-			// domNode.appendChild(planReviewButtonContainer);
 		}
 	}
 

@@ -7,6 +7,7 @@ import { Codicon } from '../../../../../base/common/codicons.js';
 import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions.js';
 import { localize2 } from '../../../../../nls.js';
 import { registerAction2, Action2, MenuId } from '../../../../../platform/actions/common/actions.js';
+import { IAideAgentService } from '../../common/aideAgentService.js';
 import { CHAT_CATEGORY } from './aideAgentChatActions.js';
 
 export const MarkUnhelpfulActionId = 'workbench.action.aideAgent.markUnhelpful';
@@ -60,14 +61,14 @@ export function registerChatTitleActions() {
 	/* TODO(@ghostwriternr): This is actually useful, but because the response part re-renders entirely when streaming, the button is impossible
 	to click in the midst of it - which is when it's actually needed. Add this back when we fix the re-render logic for good (which is... not easy).
 		*/
-	registerAction2(class StopAction extends Action2 {
+	registerAction2(class DropAction extends Action2 {
 		constructor() {
 			super({
 				id: 'workbench.action.aideAgent.stop',
 				title: localize2('aideAgent.stop.label', "Stop"),
 				f1: false,
 				category: CHAT_CATEGORY,
-				icon: Codicon.debugStop,
+				icon: Codicon.x,
 				menu: {
 					id: MenuId.AideAgentMessageTitle,
 					group: 'navigation',
@@ -77,7 +78,12 @@ export function registerChatTitleActions() {
 			});
 		}
 
-		run(accessor: ServicesAccessor, ...args: any[]) {
+		run(accessor: ServicesAccessor, context: { sessionId: string; index: number }, ...args: any[]) {
+
+			const agentService = accessor.get(IAideAgentService);
+			const model = agentService.getSession(context.sessionId);
+			model?.removeExchangesAfter(context.index);
+
 			// const item = args[0];
 			// const chatService = accessor.get(IAideAgentService);
 			// chatService.cancelExchange(item.id);

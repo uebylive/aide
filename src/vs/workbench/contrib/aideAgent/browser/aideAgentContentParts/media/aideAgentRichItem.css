@@ -4,6 +4,12 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+.aide-rich-block {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
 .aide-rich-item {
 	padding-inline: 10px;
 	padding-block: 8px;
@@ -90,25 +96,20 @@
 	margin-block: 0;
 }
 
-.aide-rich-item .aide-rich-item-checkpoint {
+.aide-rich-item-checkpoint {
 	box-sizing: border-box;
 	padding-block: 6px;
 	padding-inline: 10px;
-	margin-top: 2px; /* Becomes 8 in total with the gap of the rich item */
-	margin-bottom: -8px;
-	margin-inline: -10px;
 	display: flex;
 	gap: 8px;
 	align-items: start;
 	border: 1px solid var(--vscode-editorPane-background);
-	border-top: none;
-	border-bottom-right-radius: 3px;
-	border-bottom-left-radius: 3px;
+	border-radius: 3px;
 	background-color: var(--vscode-chat-list-background);
 	color: var(--vscode-descriptionForeground);
 }
 
-.aide-rich-item .aide-rich-item-checkpoint:is(.focused, :hover) {
+.aide-rich-item-checkpoint:is(.focused, :hover) {
 	color: revert;
 }
 

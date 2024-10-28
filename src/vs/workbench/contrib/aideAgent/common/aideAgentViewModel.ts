@@ -33,7 +33,7 @@ export function isWelcomeVM(item: unknown): item is IChatWelcomeMessageViewModel
 	return !!item && typeof item === 'object' && 'content' in item;
 }
 
-export type IChatViewModelChangeEvent = IChatAddRequestEvent | IChangePlaceholderEvent | IChatSessionInitEvent | IChatStreamingState | null;
+export type IChatViewModelChangeEvent = IChatAddRequestEvent | IChangePlaceholderEvent | IChatSessionInitEvent | IChatStreamingState | IChatRemoveExchangesEvent | null;
 
 export interface IChatAddRequestEvent {
 	kind: 'addRequest';
@@ -45,6 +45,10 @@ export interface IChangePlaceholderEvent {
 
 export interface IChatSessionInitEvent {
 	kind: 'initialize';
+}
+
+export interface IChatRemoveExchangesEvent {
+	kind: 'removeExchanges';
 }
 
 export interface IChatViewModel {
@@ -326,6 +330,9 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 					}
 				}
 			} else if (e.kind === 'streamingState') {
+				this._onDidChange.fire(e);
+			} else if (e.kind === 'removeExchanges') {
+				this._items.splice(e.index, this._items.length);
 				this._onDidChange.fire(e);
 			}
 
