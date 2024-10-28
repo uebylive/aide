@@ -295,6 +295,14 @@ export interface IChatEndResponse {
 	kind: 'endResponse';
 }
 
+export interface ICodePlanEditInfo {
+	kind: 'planEditInfo';
+	sessionId: string;
+	exchangeId: string;
+	currentStepIndex: number;
+	startStepIndex: number;
+}
+
 export type IChatProgress =
 	| IChatMarkdownContent
 	| IChatAgentMarkdownContentWithVulnerability
@@ -320,7 +328,8 @@ export type IChatProgress =
 	| IChatEditsInfo
 	| IChatPlanStep
 	| IChatEndResponse
-	| IChatThinkingForEditPart;
+	| IChatThinkingForEditPart
+	| ICodePlanEditInfo;
 
 export interface IChatFollowup {
 	kind: 'reply';

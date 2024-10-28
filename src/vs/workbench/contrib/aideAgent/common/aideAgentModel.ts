@@ -26,7 +26,7 @@ import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgen
 import { IAideAgentCodeEditingService, IAideAgentCodeEditingSession } from './aideAgentCodeEditingService.js';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from './aideAgentParserTypes.js';
 import { IAideAgentPlanService, IAideAgentPlanSession } from './aideAgentPlanService.js';
-import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IAideAgentService, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatCommandGroup, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanInfo, IChatPlanStep, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatStreamingState, IChatTask, IChatTextEdit, IChatThinkingForEditPart, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
+import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IAideAgentService, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatCommandGroup, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanInfo, IChatPlanStep, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatStreamingState, IChatTask, IChatTextEdit, IChatThinkingForEditPart, IChatTreeData, IChatUsedContext, IChatWarningMessage, ICodePlanEditInfo, isIUsedContext } from './aideAgentService.js';
 import { IChatRequestVariableValue } from './aideAgentVariables.js';
 
 export function isRequestModel(item: unknown): item is IChatRequestModel {
@@ -459,6 +459,7 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 	}
 
 	private _editingSession: IAideAgentCodeEditingSession | undefined;
+
 	/**
 	 * Returns the code edits for the response model based on the sessionId and the exchangeId
 	 *
@@ -466,8 +467,10 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 	 * dynamically, we have to do something smart over here to grab it properly
 	 * or make sure that this gets returned properly
 	 */
+	private _codeEdits: Map<URI, Range[]> | undefined;
 	public get codeEdits(): Map<URI, Range[]> | undefined {
-		return this._editingSession?.fileLocationForEditsMade(this.session.sessionId, this.id);
+		return this._codeEdits;
+		// return this._editingSession?.fileLocationForEditsMade(this.session.sessionId, this.id);
 	}
 
 	private _planSession: IAideAgentPlanSession | undefined;
@@ -568,7 +571,10 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		this._editingSession = this._aideAgentCodeEditingService.getOrStartCodeEditingSession(this.session.sessionId);
 		for (const edit of codeEdit.edits.edits) {
 			if (isWorkspaceTextEdit(edit)) {
-				this._editingSession.apply(edit);
+				await this._editingSession.apply(edit);
+				// update our code edits here so we can keep update it automagically
+				// after applying an edit
+				this._codeEdits = this._editingSession.fileLocationForEditsMade(this.session.sessionId, this.id);
 				// TODO(@ghostwriternr): This is a temporary hack to show the edited resource, until we build the UI component for showing this
 				// in a special manner for edits.
 				const resource = edit.resource;
@@ -581,6 +587,23 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 				});
 			}
 		}
+	}
+
+	/**
+	 * Updates the UI element over here by gragging the edit information from the
+	 * editing service and updating our own codeEdits properly
+	 */
+	async applyPlanEditInfo(progress: ICodePlanEditInfo) {
+		const exchangeId = progress.exchangeId;
+		const currentStepIndex = progress.currentStepIndex;
+		const previousStepIndex = progress.startStepIndex;
+		// This format is dicatated on the Aide extension layer
+		// I know bad case of not being explicit enough
+		const planStartExchangeId = `${exchangeId}::${previousStepIndex}`;
+		const planEndExchangeId = `${exchangeId}::${currentStepIndex}`;
+		const newEditsInformation = await this._editingSession?.editsBetweenExchangesInSession(this.session.sessionId, planStartExchangeId, planEndExchangeId);
+		this._codeEdits = newEditsInformation;
+		this._onDidChange.fire();
 	}
 
 	applyCodeCitation(progress: IChatCodeCitation) {
@@ -1327,6 +1350,14 @@ export class ChatModel extends Disposable implements IChatModel {
 				return;
 			}
 			this.acceptResponseProgress(runningResponseModel, progress, quiet);
+		} else if (progress.kind === 'planEditInfo') {
+			const runningResponseModel = this._mutableExchanges.find((exchange) => {
+				return exchange.id === progress.exchangeId;
+			});
+			if (runningResponseModel === undefined) {
+				return;
+			}
+			this.acceptResponseProgress(runningResponseModel, progress, quiet);
 		} else {
 			console.log(`${progress.kind} not supported for mutable progress`);
 		}
@@ -1357,6 +1388,13 @@ export class ChatModel extends Disposable implements IChatModel {
 		if (progress.kind === 'streamingState') {
 			this._onDidChange.fire(progress);
 			// early return over here
+			return;
+		}
+		// We have a plan edit info, which is a UI event and not a state event
+		// we should just update the model state over here for the UI but not
+		// make any changes to the environment itself
+		if (progress.kind === 'planEditInfo') {
+			response.applyPlanEditInfo(progress);
 			return;
 		}
 
