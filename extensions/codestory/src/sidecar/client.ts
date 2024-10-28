@@ -2,7 +2,7 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-
+import * as os from 'os';
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { sidecarTypeDefinitionsWithNode } from '../completions/helpers/vscodeApi';
@@ -14,13 +14,14 @@ import { sidecarNotIndexRepository } from '../utilities/sidecarUrl';
 import { sleep } from '../utilities/sleep';
 import { readCustomSystemInstruction } from '../utilities/systemInstruction';
 import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/types';
-import { getUserId } from '../utilities/uniqueId';
+import { getUniqueId, getUserId } from '../utilities/uniqueId';
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
 import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, PlanResponse, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
 import { CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, SidecarContextEvent, UserContext } from '../server/types';
 // import { GENERATE_PLAN } from '../completions/providers/generatePlan';
 // import { AideProbeProvider } from '../completions/providers/probeProvider';
 import { AidePlanTimer } from '../utilities/planTimer';
+import postHogClient from '../posthog/client';
 
 export enum CompletionStopReason {
 	/**
@@ -1079,6 +1080,19 @@ export class SideCarClient {
 			project_labels: projectLabels,
 			codebase_search: codebaseSearch,
 		};
+
+		const session = await vscode.csAuthentication.getSession();
+		const email = session?.account.email || "";
+
+		// capture launch success metric
+		postHogClient?.capture({
+			distinctId: getUniqueId(),
+			event: 'planning_activated',
+			properties: {
+				platform: os.platform(),
+				email,
+			},
+		});
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
