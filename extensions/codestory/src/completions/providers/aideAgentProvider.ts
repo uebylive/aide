@@ -476,7 +476,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			if ('done' in event) {
 				continue;
 			}
-
+			console.log(event);
 			const sessionId = event.request_id;
 			const exchangeId = event.exchange_id;
 			const responseStream = this.responseStreamCollection.getResponseStream({

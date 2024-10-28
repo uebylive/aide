@@ -1402,6 +1402,11 @@ export class ChatModel extends Disposable implements IChatModel {
 			);
 		}
 
+		if (progress.kind === 'endResponse' && response) {
+			this.completeResponse(response);
+			return;
+		}
+
 		// Instead of doing so much state management over here, we can just send the event
 		// over to the viewModel by firing the event over here and letting the onDidChange
 		// handlers for the view models (ChatModelView) react to this, they know what to do with this
