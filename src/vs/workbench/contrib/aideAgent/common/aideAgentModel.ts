@@ -26,7 +26,7 @@ import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgen
 import { IAideAgentCodeEditingService, IAideAgentCodeEditingSession } from './aideAgentCodeEditingService.js';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from './aideAgentParserTypes.js';
 import { IAideAgentPlanService, IAideAgentPlanSession } from './aideAgentPlanService.js';
-import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IAideAgentService, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatCommandGroup, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanInfo, IChatPlanStep, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatStreamingState, IChatTask, IChatTextEdit, IChatThinkingForEditPart, IChatTreeData, IChatUsedContext, IChatWarningMessage, ICodePlanEditInfo, isIUsedContext } from './aideAgentService.js';
+import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IAideAgentService, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatCommandGroup, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanInfo, IChatPlanStep, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatRollbackCompleted, IChatStreamingState, IChatTask, IChatTextEdit, IChatThinkingForEditPart, IChatTreeData, IChatUsedContext, IChatWarningMessage, ICodePlanEditInfo, isIUsedContext } from './aideAgentService.js';
 import { IChatRequestVariableValue } from './aideAgentVariables.js';
 
 export function isRequestModel(item: unknown): item is IChatRequestModel {
@@ -104,6 +104,7 @@ export type IChatProgressResponseContent =
 	| IChatEditsInfo
 	| IChatPlanInfo
 	| IChatConfirmation
+	| IChatRollbackCompleted
 	| IChatThinkingForEditPart;
 
 export type IChatProgressRenderableResponseContent = Exclude<IChatProgressResponseContent, IChatContentInlineReference | IChatAgentMarkdownContentWithVulnerability | IChatResponseCodeblockUriPart>;
@@ -318,6 +319,8 @@ export class Response extends Disposable implements IResponse {
 			// Ignore the representation of planUpdate parts
 			if (part.kind === 'treeData') {
 				return '';
+			} else if (part.kind === 'rollbackCompleted') {
+				return 'rollback completed';
 			} else if (part.kind === 'inlineReference') {
 				return inlineRefToRepr(part);
 			} else if (part.kind === 'command') {
@@ -1218,9 +1221,10 @@ export class ChatModel extends Disposable implements IChatModel {
 	private removeExchanges(from: number) {
 		const exchanges = this._exchanges;
 		const remaining = exchanges.slice(0, from);
-		const removed = exchanges.slice(from + 1, exchanges.length - 1);
+		const removed = exchanges.slice(from, exchanges.length);
 		this._exchanges = remaining;
 		this._onDidChange.fire({ kind: 'removeExchanges', from, remaining, removed });
+		return { from, remaining, removed };
 	}
 
 	setCustomTitle(title: string): void {
@@ -1437,7 +1441,8 @@ export class ChatModel extends Disposable implements IChatModel {
 			progress.kind === 'textEdit' ||
 			progress.kind === 'warning' ||
 			progress.kind === 'progressTask' ||
-			progress.kind === 'confirmation'
+			progress.kind === 'confirmation' ||
+			progress.kind === 'rollbackCompleted'
 		) {
 			response.updateContent(progress, quiet);
 		} else if (progress.kind === 'usedContext' || progress.kind === 'reference') {
@@ -1512,8 +1517,13 @@ export class ChatModel extends Disposable implements IChatModel {
 		// TODO(ghostwriternr): Do the updates for the UI over here, including changing the responses etc
 		const exchangeIndex = this._exchanges.findIndex((exchange) => exchange.id === exchangeId);
 		if (exchangeIndex > 0) {
-			this.removeExchanges(exchangeIndex);
+			const { removed } = this.removeExchanges(exchangeIndex);
+			// We will respond to this event entirely on the ide layer, but it should probably be triggered by sidecar
+			const response = this.addResponse();
+			this.acceptResponseProgress(response, { kind: 'rollbackCompleted', sessionId, exchangeId, exchangesRemoved: removed });
+			this.acceptResponseProgress(response, { kind: 'endResponse' });
 		}
+
 	}
 
 	/* TODO(@ghostwriternr): Honestly, don't care about followups at the moment.

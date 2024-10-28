@@ -37,7 +37,7 @@ import { ChatAgentLocation } from '../common/aideAgentAgents.js';
 import { CONTEXT_CHAT_RESPONSE_SUPPORT_ISSUE_REPORTING, CONTEXT_REQUEST, CONTEXT_RESPONSE, CONTEXT_RESPONSE_DETECTED_AGENT_COMMAND, CONTEXT_RESPONSE_ERROR, CONTEXT_RESPONSE_FILTERED, CONTEXT_RESPONSE_VOTE } from '../common/aideAgentContextKeys.js';
 import { IChatRequestVariableEntry, IChatTextEditGroup } from '../common/aideAgentModel.js';
 import { chatSubcommandLeader } from '../common/aideAgentParserTypes.js';
-import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatConfirmation, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatPlanInfo, IChatPlanStep, IChatTask, IChatTreeData } from '../common/aideAgentService.js';
+import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatConfirmation, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatPlanInfo, IChatPlanStep, IChatRollbackCompleted, IChatTask, IChatTreeData } from '../common/aideAgentService.js';
 import { IChatCodeCitations, IChatCodeEdits, IChatReferences, IChatRendererContent, IChatRequestViewModel, IChatResponseViewModel, IChatWelcomeMessageViewModel, isRequestVM, isResponseVM, isWelcomeVM } from '../common/aideAgentViewModel.js';
 import { annotateSpecialMarkdownContent } from '../common/annotations.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
@@ -876,6 +876,8 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	private renderChatContentPart(content: IChatRendererContent, templateData: IAgentListItemTemplate, context: IChatContentPartRenderContext, index: number): IChatContentPart | undefined {
 		if (content.kind === 'treeData') {
 			return this.renderTreeData(content, templateData, context);
+		} else if (content.kind === 'rollbackCompleted') {
+			return this.renderRollbackCompleted(content, templateData, context);
 		} else if (content.kind === 'progressMessage') {
 			return this.instantiationService.createInstance(ChatProgressContentPart, content, this.renderer, context);
 		} else if (content.kind === 'progressTask') {
@@ -950,6 +952,16 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		}
 
 		return treePart;
+	}
+
+	private renderRollbackCompleted(content: IChatRollbackCompleted, templateData: IAgentListItemTemplate, context: IChatContentPartRenderContext): IChatContentPart {
+		const domNode = dom.$('.chat-rollback-completed');
+		domNode.textContent = `Removed ${content.exchangesRemoved.length} exchanges`;
+		return ({
+			domNode, hasSameContent: () => true, dispose() {
+				// no-op
+			},
+		});
 	}
 
 	private renderContentReferencesListData(references: IChatReferences, labelOverride: string | undefined, context: IChatContentPartRenderContext, templateData: IAgentListItemTemplate): ChatCollapsibleListContentPart {

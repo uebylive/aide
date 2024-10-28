@@ -3,7 +3,7 @@
  * @returns void
  */
 function hello(): void {
-	console.log('hello');
+	console.log('Hello!');
 }
 
 

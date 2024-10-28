@@ -16,7 +16,7 @@ import { FileType } from '../../../../platform/files/common/files.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
 import { IWorkspaceSymbol } from '../../search/common/search.js';
 import { ChatAgentLocation, IChatAgentCommand, IChatAgentData, IChatAgentResult } from './aideAgentAgents.js';
-import { AgentMode, AgentScope, ChatModel, IChatModel, IChatRequestVariableData, IChatRequestVariableEntry, IChatResponseModel, IExportableChatData, ISerializableChatData } from './aideAgentModel.js';
+import { AgentMode, AgentScope, ChatModel, IChatExchangeModel, IChatModel, IChatRequestVariableData, IChatRequestVariableEntry, IChatResponseModel, IExportableChatData, ISerializableChatData } from './aideAgentModel.js';
 import { IParsedChatRequest } from './aideAgentParserTypes.js';
 import { IChatParserContext } from './aideAgentRequestParser.js';
 import { IChatRequestVariableValue } from './aideAgentVariables.js';
@@ -304,6 +304,13 @@ export interface ICodePlanEditInfo {
 	startStepIndex: number;
 }
 
+export interface IChatRollbackCompleted {
+	kind: 'rollbackCompleted';
+	sessionId: string;
+	exchangeId: string;
+	exchangesRemoved: IChatExchangeModel[];
+}
+
 export type IChatProgress =
 	| IChatMarkdownContent
 	| IChatAgentMarkdownContentWithVulnerability
@@ -330,6 +337,7 @@ export type IChatProgress =
 	| IChatPlanStep
 	| IChatEndResponse
 	| IChatThinkingForEditPart
+	| IChatRollbackCompleted
 	| ICodePlanEditInfo;
 
 export interface IChatFollowup {
