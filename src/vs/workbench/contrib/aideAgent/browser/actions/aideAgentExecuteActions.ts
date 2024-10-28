@@ -40,7 +40,7 @@ export class SubmitChatRequestAction extends Action2 {
 			precondition: ContextKeyExpr.and(CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate()),
 			keybinding: {
 				when: CONTEXT_IN_CHAT_INPUT,
-				primary: KeyCode.Enter,
+				primary: KeyMod.CtrlCmd | KeyCode.Enter,
 				weight: KeybindingWeight.EditorContrib
 			},
 			menu: [
@@ -50,7 +50,7 @@ export class SubmitChatRequestAction extends Action2 {
 				},
 				{
 					id: MenuId.AideAgentExecute,
-					order: 2,
+					order: 1,
 					when: ContextKeyExpr.and(CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate(), CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET.negate()),
 					group: 'navigation',
 				},
@@ -68,20 +68,20 @@ export class SubmitChatRequestAction extends Action2 {
 	}
 }
 
-export class SubmitEditsRequestAction extends Action2 {
-	static readonly ID = 'workbench.action.aideAgent.edits.submit';
+export class SubmitPlanRequestAction extends Action2 {
+	static readonly ID = 'workbench.action.aideAgent.plan.submit';
 
 	constructor() {
 		super({
-			id: SubmitEditsRequestAction.ID,
-			title: localize2('interactive.edit.submit.label', "Edit"),
+			id: SubmitPlanRequestAction.ID,
+			title: localize2('interactive.edit.submit.label', "Plan"),
 			f1: false,
 			category: CHAT_CATEGORY,
 			icon: Codicon.send,
 			precondition: ContextKeyExpr.and(CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate()),
 			keybinding: {
 				when: CONTEXT_IN_CHAT_INPUT,
-				primary: KeyMod.CtrlCmd | KeyCode.Enter,
+				primary: KeyCode.Enter,
 				weight: KeybindingWeight.EditorContrib
 			},
 			menu: [
@@ -91,7 +91,7 @@ export class SubmitEditsRequestAction extends Action2 {
 				},
 				{
 					id: MenuId.AideAgentExecute,
-					order: 1,
+					order: 2,
 					when: CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate(),
 					group: 'navigation',
 				},
@@ -105,8 +105,9 @@ export class SubmitEditsRequestAction extends Action2 {
 		const widgetService = accessor.get(IAideAgentWidgetService);
 		const widget = context?.widget ?? widgetService.lastFocusedWidget;
 		const input = widget?.getInput() ?? context?.inputValue;
-		const planningEnabled = widget?.planningEnabled ?? false;
-		widget?.acceptInput(planningEnabled ? AgentMode.Plan : AgentMode.Edit, input);
+		// deprecating planningEnable as we want to funnel user to plan
+
+		widget?.acceptInput(AgentMode.Plan, input);
 	}
 }
 
@@ -219,7 +220,7 @@ export class CancelAction extends Action2 {
 
 export function registerChatExecuteActions() {
 	registerAction2(SubmitChatRequestAction);
-	registerAction2(SubmitEditsRequestAction);
+	registerAction2(SubmitPlanRequestAction);
 	registerAction2(CancelAction);
 	registerAction2(TogglePlanningAction);
 	registerPlanningToggleMenu();

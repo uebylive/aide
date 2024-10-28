@@ -58,7 +58,7 @@ import { ChatStreamingState, IChatFollowup, IChatStreamingState } from '../commo
 import { IChatResponseViewModel } from '../common/aideAgentViewModel.js';
 import { IAideAgentWidgetHistoryService, IChatHistoryEntry } from '../common/aideAgentWidgetHistoryService.js';
 import { IAideAgentLMService } from '../common/languageModels.js';
-import { CancelAction, IChatExecuteActionContext, SubmitChatRequestAction, SubmitEditsRequestAction } from './actions/aideAgentExecuteActions.js';
+import { CancelAction, IChatExecuteActionContext, SubmitChatRequestAction, SubmitPlanRequestAction } from './actions/aideAgentExecuteActions.js';
 import { IChatWidget } from './aideAgent.js';
 import { ChatFollowups } from './aideAgentFollowups.js';
 import { StreamingStateWidget } from './aideAgentStreamingStateWidget.js';
@@ -565,7 +565,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			},
 			hiddenItemStrategy: HiddenItemStrategy.Ignore, // keep it lean when hiding items and avoid a "..." overflow menu
 			actionViewItemProvider: (action, options) => {
-				const kbActionsSet = new Set([SubmitChatRequestAction.ID, SubmitEditsRequestAction.ID, CancelAction.ID]);
+				const kbActionsSet = new Set([SubmitChatRequestAction.ID, SubmitPlanRequestAction.ID, CancelAction.ID]);
 				if (kbActionsSet.has(action.id) && action instanceof MenuItemAction) {
 					return this.instantiationService.createInstance(ActionViewItemWithKb, action);
 				}

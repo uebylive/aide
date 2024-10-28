@@ -396,6 +396,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		}
 	}
 
+	// consider putting posthog event here?
 	private async processEvent(event: vscode.AideAgentRequest): Promise<void> {
 		if (!this.editorUrl) {
 			return;
