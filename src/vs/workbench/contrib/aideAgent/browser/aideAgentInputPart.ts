@@ -61,7 +61,7 @@ import { IAideAgentLMService } from '../common/languageModels.js';
 import { CancelAction, IChatExecuteActionContext, SubmitChatRequestAction, SubmitPlanRequestAction } from './actions/aideAgentExecuteActions.js';
 import { IChatWidget } from './aideAgent.js';
 import { ChatFollowups } from './aideAgentFollowups.js';
-import { StreamingStateWidget } from './aideAgentStreamingStateWidget.js';
+import { StreamingStateWidget } from './aideAgentStreamingStateWIdget.js';
 
 const $ = dom.$;
 
