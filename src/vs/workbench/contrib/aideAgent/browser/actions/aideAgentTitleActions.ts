@@ -7,7 +7,6 @@ import { Codicon } from '../../../../../base/common/codicons.js';
 import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions.js';
 import { localize2 } from '../../../../../nls.js';
 import { registerAction2, Action2, MenuId } from '../../../../../platform/actions/common/actions.js';
-import { IAideAgentService } from '../../common/aideAgentService.js';
 import { CHAT_CATEGORY } from './aideAgentChatActions.js';
 
 export const MarkUnhelpfulActionId = 'workbench.action.aideAgent.markUnhelpful';
@@ -80,8 +79,8 @@ export function registerChatTitleActions() {
 
 		run(accessor: ServicesAccessor, context: { sessionId: string; index: number }, ...args: any[]) {
 
-			const agentService = accessor.get(IAideAgentService);
-			const model = agentService.getSession(context.sessionId);
+			// const agentService = accessor.get(IAideAgentService);
+			// const model = agentService.getSession(context.sessionId);
 			//model?.removeExchangesAfter(context.index);
 
 			// const item = args[0];

@@ -299,7 +299,7 @@ export class ExtHostChatAgents2 extends Disposable implements ExtHostChatAgentsS
 		throw new Error('Method not implemented, we implement it for the aide flow');
 	}
 
-	$handleUserFeedbackSession(handle: number, sessionId: string, exchangeId: string, accepted: boolean): void {
+	$handleUserFeedbackSession(handle: number, sessionId: string, exchangeId: string, stepIndex: number | undefined, accepted: boolean): void {
 		throw new Error('Method not implemented. we implement it for the aide flow');
 	}
 

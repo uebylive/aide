@@ -399,10 +399,10 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 		return agent.initSession(sessionId);
 	}
 
-	$handleUserFeedbackSession(handle: number, sessionId: string, exchangeId: string, accepted: boolean): void {
+	$handleUserFeedbackSession(handle: number, sessionId: string, exchangeId: string, stepIndex: number | undefined, accepted: boolean): void {
 		const agent = this._agents.get(handle);
 		if (agent) {
-			agent.handleUserFeedbackForSession(sessionId, exchangeId, accepted);
+			agent.handleUserFeedbackForSession(sessionId, exchangeId, stepIndex, accepted);
 		}
 	}
 
@@ -698,12 +698,12 @@ class ExtHostChatAgent {
 			.filter(f => !(f && 'message' in f));
 	}
 
-	handleUserFeedbackForSession(sessionId: string, exchangeId: string, accepted: boolean): void {
+	handleUserFeedbackForSession(sessionId: string, exchangeId: string, stepIndex: number | undefined, accepted: boolean): void {
 		let action = extHostTypes.AideSessionExchangeUserAction.AcceptAll;
 		if (!accepted) {
 			action = extHostTypes.AideSessionExchangeUserAction.RejectAll;
 		}
-		this._sessionHandleUserActionHandler(sessionId, exchangeId, action);
+		this._sessionHandleUserActionHandler(sessionId, exchangeId, stepIndex, action);
 	}
 
 	handleSessionUndo(sessionId: string, exchangeId: string): void {

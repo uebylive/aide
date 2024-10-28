@@ -566,7 +566,7 @@ export interface IAideAgentService {
 	onDidDisposeSession: Event<{ sessionId: string; reason: 'initializationFailed' | 'cleared' }>;
 
 	transferChatSession(transferredSessionData: IChatTransferredSessionData, toWorkspace: URI): void;
-	handleUserActionForSession(sessionId: string, exchangeId: string, agentId: string | undefined, accepted: boolean): void;
+	handleUserActionForSession(sessionId: string, exchangeId: string, stepIndex: number | undefined, agentId: string | undefined, accepted: boolean): void;
 	handleUserActionUndoSession(sessionId: string, exchangeId: string): Promise<void>;
 }
 

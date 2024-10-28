@@ -1501,8 +1501,8 @@ export class ChatModel extends Disposable implements IChatModel {
 		response.complete();
 	}
 
-	handleUserActionForSession(sessionId: string, exchangeId: string, agentId: string | undefined, accepted: boolean): void {
-		this.chatAgentService.handleUserFeedbackForSession(sessionId, exchangeId, agentId, accepted);
+	handleUserActionForSession(sessionId: string, exchangeId: string, stepIndex: number | undefined, agentId: string | undefined, accepted: boolean): void {
+		this.chatAgentService.handleUserFeedbackForSession(sessionId, exchangeId, stepIndex, agentId, accepted);
 	}
 
 	async handleUserActionUndoSession(sessionId: string, exchangeId: string): Promise<void> {

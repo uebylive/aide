@@ -863,9 +863,9 @@ export class ChatService extends Disposable implements IAideAgentService {
 		this.trace('transferChatSession', `Transferred session ${model.sessionId} to workspace ${toWorkspace.toString()}`);
 	}
 
-	handleUserActionForSession(sessionId: string, exchangeId: string, agentId: string | undefined, accepted: boolean): void {
+	handleUserActionForSession(sessionId: string, exchangeId: string, stepIndex: number | undefined, agentId: string | undefined, accepted: boolean): void {
 		const model = Iterable.find(this._sessionModels.values(), model => model.sessionId === sessionId);
-		model?.handleUserActionForSession(sessionId, exchangeId, agentId, accepted);
+		model?.handleUserActionForSession(sessionId, exchangeId, stepIndex, agentId, accepted);
 	}
 
 	async handleUserActionUndoSession(sessionId: string, exchangeId: string): Promise<void> {
