@@ -150,8 +150,8 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadAideA
 			initSession: (sessionId) => {
 				return this._proxy.$initSession(handle, sessionId);
 			},
-			handleUserFeedbackSession: (sessionId: string, exchangeId: string, accepted: boolean) => {
-				return this._proxy.$handleUserFeedbackSession(handle, sessionId, exchangeId, accepted);
+			handleUserFeedbackSession: (sessionId: string, exchangeId: string, stepIndex: number | undefined, accepted: boolean) => {
+				return this._proxy.$handleUserFeedbackSession(handle, sessionId, exchangeId, stepIndex, accepted);
 			},
 			handleSessionUndo: (sessionId: string, exchangeId: string) => {
 				return this._proxy.$handleSessionUndo(handle, sessionId, exchangeId);

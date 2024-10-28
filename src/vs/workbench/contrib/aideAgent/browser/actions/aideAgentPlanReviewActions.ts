@@ -7,8 +7,9 @@ import { Codicon } from '../../../../../base/common/codicons.js';
 import { MarkdownString } from '../../../../../base/common/htmlContent.js';
 import { localize2 } from '../../../../../nls.js';
 import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
-import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
+import { ContextKeyExpr, IContextKeyService } from '../../../../../platform/contextkey/common/contextkey.js';
 import { ServicesAccessor } from '../../../../../platform/instantiation/common/instantiation.js';
+import { CONTEXT_AIDE_PLAN_REVIEW_STATE_EXCHANGEID, CONTEXT_AIDE_PLAN_REVIEW_STATE_SESSIONID, CONTEXT_AIDE_PLAN_REVIEW_STATE_STEP_INDEX } from '../../common/aideAgentContextKeys.js';
 import { IAideAgentService } from '../../common/aideAgentService.js';
 import { PLAN_REVIEW_PANEL_ID, PlanReviewPane } from '../aideAgentPlanReviewViewPane.js';
 
@@ -137,6 +138,11 @@ export function registerPlanReviewActions() {
 
 		run(accessor: ServicesAccessor, context: IPlanReviewStepActionContext) {
 			console.log('Save up to step ', context.stepIndex, context.sessionId, context.exchangeId);
+			// Setup our context variables over here
+			const contextKeyService = accessor.get(IContextKeyService);
+			CONTEXT_AIDE_PLAN_REVIEW_STATE_SESSIONID.bindTo(contextKeyService).set(context.sessionId);
+			CONTEXT_AIDE_PLAN_REVIEW_STATE_EXCHANGEID.bindTo(contextKeyService).set(context.exchangeId);
+			CONTEXT_AIDE_PLAN_REVIEW_STATE_STEP_INDEX.bindTo(contextKeyService).set(context.stepIndex);
 			// a couple of things which we want to do because of this
 			// 1. update our plan review state on the sidepanel to reflect the changes
 			// which have been accepted

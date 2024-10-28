@@ -7,9 +7,9 @@ import { Codicon } from '../../../../../base/common/codicons.js';
 import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions.js';
 import { localize2 } from '../../../../../nls.js';
 import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
-import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
+import { ContextKeyExpr, IContextKeyService } from '../../../../../platform/contextkey/common/contextkey.js';
 import { IAideAgentCodeEditingService } from '../../common/aideAgentCodeEditingService.js';
-import { CONTEXT_STREAMING_STATE } from '../../common/aideAgentContextKeys.js';
+import { CONTEXT_AIDE_PLAN_REVIEW_STATE_EXCHANGEID, CONTEXT_AIDE_PLAN_REVIEW_STATE_SESSIONID, CONTEXT_AIDE_PLAN_REVIEW_STATE_STEP_INDEX, CONTEXT_STREAMING_STATE } from '../../common/aideAgentContextKeys.js';
 import { IAideAgentPlanService } from '../../common/aideAgentPlanService.js';
 import { ChatStreamingState, IAideAgentService } from '../../common/aideAgentService.js';
 
@@ -103,9 +103,19 @@ export function registerChatEditsActions() {
 			// These values are set on the toolbar present over in aideAgentRichItem
 			const exchangeId = context['aideAgentExchangeId'];
 			const sessionId = context['aideAgentSessionId'];
+			// Also grab the variables which are set in the global context since this can be part
+			// of the plan review flow
+			const contextKeyService = accessor.get(IContextKeyService);
+			const aidePlanReviewStateSessionId = CONTEXT_AIDE_PLAN_REVIEW_STATE_SESSIONID.getValue(contextKeyService);
+			const aidePlanReviewStateExchangeId = CONTEXT_AIDE_PLAN_REVIEW_STATE_EXCHANGEID.getValue(contextKeyService);
+			const aidePlanReviewStateStepId = CONTEXT_AIDE_PLAN_REVIEW_STATE_STEP_INDEX.getValue(contextKeyService);
 			try {
 				const aideAgentSession = accessor.get(IAideAgentService);
-				aideAgentSession.handleUserActionForSession(sessionId, exchangeId, undefined, true);
+				if (aidePlanReviewStateSessionId === sessionId && aidePlanReviewStateExchangeId === exchangeId) {
+					aideAgentSession.handleUserActionForSession(sessionId, exchangeId, aidePlanReviewStateStepId, undefined, true);
+				} else {
+					aideAgentSession.handleUserActionForSession(sessionId, exchangeId, undefined, undefined, true);
+				}
 			} catch (exception) {
 				console.error(exception);
 			}
@@ -140,11 +150,18 @@ export function registerChatEditsActions() {
 			// These values are set on the toolbar present over in aideAgentRichItem
 			const exchangeId = context['aideAgentExchangeId'];
 			const sessionId = context['aideAgentSessionId'];
+
+			const contextKeyService = accessor.get(IContextKeyService);
+			const aidePlanReviewStateSessionId = CONTEXT_AIDE_PLAN_REVIEW_STATE_SESSIONID.getValue(contextKeyService);
+			const aidePlanReviewStateExchangeId = CONTEXT_AIDE_PLAN_REVIEW_STATE_EXCHANGEID.getValue(contextKeyService);
+			const aidePlanReviewStateStepId = CONTEXT_AIDE_PLAN_REVIEW_STATE_STEP_INDEX.getValue(contextKeyService);
 			try {
 				const aideAgentSession = accessor.get(IAideAgentService);
-				// to understand about args[1], args[2], args[3], grep for `aideAgent.rejectAll`
-				// and see how these values are passed
-				aideAgentSession.handleUserActionForSession(sessionId, exchangeId, undefined, false);
+				if (aidePlanReviewStateSessionId === sessionId && aidePlanReviewStateExchangeId === exchangeId) {
+					aideAgentSession.handleUserActionForSession(sessionId, exchangeId, aidePlanReviewStateStepId, undefined, false);
+				} else {
+					aideAgentSession.handleUserActionForSession(sessionId, exchangeId, undefined, undefined, false);
+				}
 			} catch (exception) {
 				console.error(exception);
 			}

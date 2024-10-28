@@ -1339,7 +1339,7 @@ export interface ExtHostChatAgentsShape2 {
 	$provideSampleQuestions(handle: number, location: ChatAgentLocation, token: CancellationToken): Promise<IChatFollowup[] | undefined>;
 	$releaseSession(sessionId: string): void;
 	$detectChatParticipant(handle: number, request: Dto<IChatAgentRequest>, context: { history: IChatAgentHistoryEntryDto[] }, options: { participants: IChatParticipantMetadata[]; location: ChatAgentLocation }, token: CancellationToken): Promise<IChatParticipantDetectionResult | null | undefined>;
-	$handleUserFeedbackSession(handle: number, sessionId: string, exchangeId: string, accepted: boolean): void;
+	$handleUserFeedbackSession(handle: number, sessionId: string, exchangeId: string, stepIndex: number | undefined, accepted: boolean): void;
 	$handleSessionUndo(handle: number, sessionId: string, exchangeId: string): void;
 }
 

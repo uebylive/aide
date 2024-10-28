@@ -42,7 +42,7 @@ export function registerCodeEditActions() {
 
 			try {
 				const aideAgentSession = accessor.get(IAideAgentService);
-				aideAgentSession.handleUserActionForSession(args[1], exchangeId, args[2], args[3]);
+				aideAgentSession.handleUserActionForSession(args[1], exchangeId, undefined, args[2], args[3]);
 			} catch (exception) {
 				console.error(exception);
 			}
@@ -78,7 +78,7 @@ export function registerCodeEditActions() {
 				const aideAgentSession = accessor.get(IAideAgentService);
 				// to understand about args[1], args[2], args[3], grep for `aideAgent.rejectAll`
 				// and see how these values are passed
-				aideAgentSession.handleUserActionForSession(sessionId, exchangeId, args[2], args[3]);
+				aideAgentSession.handleUserActionForSession(sessionId, exchangeId, undefined, args[2], args[3]);
 			} catch (exception) {
 				console.error(exception);
 			}
