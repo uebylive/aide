@@ -137,18 +137,6 @@ export class ChatVariablesService implements IAideAgentVariablesService {
 					}
 				}
 			} else if (options.agentScope === AgentScope.PinnedContext) {
-				const pinnedContexts = this.pinnedContextService.getPinnedContexts();
-				pinnedContexts.forEach(context => {
-					const model = this.modelService.getModel(context);
-					if (model) {
-						const range = model.getFullModelRange();
-						resolvedAttachedContext.push({
-							id: 'vscode.file',
-							name: basename(model.uri.fsPath),
-							value: { uri: model.uri, range }
-						});
-					}
-				});
 			} else if (options.agentScope === AgentScope.Codebase) {
 				const openEditors = this.editorService.editors;
 				openEditors.forEach(editor => {
@@ -167,6 +155,20 @@ export class ChatVariablesService implements IAideAgentVariablesService {
 				});
 			}
 		}
+
+		// we always want to get the pinned context over here
+		const pinnedContexts = this.pinnedContextService.getPinnedContexts();
+		pinnedContexts.forEach(context => {
+			const model = this.modelService.getModel(context);
+			if (model) {
+				const range = model.getFullModelRange();
+				resolvedAttachedContext.push({
+					id: 'vscode.file.pinnedContext',
+					name: basename(model.uri.fsPath),
+					value: { uri: model.uri, range }
+				});
+			}
+		});
 
 		// Make array not sparse
 		resolvedVariables = coalesce<IChatRequestVariableEntry>(resolvedVariables);

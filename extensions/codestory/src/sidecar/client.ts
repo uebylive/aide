@@ -1480,13 +1480,13 @@ export async function convertVSCodeVariableToSidecarHackingForPlan(
 	for (const variable of variables) {
 		// vscode.editor.selection is a special id which is also present in the editor
 		// this help us understand that this is a selection and not a file reference
-		if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile' || variable.id === 'vscode.editor.selection') {
+		if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile' || variable.id === 'vscode.editor.selection' || variable.id === 'vscode.file.pinnedContext') {
 			const v = variable as vscode.AideAgentFileReference;
 			const value = v.value;
 			const attachedFile = await resolveFile(value.uri);
 			let range = value.range;
 			let type: SidecarVariableType = 'File';
-			if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile') {
+			if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile' || variable.id === 'vscode.file.pinnedContext') {
 				type = 'File';
 			} else if (variable.id === 'vscode.editor.selection') {
 				type = 'Selection';
