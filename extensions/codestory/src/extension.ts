@@ -150,26 +150,27 @@ export async function activate(context: vscode.ExtensionContext) {
 
 
 	// Register the semantic search command here
-	vscode.commands.registerCommand('codestory.semanticSearch', async (prompt: string): Promise<CodeSymbolInformationEmbeddings[]> => {
-		logger.info('[semanticSearch][extension] We are executing semantic search :' + prompt);
-		postHogClient?.capture({
-			distinctId: await getUniqueId(),
-			event: 'search',
-			properties: {
-				prompt,
-				repoName,
-				repoHash,
-			},
-		});
-		// We should be using the searchIndexCollection instead here, but for now
-		// embedding search is fine
-		// Here we will ping the semantic client instead so we can get the results
-		const results = await sidecarClient.getSemanticSearchResult(
-			prompt,
-			currentRepo,
-		);
-		return results;
-	});
+	// zi: removing as deprecated
+	// vscode.commands.registerCommand('codestory.semanticSearch', async (prompt: string): Promise<CodeSymbolInformationEmbeddings[]> => {
+	// 	logger.info('[semanticSearch][extension] We are executing semantic search :' + prompt);
+	// 	postHogClient?.capture({
+	// 		distinctId: await getUniqueId(),
+	// 		event: 'search',
+	// 		properties: {
+	// 			prompt,
+	// 			repoName,
+	// 			repoHash,
+	// 		},
+	// 	});
+	// 	// We should be using the searchIndexCollection instead here, but for now
+	// 	// embedding search is fine
+	// 	// Here we will ping the semantic client instead so we can get the results
+	// 	const results = await sidecarClient.getSemanticSearchResult(
+	// 		prompt,
+	// 		currentRepo,
+	// 	);
+	// 	return results;
+	// });
 
 	// Register the quick action providers
 	const aideQuickFix = new AideQuickFix();

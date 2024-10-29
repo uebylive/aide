@@ -5,7 +5,7 @@
 
 import postHogClient from './client';
 
-
+// this is not used
 export const logChatPrompt = (
 	prompt: string,
 	githubRepoName: string,
@@ -23,7 +23,7 @@ export const logChatPrompt = (
 	});
 };
 
-
+// this is not used
 export const logSearchPrompt = (
 	prompt: string,
 	githubRepoName: string,

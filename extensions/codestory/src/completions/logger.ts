@@ -732,14 +732,16 @@ export class LoggingService {
 		) {
 			return;
 		}
-		postHogClient?.capture({
-			distinctId: getUniqueId(),
-			event: message,
-			properties: {
-				message,
-				...(data as object),
-			},
-		});
+
+		// zi: commenting this out to preserve posthog quota
+		// postHogClient?.capture({
+		// 	distinctId: getUniqueId(),
+		// 	event: message,
+		// 	properties: {
+		// 		message,
+		// 		...(data as object),
+		// 	},
+		// });
 		// this.logMessage(message, 'INFO');
 		if (data) {
 			this.logObject(message, data);
