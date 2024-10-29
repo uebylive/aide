@@ -384,7 +384,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			// TODO(skcd): Not sure if an async stream like this works, but considering
 			// js/ts this should be okay from what I remember, pending futures do not
 			// get cleaned up via GC
-			const responseStream = this.sidecarClient.userFeedbackOnExchange(sessionId, exchangeId, editorUrl, isAccepted);
+			const responseStream = this.sidecarClient.userFeedbackOnExchange(sessionId, exchangeId, stepIndex, editorUrl, isAccepted);
 			this.reportAgentEventsToChat(true, responseStream);
 		}
 	}
