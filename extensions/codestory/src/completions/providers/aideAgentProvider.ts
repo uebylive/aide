@@ -360,6 +360,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	}
 
 	handleSessionUndo(sessionId: string, exchangeId: string): void {
+		// TODO(skcd): Handle this properly that we are doing an undo over here
+		this.sidecarClient.handleSessionUndo(sessionId, exchangeId, this.editorUrl!);
 		console.log('handleSessionUndo', sessionId, exchangeId);
 	}
 
