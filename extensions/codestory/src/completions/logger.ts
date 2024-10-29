@@ -685,9 +685,6 @@ function getOtherCompletionProvider(): string[] {
 	return [];
 }
 
-import postHogClient from '../posthog/client';
-import { getUniqueId } from '../utilities/uniqueId';
-
 type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR' | 'NONE';
 
 export class LoggingService {

@@ -21,7 +21,6 @@ import { checkReadonlyFSMode } from './utilities/readonlyFS';
 import { reportIndexingPercentage } from './utilities/reportIndexingUpdate';
 import { startSidecarBinary } from './utilities/setupSidecarBinary';
 import { readCustomSystemInstruction } from './utilities/systemInstruction';
-import { CodeSymbolInformationEmbeddings } from './utilities/types';
 import { getUniqueId } from './utilities/uniqueId';
 import { ProjectContext } from './utilities/workspaceContext';
 import { CSEventHandler } from './csEvents/csEventHandler';
