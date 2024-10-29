@@ -1205,6 +1205,7 @@ export class SideCarClient {
 	async *userFeedbackOnExchange(
 		sessionId: string,
 		exchangeId: string,
+		stepIndex: number | undefined,
 		editorUrl: string,
 		accepted: boolean,
 	): AsyncIterableIterator<SideCarAgentEvent> {
@@ -1215,6 +1216,7 @@ export class SideCarClient {
 			session_id: sessionId,
 			exchange_id: exchangeId,
 			editor_url: editorUrl,
+			step_index: stepIndex,
 			accepted,
 		};
 
