@@ -74,7 +74,7 @@ export class SubmitPlanRequestAction extends Action2 {
 	constructor() {
 		super({
 			id: SubmitPlanRequestAction.ID,
-			title: localize2('interactive.edit.submit.label', "Plan"),
+			title: localize2('interactive.edit.submit.label', "Edit"),
 			f1: false,
 			category: CHAT_CATEGORY,
 			icon: Codicon.send,
@@ -138,17 +138,18 @@ class TogglePlanningAction extends Action2 {
 	}
 }
 
-function registerPlanningToggleMenu() {
-	MenuRegistry.appendMenuItem(MenuId.AideAgentInput, {
-		group: 'navigation',
-		command: {
-			id: TogglePlanningAction.ID,
-			title: localize2('interactive.togglePlanning.label', "Toggle additional reasoning"),
-			icon: Codicon.compass,
-			toggled: { condition: CONTEXT_CHAT_INPUT_PLANNING_ENABLED, icon: Codicon.compassActive }
-		},
-	});
-}
+// Remove toggle for additional reasoning
+// function registerPlanningToggleMenu() {
+// 	MenuRegistry.appendMenuItem(MenuId.AideAgentInput, {
+// 		group: 'navigation',
+// 		command: {
+// 			id: TogglePlanningAction.ID,
+// 			title: localize2('interactive.togglePlanning.label', "Toggle additional reasoning"),
+// 			icon: Codicon.compass,
+// 			toggled: { condition: CONTEXT_CHAT_INPUT_PLANNING_ENABLED, icon: Codicon.compassActive }
+// 		},
+// 	});
+// }
 
 // export const AgentModePickerActionId = 'workbench.action.aideAgent.setMode';
 // MenuRegistry.appendMenuItem(MenuId.AideAgentExecute, {
@@ -223,5 +224,4 @@ export function registerChatExecuteActions() {
 	registerAction2(SubmitPlanRequestAction);
 	registerAction2(CancelAction);
 	registerAction2(TogglePlanningAction);
-	registerPlanningToggleMenu();
 }

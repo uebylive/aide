@@ -1081,20 +1081,6 @@ export class SideCarClient {
 			codebase_search: codebaseSearch,
 		};
 
-		const session = await vscode.csAuthentication.getSession();
-		const email = session?.account.email || "";
-
-		// capture launch success metric
-		postHogClient?.capture({
-			distinctId: getUniqueId(),
-			event: 'planning_activated',
-			properties: {
-				platform: os.platform(),
-				email,
-				query,
-			},
-		});
-
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
 			const lineParts = line.split('data:{');

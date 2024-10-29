@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import * as os from 'os';
 import * as http from 'http';
 import * as net from 'net';
 import * as vscode from 'vscode';
@@ -13,8 +14,9 @@ import { RecentEditsRetriever } from '../../server/editedFiles';
 import { handleRequest } from '../../server/requestHandler';
 import { EditedCodeStreamingRequest, SideCarAgentEvent, SidecarApplyEditsRequest, SidecarContextEvent, SidecarUndoPlanStep } from '../../server/types';
 import { RepoRef, SideCarClient } from '../../sidecar/client';
-import { getUserId } from '../../utilities/uniqueId';
+import { getUniqueId, getUserId } from '../../utilities/uniqueId';
 import { ProjectContext } from '../../utilities/workspaceContext';
+import postHogClient from '../../posthog/client';
 
 /**
  * Stores the necessary identifiers required for identifying a response stream
@@ -401,6 +403,21 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		if (!this.editorUrl) {
 			return;
 		}
+
+		const session = await vscode.csAuthentication.getSession();
+		const email = session?.account.email || '';
+
+		// capture launch success metric
+		postHogClient?.capture({
+			distinctId: getUniqueId(),
+			event: 'processEvent',
+			properties: {
+				platform: os.platform(),
+				email,
+				query: event.prompt,
+				mode: event.mode,
+			},
+		});
 		// New flow migration
 		if (event.mode === vscode.AideAgentMode.Chat || event.mode === vscode.AideAgentMode.Edit || event.mode === vscode.AideAgentMode.Plan) {
 			await this.streamResponse(event, event.sessionId, this.editorUrl);
