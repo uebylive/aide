@@ -12,12 +12,14 @@ import { IContextKey, IContextKeyService } from '../../contextkey/common/context
 import { IInstantiationService } from '../../instantiation/common/instantiation.js';
 import { ILayoutService } from '../../layout/browser/layoutService.js';
 import { INotificationService } from '../../notification/common/notification.js';
+import { IStorageService, StorageScope, StorageTarget } from '../../storage/common/storage.js';
 import { defaultButtonStyles } from '../../theme/browser/defaultStyles.js';
 import { CSAuthenticationSession, ICSAccountService, ICSAuthenticationService } from '../common/csAccount.js';
 import { CS_ACCOUNT_CARD_VISIBLE } from '../common/csAccountContextKeys.js';
 import './media/csAccount.css';
 
 const $ = dom.$;
+const STORAGE_KEY = 'csAccount.requestCount';
 
 export class CSAccountService extends Disposable implements ICSAccountService {
 	_serviceBrand: undefined;
@@ -28,11 +30,12 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 	private csAccountCard: HTMLElement | undefined;
 
 	constructor(
-		@ILayoutService private readonly layoutService: ILayoutService,
-		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@ICSAuthenticationService private readonly csAuthenticationService: ICSAuthenticationService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
-		@INotificationService private readonly notificationService: INotificationService
+		@ICSAuthenticationService private readonly csAuthenticationService: ICSAuthenticationService,
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@ILayoutService private readonly layoutService: ILayoutService,
+		@INotificationService private readonly notificationService: INotificationService,
+		@IStorageService private readonly storageService: IStorageService,
 	) {
 		super();
 
@@ -60,6 +63,13 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 	}
 
 	async ensureAuthenticated(): Promise<boolean> {
+		// For first 5 calls, return true without authenticating
+		const count = this.storageService.getNumber(STORAGE_KEY, StorageScope.PROFILE, 0);
+		if (count < 5) {
+			this.storageService.store(STORAGE_KEY, count + 1, StorageScope.PROFILE, StorageTarget.MACHINE);
+			return true;
+		}
+
 		try {
 			let csAuthSession = await this.csAuthenticationService.getSession();
 			if (!csAuthSession) {
@@ -83,6 +93,9 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 				this.csAuthenticationService.notifyWaitlistPosition(csAuthSession.waitlistPosition);
 				return false; // User is on the waitlist
 			}
+
+			// Increment the usage count
+			this.storageService.store(STORAGE_KEY, count + 1, StorageScope.PROFILE, StorageTarget.MACHINE);
 			return true; // User is authenticated and not on the waitlist
 		} catch (error) {
 			// Handle any errors that occurred during the authentication
