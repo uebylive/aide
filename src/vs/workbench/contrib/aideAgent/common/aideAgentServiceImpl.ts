@@ -14,6 +14,7 @@ import { Disposable, DisposableMap, IDisposable } from '../../../../base/common/
 import { revive } from '../../../../base/common/marshalling.js';
 import { URI, UriComponents } from '../../../../base/common/uri.js';
 import { localize } from '../../../../nls.js';
+import { ICSAccountService } from '../../../../platform/codestoryAccount/common/csAccount.js';
 import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
@@ -94,6 +95,7 @@ export class ChatService extends Disposable implements IAideAgentService {
 		@IAideAgentSlashCommandService private readonly chatSlashCommandService: IAideAgentSlashCommandService,
 		@IAideAgentVariablesService private readonly chatVariablesService: IAideAgentVariablesService,
 		@IAideAgentAgentService private readonly chatAgentService: IAideAgentAgentService,
+		@ICSAccountService private readonly csAccountService: ICSAccountService,
 		@IWorkbenchAssignmentService workbenchAssignmentService: IWorkbenchAssignmentService,
 		@IContextKeyService contextKeyService: IContextKeyService,
 	) {
@@ -497,6 +499,8 @@ export class ChatService extends Disposable implements IAideAgentService {
 		const parsedRequest = this.parseChatRequest(sessionId, request, location, options);
 		const agent = parsedRequest.parts.find((r): r is ChatRequestAgentPart => r instanceof ChatRequestAgentPart)?.agent ?? defaultAgent;
 		const agentSlashCommandPart = parsedRequest.parts.find((r): r is ChatRequestAgentSubcommandPart => r instanceof ChatRequestAgentSubcommandPart);
+
+		await this.csAccountService.ensureAuthenticated();
 
 		// This method is only returning whether the request was accepted - don't block on the actual request
 		return {
