@@ -78,7 +78,7 @@
         "id": "aide",
         "name": "Aide",
         "fullName": "Aide",
-        "description": "What can I help you with today?",
+        "description": "@ to add context",
         "supportsModelPicker": true,
         "isDefault": true,
         "metadata": {
