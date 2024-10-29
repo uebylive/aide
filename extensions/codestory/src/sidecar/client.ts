@@ -1202,6 +1202,28 @@ export class SideCarClient {
 		}
 	}
 
+	async *handleSessionUndo(
+		sessionId: string,
+		exchangeId: string,
+		editorUrl: string,
+	) {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/agentic/user_handle_session_undo';
+		const url = baseUrl.toString();
+		const body = {
+			session_id: sessionId,
+			exchange_id: exchangeId,
+			editor_url: editorUrl,
+		};
+		await fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(body),
+		});
+	}
+
 	async *userFeedbackOnExchange(
 		sessionId: string,
 		exchangeId: string,
