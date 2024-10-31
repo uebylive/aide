@@ -10,8 +10,7 @@ import { ServicesAccessor } from '../../../../../platform/instantiation/common/i
 import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { IAideAgentCodeEditingService } from '../../common/aideAgentCodeEditingService.js';
 import { CONTEXT_IN_CHAT_INPUT } from '../../common/aideAgentContextKeys.js';
-import { IAideAgentService } from '../../common/aideAgentService.js';
-import { CHAT_CATEGORY } from './aideAgentChatActions.js';
+import { CHAT_CATEGORY } from './aideAgentActions.js';
 
 export function registerCodeEditActions() {
 	registerAction2(class AcceptAllAction extends Action2 {
@@ -31,24 +30,11 @@ export function registerCodeEditActions() {
 			});
 		}
 
-		/**
-		 * TODO(codestory): When we accept here, if any of the previous exchanges
-		 * which were not accepted also go into accepted state cause we build up
-		 * incrementally and there is no branching
-		 */
 		run(accessor: ServicesAccessor, ...args: any[]) {
 			const exchangeId = args[0];
-			const sessionId = args[1];
-
-			try {
-				const aideAgentSession = accessor.get(IAideAgentService);
-				aideAgentSession.handleUserActionForSession(args[1], exchangeId, undefined, args[2], args[3]);
-			} catch (exception) {
-				console.error(exception);
-			}
 
 			const aideAgentCodeEditingService = accessor.get(IAideAgentCodeEditingService);
-			const editingSession = aideAgentCodeEditingService.getOrStartCodeEditingSession(sessionId);
+			const editingSession = aideAgentCodeEditingService.getOrStartCodeEditingSession(exchangeId);
 			editingSession.accept();
 		}
 	});
@@ -72,24 +58,10 @@ export function registerCodeEditActions() {
 
 		run(accessor: ServicesAccessor, ...args: any[]) {
 			const exchangeId = args[0];
-			const sessionId = args[1];
-
-			try {
-				const aideAgentSession = accessor.get(IAideAgentService);
-				// to understand about args[1], args[2], args[3], grep for `aideAgent.rejectAll`
-				// and see how these values are passed
-				aideAgentSession.handleUserActionForSession(sessionId, exchangeId, undefined, args[2], args[3]);
-			} catch (exception) {
-				console.error(exception);
-			}
 
 			const aideAgentCodeEditingService = accessor.get(IAideAgentCodeEditingService);
-			const editingSession = aideAgentCodeEditingService.getOrStartCodeEditingSession(sessionId);
-			// we reject all the changes which are related to this exchange and not
-			// the ones related to the previous one
-			// Note: this is an async function so the GC will not clear it when we
-			// go out of scope over here in the `run` function
-			editingSession.rejectForExchange(args[1], exchangeId);
+			const editingSession = aideAgentCodeEditingService.getOrStartCodeEditingSession(exchangeId);
+			editingSession.reject();
 		}
 	});
 }

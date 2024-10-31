@@ -25,17 +25,6 @@ import { CHAT_PROVIDER_ID } from '../common/aideAgentParticipantContribTypes.js'
 import { IEditorGroup } from '../../../services/editor/common/editorGroupsService.js';
 import { EDITOR_DRAG_AND_DROP_BACKGROUND } from '../../../common/theme.js';
 
-/**
- * Exposes the editor style options for everyone to use
- */
-export const AideEditorStyleOptions = {
-	listForeground: editorForeground,
-	listBackground: editorBackground,
-	overlayBackground: EDITOR_DRAG_AND_DROP_BACKGROUND,
-	inputEditorBackground: inputBackground,
-	resultEditorBackground: editorBackground
-};
-
 export interface IChatEditorOptions extends IEditorOptions {
 	target?: { sessionId: string } | { data: IExportableChatData | ISerializableChatData };
 }

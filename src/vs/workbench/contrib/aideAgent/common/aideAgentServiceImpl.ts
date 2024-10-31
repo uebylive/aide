@@ -14,7 +14,6 @@ import { Disposable, DisposableMap, IDisposable } from '../../../../base/common/
 import { revive } from '../../../../base/common/marshalling.js';
 import { URI, UriComponents } from '../../../../base/common/uri.js';
 import { localize } from '../../../../nls.js';
-import { ICSAccountService } from '../../../../platform/codestoryAccount/common/csAccount.js';
 import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
@@ -95,7 +94,6 @@ export class ChatService extends Disposable implements IAideAgentService {
 		@IAideAgentSlashCommandService private readonly chatSlashCommandService: IAideAgentSlashCommandService,
 		@IAideAgentVariablesService private readonly chatVariablesService: IAideAgentVariablesService,
 		@IAideAgentAgentService private readonly chatAgentService: IAideAgentAgentService,
-		@ICSAccountService private readonly csAccountService: ICSAccountService,
 		@IWorkbenchAssignmentService workbenchAssignmentService: IWorkbenchAssignmentService,
 		@IContextKeyService contextKeyService: IContextKeyService,
 	) {
@@ -344,35 +342,22 @@ export class ChatService extends Disposable implements IAideAgentService {
 		this.saveState();
 	}
 
-	startSessionWithId(location: ChatAgentLocation, token: CancellationToken, sessionId: string, isPassthrough: boolean = false): ChatModel {
-		const model = this.instantiationService.createInstance(ChatModel, undefined, location, isPassthrough, sessionId);
-		this._sessionModels.set(model.sessionId, model);
-		this.initializeSession(model, token);
-		return model;
-	}
-
 	startSession(location: ChatAgentLocation, token: CancellationToken, isPassthrough: boolean = false): ChatModel {
 		this.trace('startSession');
 		return this._startSession(undefined, location, isPassthrough, token);
 	}
 
 	private _startSession(someSessionHistory: IExportableChatData | ISerializableChatData | undefined, location: ChatAgentLocation, isPassthrough: boolean, token: CancellationToken): ChatModel {
-		const model = this.instantiationService.createInstance(ChatModel, someSessionHistory, location, isPassthrough, null);
+		const model = this.instantiationService.createInstance(ChatModel, someSessionHistory, location, isPassthrough);
 		this._sessionModels.set(model.sessionId, model);
 		this.initializeSession(model, token);
 		return model;
 	}
 
 	private progressCallback(model: ChatModel, response: ChatResponseModel | undefined, progress: IChatProgress, token: CancellationToken): void {
-		// TODO(skcd): There is a race condition over here, we have the cancellation token which we set to cancelled and stop processing requests
-		// for the exchange at the moment but there are terminating events which get sent on cancellation, we have to understand a better way
-		// to notify the system that the exchange has terminated, what we have now works but breaks since we need to send additional cleanup
-		// actions when the cancellation is triggered
-		// The guarantee we can establish is that the external system will make sure that we terminate the model over here correctly instead of relying
-		// on cancellation token over here as a proxy to stop reacting to events
-		// if (token.isCancellationRequested) {
-		// 	return;
-		// }
+		if (token.isCancellationRequested) {
+			return;
+		}
 
 		if (progress.kind === 'endResponse' && response) {
 			model.completeResponse(response);
@@ -484,17 +469,6 @@ export class ChatService extends Disposable implements IAideAgentService {
 	}
 	*/
 
-	pushProgress(sessionId: string, progress: IChatProgress): void {
-		const model = this._sessionModels.get(sessionId);
-		model?.accepResponseProgressMutable(progress);
-		// I have to do either of the 2 things over here.. which makes this very non-trivial
-		// - somehow make the model accept forcefully a request to a particular exchangeId
-		// - the model here is readonly since we have a progress callback which should be used
-		// to solve it
-		// - the breaking paradigm here is that we are getting write access to something which is
-		// inherently readonly at this layer and talks in terms of interfaces
-	}
-
 	async sendRequest(sessionId: string, request: string, options?: IChatSendRequestOptions): Promise<IChatSendRequestData | undefined> {
 		this.trace('sendRequest', `sessionId: ${sessionId}, message: ${request.substring(0, 20)}${request.length > 20 ? '[...]' : ''}}`);
 		if (!request.trim() && !options?.slashCommand && !options?.agentId) {
@@ -523,8 +497,6 @@ export class ChatService extends Disposable implements IAideAgentService {
 		const parsedRequest = this.parseChatRequest(sessionId, request, location, options);
 		const agent = parsedRequest.parts.find((r): r is ChatRequestAgentPart => r instanceof ChatRequestAgentPart)?.agent ?? defaultAgent;
 		const agentSlashCommandPart = parsedRequest.parts.find((r): r is ChatRequestAgentSubcommandPart => r instanceof ChatRequestAgentSubcommandPart);
-
-		await this.csAccountService.ensureAuthenticated();
 
 		// This method is only returning whether the request was accepted - don't block on the actual request
 		return {
@@ -865,15 +837,5 @@ export class ChatService extends Disposable implements IAideAgentService {
 
 		this.storageService.store(globalChatKey, JSON.stringify(existingRaw), StorageScope.PROFILE, StorageTarget.MACHINE);
 		this.trace('transferChatSession', `Transferred session ${model.sessionId} to workspace ${toWorkspace.toString()}`);
-	}
-
-	handleUserActionForSession(sessionId: string, exchangeId: string, stepIndex: number | undefined, agentId: string | undefined, accepted: boolean): void {
-		const model = Iterable.find(this._sessionModels.values(), model => model.sessionId === sessionId);
-		model?.handleUserActionForSession(sessionId, exchangeId, stepIndex, agentId, accepted);
-	}
-
-	async handleUserActionUndoSession(sessionId: string, exchangeId: string): Promise<void> {
-		const model = Iterable.find(this._sessionModels.values(), model => model.sessionId === sessionId);
-		await model?.handleUserActionUndoSession(sessionId, exchangeId);
 	}
 }

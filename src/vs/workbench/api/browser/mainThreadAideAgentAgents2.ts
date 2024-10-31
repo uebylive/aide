@@ -74,8 +74,6 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadAideA
 
 	private readonly _agents = this._register(new DisposableMap<number, AgentData>());
 	private readonly _agentCompletionProviders = this._register(new DisposableMap<number, IDisposable>());
-	// keeps a store of all the cancellation tokens over here
-	private readonly _cancellationTokenMap: Map<string, CancellationToken> = new Map();
 	private readonly _agentIdsToCompletionProviders = this._register(new DisposableMap<string, IDisposable>);
 
 	private readonly _chatParticipantDetectionProviders = this._register(new DisposableMap<number, IDisposable>());
@@ -150,12 +148,6 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadAideA
 			initSession: (sessionId) => {
 				return this._proxy.$initSession(handle, sessionId);
 			},
-			handleUserFeedbackSession: (sessionId: string, exchangeId: string, stepIndex: number | undefined, accepted: boolean) => {
-				return this._proxy.$handleUserFeedbackSession(handle, sessionId, exchangeId, stepIndex, accepted);
-			},
-			handleSessionUndo: (sessionId: string, exchangeId: string) => {
-				return this._proxy.$handleSessionUndo(handle, sessionId, exchangeId);
-			},
 			invoke: async (request, token) => {
 				return await this._proxy.$invokeAgent(handle, request, { history: [] }, token) ?? {};
 			},
@@ -220,10 +212,6 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadAideA
 
 	async $initResponse(sessionId: string): Promise<{ responseId: string; token: CancellationToken }> {
 		const { responseId, callback, token } = await this._chatService.initiateResponse(sessionId);
-		// keep track of the cancellation token over here, we will proxy this
-		// over to the extension since the extension layer logic is polling from
-		// $cancelExchange
-		this._cancellationTokenMap.set(`${sessionId}-${responseId}`, token);
 		this._pendingProgress.set(responseId, callback);
 		return { responseId, token };
 	}
@@ -333,21 +321,6 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadAideA
 
 	$unregisterChatParticipantDetectionProvider(handle: number): void {
 		this._chatParticipantDetectionProviders.deleteAndDispose(handle);
-	}
-
-	async $cancelExchange(sessionId: string, exchangeId: string): Promise<null> {
-		// we only cancel when the exchange has been really cancelled otherwise its fine
-		// since this is a promise, and will only resolve when the cancellation token has been triggered
-		// otherwise we are fine over here
-		const cancellationToken = this._cancellationTokenMap.get(`${sessionId}-${exchangeId}`);
-		if (cancellationToken) {
-			return new Promise<null>((resolve) => {
-				cancellationToken.onCancellationRequested(() => {
-					resolve(null);
-				});
-			});
-		}
-		return null;
 	}
 }
 

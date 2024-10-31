@@ -26,16 +26,15 @@ import { ILogService } from '../../../../platform/log/common/log.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgentData } from '../common/aideAgentAgents.js';
-import { IAideAgentCodeEditingService } from '../common/aideAgentCodeEditingService.js';
-import { CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_RESPONSE_WITH_PLAN_STEPS, CONTEXT_IN_CHAT_SESSION, CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER, CONTEXT_RESPONSE_FILTERED, CONTEXT_STREAMING_STATE } from '../common/aideAgentContextKeys.js';
+import { CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_SESSION, CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER, CONTEXT_RESPONSE_FILTERED } from '../common/aideAgentContextKeys.js';
 import { AgentMode, AgentScope, ChatModelInitState, IChatModel, IChatRequestVariableEntry, IChatResponseModel } from '../common/aideAgentModel.js';
 import { ChatRequestAgentPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader, formatChatQuestion } from '../common/aideAgentParserTypes.js';
 import { ChatRequestParser } from '../common/aideAgentRequestParser.js';
-import { IAideAgentService, IChatFollowup, IChatLocationData, IChatStreamingState } from '../common/aideAgentService.js';
+import { IAideAgentService, IChatFollowup, IChatLocationData } from '../common/aideAgentService.js';
 import { IAideAgentSlashCommandService } from '../common/aideAgentSlashCommands.js';
 import { ChatViewModel, IChatResponseViewModel, isRequestVM, isResponseVM, isWelcomeVM } from '../common/aideAgentViewModel.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
-import { ChatTreeItem, IAideAgentAccessibilityService, IAideAgentWidgetService, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions, IChatPlanStepsInfo, IChatWidget, IChatWidgetViewContext, IChatWidgetViewOptions, showChatView, TreeUser } from './aideAgent.js';
+import { ChatTreeItem, IAideAgentAccessibilityService, IAideAgentWidgetService, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions, IChatWidget, IChatWidgetViewContext, IChatWidgetViewOptions, showChatView } from './aideAgent.js';
 import { ChatAccessibilityProvider } from './aideAgentAccessibilityProvider.js';
 import { ChatInputPart } from './aideAgentInputPart.js';
 import { ChatListDelegate, ChatListItemRenderer, IChatRendererDelegate } from './aideAgentListRenderer.js';
@@ -142,7 +141,6 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	private requestInProgress: IContextKey<boolean>;
 	private agentInInput: IContextKey<boolean>;
 	private agentSupportsModelPicker: IContextKey<boolean>;
-	private inChatResponseWithPlanSteps: IContextKey<boolean>;
 
 	private _visible = false;
 	public get visible() {
@@ -203,7 +201,6 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IAideAgentService private readonly chatService: IAideAgentService,
 		@IAideAgentAgentService private readonly chatAgentService: IAideAgentAgentService,
-		@IAideAgentCodeEditingService private readonly aideAgentCodeEditingService: IAideAgentCodeEditingService,
 		@IAideAgentWidgetService chatWidgetService: IAideAgentWidgetService,
 		@IContextMenuService private readonly contextMenuService: IContextMenuService,
 		@IAideAgentAccessibilityService private readonly chatAccessibilityService: IAideAgentAccessibilityService,
@@ -225,10 +222,8 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET.bindTo(contextKeyService).set('isPassthrough' in this.viewContext && this.viewContext.isPassthrough);
 		CONTEXT_IN_CHAT_SESSION.bindTo(contextKeyService).set(true);
 		CONTEXT_CHAT_LOCATION.bindTo(contextKeyService).set(this._location.location);
-
 		this.agentInInput = CONTEXT_CHAT_INPUT_HAS_AGENT.bindTo(contextKeyService);
 		this.agentSupportsModelPicker = CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER.bindTo(contextKeyService);
-		this.inChatResponseWithPlanSteps = CONTEXT_IN_CHAT_RESPONSE_WITH_PLAN_STEPS.bindTo(this.contextKeyService);
 		this.requestInProgress = CONTEXT_CHAT_REQUEST_IN_PROGRESS.bindTo(contextKeyService);
 
 		this._register((chatWidgetService as ChatWidgetService).register(this));
@@ -484,27 +479,11 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		}
 	}
 
-	setWillBeDroppedStep(index: number | undefined): void {
-		this.viewModel?.setWillBeDroppedStep(index);
-	}
-
-	setWillBeSavedStep(index: number | undefined): void {
-		this.viewModel?.setWillBeSavedStep(index);
-	}
-
-	setSavedStep(index: number | undefined): void {
-		this.viewModel?.setSavedStep(index);
-	}
-
 	private createList(listContainer: HTMLElement, options: IChatListItemRendererOptions): void {
 		const scopedInstantiationService = this._register(this._register(this.instantiationService.createChild(new ServiceCollection([IContextKeyService, this.contextKeyService]))));
 		const delegate = scopedInstantiationService.createInstance(ChatListDelegate, this.viewOptions.defaultElementHeight ?? 200);
 		const rendererDelegate: IChatRendererDelegate = {
-			kind: 'chat',
 			getListLength: () => this.tree.getNode(null).visibleChildrenCount,
-			setWillBeDroppedStep: this.setWillBeDroppedStep,
-			setWillBeSavedStep: this.setWillBeSavedStep,
-			setSavedStep: this.setSavedStep,
 			onDidScroll: this.onDidScroll,
 		};
 
@@ -513,11 +492,8 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		overflowWidgetsContainer.classList.add('chat-overflow-widget-container', 'monaco-editor');
 		listContainer.append(overflowWidgetsContainer);
 
-		const user = TreeUser.Chat;
-		// Update our renderer to be chat only over here in the widget
 		this.renderer = this._register(scopedInstantiationService.createInstance(
 			ChatListItemRenderer,
-			'ChatWidget',
 			this.editorOptions,
 			this.location,
 			options,
@@ -525,10 +501,9 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			this._codeBlockModelCollection,
 			overflowWidgetsContainer,
 		));
-		this.renderer.rendererUser = user;
 		this._register(this.renderer.onDidClickFollowup(item => {
 			// is this used anymore?
-			// this.acceptInput(item.message);
+			this.acceptInput(item.message);
 		}));
 		this._register(this.renderer.onDidClickRerunWithAgentOrCommandDetection(item => {
 			/* TODO(@ghostwriternr): Commenting this out definitely breaks rerunning requests. Fix this.
@@ -541,7 +516,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 		this.tree = this._register(<WorkbenchObjectTree<ChatTreeItem>>scopedInstantiationService.createInstance(
 			WorkbenchObjectTree,
-			user,
+			'Chat',
 			listContainer,
 			delegate,
 			[this.renderer],
@@ -577,16 +552,6 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 		this._register(this.tree.onDidChangeContentHeight(() => {
 			this.onDidChangeTreeContentHeight();
-		}));
-		this._register(this.tree.onDidChangeFocus((event) => {
-			if (event.elements.length === 1) {
-				const [firstElement] = event.elements;
-				if (firstElement && isResponseVM(firstElement)) {
-					const responseContent = firstElement.model.response.value;
-					const hasPlanSteps = responseContent.some(el => el.kind === 'planStep');
-					this.inChatResponseWithPlanSteps.set(hasPlanSteps);
-				}
-			}
 		}));
 		this._register(this.renderer.onDidChangeItemHeight(e => {
 			this.tree.updateElementHeight(e.element, e.height);
@@ -678,8 +643,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			}
 
 			msg += e.followup.message;
-			// we do not work on top of followups, so we can disable this on our side
-			// this.acceptInput(msg);
+			this.acceptInput(msg);
 
 			if (!e.response) {
 				// Followups can be shown by the welcome message, then there is no response associated.
@@ -737,12 +701,6 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			if (!this.viewModel) {
 				return;
 			}
-
-			// Reacting to the streamingState over here since these influence the
-			// streamingStateWidget which is part of the ChatWidget
-			events.filter((event) => event?.kind === 'streamingState').forEach((event) => {
-				this.updateStreamingState(event);
-			});
 
 			this.requestInProgress.set(this.viewModel.requestInProgress);
 
@@ -822,48 +780,12 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this.inputPart.logInputHistory();
 	}
 
-	async acceptInput(mode: AgentMode, query: string): Promise<IChatResponseModel | undefined> {
-		return this._acceptInput(query && mode ? { query, mode } : undefined);
+	async acceptInput(query?: string): Promise<IChatResponseModel | undefined> {
+		return this._acceptInput(query ? { query } : undefined);
 	}
 
-	// Leftover from the old chat view, not sure if this is still needed
 	async acceptInputWithPrefix(prefix: string): Promise<void> {
 		this._acceptInput({ prefix });
-	}
-
-	private updateStreamingState(event: IChatStreamingState) {
-		const state = event.state;
-		// If we are finished with the exchange, then set the streaming state to undefined
-		if (state === 'finished') {
-			CONTEXT_STREAMING_STATE.bindTo(this.contextKeyService).set(undefined);
-			this.inputPart.hideStreamingState();
-		} else if (state === 'cancelled') {
-			// If the streaming state is showing cancelled, then we have to first
-			// check if there are any edits associated with the session and the exchange
-			// and do operations based on top of that
-			if (this.aideAgentCodeEditingService.doesExchangeHaveEdits(event.sessionId, event.exchangeId)) {
-				CONTEXT_STREAMING_STATE.bindTo(this.contextKeyService).set('waitingFeedback');
-				this.inputPart.updateStreamingState({
-					exchangeId: event.exchangeId,
-					sessionId: event.sessionId,
-					isError: event.isError,
-					kind: 'streamingState',
-					state: 'waitingFeedback',
-					loadingLabel: event.loadingLabel,
-					message: event.message,
-				});
-			} else {
-				CONTEXT_STREAMING_STATE.bindTo(this.contextKeyService).set(undefined);
-				this.inputPart.hideStreamingState();
-			}
-		} else {
-			CONTEXT_STREAMING_STATE.bindTo(this.contextKeyService).set(state);
-			// waiting for the feedback always goes over here for some reason
-			// so we do end up showing the approve and reject buttons even
-			// when there are no edits selected
-			// we should have a way to figure that part out
-			this.inputPart.updateStreamingState(event);
-		}
 	}
 
 	private collectInputState(): IChatInputState {
@@ -876,7 +798,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		return inputState;
 	}
 
-	private async _acceptInput(opts: { query: string; mode: AgentMode } | { prefix: string } | undefined): Promise<IChatResponseModel | undefined> {
+	private async _acceptInput(opts: { query: string } | { prefix: string } | undefined): Promise<IChatResponseModel | undefined> {
 		if (this.viewModel) {
 			const editorValue = this.getInput();
 			if ('isPassthrough' in this.viewContext && this.viewContext.isPassthrough) {
@@ -886,7 +808,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 				}
 
 				widget.transferQueryState(AgentMode.Edit, this.inputPart.currentAgentScope);
-				widget.acceptInput(AgentMode.Edit, editorValue);
+				widget.acceptInput(editorValue);
 				widget.focusInput();
 				this._onDidAcceptInput.fire();
 				return;
@@ -898,24 +820,9 @@ export class ChatWidget extends Disposable implements IChatWidget {
 				'query' in opts ? opts.query :
 					`${opts.prefix} ${editorValue}`;
 			const isUserQuery = !opts || 'prefix' in opts;
-			let agentMode = AgentMode.Chat;
-			if (opts && 'mode' in opts) {
-				agentMode = opts.mode;
-			}
-
-			// This is also tied to just the edit and to nothing else right now
-			// which kind of feels weird ngl
-			let agentScope = this.inputPart.currentAgentScope;
-			// If we are inPassthrough which implies a floating widget then
-			// our scope is always Selection
-			if ('isPassthrough' in this.viewContext && this.viewContext.isPassthrough) {
-				agentScope = AgentScope.Selection;
-			}
-			// scope here is dicated by how the command is run, not on the internal state
-			// of the inputPart which was based on a selector before
 			const result = await this.chatService.sendRequest(this.viewModel.sessionId, input, {
-				agentMode,
-				agentScope: agentScope,
+				agentMode: this.inputPart.currentAgentMode,
+				agentScope: this.inputPart.currentAgentScope,
 				userSelectedModelId: this.inputPart.currentLanguageModel,
 				location: this.location,
 				locationData: this._location.resolveData?.(),
@@ -945,16 +852,8 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	}
 
 	transferQueryState(mode: AgentMode, scope: AgentScope): void {
-		//this.inputPart.currentAgentMode = mode;
+		this.inputPart.currentAgentMode = mode;
 		this.inputPart.currentAgentScope = scope;
-	}
-
-	get planningEnabled(): boolean {
-		return this.inputPart.planningEnabled;
-	}
-
-	togglePlanning(): void {
-		this.inputPart.planningEnabled = !this.inputPart.planningEnabled;
 	}
 
 	setContext(overwrite: boolean, ...contentReferences: IChatRequestVariableEntry[]) {
@@ -975,14 +874,6 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 	getLastFocusedFileTreeForResponse(response: IChatResponseViewModel): IChatFileTreeInfo | undefined {
 		return this.renderer.getLastFocusedFileTreeForResponse(response);
-	}
-
-	getPlanStepsInfoForResponse(response: IChatResponseViewModel): IChatPlanStepsInfo[] {
-		return this.renderer.getPlanStepsInfoForResponse(response);
-	}
-
-	getLastFocusedPlanStepForResponse(response: IChatResponseViewModel): IChatPlanStepsInfo | undefined {
-		return this.renderer.getLastFocusePlanStepForResponse(response);
 	}
 
 	focusLastMessage(): void {

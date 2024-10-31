@@ -3,30 +3,39 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { CancellationTokenSource } from '../../../../../base/common/cancellation.js';
 import { Codicon } from '../../../../../base/common/codicons.js';
 import { KeyCode, KeyMod } from '../../../../../base/common/keyCodes.js';
+import { URI } from '../../../../../base/common/uri.js';
 import { ICodeEditor } from '../../../../../editor/browser/editorBrowser.js';
 import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions.js';
 import { ICodeEditorService } from '../../../../../editor/browser/services/codeEditorService.js';
 import { EditorContextKeys } from '../../../../../editor/common/editorContextKeys.js';
+import { TextEdit } from '../../../../../editor/common/languages.js';
 import { CopyAction } from '../../../../../editor/contrib/clipboard/browser/clipboard.js';
-import { localize2 } from '../../../../../nls.js';
+import { localize, localize2 } from '../../../../../nls.js';
 import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
 import { IClipboardService } from '../../../../../platform/clipboard/common/clipboardService.js';
 import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
+import { INotificationService } from '../../../../../platform/notification/common/notification.js';
+import { IProgressService, ProgressLocation } from '../../../../../platform/progress/common/progress.js';
+import { TerminalLocation } from '../../../../../platform/terminal/common/terminal.js';
+import { IUntitledTextResourceEditorInput } from '../../../../common/editor.js';
 import { IEditorService } from '../../../../services/editor/common/editorService.js';
 import { accessibleViewInCodeBlock } from '../../../accessibility/browser/accessibilityConfiguration.js';
+import { ITerminalEditorService, ITerminalGroupService, ITerminalService } from '../../../terminal/browser/terminal.js';
+import { ICodeMapperCodeBlock, IAideAgentCodeMapperService } from '../../common/aideAgentCodeMapperService.js';
 import { CONTEXT_CHAT_EDIT_APPLIED, CONTEXT_CHAT_ENABLED, CONTEXT_IN_CHAT_INPUT, CONTEXT_IN_CHAT_SESSION } from '../../common/aideAgentContextKeys.js';
+import { IAideAgentEditingService } from '../../common/aideAgentEditingService.js';
 import { ChatCopyKind, IAideAgentService } from '../../common/aideAgentService.js';
 import { IChatResponseViewModel, isResponseVM } from '../../common/aideAgentViewModel.js';
 import { IAideAgentCodeBlockContextProviderService, IAideAgentWidgetService } from '../aideAgent.js';
 import { DefaultChatTextEditor, ICodeBlockActionContext, ICodeCompareBlockActionContext } from '../codeBlockPart.js';
-import { CHAT_CATEGORY } from './aideAgentChatActions.js';
-import { InsertCodeBlockOperation } from './codeBlockOperations.js';
+import { CHAT_CATEGORY } from './aideAgentActions.js';
+import { ApplyCodeBlockOperation, InsertCodeBlockOperation } from './codeBlockOperations.js';
 
-/*
 const shellLangIds = [
 	'fish',
 	'ps1',
@@ -36,7 +45,6 @@ const shellLangIds = [
 	'shellscript',
 	'zsh'
 ];
-*/
 
 export interface IChatCodeBlockActionContext extends ICodeBlockActionContext {
 	element: IChatResponseViewModel;
@@ -180,7 +188,6 @@ export function registerChatCodeBlockActions() {
 		return false;
 	});
 
-	/*
 	registerAction2(class SmartApplyInEditorAction extends ChatCodeBlockAction {
 
 		private operation: ApplyCodeBlockOperation | undefined;
@@ -287,7 +294,6 @@ export function registerChatCodeBlockActions() {
 			});
 		}
 	});
-	*/
 
 	registerAction2(class SmartApplyInEditorAction extends ChatCodeBlockAction {
 		constructor() {
@@ -319,7 +325,6 @@ export function registerChatCodeBlockActions() {
 		}
 	});
 
-	/*
 	registerAction2(class InsertIntoNewFileAction extends ChatCodeBlockAction {
 		constructor() {
 			super({
@@ -453,7 +458,6 @@ export function registerChatCodeBlockActions() {
 			}
 		}
 	});
-	*/
 
 	function navigateCodeBlocks(accessor: ServicesAccessor, reverse?: boolean): void {
 		const codeEditorService = accessor.get(ICodeEditorService);

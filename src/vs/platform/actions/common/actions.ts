@@ -232,17 +232,9 @@ export class MenuId {
 	static readonly AideAgentCodeBlock = new MenuId('AideAgentCodeblock');
 	static readonly AideAgentCompareBlock = new MenuId('AideAgentCompareBlock');
 	static readonly AideAgentMessageTitle = new MenuId('AideAgentMessageTitle');
-	static readonly AideAgentReviewPlanSteps = new MenuId('AideAgentReviewPlanSteps');
 	static readonly AideAgentExecute = new MenuId('AideAgentExecute');
 	static readonly AideAgentExecuteSecondary = new MenuId('AideAgentExecuteSecondary');
 	static readonly AideAgentInput = new MenuId('AideAgentInput');
-	static readonly AideAgentEditsLoading = new MenuId('AideAgentEditsLoading');
-	static readonly AideAgentPlanLoading = new MenuId('AideAgentPlanLoading');
-	static readonly AideAgentPlanReview = new MenuId('AideAgentPlanReview');
-	static readonly AideAgentPlanCompleted = new MenuId('AideAgentPlanCompleted');
-	static readonly AideAgentEditsCompleted = new MenuId('AideAgentEditsCompleted');
-	static readonly AideAgentEditsReview = new MenuId('AideAgentEditsReview');
-	static readonly AideAgentStreamingState = new MenuId('AideAgentStreamingState');
 	static readonly AideAgentInlineResourceAnchorContext = new MenuId('AideAgentInlineResourceAnchorContext');
 	static readonly AideAgentInlineSymbolAnchorContext = new MenuId('AideAgentInlineSymbolAnchorContext');
 	static readonly AccessibleView = new MenuId('AccessibleView');

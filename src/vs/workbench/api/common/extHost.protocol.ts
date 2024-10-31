@@ -52,11 +52,11 @@ import { EditSessionIdentityMatch } from '../../../platform/workspace/common/edi
 import { WorkspaceTrustRequestOptions } from '../../../platform/workspace/common/workspaceTrust.js';
 import { SaveReason } from '../../common/editor.js';
 import { IRevealOptions, ITreeItem, IViewBadge } from '../../common/views.js';
-import { IChatCodeEdit, IChatCommandButton as IAideChatCommandButton, IChatCommandGroup, IChatEditsInfo, IChatEndResponse, IChatPlanStep, IChatStreamingState, IChatPlanInfo, IChatThinkingForEditPart, IChatRollbackCompleted } from '../../contrib/aideAgent/common/aideAgentService.js';
+import { IChatCodeEdit, IChatEndResponse } from '../../contrib/aideAgent/common/aideAgentService.js';
 import { CallHierarchyItem } from '../../contrib/callHierarchy/common/callHierarchy.js';
 import { ChatAgentLocation, IChatAgentMetadata, IChatAgentRequest, IChatAgentResult } from '../../contrib/chat/common/chatAgents.js';
 import { ICodeMapperRequest, ICodeMapperResult } from '../../contrib/chat/common/chatCodeMapperService.js';
-import { IAideChatProgressResponseContent, IChatProgressResponseContent } from '../../contrib/chat/common/chatModel.js';
+import { IChatProgressResponseContent } from '../../contrib/chat/common/chatModel.js';
 import { IChatFollowup, IChatProgress, IChatResponseErrorDetails, IChatTask, IChatTaskDto, IChatUserActionEvent, IChatVoteAction } from '../../contrib/chat/common/chatService.js';
 import { IChatRequestVariableValue, IChatVariableData, IChatVariableResolverProgress } from '../../contrib/chat/common/chatVariables.js';
 import { IChatMessage, IChatResponseFragment, ILanguageModelChatMetadata, ILanguageModelChatSelector, ILanguageModelsChangeEvent } from '../../contrib/chat/common/languageModels.js';
@@ -1319,8 +1319,7 @@ export interface IChatAgentCompletionItem {
 
 export type IChatContentProgressDto =
 	| Dto<Exclude<IChatProgressResponseContent, IChatTask>>
-	| IChatTaskDto
-	| Dto<IAideChatProgressResponseContent>;
+	| IChatTaskDto;
 
 export type IChatAgentHistoryEntryDto = {
 	request: IChatAgentRequest;
@@ -1339,10 +1338,7 @@ export interface ExtHostChatAgentsShape2 {
 	$provideSampleQuestions(handle: number, location: ChatAgentLocation, token: CancellationToken): Promise<IChatFollowup[] | undefined>;
 	$releaseSession(sessionId: string): void;
 	$detectChatParticipant(handle: number, request: Dto<IChatAgentRequest>, context: { history: IChatAgentHistoryEntryDto[] }, options: { participants: IChatParticipantMetadata[]; location: ChatAgentLocation }, token: CancellationToken): Promise<IChatParticipantDetectionResult | null | undefined>;
-	$handleUserFeedbackSession(handle: number, sessionId: string, exchangeId: string, stepIndex: number | undefined, accepted: boolean): void;
-	$handleSessionUndo(handle: number, sessionId: string, exchangeId: string): void;
 }
-
 export interface IChatParticipantMetadata {
 	participant: string;
 	command?: string;
@@ -1426,25 +1422,17 @@ export type IChatProgressDto =
 ///////////////////////// END CHAT /////////////////////////
 
 ///////////////////////// START AIDE /////////////////////////
-
 export interface ExtHostAideAgentAgentsShape extends ExtHostChatAgentsShape2 {
 	$initSession(handle: number, sessionId: string): void;
 }
 
-export type IAideChatProgressDto = Dto<IChatEditsInfo | IChatStreamingState | IAideChatCommandButton | IChatCommandGroup | IChatPlanStep | IChatPlanInfo | IChatEndResponse | IChatThinkingForEditPart | IChatRollbackCompleted>;
 export type IChatCodeEditDto = Pick<IChatCodeEdit, 'kind'> & { edits: IWorkspaceEditDto };
-export type IAideAgentProgressDto = IChatProgressDto | IAideChatProgressDto | IChatCodeEditDto;
+export type IAideAgentProgressDto = IChatProgressDto | IChatCodeEditDto | Dto<IChatEndResponse>;
 
 export interface MainThreadAideAgentAgentsShape2 extends MainThreadChatAgentsShape2 {
-	// The cancellation token over here is broken bad, since we are on the server
-	// side, the RPC layer cannot pass us the cancellation token properly
-	// we get this but DO NOT USE IT
 	$initResponse(sessionId: string): Promise<{ responseId: string; token: CancellationToken }>;
 	$handleProgressChunk(responseId: string, chunk: IAideAgentProgressDto, handle?: number): Promise<number | void>;
-	$cancelExchange(sessionId: string, exchangeId: string): Promise<null>;
 }
-
-
 
 ///////////////////////// END AIDE /////////////////////////
 

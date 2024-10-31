@@ -6,7 +6,7 @@
 import type * as vscode from 'vscode';
 import { coalesce } from '../../../base/common/arrays.js';
 import { raceCancellation } from '../../../base/common/async.js';
-import { CancellationToken, CancellationTokenSource } from '../../../base/common/cancellation.js';
+import { CancellationToken } from '../../../base/common/cancellation.js';
 import { toErrorMessage } from '../../../base/common/errorMessage.js';
 import { Emitter } from '../../../base/common/event.js';
 import { IMarkdownString } from '../../../base/common/htmlContent.js';
@@ -121,56 +121,16 @@ class AideAgentResponseStream {
 				},
 				button(value) {
 					throwIfDone(this.anchor);
-					const part = new extHostTypes.AideAgentResponseCommandButtonPart(value);
-					const dto = typeConvert.AideAgentResponseCommandButtonPart.from(part, that._commandsConverter, that._sessionDisposables);
+					const part = new extHostTypes.ChatResponseCommandButtonPart(value);
+					const dto = typeConvert.ChatResponseCommandButtonPart.from(part, that._commandsConverter, that._sessionDisposables);
 					_report(dto);
 					return this;
-				},
-				buttonGroup(value) {
-					throwIfDone(this.anchor);
-					const part = new extHostTypes.AideAgentResponseCommandGroupPart(value);
-					const dto = typeConvert.AideAgentResponseCommandGroupPart.from(part, that._commandsConverter, that._sessionDisposables);
-					_report(dto);
-					return this;
-				},
-				streamingState(value) {
-					throwIfDone(this.anchor);
-					const part = new extHostTypes.AideAgentResponseStreamingStatePart(value);
-					const dto = typeConvert.AideAgentResponseStreamingStatePart.from(part);
-					_report(dto);
-				},
-				thinkingForEdit(value) {
-					throwIfDone(this.anchor);
-					const part = new extHostTypes.AideAgentThinkingForEditPart(value);
-					const dto = typeConvert.AideAgentThinkingForEditPart.from(part);
-					_report(dto);
 				},
 				progress(value, task?: ((progress: vscode.Progress<vscode.ChatResponseWarningPart>) => Thenable<string | void>)) {
 					throwIfDone(this.progress);
 					const part = new extHostTypes.ChatResponseProgressPart2(value, task);
 					const dto = task ? typeConvert.ChatTask.from(part) : typeConvert.ChatResponseProgressPart.from(part);
 					_report(dto, task);
-					return this;
-				},
-				editsInfo(value) {
-					throwIfDone(this.anchor);
-					const part = new extHostTypes.AideAgentResponseEditsInfoPart(value);
-					const dto = typeConvert.AideAgentResponseEditsInfoPart.from(part);
-					_report(dto);
-					return this;
-				},
-				planInfo(value) {
-					throwIfDone(this.anchor);
-					const part = new extHostTypes.AideAgentResponsePlanInfoPart(value);
-					const dto = typeConvert.AideAgentResponsePlanInfoPart.from(part);
-					_report(dto);
-					return this;
-				},
-				step(value) {
-					throwIfDone(this.anchor);
-					const part = new extHostTypes.AideAgentResponsePlanPart(value);
-					const dto = typeConvert.AideAgentResponsePlanPart.from(part);
-					_report(dto);
 					return this;
 				},
 				warning(value) {
@@ -234,6 +194,7 @@ class AideAgentResponseStream {
 				},
 				codeEdit(edits) {
 					throwIfDone(this.codeEdit);
+
 					const part = new extHostTypes.ChatResponseCodeEditPart(edits);
 					const dto = typeConvert.ChatResponseCodeEditPart.from(part);
 					_report(dto);
@@ -317,9 +278,6 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 		this._proxy.$transferActiveChatSession(newWorkspace);
 	}
 
-	/**
-	 * The id over here is for the chat participant
-	 */
 	createChatAgent(extension: IExtensionDescription, id: string, handler: vscode.AideSessionParticipant): vscode.AideSessionAgent {
 		const handle = ExtHostAideAgentAgents2._idPool++;
 		this._proxy.$registerAgent(handle, extension.identifier, id, {}, undefined);
@@ -327,7 +285,7 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 			extension, id, this._proxy, handle,
 			// Preserve the correct 'this' context
 			(sessionId: string) => this.initResponse(sessionId),
-			handler.newSession, handler.handleEvent, handler.handleExchangeUserAction, handler.handleSessionUndo
+			handler.newSession, handler.handleEvent
 		);
 		this._agents.set(handle, agent);
 
@@ -399,20 +357,6 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 		return agent.initSession(sessionId);
 	}
 
-	$handleUserFeedbackSession(handle: number, sessionId: string, exchangeId: string, stepIndex: number | undefined, accepted: boolean): void {
-		const agent = this._agents.get(handle);
-		if (agent) {
-			agent.handleUserFeedbackForSession(sessionId, exchangeId, stepIndex, accepted);
-		}
-	}
-
-	$handleSessionUndo(handle: number, sessionId: string, exchangeId: string): void {
-		const agent = this._agents.get(handle);
-		if (agent) {
-			agent.handleSessionUndo(sessionId, exchangeId);
-		}
-	}
-
 	async $invokeAgent(handle: number, requestDto: Dto<IChatAgentRequest>, context: { history: IChatAgentHistoryEntryDto[] }, token: CancellationToken): Promise<IChatAgentResult | undefined> {
 		const agent = this._agents.get(handle);
 		if (!agent) {
@@ -461,29 +405,15 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 		}
 	}
 
-	private async initResponse(sessionId: string): Promise<{ stream: vscode.AideAgentResponseStream; token: CancellationToken; exchangeId: string } | undefined> {
+	private async initResponse(sessionId: string): Promise<{ stream: vscode.AideAgentResponseStream; token: CancellationToken } | undefined> {
 		const sessionDisposables = this._sessionDisposables.get(sessionId);
 		if (!sessionDisposables) {
 			return undefined;
 		}
 
-		// Create a new cancellation token over here, this will proxy whatever
-		// is happening on the editor side and relay this back to the extension
-		const cancellationTokenSource = new CancellationTokenSource();
-		// forcefully create the cancellation token over here
-		const cancellationToken = cancellationTokenSource.token;
-
-		const { responseId } = await this._proxy.$initResponse(sessionId);
+		const { responseId, token } = await this._proxy.$initResponse(sessionId);
 		const stream = new AideAgentResponseStream(responseId, this._proxy, this._commands.converter, sessionDisposables);
-		// javascript ftw, since this is an async function it does not get cleared
-		// by the GC and keeps spinning in the background, what this means for us
-		// is that we have a way to send to the extension layer what the cancellation
-		// token status is as it is present on the editor layer
-		this._proxy.$cancelExchange(sessionId, responseId).then(() => {
-			// cancel the pending source over here
-			cancellationTokenSource.cancel();
-		});
-		return { stream: stream.apiObject, token: cancellationToken, exchangeId: responseId };
+		return { stream: stream.apiObject, token };
 	}
 
 	private async prepareHistoryTurns(agentId: string, context: { history: IChatAgentHistoryEntryDto[] }): Promise<(vscode.ChatRequestTurn | vscode.ChatResponseTurn)[]> {
@@ -658,8 +588,6 @@ class ExtHostChatAgent {
 		private _initResponse: vscode.AideSessionEventSender,
 		private _sessionHandler: vscode.AideSessionHandler,
 		private _requestHandler: vscode.AideSessionEventHandler,
-		private _sessionHandleUserActionHandler: vscode.AideSessionHandleUserAction,
-		private _sessionHandleSessionUndo: vscode.AideSessionUndoAction,
 	) { }
 
 	initSession(sessionId: string): void {
@@ -696,18 +624,6 @@ class ExtHostChatAgent {
 			.filter(f => !(f && 'commandId' in f))
 			// Filter out followups from older providers before 'message' changed to 'prompt'
 			.filter(f => !(f && 'message' in f));
-	}
-
-	handleUserFeedbackForSession(sessionId: string, exchangeId: string, stepIndex: number | undefined, accepted: boolean): void {
-		let action = extHostTypes.AideSessionExchangeUserAction.AcceptAll;
-		if (!accepted) {
-			action = extHostTypes.AideSessionExchangeUserAction.RejectAll;
-		}
-		this._sessionHandleUserActionHandler(sessionId, exchangeId, stepIndex, action);
-	}
-
-	handleSessionUndo(sessionId: string, exchangeId: string): void {
-		this._sessionHandleSessionUndo(sessionId, exchangeId);
 	}
 
 	async provideWelcomeMessage(location: vscode.ChatLocation, token: CancellationToken): Promise<(string | IMarkdownString)[] | undefined> {

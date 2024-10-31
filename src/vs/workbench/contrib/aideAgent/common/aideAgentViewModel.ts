@@ -10,13 +10,12 @@ import { Disposable } from '../../../../base/common/lifecycle.js';
 import * as marked from '../../../../base/common/marked/marked.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import { URI } from '../../../../base/common/uri.js';
-import { Range } from '../../../../editor/common/core/range.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { getFullyQualifiedId, IAideAgentAgentNameService, IChatAgentCommand, IChatAgentData, IChatAgentResult } from './aideAgentAgents.js';
 import { ChatModelInitState, IChatModel, IChatProgressRenderableResponseContent, IChatRequestModel, IChatRequestVariableEntry, IChatResponseModel, IChatTextEditGroup, IChatWelcomeMessageContent, IResponse } from './aideAgentModel.js';
 import { IParsedChatRequest } from './aideAgentParserTypes.js';
-import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatCodeCitation, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatPlanInfo, IChatProgressMessage, IChatResponseErrorDetails, IChatStreamingState, IChatTask, IChatUsedContext } from './aideAgentService.js';
+import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatCodeCitation, IChatContentReference, IChatFollowup, IChatProgressMessage, IChatResponseErrorDetails, IChatTask, IChatUsedContext } from './aideAgentService.js';
 import { countWords } from './aideAgentWordCounter.js';
 import { annotateVulnerabilitiesInText } from './annotations.js';
 import { CodeBlockModelCollection } from './codeBlockModelCollection.js';
@@ -33,7 +32,7 @@ export function isWelcomeVM(item: unknown): item is IChatWelcomeMessageViewModel
 	return !!item && typeof item === 'object' && 'content' in item;
 }
 
-export type IChatViewModelChangeEvent = IChatAddRequestEvent | IChangePlaceholderEvent | IChatSessionInitEvent | IChatStreamingState | IChatRemoveExchangesEvent | null;
+export type IChatViewModelChangeEvent = IChatAddRequestEvent | IChangePlaceholderEvent | IChatSessionInitEvent | null;
 
 export interface IChatAddRequestEvent {
 	kind: 'addRequest';
@@ -47,10 +46,6 @@ export interface IChatSessionInitEvent {
 	kind: 'initialize';
 }
 
-export interface IChatRemoveExchangesEvent {
-	kind: 'removeExchanges';
-}
-
 export interface IChatViewModel {
 	readonly model: IChatModel;
 	readonly initState: ChatModelInitState;
@@ -62,9 +57,6 @@ export interface IChatViewModel {
 	getItems(): (IChatRequestViewModel | IChatResponseViewModel | IChatWelcomeMessageViewModel)[];
 	setInputPlaceholder(text: string): void;
 	resetInputPlaceholder(): void;
-	setWillBeSavedStep(index: number): void;
-	setWillBeDroppedStep(index: number): void;
-	setSavedStep(index: number): void;
 }
 
 export interface IChatRequestViewModel {
@@ -122,6 +114,7 @@ export interface IChatTaskRenderData {
 
 export interface IChatResponseRenderData {
 	renderedParts: IChatRendererContent[];
+
 	renderedWordCount: number;
 	lastRenderTime: number;
 }
@@ -143,17 +136,9 @@ export interface IChatCodeCitations {
 }
 
 /**
- * Content type for edits used during rendering, not in the model
- */
-export interface IChatCodeEdits {
-	edits: Map<URI, Range[]>;
-	kind: 'codeEdits';
-}
-
-/**
  * Type for content parts rendered by IChatListRenderer
  */
-export type IChatRendererContent = IChatProgressRenderableResponseContent | IChatReferences | IChatCodeCitations | IChatCodeEdits;
+export type IChatRendererContent = IChatProgressRenderableResponseContent | IChatReferences | IChatCodeCitations;
 
 export interface IChatLiveUpdateData {
 	firstWordTime: number;
@@ -179,25 +164,16 @@ export interface IChatResponseViewModel {
 	readonly usedContext: IChatUsedContext | undefined;
 	readonly contentReferences: ReadonlyArray<IChatContentReference>;
 	readonly codeCitations: ReadonlyArray<IChatCodeCitation>;
-	readonly codeEdits: Map<URI, Range[]> | undefined;
 	readonly progressMessages: ReadonlyArray<IChatProgressMessage>;
-	readonly editsInfo: IChatEditsInfo | undefined;
-	readonly planInfo: IChatPlanInfo | undefined;
 	readonly isComplete: boolean;
 	readonly isCanceled: boolean;
 	readonly isStale: boolean;
-	readonly willBeDropped: boolean;
-	readonly isSaved: boolean;
-	readonly willBeSaved: boolean;
 	readonly vote: ChatAgentVoteDirection | undefined;
 	readonly voteDownReason: ChatAgentVoteDownReason | undefined;
 	readonly replyFollowups?: IChatFollowup[];
 	readonly errorDetails?: IChatResponseErrorDetails;
 	readonly result?: IChatAgentResult;
 	readonly contentUpdateTimings?: IChatLiveUpdateData;
-	readonly planSessionId: string | null;
-	readonly planExchangeId: string | null;
-	readonly responseIndex: number;
 	renderData?: IChatResponseRenderData;
 	currentRenderedHeight: number | undefined;
 	setVote(vote: ChatAgentVoteDirection): void;
@@ -224,42 +200,6 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 
 	get model(): IChatModel {
 		return this._model;
-	}
-
-	setWillBeDroppedStep(willBeDropedStep: number | undefined) {
-		for (const item of this._items) {
-			if (isResponseVM(item)) {
-				if (willBeDropedStep === undefined) {
-					item.willBeDropped = false;
-				} else {
-					item.willBeDropped = item.responseIndex >= willBeDropedStep;
-				}
-			}
-		}
-	}
-
-	setWillBeSavedStep(willBeSavedStep: number | undefined) {
-		for (const item of this._items) {
-			if (isResponseVM(item)) {
-				if (willBeSavedStep === undefined) {
-					item.willBeSaved = false;
-				} else {
-					item.willBeSaved = item.responseIndex <= willBeSavedStep;
-				}
-			}
-		}
-	}
-
-	setSavedStep(savedIndex: number | undefined) {
-		for (const item of this._items) {
-			if (isResponseVM(item)) {
-				if (savedIndex === undefined) {
-					item.isSaved = false;
-				} else {
-					item.isSaved = item.responseIndex <= savedIndex;
-				}
-			}
-		}
 	}
 
 	setInputPlaceholder(text: string): void {
@@ -329,11 +269,6 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 						item.dispose();
 					}
 				}
-			} else if (e.kind === 'streamingState') {
-				this._onDidChange.fire(e);
-			} else if (e.kind === 'removeExchanges') {
-				this._items.splice(e.from, this._items.length);
-				this._onDidChange.fire(e);
 			}
 
 			const modelEventToVmEvent: IChatViewModelChangeEvent = e.kind === 'addRequest' ? { kind: 'addRequest' } :
@@ -344,8 +279,7 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 	}
 
 	private onAddResponse(responseModel: IChatResponseModel) {
-		const responseIndex = this._items.filter(isResponseVM).length;
-		const response = this.instantiationService.createInstance(ChatResponseViewModel, responseModel, responseIndex);
+		const response = this.instantiationService.createInstance(ChatResponseViewModel, responseModel);
 		this._register(response.onDidChange(() => {
 			if (response.isComplete) {
 				this.updateCodeBlockTextModels(response);
@@ -446,10 +380,6 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 	private readonly _onDidChange = this._register(new Emitter<void>());
 	readonly onDidChange = this._onDidChange.event;
 
-	willBeDropped = false;
-	willBeSaved = false;
-	isSaved = false;
-
 	get model() {
 		return this._model;
 	}
@@ -507,22 +437,6 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 		return this._model.contentReferences;
 	}
 
-	get codeEdits() {
-		return this._model.codeEdits;
-	}
-
-	get editsInfo() {
-		return this._model.editsInfo;
-	}
-
-	get planInfo() {
-		return this._model.planInfo;
-	}
-
-	get streamingState() {
-		return this._model.streamingState;
-	}
-
 	get codeCitations(): ReadonlyArray<IChatCodeCitation> {
 		return this._model.codeCitations;
 	}
@@ -578,7 +492,7 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 			return this._usedReferencesExpanded;
 		}
 
-		return false;
+		return this.response.value.length === 0;
 	}
 
 	set usedReferencesExpanded(v: boolean) {
@@ -599,21 +513,8 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 		return this._contentUpdateTimings;
 	}
 
-	get planExchangeId(): string | null {
-		return this._model.planExchangeId;
-	}
-
-	get planSessionId(): string | null {
-		return this._model.planSessionId;
-	}
-
-	get responseIndex(): number {
-		return this._responseIndex;
-	}
-
 	constructor(
 		private readonly _model: IChatResponseModel,
-		private readonly _responseIndex: number,
 		@ILogService private readonly logService: ILogService,
 		@IAideAgentAgentNameService private readonly chatAgentNameService: IAideAgentAgentNameService,
 	) {

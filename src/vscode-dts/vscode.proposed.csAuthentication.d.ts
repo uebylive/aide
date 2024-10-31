@@ -4,20 +4,11 @@
  *--------------------------------------------------------------------------------------------*/
 
 declare module 'vscode' {
-	interface AuthenticatedCSUser {
-		email: string;
-	}
-
 	export interface CSAuthenticationSession {
 		/**
 		 * The access token.
 		 */
 		readonly accessToken: string;
-
-		/**
-		 * The authenticated user.
-		 */
-		readonly account: AuthenticatedCSUser;
 	}
 
 	export namespace csAuthentication {

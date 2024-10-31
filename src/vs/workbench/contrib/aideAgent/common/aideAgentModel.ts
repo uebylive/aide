@@ -5,7 +5,6 @@
 
 import { asArray } from '../../../../base/common/arrays.js';
 import { DeferredPromise } from '../../../../base/common/async.js';
-import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
 import { IMarkdownString, MarkdownString, isMarkdownString } from '../../../../base/common/htmlContent.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
@@ -17,16 +16,17 @@ import { isObject } from '../../../../base/common/types.js';
 import { URI, UriComponents, UriDto, isUriComponents } from '../../../../base/common/uri.js';
 import { generateUuid } from '../../../../base/common/uuid.js';
 import { IOffsetRange, OffsetRange } from '../../../../editor/common/core/offsetRange.js';
-import { IRange, Range } from '../../../../editor/common/core/range.js';
+import { IRange } from '../../../../editor/common/core/range.js';
 import { IWorkspaceFileEdit, IWorkspaceTextEdit, TextEdit, WorkspaceEdit } from '../../../../editor/common/languages.js';
+import { IModelDeltaDecoration, ITextModel } from '../../../../editor/common/model.js';
 import { localize } from '../../../../nls.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgentData, IChatAgentResult, reviveSerializedAgent } from './aideAgentAgents.js';
 import { IAideAgentCodeEditingService, IAideAgentCodeEditingSession } from './aideAgentCodeEditingService.js';
+import { HunkData } from './aideAgentEditingSession.js';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from './aideAgentParserTypes.js';
-import { IAideAgentPlanService, IAideAgentPlanSession } from './aideAgentPlanService.js';
-import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IAideAgentService, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatCommandGroup, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanInfo, IChatPlanStep, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatRollbackCompleted, IChatStreamingState, IChatTask, IChatTextEdit, IChatThinkingForEditPart, IChatTreeData, IChatUsedContext, IChatWarningMessage, ICodePlanEditInfo, isIUsedContext } from './aideAgentService.js';
+import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
 import { IChatRequestVariableValue } from './aideAgentVariables.js';
 
 export function isRequestModel(item: unknown): item is IChatRequestModel {
@@ -96,16 +96,10 @@ export type IChatProgressResponseContent =
 	| IChatContentInlineReference
 	| IChatProgressMessage
 	| IChatCommandButton
-	| IChatCommandGroup
 	| IChatWarningMessage
 	| IChatTask
 	| IChatTextEditGroup
-	| IChatPlanStep
-	| IChatEditsInfo
-	| IChatPlanInfo
-	| IChatConfirmation
-	| IChatRollbackCompleted
-	| IChatThinkingForEditPart;
+	| IChatConfirmation;
 
 export type IChatProgressRenderableResponseContent = Exclude<IChatProgressResponseContent, IChatContentInlineReference | IChatAgentMarkdownContentWithVulnerability | IChatResponseCodeblockUriPart>;
 
@@ -113,6 +107,14 @@ export interface IResponse {
 	readonly value: ReadonlyArray<IChatProgressResponseContent>;
 	toMarkdown(): string;
 	toString(): string;
+}
+
+export interface IAideAgentEdits {
+	readonly targetUri: string;
+	readonly textModelN: ITextModel;
+	textModel0: ITextModel;
+	hunkData: HunkData;
+	textModelNDecorations?: IModelDeltaDecoration[];
 }
 
 export interface IChatResponseModel {
@@ -125,11 +127,7 @@ export interface IChatResponseModel {
 	readonly agent?: IChatAgentData;
 	readonly usedContext: IChatUsedContext | undefined;
 	readonly contentReferences: ReadonlyArray<IChatContentReference>;
-	readonly editsInfo: IChatEditsInfo | undefined;
-	readonly planInfo: IChatPlanInfo | undefined;
-	readonly streamingState: IChatStreamingState | undefined;
 	readonly codeCitations: ReadonlyArray<IChatCodeCitation>;
-	readonly codeEdits: Map<URI, Range[]> | undefined;
 	readonly progressMessages: ReadonlyArray<IChatProgressMessage>;
 	readonly slashCommand?: IChatAgentCommand;
 	readonly agentOrSlashCommandDetected: boolean;
@@ -142,8 +140,6 @@ export interface IChatResponseModel {
 	readonly voteDownReason: ChatAgentVoteDownReason | undefined;
 	readonly followups?: IChatFollowup[] | undefined;
 	readonly result?: IChatAgentResult;
-	readonly planExchangeId: string | null;
-	readonly planSessionId: string | null;
 	setVote(vote: ChatAgentVoteDirection): void;
 	setVoteDownReason(reason: ChatAgentVoteDownReason | undefined): void;
 	setEditApplied(edit: IChatTextEditGroup, editCount: number): boolean;
@@ -300,6 +296,7 @@ export class Response extends Disposable implements IResponse {
 				}
 				this._updateRepr(false);
 			});
+
 		} else {
 			this._responseParts.push(progress);
 			this._updateRepr(quiet);
@@ -316,33 +313,18 @@ export class Response extends Disposable implements IResponse {
 			'uri' in part.inlineReference ? basename(part.inlineReference.uri) : 'name' in part.inlineReference ? part.inlineReference.name : basename(part.inlineReference);
 
 		this._responseRepr = this._responseParts.map(part => {
-			// Ignore the representation of planUpdate parts
 			if (part.kind === 'treeData') {
 				return '';
-			} else if (part.kind === 'rollbackCompleted') {
-				return 'rollback completed';
 			} else if (part.kind === 'inlineReference') {
 				return inlineRefToRepr(part);
 			} else if (part.kind === 'command') {
 				return part.command.title;
-			} else if (part.kind === 'commandGroup') {
-				return part.commands.map(c => c.command.title).join(', ');
 			} else if (part.kind === 'textEditGroup') {
 				return localize('editsSummary', "Made changes.");
 			} else if (part.kind === 'progressMessage' || part.kind === 'codeblockUri') {
 				return '';
 			} else if (part.kind === 'confirmation') {
 				return `${part.title}\n${part.message}`;
-			} else if (part.kind === 'planStep') {
-				return part.description.value;
-			} else if (part.kind === 'editsInfo' || part.kind === 'planInfo') {
-				const repr = part.state;
-				if (part.isStale) {
-					return repr.concat(` ${localize('stale', "(stale)")}`);
-				}
-				return repr;
-			} else if (part.kind === 'thinkingForEdit') {
-				return part.thinkingDelta.value;
 			} else {
 				return part.content.value;
 			}
@@ -355,8 +337,6 @@ export class Response extends Disposable implements IResponse {
 		this._markdownContent = this._responseParts.map(part => {
 			if (part.kind === 'inlineReference') {
 				return inlineRefToRepr(part);
-			} else if (part.kind === 'thinkingForEdit') {
-				return part.thinkingDelta.value;
 			} else if (part.kind === 'markdownContent' || part.kind === 'markdownVuln') {
 				return part.content.value;
 			} else {
@@ -446,37 +426,7 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		return this._contentReferences;
 	}
 
-	private _streamingState: IChatStreamingState | undefined;
-	public get streamingState(): IChatStreamingState | undefined {
-		return this._streamingState;
-	}
-
-	private _editsInfo: IChatEditsInfo | undefined;
-	public get editsInfo(): IChatEditsInfo | undefined {
-		return this._editsInfo;
-	}
-
-	private _planInfo: IChatPlanInfo | undefined;
-	public get planInfo(): IChatPlanInfo | undefined {
-		return this._planInfo;
-	}
-
 	private _editingSession: IAideAgentCodeEditingSession | undefined;
-
-	/**
-	 * Returns the code edits for the response model based on the sessionId and the exchangeId
-	 *
-	 * the only gotcha here is that this makes it very stateful... so we are not able to update it
-	 * dynamically, we have to do something smart over here to grab it properly
-	 * or make sure that this gets returned properly
-	 */
-	private _codeEdits: Map<URI, Range[]> | undefined;
-	public get codeEdits(): Map<URI, Range[]> | undefined {
-		return this._codeEdits;
-		// return this._editingSession?.fileLocationForEditsMade(this.session.sessionId, this.id);
-	}
-
-	private _planSession: IAideAgentPlanSession | undefined;
 
 	private readonly _codeCitations: IChatCodeCitation[] = [];
 	public get codeCitations(): ReadonlyArray<IChatCodeCitation> {
@@ -493,27 +443,8 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		return this._isStale;
 	}
 
-	private _planExchangeId: string | null = null;
-	public get planExchangeId(): string | null {
-		return this._planExchangeId;
-	}
-
-	public set planExchangeId(planExchangeId: string) {
-		this._planExchangeId = planExchangeId;
-	}
-
-	private _planSessionId: string | null = null;
-	public get planSessionId(): string | null {
-		return this._planSessionId;
-	}
-
-	public set planSessionId(planSessionId: string) {
-		this._planSessionId = planSessionId;
-	}
-
 	constructor(
 		@IAideAgentCodeEditingService private readonly _aideAgentCodeEditingService: IAideAgentCodeEditingService,
-		@IAideAgentPlanService private readonly _aidePlanService: IAideAgentPlanService,
 		_response: IMarkdownString | ReadonlyArray<IMarkdownString | IChatResponseProgressFileTreeData | IChatContentInlineReference | IChatAgentMarkdownContentWithVulnerability | IChatResponseCodeblockUriPart>,
 		private _session: ChatModel,
 		private _agent: IChatAgentData | undefined,
@@ -556,57 +487,20 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		}
 	}
 
-	applyEditsInfo(editsInfo: IChatEditsInfo) {
-		this._editsInfo = editsInfo;
-		this._onDidChange.fire();
-	}
-
-	applyPlanInfo(planInfo: IChatPlanInfo) {
-		this._planSession = this._aidePlanService.getOrStartPlanSession(planInfo.sessionId, planInfo.exchangeId);
-		this._planInfo = planInfo;
-		// update the plan info to what we have over here
-		this._planSession.updatePlanInfo(planInfo);
-		this._onDidChange.fire();
-	}
-
 	async applyCodeEdit(codeEdit: IChatCodeEdit) {
-		// here we have to pass sessionId instead of the chat.id
-		this._editingSession = this._aideAgentCodeEditingService.getOrStartCodeEditingSession(this.session.sessionId);
+		this._editingSession = this._aideAgentCodeEditingService.getOrStartCodeEditingSession(this.id);
 		for (const edit of codeEdit.edits.edits) {
 			if (isWorkspaceTextEdit(edit)) {
-				await this._editingSession.apply(edit);
-				// update our code edits here so we can keep update it automagically
-				// after applying an edit
-				this._codeEdits = this._editingSession.fileLocationForEditsMade(this.session.sessionId, edit.metadata?.label ?? this.id);
+				this._editingSession.apply(edit);
 				// TODO(@ghostwriternr): This is a temporary hack to show the edited resource, until we build the UI component for showing this
 				// in a special manner for edits.
 				const resource = edit.resource;
-				if (resource.fsPath === '/undoCheck') {
-					continue;
-				}
 				this.applyReference({
 					kind: 'reference',
 					reference: resource
 				});
 			}
 		}
-	}
-
-	/**
-	 * Updates the UI element over here by gragging the edit information from the
-	 * editing service and updating our own codeEdits properly
-	 */
-	async applyPlanEditInfo(progress: ICodePlanEditInfo) {
-		const exchangeId = progress.exchangeId;
-		const currentStepIndex = progress.currentStepIndex;
-		const previousStepIndex = progress.startStepIndex;
-		// This format is dicatated on the Aide extension layer
-		// I know bad case of not being explicit enough
-		const planStartExchangeId = `${exchangeId}::${previousStepIndex}`;
-		const planEndExchangeId = `${exchangeId}::${currentStepIndex}`;
-		const newEditsInformation = await this._editingSession?.editsBetweenExchangesInSession(this.session.sessionId, planStartExchangeId, planEndExchangeId);
-		this._codeEdits = newEditsInformation;
-		this._onDidChange.fire();
 	}
 
 	applyCodeCitation(progress: IChatCodeCitation) {
@@ -633,6 +527,22 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		}
 
 		this._editingSession?.complete();
+		this.updateContent({
+			'kind': 'command',
+			command: {
+				id: 'aideAgent.acceptAll',
+				title: localize('acceptEdits', "Accept all"),
+				arguments: [this.id]
+			}
+		});
+		this.updateContent({
+			'kind': 'command',
+			command: {
+				id: 'aideAgent.rejectAll',
+				title: localize('rejectEdits', "Reject all"),
+				arguments: [this.id]
+			}
+		});
 
 		this._isComplete = true;
 		this._onDidChange.fire();
@@ -830,9 +740,7 @@ export type IChatChangeEvent =
 	| IChatAddResponseEvent
 	| IChatSetAgentEvent
 	| IChatMoveEvent
-	| IChatCodeEditEvent
-	| IChatStreamingState
-	| IChatRemoveExchangesEvent;
+	| IChatCodeEditEvent;
 
 export interface IChatAddRequestEvent {
 	kind: 'addRequest';
@@ -879,13 +787,6 @@ export interface IChatCodeEditEvent {
 	edits: WorkspaceEdit;
 }
 
-export interface IChatRemoveExchangesEvent {
-	kind: 'removeExchanges';
-	from: number;
-	remaining: IChatExchangeModel[];
-	removed: IChatExchangeModel[];
-}
-
 export interface IChatSetAgentEvent {
 	kind: 'setAgent';
 	agent: IChatAgentData;
@@ -902,15 +803,9 @@ export enum ChatModelInitState {
 	Initialized
 }
 
-export enum AgentSessionExchangeUserAction {
-	AcceptAll = 'AcceptAll',
-	RejectAll = 'RejectAll',
-}
-
 export enum AgentMode {
 	Chat = 'Chat',
-	Edit = 'Edit',
-	Plan = 'Plan'
+	Edit = 'Edit'
 }
 
 export enum AgentScope {
@@ -932,18 +827,13 @@ export class ChatModel extends Disposable implements IChatModel {
 	private readonly _onDidChange = this._register(new Emitter<IChatChangeEvent>());
 	readonly onDidChange = this._onDidChange.event;
 
-	private _mutableExchanges: ChatResponseModel[];
 	private _exchanges: IChatExchangeModel[];
 	private _initState: ChatModelInitState = ChatModelInitState.Created;
 	private _isInitializedDeferred = new DeferredPromise<void>();
-	// this is kinda similar to threads in a way if you think about it??
-	// cause each chat model can have children chat models which are shown over here
-	private _planChatModels: Map<string, ChatModel> = new Map();
-	private _planChatResponseModels: Map<string, ChatResponseModel> = new Map();
 
 	private _welcomeMessage: ChatWelcomeMessageModel | undefined;
 	get welcomeMessage(): ChatWelcomeMessageModel | undefined {
-		return this._exchanges.length === 0 ? this._welcomeMessage : undefined;
+		return this._welcomeMessage;
 	}
 
 	// TODO to be clear, this is not the same as the id from the session object, which belongs to the provider.
@@ -964,11 +854,6 @@ export class ChatModel extends Disposable implements IChatModel {
 
 	get lastExchange(): IChatExchangeModel | undefined {
 		return this._exchanges.at(-1);
-	}
-
-	_lastStreamingState: IChatStreamingState | undefined;
-	get lastStreamingState() {
-		return this._lastStreamingState;
 	}
 
 	private _creationDate: number;
@@ -1033,26 +918,16 @@ export class ChatModel extends Disposable implements IChatModel {
 		private readonly initialData: ISerializableChatData | IExportableChatData | undefined,
 		private readonly _initialLocation: ChatAgentLocation,
 		readonly isPassthrough: boolean,
-		// used to force a certain session id on the chatmodel, use it at your own risk
-		// we are using it now to set the sessionId for the planreview pane over here
-		readonly forcedSessionId: string | null,
 		@ILogService private readonly logService: ILogService,
-		@IAideAgentService private readonly aideAgentService: IAideAgentService,
 		@IAideAgentAgentService private readonly chatAgentService: IAideAgentAgentService,
 		@IAideAgentCodeEditingService private readonly aideAgentCodeEditingService: IAideAgentCodeEditingService,
-		@IAideAgentPlanService private readonly aideAgentPlanService: IAideAgentPlanService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 	) {
 		super();
 
 		this._isImported = (!!initialData && !isSerializableSessionData(initialData)) || (initialData?.isImported ?? false);
-		if (forcedSessionId) {
-			this._sessionId = forcedSessionId;
-		} else {
-			this._sessionId = (isSerializableSessionData(initialData) && initialData.sessionId) || generateUuid();
-		}
+		this._sessionId = (isSerializableSessionData(initialData) && initialData.sessionId) || generateUuid();
 		this._exchanges = initialData ? this._deserialize(initialData) : [];
-		this._mutableExchanges = [];
 		this._creationDate = (isSerializableSessionData(initialData) && initialData.creationDate) || Date.now();
 		this._lastMessageDate = (isSerializableSessionData(initialData) && initialData.lastMessageDate) || this._creationDate;
 		this._customTitle = isSerializableSessionData(initialData) ? initialData.customTitle : undefined;
@@ -1094,7 +969,6 @@ export class ChatModel extends Disposable implements IChatModel {
 					// TODO(@ghostwriternr): We used to assign the response to the request here, but now we don't.
 					const response = new ChatResponseModel(
 						this.aideAgentCodeEditingService,
-						this.aideAgentPlanService,
 						raw.response ?? [new MarkdownString(raw.response)], this, agent, raw.slashCommand, true, raw.isCanceled, raw.vote, raw.voteDownReason, result, raw.followups
 					);
 					if (raw.usedContext) { // @ulugbekna: if this's a new vscode sessions, doc versions are incorrect anyway?
@@ -1193,13 +1067,12 @@ export class ChatModel extends Disposable implements IChatModel {
 
 	addRequest(message: IParsedChatRequest, variableData: IChatRequestVariableData, attempt: number, chatAgent?: IChatAgentData, slashCommand?: IChatAgentCommand, confirmation?: string, locationData?: IChatLocationData, attachments?: IChatRequestVariableEntry[]): ChatRequestModel {
 		const request = new ChatRequestModel(this, message, variableData, attempt, confirmation, locationData, attachments);
-		//const response = new ChatResponseModel(
-		//	this.aideAgentCodeEditingService,
-		//	this.aideAgentPlanService,
-		//	[], this, chatAgent, slashCommand
-		//);
+		const response = new ChatResponseModel(
+			this.aideAgentCodeEditingService,
+			[], this, chatAgent, slashCommand
+		);
 
-		this._exchanges.push(request);
+		this._exchanges.push(request, response);
 		this._lastMessageDate = Date.now();
 		this._onDidChange.fire({ kind: 'addRequest', request });
 		return request;
@@ -1208,23 +1081,12 @@ export class ChatModel extends Disposable implements IChatModel {
 	addResponse(): ChatResponseModel {
 		const response = new ChatResponseModel(
 			this.aideAgentCodeEditingService,
-			this.aideAgentPlanService,
 			[], this, undefined, undefined
 		);
 		this._exchanges.push(response);
-		this._mutableExchanges.push(response);
 		// TODO(@ghostwriternr): Just looking at the above, do we need to update the last message date here? What is it used for?
 		this._onDidChange.fire({ kind: 'addResponse', response });
 		return response;
-	}
-
-	private removeExchanges(from: number) {
-		const exchanges = this._exchanges;
-		const remaining = exchanges.slice(0, from);
-		const removed = exchanges.slice(from, exchanges.length);
-		this._exchanges = remaining;
-		this._onDidChange.fire({ kind: 'removeExchanges', from, remaining, removed });
-		return { from, remaining, removed };
 	}
 
 	setCustomTitle(title: string): void {
@@ -1234,153 +1096,6 @@ export class ChatModel extends Disposable implements IChatModel {
 	updateRequest(request: ChatRequestModel, variableData: IChatRequestVariableData) {
 		request.variableData = variableData;
 		this._onDidChange.fire({ kind: 'changedRequest', request });
-	}
-
-
-	acceptThinkingForEdit(progress: IChatThinkingForEditPart) {
-		if (progress.kind !== 'thinkingForEdit') {
-			return;
-		}
-		const planId = `${progress.sessionId}-${progress.exchangeId}`;
-		// If this is a plan session, then we are showing rich information on the side pane already
-		// and the edit information is not as useful anymore
-		if (this.aideAgentPlanService.isPlanSession(progress.sessionId, progress.exchangeId)) {
-			return;
-		}
-		let planMaybe = this._planChatModels.get(planId);
-		if (planMaybe === undefined) {
-			planMaybe = this.aideAgentService.startSessionWithId(ChatAgentLocation.Notebook, CancellationToken.None, planId);
-			if (planMaybe === undefined) {
-				return;
-			}
-			this._planChatModels.set(planId, planMaybe);
-		}
-		// if its still empty.. boy oh boy
-		if (planMaybe === undefined) {
-			return;
-		}
-
-		// No running exchanges, implies we have not started showing this information to the user
-		if (planMaybe.getExchanges().length === 0) {
-			const response = planMaybe.addResponse();
-			this._planChatResponseModels.set(planId, response);
-			// push the progress over here as markdown
-			planMaybe.acceptResponseProgress(response,
-				{
-					'kind': 'markdownContent',
-					content: progress.thinkingDelta,
-				}
-			);
-		} else {
-			const responseModel = this._planChatResponseModels.get(planId);
-			if (responseModel === undefined) {
-				return;
-			}
-			planMaybe.acceptResponseProgress(responseModel, {
-				'kind': 'markdownContent',
-				content: progress.thinkingDelta,
-			});
-		}
-
-		// Bring the plan view pane to the view of the user
-		this.aideAgentPlanService.anchorPlanViewPane(progress.sessionId, progress.exchangeId);
-	}
-
-	/**
-	 * Handles IChatPlanStep which has deltas streaming in continously, we have total
-	 * control over how to render the plan properly. Of course we can create rich elemnts etc for this
-	 * which is all good
-	 */
-	acceptPlanStepInfo(progress: IChatPlanStep) {
-		if (progress.kind !== 'planStep') {
-			return;
-		}
-		// make sure we are tracking this as a plan
-		this.aideAgentPlanService.getOrStartPlanSession(progress.sessionId, progress.exchangeId);
-		const planId = `${progress.sessionId}-${progress.exchangeId}`;
-		let planMaybe = this._planChatModels.get(planId);
-		if (planMaybe === undefined) {
-			planMaybe = this.aideAgentService.startSessionWithId(ChatAgentLocation.Notebook, CancellationToken.None, planId);
-			if (planMaybe === undefined) {
-				return;
-			}
-			this._planChatModels.set(planId, planMaybe);
-		}
-		// if its still empty.. boy oh boy
-		if (planMaybe === undefined) {
-			return;
-		}
-
-		const currentProgressIndex = progress.index;
-
-		// We do not have enough entries in our session for this... awkward
-		if (currentProgressIndex > planMaybe.getExchanges().length - 1) {
-			// if there is a previous plan response which is going on, we can safely cancel it over here
-			const previousResponseModel = this._planChatResponseModels.get(`${planId}-${planMaybe.getExchanges().length - 1}`);
-			if (previousResponseModel) {
-				// complete the previous step over here
-				previousResponseModel.complete();
-			}
-			// if this is the first entry we will have a title over here
-			const response = planMaybe.addResponse();
-			response.planExchangeId = progress.exchangeId;
-			response.planSessionId = progress.sessionId;
-			this._planChatResponseModels.set(`${planId}-${currentProgressIndex}`, response);
-			planMaybe.acceptResponseProgress(response, {
-				'kind': 'markdownContent',
-				content: new MarkdownString(`## ${progress.title}\n`)
-			});
-			// do not mark this as complete yet.. we are not done
-			return;
-		}
-
-		if (currentProgressIndex === planMaybe.getExchanges().length - 1) {
-			// extra dumb logic here but esentially what we are going to do is the following
-			// update the markdown content for the plan over here
-			// we want to get back the response over here so we can send more events to it
-			const responseModel = this._planChatResponseModels.get(`${planId}-${currentProgressIndex}`);
-			if (progress.descriptionDelta) {
-				planMaybe.acceptResponseProgress(responseModel, {
-					'kind': 'markdownContent',
-					content: progress.descriptionDelta,
-				});
-			}
-		}
-
-		// For now we can also make sure that we bring the review pane over here into the view
-		// automagically since the plan is getting generated
-		this.aideAgentPlanService.anchorPlanViewPane(progress.sessionId, progress.exchangeId);
-	}
-
-	/**
-	 * We can accept response for progress but mutate the states here in a very weird
-	 * way with our response model
-	 * We have to make sure that it does end up calling acceptResponseProgress which takes
-	 * care of all the updates for us
-	 *
-	 * We can figure out what kind of events to accept here which is nice but also not fun
-	 * log over here if we are reacting to events we do not want to support
-	 */
-	accepResponseProgressMutable(progress: IChatProgress, quiet?: boolean): void {
-		if (progress.kind === 'planInfo') {
-			const runningResponseModel = this._mutableExchanges.find((exchange) => {
-				return exchange.id === progress.exchangeId;
-			});
-			if (runningResponseModel === undefined) {
-				return;
-			}
-			this.acceptResponseProgress(runningResponseModel, progress, quiet);
-		} else if (progress.kind === 'planEditInfo') {
-			const runningResponseModel = this._mutableExchanges.find((exchange) => {
-				return exchange.id === progress.exchangeId;
-			});
-			if (runningResponseModel === undefined) {
-				return;
-			}
-			this.acceptResponseProgress(runningResponseModel, progress, quiet);
-		} else {
-			console.log(`${progress.kind} not supported for mutable progress`);
-		}
 	}
 
 	acceptResponseProgress(response: ChatResponseModel | undefined, progress: IChatProgress, quiet?: boolean): void {
@@ -1397,42 +1112,8 @@ export class ChatModel extends Disposable implements IChatModel {
 		if (!response) {
 			response = new ChatResponseModel(
 				this.aideAgentCodeEditingService,
-				this.aideAgentPlanService,
 				[], this, undefined, undefined
 			);
-		}
-
-		if (progress.kind === 'endResponse' && response) {
-			this.completeResponse(response);
-			return;
-		}
-
-		// Instead of doing so much state management over here, we can just send the event
-		// over to the viewModel by firing the event over here and letting the onDidChange
-		// handlers for the view models (ChatModelView) react to this, they know what to do with this
-		if (progress.kind === 'streamingState') {
-			this._onDidChange.fire(progress);
-			// early return over here
-			return;
-		}
-		// We have a plan edit info, which is a UI event and not a state event
-		// we should just update the model state over here for the UI but not
-		// make any changes to the environment itself
-		if (progress.kind === 'planEditInfo') {
-			response.applyPlanEditInfo(progress);
-			return;
-		}
-
-		// These events are special as they directed towards the side panel
-		// as well, so we have to send the right notification over here
-		if (progress.kind === 'planStep') {
-			this.acceptPlanStepInfo(progress);
-			return;
-		}
-
-		if (progress.kind === 'thinkingForEdit') {
-			this.acceptThinkingForEdit(progress);
-			return;
 		}
 
 		if (progress.kind === 'markdownContent' ||
@@ -1442,12 +1123,10 @@ export class ChatModel extends Disposable implements IChatModel {
 			progress.kind === 'markdownVuln' ||
 			progress.kind === 'progressMessage' ||
 			progress.kind === 'command' ||
-			progress.kind === 'commandGroup' ||
 			progress.kind === 'textEdit' ||
 			progress.kind === 'warning' ||
 			progress.kind === 'progressTask' ||
-			progress.kind === 'confirmation' ||
-			progress.kind === 'rollbackCompleted'
+			progress.kind === 'confirmation'
 		) {
 			response.updateContent(progress, quiet);
 		} else if (progress.kind === 'usedContext' || progress.kind === 'reference') {
@@ -1465,10 +1144,6 @@ export class ChatModel extends Disposable implements IChatModel {
 		} else if (progress.kind === 'codeEdit') {
 			response.applyCodeEdit(progress);
 			this._onDidChange.fire({ kind: 'codeEdit', edits: progress.edits });
-		} else if (progress.kind === 'editsInfo') {
-			response.applyEditsInfo(progress);
-		} else if (progress.kind === 'planInfo') {
-			response.applyPlanInfo(progress);
 		} else {
 			this.logService.error(`Couldn't handle progress: ${JSON.stringify(progress)}`);
 		}
@@ -1509,26 +1184,6 @@ export class ChatModel extends Disposable implements IChatModel {
 		}
 
 		response.complete();
-	}
-
-	handleUserActionForSession(sessionId: string, exchangeId: string, stepIndex: number | undefined, agentId: string | undefined, accepted: boolean): void {
-		this.chatAgentService.handleUserFeedbackForSession(sessionId, exchangeId, stepIndex, agentId, accepted);
-	}
-
-	async handleUserActionUndoSession(sessionId: string, exchangeId: string): Promise<void> {
-		const editingSession = this.aideAgentCodeEditingService.getOrStartCodeEditingSession(sessionId);
-		await editingSession.rejectForExchange(sessionId, exchangeId);
-		this.chatAgentService.handleUserActionUndoSession(sessionId, exchangeId);
-		// TODO(ghostwriternr): Do the updates for the UI over here, including changing the responses etc
-		const exchangeIndex = this._exchanges.findIndex((exchange) => exchange.id === exchangeId);
-		if (exchangeIndex > 0) {
-			const { removed } = this.removeExchanges(exchangeIndex);
-			// We will respond to this event entirely on the ide layer, but it should probably be triggered by sidecar
-			const response = this.addResponse();
-			this.acceptResponseProgress(response, { kind: 'rollbackCompleted', sessionId, exchangeId, exchangesRemoved: removed.length });
-			this.acceptResponseProgress(response, { kind: 'endResponse' });
-		}
-
 	}
 
 	/* TODO(@ghostwriternr): Honestly, don't care about followups at the moment.

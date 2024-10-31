@@ -40,7 +40,7 @@ export enum ChatAgentLocation {
 	Panel = 'panel',
 	Terminal = 'terminal',
 	Notebook = 'notebook',
-	Editor = 'editor',
+	Editor = 'editor'
 }
 
 export namespace ChatAgentLocation {
@@ -85,8 +85,6 @@ export interface IChatAgentImplementation {
 	provideWelcomeMessage?(location: ChatAgentLocation, token: CancellationToken): ProviderResult<(string | IMarkdownString)[] | undefined>;
 	provideChatTitle?: (history: IChatAgentHistoryEntry[], token: CancellationToken) => Promise<string | undefined>;
 	provideSampleQuestions?(location: ChatAgentLocation, token: CancellationToken): ProviderResult<IChatFollowup[] | undefined>;
-	handleUserFeedbackSession(sessionId: string, exchangeId: string, stepIndex: number | undefined, accepted: boolean): void;
-	handleSessionUndo(sessionId: string, exchangeId: string): void;
 }
 
 export interface IChatParticipantDetectionResult {
@@ -225,8 +223,6 @@ export interface IAideAgentAgentService {
 	getContributedDefaultAgent(location: ChatAgentLocation): IChatAgentData | undefined;
 	getSecondaryAgent(): IChatAgentData | undefined;
 	updateAgent(id: string, updateMetadata: IChatAgentMetadata): void;
-	handleUserFeedbackForSession(sessionId: string, exchangeId: string, stepIndex: number | undefined, agentId: string | undefined, accepted: boolean): void;
-	handleUserActionUndoSession(sessionId: string, exchangeId: string): void;
 }
 
 export class ChatAgentService implements IAideAgentAgentService {
@@ -501,22 +497,6 @@ export class ChatAgentService implements IAideAgentAgentService {
 
 		return { agent, command };
 	}
-
-	handleUserFeedbackForSession(sessionId: string, exchangeId: string, stepIndex: number | undefined, agentId: string | undefined, accepted: boolean): void {
-		// we start by grabbing the default agent which is registered on the panel
-		// over here
-		const agent = this.getDefaultAgent(ChatAgentLocation.Panel);
-		if (agent) {
-			agent.handleUserFeedbackSession(sessionId, exchangeId, stepIndex, accepted);
-		}
-	}
-
-	handleUserActionUndoSession(sessionId: string, exchangeId: string): void {
-		const agent = this.getDefaultAgent(ChatAgentLocation.Panel);
-		if (agent) {
-			agent.handleSessionUndo(sessionId, exchangeId);
-		}
-	}
 }
 
 export class MergedChatAgent implements IChatAgent {
@@ -572,14 +552,6 @@ export class MergedChatAgent implements IChatAgent {
 		}
 
 		return undefined;
-	}
-
-	handleUserFeedbackSession(sessionId: string, exchangeId: string, stepIndex: number | undefined, accepted: boolean): void {
-		return this.impl.handleUserFeedbackSession(sessionId, exchangeId, stepIndex, accepted);
-	}
-
-	handleSessionUndo(sessionId: string, exchangeId: string): void {
-		return this.impl.handleSessionUndo(sessionId, exchangeId);
 	}
 
 	toJSON(): IChatAgentData {

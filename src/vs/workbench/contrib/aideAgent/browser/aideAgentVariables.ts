@@ -116,27 +116,36 @@ export class ChatVariablesService implements IAideAgentVariablesService {
 						const selection = activeEditor.getSelection();
 						let range: IRange;
 						if (selection && !selection.isEmpty()) {
-							// TODO(skcd): we send over 1 indexed here since we are going to fix
-							// it later on when converting it to a range which is 0 indexed
-							// on the Dto Layer, maybe?
 							range = {
-								startLineNumber: selection.startLineNumber,
-								startColumn: selection.startColumn,
-								endLineNumber: selection.endLineNumber,
-								endColumn: selection.endColumn,
+								startLineNumber: selection.startLineNumber - 1,
+								startColumn: selection.startColumn - 1,
+								endLineNumber: selection.endLineNumber - 1,
+								endColumn: selection.endColumn - 1,
 							};
 						} else {
 							range = model.getFullModelRange();
 						}
 
 						resolvedAttachedContext.push({
-							id: 'vscode.editor.selection',
+							id: 'vscode.file',
 							name: basename(model.uri.fsPath),
 							value: { uri: model.uri, range },
 						});
 					}
 				}
 			} else if (options.agentScope === AgentScope.PinnedContext) {
+				const pinnedContexts = this.pinnedContextService.getPinnedContexts();
+				pinnedContexts.forEach(context => {
+					const model = this.modelService.getModel(context);
+					if (model) {
+						const range = model.getFullModelRange();
+						resolvedAttachedContext.push({
+							id: 'vscode.file',
+							name: basename(model.uri.fsPath),
+							value: { uri: model.uri, range }
+						});
+					}
+				});
 			} else if (options.agentScope === AgentScope.Codebase) {
 				const openEditors = this.editorService.editors;
 				openEditors.forEach(editor => {
@@ -155,20 +164,6 @@ export class ChatVariablesService implements IAideAgentVariablesService {
 				});
 			}
 		}
-
-		// we always want to get the pinned context over here
-		const pinnedContexts = this.pinnedContextService.getPinnedContexts();
-		pinnedContexts.forEach(context => {
-			const model = this.modelService.getModel(context);
-			if (model) {
-				const range = model.getFullModelRange();
-				resolvedAttachedContext.push({
-					id: 'vscode.file.pinnedContext',
-					name: basename(model.uri.fsPath),
-					value: { uri: model.uri, range }
-				});
-			}
-		});
 
 		// Make array not sparse
 		resolvedVariables = coalesce<IChatRequestVariableEntry>(resolvedVariables);

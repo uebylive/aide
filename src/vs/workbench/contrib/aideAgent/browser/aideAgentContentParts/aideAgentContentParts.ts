@@ -19,7 +19,6 @@ export interface IChatContentPart extends IDisposable {
 }
 
 export interface IChatContentPartRenderContext {
-	user: string; // Is it chat or plan review?
 	element: ChatTreeItem;
 	index: number;
 	content: ReadonlyArray<IChatRendererContent>;
