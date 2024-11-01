@@ -1293,7 +1293,12 @@ export class SideCarClient {
 			access_token: workosAccessToken,
 		};
 
-		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
+		// consider using headers
+		const headers = {
+			'Authorization': `Bearer ${workosAccessToken}`,
+		};
+
+		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body, headers);
 		for await (const line of asyncIterableResponse) {
 			const lineParts = line.split('data:{');
 			for (const lineSinglePart of lineParts) {
