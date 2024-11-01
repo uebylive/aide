@@ -1062,6 +1062,7 @@ export class SideCarClient {
 		repoRef: RepoRef,
 		projectLabels: string[],
 		codebaseSearch: boolean,
+		workosAccessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agentic/agent_session_plan';
@@ -1077,6 +1078,7 @@ export class SideCarClient {
 			root_directory: vscode.workspace.rootPath,
 			project_labels: projectLabels,
 			codebase_search: codebaseSearch,
+			access_token: workosAccessToken,
 		};
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
@@ -1171,6 +1173,7 @@ export class SideCarClient {
 		variables: readonly vscode.ChatPromptReference[],
 		repoRef: RepoRef,
 		projectLabels: string[],
+		workosAccessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agentic/agent_session_edit_anchored';
@@ -1186,6 +1189,7 @@ export class SideCarClient {
 			project_labels: projectLabels,
 			root_directory: vscode.workspace.rootPath,
 			codebase_search: false,
+			access_token: workosAccessToken,
 		};
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
@@ -1270,6 +1274,7 @@ export class SideCarClient {
 		variables: readonly vscode.ChatPromptReference[],
 		repoRef: RepoRef,
 		projectLabels: string[],
+		workosAccessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agentic/agent_session_chat';
@@ -1285,6 +1290,7 @@ export class SideCarClient {
 			project_labels: projectLabels,
 			root_directory: vscode.workspace.rootPath,
 			codebase_search: false,
+			access_token: workosAccessToken,
 		};
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);

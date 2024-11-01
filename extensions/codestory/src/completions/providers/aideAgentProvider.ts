@@ -444,7 +444,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		const agentMode = event.mode;
 		const variables = event.references;
 		if (event.mode === vscode.AideAgentMode.Chat) {
-			const responseStream = this.sidecarClient.agentSessionChat(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels);
+			const responseStream = this.sidecarClient.agentSessionChat(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, workosAccessToken);
 			await this.reportAgentEventsToChat(true, responseStream);
 		}
 		// Now lets try to handle the edit event first
@@ -454,11 +454,11 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		// if its selection scope then its agentic
 		if (event.mode === vscode.AideAgentMode.Edit) {
 			if (event.scope === vscode.AideAgentScope.Selection) {
-				const responseStream = await this.sidecarClient.agentSessionAnchoredEdit(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels);
+				const responseStream = await this.sidecarClient.agentSessionAnchoredEdit(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, workosAccessToken);
 				await this.reportAgentEventsToChat(true, responseStream);
 			} else {
 				const isWholeCodebase = event.scope === vscode.AideAgentScope.Codebase;
-				const responseStream = await this.sidecarClient.agentSessionPlanStep(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, isWholeCodebase);
+				const responseStream = await this.sidecarClient.agentSessionPlanStep(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, isWholeCodebase, workosAccessToken);
 				await this.reportAgentEventsToChat(true, responseStream);
 			}
 		}
@@ -469,7 +469,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		// once we have a step of the plan we should stream it along with the edits of the plan
 		// and keep doing that until we are done completely
 		if (event.mode === vscode.AideAgentMode.Plan) {
-			const responseStream = await this.sidecarClient.agentSessionPlanStep(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, false);
+			const responseStream = await this.sidecarClient.agentSessionPlanStep(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, false, workosAccessToken);
 			await this.reportAgentEventsToChat(true, responseStream);
 		}
 	}
