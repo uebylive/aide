@@ -6,7 +6,7 @@
 import { Codicon } from '../../../../../base/common/codicons.js';
 import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions.js';
 import { localize2 } from '../../../../../nls.js';
-import { registerAction2, Action2, MenuId } from '../../../../../platform/actions/common/actions.js';
+import { registerAction2, Action2 } from '../../../../../platform/actions/common/actions.js';
 import { CHAT_CATEGORY } from './aideAgentChatActions.js';
 
 export const MarkUnhelpfulActionId = 'workbench.action.aideAgent.markUnhelpful';
