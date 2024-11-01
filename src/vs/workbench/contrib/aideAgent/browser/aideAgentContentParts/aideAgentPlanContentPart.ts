@@ -73,22 +73,16 @@ function assignLabel(plan: IChatPlanInfo): string {
 			// not returning a localized string, is this really bad??
 			return mutableDescription;
 		default:
-			throw new Error('Invalid state');
+			return defaultLabel;
 	}
 }
 
 function assignIcon(plan: IChatPlanInfo): string {
 	switch (plan.state) {
-		case 'Started':
-			return 'micro/bolt';
-		case 'Complete':
-			return 'micro/check-circle';
 		case 'Cancelled':
 			return 'micro/x-mark';
-		case 'InReview':
-			return 'micro/bolt';
 		default:
-			throw new Error('Invalid state');
+			return 'micro/bolt';
 	}
 }
 
@@ -110,9 +104,6 @@ function assignMenuAndPreviewOptions(edits: IChatPlanInfo): { menuId: MenuId | n
 		case 'Cancelled':
 			menuId = MenuId.AideAgentEditsCompleted;
 			break;
-		case 'InReview':
-			menuId = MenuId.AideAgentPlanReview;
-			previewOptions = { startLabel, start: -2, end: -1 };
 		default:
 			break;
 	}

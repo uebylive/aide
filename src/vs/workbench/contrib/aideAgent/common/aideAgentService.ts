@@ -256,7 +256,6 @@ export interface IChatStreamingState {
 
 export enum ChatEditsState {
 	Loading = 'loading',
-	InReview = 'inReview',
 	MarkedComplete = 'markedComplete',
 	Cancelled = 'cancelled',
 }
@@ -266,7 +265,6 @@ export enum ChatPlanState {
 	Started = 'Started',
 	Complete = 'Complete',
 	Cancelled = 'Cancelled',
-	InReview = 'InReview',
 }
 
 export interface IChatEditsInfo {

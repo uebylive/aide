@@ -1555,6 +1555,7 @@ export class ChatModel extends Disposable implements IChatModel {
 
 	handleUserActionForSession(sessionId: string, exchangeId: string, stepIndex: number | undefined, agentId: string | undefined, accepted: boolean): void {
 		this.chatAgentService.handleUserFeedbackForSession(sessionId, exchangeId, stepIndex, agentId, accepted);
+		this.addRequest({ text: accepted ? 'accepted' : 'rejected', parts: [] }, { variables: [] }, 0);
 	}
 
 	async handleUserActionUndoSession(sessionId: string, exchangeId: string): Promise<void> {
@@ -1568,9 +1569,8 @@ export class ChatModel extends Disposable implements IChatModel {
 			// We will respond to this event entirely on the ide layer, but it should probably be triggered by sidecar
 			const response = this.addResponse();
 			this.acceptResponseProgress(response, { kind: 'rollbackCompleted', sessionId, exchangeId, exchangesRemoved: removed.length });
-			this.acceptResponseProgress(response, { kind: 'endResponse' });
+			// this.acceptResponseProgress(response, { kind: 'endResponse' }); @g-danna can I remove this?
 		}
-
 	}
 
 	/* TODO(@ghostwriternr): Honestly, don't care about followups at the moment.

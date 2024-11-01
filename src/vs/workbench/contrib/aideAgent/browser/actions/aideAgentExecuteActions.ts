@@ -8,7 +8,7 @@ import { KeyCode, KeyMod } from '../../../../../base/common/keyCodes.js';
 import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions.js';
 import { localize2 } from '../../../../../nls.js';
 import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
-import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
+import { ContextKeyExpr, ContextKeyTrueExpr } from '../../../../../platform/contextkey/common/contextkey.js';
 import { IsDevelopmentContext } from '../../../../../platform/contextkey/common/contextkeys.js';
 import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { CONTEXT_AIDE_PLAN_INPUT, CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_INPUT, CONTEXT_STREAMING_STATE } from '../../common/aideAgentContextKeys.js';
@@ -51,7 +51,7 @@ export class SubmitChatRequestAction extends Action2 {
 				{
 					id: MenuId.AideAgentExecute,
 					order: 1,
-					when: ContextKeyExpr.and(CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate(), CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET.negate()),
+					when: ContextKeyExpr.and(CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET.negate()), // and CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate()
 					group: 'navigation',
 				},
 			]
@@ -92,7 +92,7 @@ export class SubmitPlanRequestAction extends Action2 {
 				{
 					id: MenuId.AideAgentExecute,
 					order: 2,
-					when: CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate(),
+					when: ContextKeyTrueExpr.INSTANCE, // CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate()
 					group: 'navigation',
 				},
 			]
@@ -183,17 +183,19 @@ export class CancelAction extends Action2 {
 			f1: false,
 			category: CHAT_CATEGORY,
 			icon: Codicon.stopCircle,
-			menu: [{
-				id: MenuId.AideAgentExecute,
-				when: CONTEXT_CHAT_REQUEST_IN_PROGRESS,
-				order: 2,
-				group: 'navigation',
-			}, {
-				id: MenuId.AideAgentStreamingState,
-				when: CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.Loading),
-				order: 2,
-				group: 'navigation',
-			}],
+			menu: [
+				// 	{
+				// 	id: MenuId.AideAgentExecute,
+				// 	when: CONTEXT_CHAT_REQUEST_IN_PROGRESS,
+				// 	order: 2,
+				// 	group: 'navigation',
+				// },
+				{
+					id: MenuId.AideAgentStreamingState,
+					when: CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.Loading),
+					order: 2,
+					group: 'navigation',
+				}],
 			keybinding: {
 				when: CONTEXT_IN_CHAT_INPUT,
 				weight: KeybindingWeight.WorkbenchContrib,

@@ -60,14 +60,14 @@ export function registerPlanReviewActions() {
 					description: new MarkdownString('Dropping the whole plan'),
 				});
 			} else {
-				aideAgentService.pushProgress(context.sessionId, {
-					kind: 'planInfo',
-					exchangeId: context.exchangeId,
-					isStale: false,
-					sessionId: context.sessionId,
-					state: 'InReview',
-					description: new MarkdownString(`Accepting changes until ${context.stepIndex}`)
-				});
+				// aideAgentService.pushProgress(context.sessionId, {
+				// 	kind: 'planInfo',
+				// 	exchangeId: context.exchangeId,
+				// 	isStale: false,
+				// 	sessionId: context.sessionId,
+				// 	state: 'InReview',
+				// 	description: new MarkdownString(`Accepting changes until ${context.stepIndex}`)
+				// });
 			}
 		}
 	});
@@ -105,14 +105,14 @@ export function registerPlanReviewActions() {
 			// 5. the selection should be smart to only show the latest change which is present
 			const aideAgentService = accessor.get(IAideAgentService);
 			// [1] push update so we can update our rich element
-			aideAgentService.pushProgress(context.sessionId, {
-				kind: 'planInfo',
-				exchangeId: context.exchangeId,
-				isStale: false,
-				sessionId: context.sessionId,
-				state: `InReview`,
-				description: new MarkdownString(`Accepting changes until ${context.stepIndex + 1}`),
-			});
+			// aideAgentService.pushProgress(context.sessionId, {
+			// 	kind: 'planInfo',
+			// 	exchangeId: context.exchangeId,
+			// 	isStale: false,
+			// 	sessionId: context.sessionId,
+			// 	state: `InReview`,
+			// 	description: new MarkdownString(`Accepting changes until ${context.stepIndex + 1}`),
+			// });
 
 			// [2] push an update for the hunks over here
 			// TODO(skcd): This is not yet working properly, debug why :|

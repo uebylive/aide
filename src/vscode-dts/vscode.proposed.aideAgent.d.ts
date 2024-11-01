@@ -19,7 +19,6 @@ declare module 'vscode' {
 	export enum AideAgentPlanState {
 		Started = 'Started',
 		Complete = 'Complete',
-		InReview = 'InReview',
 		Cancelled = 'Cancelled',
 	}
 
@@ -27,7 +26,6 @@ declare module 'vscode' {
 
 	export enum AideAgentEditsState {
 		Loading = 'loading',
-		InReview = 'inReview',
 		MarkedComplete = 'markedComplete',
 		Cancelled = 'cancelled',
 	}

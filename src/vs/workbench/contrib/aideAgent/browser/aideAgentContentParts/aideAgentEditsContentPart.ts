@@ -59,10 +59,8 @@ export class EditsContentPart extends AideAgentRichItemContent {
 function assignLabel(edits: IChatEditsInfo): string {
 	switch (edits.state) {
 		case ChatEditsState.Loading:
-			return localize('agent.editing', "Editing");
-		case ChatEditsState.InReview:
 		case ChatEditsState.MarkedComplete:
-			return localize('agent.editsMade', "Edits made");
+			return localize('agent.edits', "Edits");
 		case ChatEditsState.Cancelled:
 			return localize('agent.editsCancelled', "Edits cancelled");
 		default:
@@ -73,7 +71,6 @@ function assignLabel(edits: IChatEditsInfo): string {
 function assignIcon(edits: IChatEditsInfo): string {
 	switch (edits.state) {
 		case ChatEditsState.Loading:
-		case ChatEditsState.InReview:
 			return 'micro/bolt';
 		case ChatEditsState.MarkedComplete:
 			return 'micro/check-circle';
@@ -98,10 +95,6 @@ function assignMenuAndPreviewOptions(edits: IChatEditsInfo): { menuId: MenuId | 
 	switch (edits.state) {
 		case ChatEditsState.Loading:
 			menuId = MenuId.AideAgentEditsLoading;
-			previewOptions = { startLabel, start: -2, end: -1 };
-			break;
-		case ChatEditsState.InReview:
-			menuId = MenuId.AideAgentEditsReview;
 			previewOptions = { startLabel, start: -2, end: -1 };
 			break;
 		case ChatEditsState.MarkedComplete:
