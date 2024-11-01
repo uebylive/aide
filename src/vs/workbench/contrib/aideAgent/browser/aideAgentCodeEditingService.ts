@@ -15,6 +15,7 @@ import { Range } from '../../../../editor/common/core/range.js';
 import { IWorkspaceTextEdit } from '../../../../editor/common/languages.js';
 import { ITextModel, MinimapPosition, OverviewRulerLane, TrackedRangeStickiness } from '../../../../editor/common/model.js';
 import { createTextBufferFactoryFromSnapshot, ModelDecorationOptions } from '../../../../editor/common/model/textModel.js';
+import { ICSEventsService } from '../../../../editor/common/services/csEvents.js';
 import { IEditorWorkerService } from '../../../../editor/common/services/editorWorker.js';
 import { IModelService } from '../../../../editor/common/services/model.js';
 import { DefaultModelSHA1Computer } from '../../../../editor/common/services/modelService.js';
@@ -24,10 +25,8 @@ import { IInstantiationService } from '../../../../platform/instantiation/common
 import { IEditorService } from '../../../services/editor/common/editorService.js';
 import { minimapInlineChatDiffInserted, overviewRulerInlineChatDiffInserted } from '../../inlineChat/common/inlineChat.js';
 import { IAideAgentCodeEditingService, IAideAgentCodeEditingSession } from '../common/aideAgentCodeEditingService.js';
-import { HunkData, HunkDisplayData, HunkInformation, HunkState } from '../common/aideAgentEditingSession.js';
+import { calculateChanges, HunkData, HunkDisplayData, HunkInformation, HunkState } from '../common/aideAgentEditingSession.js';
 import { IAideAgentEdits, IChatTextEditGroupState } from '../common/aideAgentModel.js';
-
-
 
 const editDecorationOptions = ModelDecorationOptions.register({
 	description: 'aide-probe-edit-modified',
@@ -69,6 +68,7 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 		@IEditorWorkerService private readonly _editorWorkerService: IEditorWorkerService,
 		@IModelService private readonly _modelService: IModelService,
 		@ITextModelService private readonly _textModelService: ITextModelService,
+		@ICSEventsService private readonly _csEventsService: ICSEventsService,
 	) {
 		super();
 
@@ -254,14 +254,19 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 		}
 	}
 
-	private removeDecorations() {
+	private removeDecorations(accepted: boolean) {
+		// Calculate the number of changes being accepted
+		const edits = Array.from(this._hunkDisplayData.keys());
+		const changes = calculateChanges(edits);
+		this._csEventsService.reportAgentCodeEdit({ accepted, ...changes });
+
 		for (const data of this._hunkDisplayData.values()) {
 			data.remove();
 		}
 	}
 
 	accept(): void {
-		this.removeDecorations();
+		this.removeDecorations(true);
 	}
 
 	reject(): void {
@@ -269,7 +274,7 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 			edit.hunkData.discardAll();
 		}
 
-		this.removeDecorations();
+		this.removeDecorations(false);
 	}
 
 	stop(): Promise<void> {

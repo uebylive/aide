@@ -376,3 +376,22 @@ function lineRangeAsRange(lineRange: LineRange, model: ITextModel): Range {
 		? new Range(lineRange.startLineNumber, 1, lineRange.startLineNumber, model.getLineLength(lineRange.startLineNumber))
 		: new Range(lineRange.startLineNumber, 1, lineRange.endLineNumberExclusive - 1, model.getLineLength(lineRange.endLineNumberExclusive - 1));
 }
+
+export function calculateChanges(edits: HunkInformation[]) {
+	const changes = edits.reduce((acc, edit) => {
+		const newRanges = edit.getRangesN() || [];
+		const oldRanges = edit.getRanges0() || [];
+		if (edit.isInsertion()) {
+			const wholeNewRange = newRanges[0];
+			acc.added += wholeNewRange.endLineNumber - wholeNewRange.startLineNumber + 1;
+		} else if (newRanges.length > 0 && oldRanges.length > 0) {
+			const wholeNewRange = newRanges[0];
+			const wholeOldRange = oldRanges[0];
+
+			acc.added += wholeNewRange.endLineNumber - wholeNewRange.startLineNumber + 1;
+			acc.removed += wholeOldRange.endLineNumber - wholeOldRange.startLineNumber + 1;
+		}
+		return acc;
+	}, { added: 0, removed: 0 });
+	return changes;
+}
