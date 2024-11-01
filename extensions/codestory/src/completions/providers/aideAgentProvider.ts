@@ -407,7 +407,12 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		}
 
 		const session = await vscode.csAuthentication.getSession();
-		const email = session?.account.email || '';
+
+		// Nullish coalescing more appropriate here
+		const email = session?.account.email ?? '';
+
+		// accessToken required for sidecar requests (through codestory provider)
+		const token = session?.accessToken ?? '';
 
 		// capture launch success metric
 		postHogClient?.capture({
@@ -422,7 +427,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		});
 		// New flow migration
 		if (event.mode === vscode.AideAgentMode.Chat || event.mode === vscode.AideAgentMode.Edit || event.mode === vscode.AideAgentMode.Plan) {
-			await this.streamResponse(event, event.sessionId, this.editorUrl);
+			await this.streamResponse(event, event.sessionId, this.editorUrl, token);
 			return;
 		}
 	}
@@ -432,7 +437,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	 * type, since on the sidecar side we are taking care of streaming the right thing
 	 * depending on the agent mode
 	 */
-	private async streamResponse(event: vscode.AideAgentRequest, sessionId: string, editorUrl: string) {
+	private async streamResponse(event: vscode.AideAgentRequest, sessionId: string, editorUrl: string, workosAccessToken: string) {
+		console.log({ workosAccessToken });
 		const prompt = event.prompt;
 		const exchangeIdForEvent = event.exchangeId;
 		const agentMode = event.mode;
