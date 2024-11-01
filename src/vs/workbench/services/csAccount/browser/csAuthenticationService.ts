@@ -226,8 +226,25 @@ export class CSAuthenticationService extends Themable implements ICSAuthenticati
 	}
 
 	async getSession(): Promise<CSAuthenticationSession | undefined> {
-		const session = await this.secretStorageService.get(SESSION_SECRET_KEY);
-		return session ? JSON.parse(session) : undefined;
+		const rawSession = await this.secretStorageService.get(SESSION_SECRET_KEY);
+		const session = rawSession ? JSON.parse(rawSession) : undefined;
+		if (session) {
+			try {
+				const resp = await this.getUser(session.accessToken);
+				if (resp.ok) {
+					return session;
+				} else if (resp.status === 401) {
+					await this.refreshTokens();
+					const rawSession = await this.secretStorageService.get(SESSION_SECRET_KEY);
+					return rawSession ? JSON.parse(rawSession) : undefined;
+				} else {
+					return undefined;
+				}
+			} catch (e) {
+				return undefined;
+			}
+		}
+		return session;
 	}
 
 	/**
@@ -240,18 +257,23 @@ export class CSAuthenticationService extends Themable implements ICSAuthenticati
 		const tokenData = decodeBase64(encodedTokenData);
 		const tokens = JSON.parse(tokenData.toString()) as EncodedCSTokenData;
 
-		const resp = await fetch(
+		const user = await this.getUser(tokens.access_token);
+		const text = await user.text();
+		const data = JSON.parse(text) as CSUserProfileResponse;
+
+		return { ...data, ...tokens };
+	}
+
+	private async getUser(accessToken: string): Promise<Response> {
+		return fetch(
 			`${this._subscriptionsAPIBase}/v1/users/me`,
 			{
 				headers: {
 					'Content-Type': 'application/json',
-					Authorization: `Bearer ${tokens.access_token}`,
+					Authorization: `Bearer ${accessToken}`,
 				},
 			},
 		);
-		const text = await resp.text();
-		const data = JSON.parse(text) as CSUserProfileResponse;
-		return { ...data, ...tokens };
 	}
 
 	notifyWaitlistPosition(position?: number) {
