@@ -492,8 +492,8 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		templateData.rowContainer.classList.toggle('show-detail-progress', isResponseVM(element) && !element.isComplete && !element.progressMessages.length);
 
 		if (templateData.kind === 'chatTemplate') {
-			templateData.username.textContent = isResponseVM(element) ? element.username : localize('chatUser', "You");
-			if (isResponseVM(element)) {
+			templateData.username.textContent = (isResponseVM(element) || isWelcomeVM(element)) ? element.username : localize('chatUser', "You");
+			if (isResponseVM(element) || isWelcomeVM(element)) {
 				templateData.username.classList.add('agent');
 			}
 
