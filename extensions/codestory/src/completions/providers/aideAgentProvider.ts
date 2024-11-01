@@ -438,7 +438,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	 * depending on the agent mode
 	 */
 	private async streamResponse(event: vscode.AideAgentRequest, sessionId: string, editorUrl: string, workosAccessToken: string) {
-		console.log({ workosAccessToken });
 		const prompt = event.prompt;
 		const exchangeIdForEvent = event.exchangeId;
 		const agentMode = event.mode;
