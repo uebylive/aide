@@ -68,12 +68,12 @@ export function registerChatTitleActions() {
 				f1: false,
 				category: CHAT_CATEGORY,
 				icon: Codicon.x,
-				menu: {
-					id: MenuId.AideAgentMessageTitle,
-					group: 'navigation',
-					order: 1,
-					//when: ContextKeyExpr.and(CONTEXT_RESPONSE, CONTEXT_RESPONSE_FILTERED.negate())
-				}
+				// menu: {
+				// 	id: MenuId.AideAgentMessageTitle,
+				// 	group: 'navigation',
+				// 	order: 1,
+				// 	//when: ContextKeyExpr.and(CONTEXT_RESPONSE, CONTEXT_RESPONSE_FILTERED.negate())
+				// }
 			});
 		}
 
