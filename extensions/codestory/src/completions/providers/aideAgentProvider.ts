@@ -855,12 +855,12 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					if (responseStream) {
 						responseStream.stream.close();
 					}
+					// remove the response stream from the collection
+					this.responseStreamCollection.removeResponseStream({
+						sessionId,
+						exchangeId,
+					});
 				}
-				// remove the response stream from the collection
-				this.responseStreamCollection.removeResponseStream({
-					sessionId,
-					exchangeId,
-				});
 			}
 		}
 	}
