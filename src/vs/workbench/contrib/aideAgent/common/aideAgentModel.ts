@@ -26,7 +26,7 @@ import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgen
 import { IAideAgentCodeEditingService, IAideAgentCodeEditingSession } from './aideAgentCodeEditingService.js';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from './aideAgentParserTypes.js';
 import { IAideAgentPlanService, IAideAgentPlanSession } from './aideAgentPlanService.js';
-import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IAideAgentService, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatCommandGroup, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanInfo, IChatPlanStep, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatRollbackCompleted, IChatStreamingState, IChatTask, IChatTextEdit, IChatThinkingForEditPart, IChatTreeData, IChatUsedContext, IChatWarningMessage, ICodePlanEditInfo, isIUsedContext } from './aideAgentService.js';
+import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IAideAgentService, IChatAgentMarkdownContentWithVulnerability, IChatAideAgentPlanRegenerateInformationPart, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatCommandGroup, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanInfo, IChatPlanStep, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatRollbackCompleted, IChatStreamingState, IChatTask, IChatTextEdit, IChatThinkingForEditPart, IChatTreeData, IChatUsedContext, IChatWarningMessage, ICodePlanEditInfo, isIUsedContext } from './aideAgentService.js';
 import { IChatRequestVariableValue } from './aideAgentVariables.js';
 
 export function isRequestModel(item: unknown): item is IChatRequestModel {
@@ -1287,6 +1287,25 @@ export class ChatModel extends Disposable implements IChatModel {
 	}
 
 	/**
+	 * Handles progress event which tells us that we are generating a new plan
+	 */
+	acceptPlanRegeneration(progress: IChatAideAgentPlanRegenerateInformationPart) {
+		if (progress.kind !== 'planRegeneration') {
+			return;
+		}
+		const planId = `${progress.sessionId}-${progress.exchangeId}`;
+		const runningPlan = this._planChatModels.get(planId);
+		if (runningPlan === undefined) {
+			return;
+		}
+		// dispose our running chat model, this should reset the view model
+		// properly (hopefully?)
+		// TODO(codestory): Figure out if this really resets resets the view model
+		// for the plan generation step
+		runningPlan.dispose();
+	}
+
+	/**
 	 * Handles IChatPlanStep which has deltas streaming in continously, we have total
 	 * control over how to render the plan properly. Of course we can create rich elemnts etc for this
 	 * which is all good
@@ -1408,8 +1427,7 @@ export class ChatModel extends Disposable implements IChatModel {
 		}
 
 		if (progress.kind === 'planRegeneration') {
-			console.log('planRengerationEvent');
-			console.log(progress);
+			this.acceptPlanRegeneration(progress);
 			return;
 		}
 
