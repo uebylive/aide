@@ -27,11 +27,11 @@ import { IThemeService } from '../../../../platform/theme/common/themeService.js
 import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgentData } from '../common/aideAgentAgents.js';
 import { IAideAgentCodeEditingService } from '../common/aideAgentCodeEditingService.js';
-import { CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_RESPONSE_WITH_PLAN_STEPS, CONTEXT_IN_CHAT_SESSION, CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER, CONTEXT_RESPONSE_FILTERED, CONTEXT_STREAMING_STATE } from '../common/aideAgentContextKeys.js';
+import { CONTEXT_AIDE_PLAN_REVIEW_STATE_EXCHANGEID, CONTEXT_AIDE_PLAN_REVIEW_STATE_SESSIONID, CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_RESPONSE_WITH_PLAN_STEPS, CONTEXT_IN_CHAT_SESSION, CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER, CONTEXT_RESPONSE_FILTERED, CONTEXT_STREAMING_STATE } from '../common/aideAgentContextKeys.js';
 import { AgentMode, AgentScope, ChatModelInitState, IChatModel, IChatRequestVariableEntry, IChatResponseModel } from '../common/aideAgentModel.js';
 import { ChatRequestAgentPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader, formatChatQuestion } from '../common/aideAgentParserTypes.js';
 import { ChatRequestParser } from '../common/aideAgentRequestParser.js';
-import { IAideAgentService, IChatFollowup, IChatLocationData, IChatStreamingState } from '../common/aideAgentService.js';
+import { IAideAgentService, IChatAideAgentPlanRegenerateInformationPart, IChatFollowup, IChatLocationData, IChatStreamingState } from '../common/aideAgentService.js';
 import { IAideAgentSlashCommandService } from '../common/aideAgentSlashCommands.js';
 import { ChatViewModel, IChatResponseViewModel, isRequestVM, isResponseVM, isWelcomeVM } from '../common/aideAgentViewModel.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
@@ -144,6 +144,16 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	private agentSupportsModelPicker: IContextKey<boolean>;
 	private inChatResponseWithPlanSteps: IContextKey<boolean>;
 
+	private _runningSessionId: IContextKey<string | undefined>;
+	get runningSessionId(): string | undefined {
+		return this._runningSessionId.get();
+	}
+
+	private _runningExchangeId: IContextKey<string | undefined>;
+	get runningExchangeId(): string | undefined {
+		return this._runningExchangeId.get();
+	}
+
 	private _visible = false;
 	public get visible() {
 		return this._visible;
@@ -229,6 +239,8 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this.agentInInput = CONTEXT_CHAT_INPUT_HAS_AGENT.bindTo(contextKeyService);
 		this.agentSupportsModelPicker = CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER.bindTo(contextKeyService);
 		this.inChatResponseWithPlanSteps = CONTEXT_IN_CHAT_RESPONSE_WITH_PLAN_STEPS.bindTo(this.contextKeyService);
+		this._runningSessionId = CONTEXT_AIDE_PLAN_REVIEW_STATE_SESSIONID.bindTo(this.contextKeyService);
+		this._runningExchangeId = CONTEXT_AIDE_PLAN_REVIEW_STATE_EXCHANGEID.bindTo(this.contextKeyService);
 		this.requestInProgress = CONTEXT_CHAT_REQUEST_IN_PROGRESS.bindTo(contextKeyService);
 
 		this._register((chatWidgetService as ChatWidgetService).register(this));
@@ -744,6 +756,12 @@ export class ChatWidget extends Disposable implements IChatWidget {
 				this.updateStreamingState(event);
 			});
 
+			// Reacting to the planRegenerationEvent over here since that influences
+			// the current event we are intersted in
+			events.filter((event) => event?.kind === 'planRegeneration').forEach((event) => {
+				this.updatePlanRegenerationState(event);
+			});
+
 			this.requestInProgress.set(this.viewModel.requestInProgress);
 
 			this.onDidChangeItems();
@@ -822,6 +840,12 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this.inputPart.logInputHistory();
 	}
 
+	async acceptIterationInput(mode: AgentMode, query: string): Promise<IChatResponseModel | undefined> {
+		console.log(this.inputPart.attachedContext);
+		this.inputPart.acceptInput(true);
+		return undefined;
+	}
+
 	async acceptInput(mode: AgentMode, query: string): Promise<IChatResponseModel | undefined> {
 		return this._acceptInput(query && mode ? { query, mode } : undefined);
 	}
@@ -829,6 +853,11 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	// Leftover from the old chat view, not sure if this is still needed
 	async acceptInputWithPrefix(prefix: string): Promise<void> {
 		this._acceptInput({ prefix });
+	}
+
+	private updatePlanRegenerationState(event: IChatAideAgentPlanRegenerateInformationPart) {
+		this._runningSessionId.set(event.sessionId);
+		this._runningExchangeId.set(event.exchangeId);
 	}
 
 	private updateStreamingState(event: IChatStreamingState) {

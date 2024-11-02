@@ -20,10 +20,12 @@ import { IOffsetRange, OffsetRange } from '../../../../editor/common/core/offset
 import { IRange, Range } from '../../../../editor/common/core/range.js';
 import { IWorkspaceFileEdit, IWorkspaceTextEdit, TextEdit, WorkspaceEdit } from '../../../../editor/common/languages.js';
 import { localize } from '../../../../nls.js';
+import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgentData, IChatAgentResult, reviveSerializedAgent } from './aideAgentAgents.js';
 import { IAideAgentCodeEditingService, IAideAgentCodeEditingSession } from './aideAgentCodeEditingService.js';
+import { CONTEXT_AIDE_PLAN_REVIEW_STATE_EXCHANGEID, CONTEXT_AIDE_PLAN_REVIEW_STATE_SESSIONID } from './aideAgentContextKeys.js';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from './aideAgentParserTypes.js';
 import { IAideAgentPlanService, IAideAgentPlanSession } from './aideAgentPlanService.js';
 import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IAideAgentService, IChatAgentMarkdownContentWithVulnerability, IChatAideAgentPlanRegenerateInformationPart, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatCommandGroup, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanInfo, IChatPlanStep, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatRollbackCompleted, IChatStreamingState, IChatTask, IChatTextEdit, IChatThinkingForEditPart, IChatTreeData, IChatUsedContext, IChatWarningMessage, ICodePlanEditInfo, isIUsedContext } from './aideAgentService.js';
@@ -832,7 +834,8 @@ export type IChatChangeEvent =
 	| IChatMoveEvent
 	| IChatCodeEditEvent
 	| IChatStreamingState
-	| IChatRemoveExchangesEvent;
+	| IChatRemoveExchangesEvent
+	| IChatAideAgentPlanRegenerateInformationPart;
 
 export interface IChatAddRequestEvent {
 	kind: 'addRequest';
@@ -1042,6 +1045,7 @@ export class ChatModel extends Disposable implements IChatModel {
 		@IAideAgentCodeEditingService private readonly aideAgentCodeEditingService: IAideAgentCodeEditingService,
 		@IAideAgentPlanService private readonly aideAgentPlanService: IAideAgentPlanService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 	) {
 		super();
 
@@ -1193,11 +1197,6 @@ export class ChatModel extends Disposable implements IChatModel {
 
 	addRequest(message: IParsedChatRequest, variableData: IChatRequestVariableData, attempt: number, chatAgent?: IChatAgentData, slashCommand?: IChatAgentCommand, confirmation?: string, locationData?: IChatLocationData, attachments?: IChatRequestVariableEntry[]): ChatRequestModel {
 		const request = new ChatRequestModel(this, message, variableData, attempt, confirmation, locationData, attachments);
-		//const response = new ChatResponseModel(
-		//	this.aideAgentCodeEditingService,
-		//	this.aideAgentPlanService,
-		//	[], this, chatAgent, slashCommand
-		//);
 
 		this._exchanges.push(request);
 		this._lastMessageDate = Date.now();
@@ -1298,10 +1297,8 @@ export class ChatModel extends Disposable implements IChatModel {
 		if (runningPlan === undefined) {
 			return;
 		}
-		// dispose our running chat model, this should reset the view model
-		// properly (hopefully?)
-		// TODO(codestory): Figure out if this really resets resets the view model
-		// for the plan generation step
+		CONTEXT_AIDE_PLAN_REVIEW_STATE_SESSIONID.bindTo(this.contextKeyService).set(progress.sessionId);
+		CONTEXT_AIDE_PLAN_REVIEW_STATE_EXCHANGEID.bindTo(this.contextKeyService).set(progress.exchangeId);
 		runningPlan.dispose();
 	}
 
@@ -1428,6 +1425,7 @@ export class ChatModel extends Disposable implements IChatModel {
 
 		if (progress.kind === 'planRegeneration') {
 			this.acceptPlanRegeneration(progress);
+			this._onDidChange.fire(progress);
 			return;
 		}
 

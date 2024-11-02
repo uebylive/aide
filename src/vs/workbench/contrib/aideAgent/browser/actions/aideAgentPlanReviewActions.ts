@@ -137,7 +137,6 @@ export function registerPlanReviewActions() {
 		}
 
 		run(accessor: ServicesAccessor, context: IPlanReviewStepActionContext) {
-			console.log('Save up to step ', context.stepIndex, context.sessionId, context.exchangeId);
 			// Setup our context variables over here
 			const contextKeyService = accessor.get(IContextKeyService);
 			CONTEXT_AIDE_PLAN_REVIEW_STATE_SESSIONID.bindTo(contextKeyService).set(context.sessionId);

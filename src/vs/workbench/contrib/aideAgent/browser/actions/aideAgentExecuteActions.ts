@@ -256,9 +256,9 @@ export class ContinueEditing extends Action2 {
 		if (!widget) {
 			return;
 		}
-		// TODO(skcd): Figure out how to send the input query over here so we can
-		// continue iterating
-		// There are many interesting bits here which we need to figure out properly
+		const sessionId = widget.runningSessionId;
+		const exchangeId = widget.runningExchangeId;
+		console.log('continueEditing', sessionId, exchangeId);
 	}
 }
 
