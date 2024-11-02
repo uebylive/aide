@@ -212,6 +212,9 @@ export class CancelAction extends Action2 {
 			return;
 		}
 
+		// TODO(skcd): Cancel here needs to do more than just cancel the running
+		// exchanges, we have to make sure that the running plan gets rejected
+		// properly and the UX is updated about it
 		const chatService = accessor.get(IAideAgentService);
 		if (widget.viewModel) {
 			chatService.cancelAllExchangesForSession();
@@ -219,9 +222,50 @@ export class CancelAction extends Action2 {
 	}
 }
 
+export class ContinueEditing extends Action2 {
+	static readonly ID = 'workbench.action.aideAgent.continueEditing';
+	constructor() {
+		super({
+			id: ContinueEditing.ID,
+			title: localize2('interactive.continueEditing.label', "Continue Editing"),
+			f1: false,
+			category: CHAT_CATEGORY,
+			icon: Codicon.send,
+			menu: [{
+				id: MenuId.AideAgentExecute,
+				when: CONTEXT_CHAT_REQUEST_IN_PROGRESS,
+				order: 2,
+				group: 'navigation',
+			}],
+			keybinding: {
+				when: CONTEXT_IN_CHAT_INPUT,
+				weight: KeybindingWeight.WorkbenchContrib,
+				// This keycombination is totally fucked but its a good start
+				// TODO(codestory): Fix this to render better
+				primary: KeyMod.CtrlCmd | KeyCode.Shift | KeyCode.Enter,
+				win: { primary: KeyMod.Alt | KeyCode.Backspace },
+			}
+		});
+	}
+
+	run(accessor: ServicesAccessor, ...args: any[]) {
+		const context: IChatExecuteActionContext | undefined = args[0];
+
+		const widgetService = accessor.get(IAideAgentWidgetService);
+		const widget = context?.widget ?? widgetService.lastFocusedWidget;
+		if (!widget) {
+			return;
+		}
+		// TODO(skcd): Figure out how to send the input query over here so we can
+		// continue iterating
+		// There are many interesting bits here which we need to figure out properly
+	}
+}
+
 export function registerChatExecuteActions() {
 	registerAction2(SubmitChatRequestAction);
 	registerAction2(SubmitPlanRequestAction);
 	registerAction2(CancelAction);
+	registerAction2(ContinueEditing);
 	registerAction2(TogglePlanningAction);
 }
