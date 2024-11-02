@@ -165,6 +165,11 @@ declare module 'vscode' {
 		readonly thinkingDelta: string;
 	}
 
+	export interface AideAgentPlanRegenerateInformation {
+		readonly sessionId: string;
+		readonly exchangeId: string;
+	}
+
 	export interface AideAgentEditsInfo {
 		/*
 		 * State of the edits
@@ -243,6 +248,7 @@ declare module 'vscode' {
 		step(step: AideChatStep): void;
 		push(part: AideAgentResponsePart): void;
 		thinkingForEdit(part: AideAgentThinkingForEdit): void;
+		regeneratePlan(planInformation: AideAgentPlanRegenerateInformation): void;
 		close(): void;
 	}
 

@@ -230,6 +230,12 @@ export enum ChatStreamingStateLoadingLabel {
 	Generating = 'generating',
 }
 
+export interface IChatAideAgentPlanRegenerateInformationPart {
+	kind: 'planRegeneration';
+	sessionId: string;
+	exchangeId: string;
+}
+
 export interface IChatThinkingForEditPart {
 	kind: 'thinkingForEdit';
 	sessionId: string;
@@ -338,7 +344,8 @@ export type IChatProgress =
 	| IChatEndResponse
 	| IChatThinkingForEditPart
 	| IChatRollbackCompleted
-	| ICodePlanEditInfo;
+	| ICodePlanEditInfo
+	| IChatAideAgentPlanRegenerateInformationPart;
 
 export interface IChatFollowup {
 	kind: 'reply';

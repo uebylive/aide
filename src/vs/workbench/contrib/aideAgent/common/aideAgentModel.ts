@@ -1407,6 +1407,12 @@ export class ChatModel extends Disposable implements IChatModel {
 			return;
 		}
 
+		if (progress.kind === 'planRegeneration') {
+			console.log('planRengerationEvent');
+			console.log(progress);
+			return;
+		}
+
 		// Instead of doing so much state management over here, we can just send the event
 		// over to the viewModel by firing the event over here and letting the onDidChange
 		// handlers for the view models (ChatModelView) react to this, they know what to do with this

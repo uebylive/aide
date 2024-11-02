@@ -139,6 +139,12 @@ class AideAgentResponseStream {
 					const dto = typeConvert.AideAgentResponseStreamingStatePart.from(part);
 					_report(dto);
 				},
+				regeneratePlan(planInformation) {
+					throwIfDone(this.anchor);
+					const part = new extHostTypes.AideAgentPlanRegenerateInformationPart(planInformation);
+					const dto = typeConvert.AideAgentPlanRegenerateInformationPart.from(part);
+					_report(dto);
+				},
 				thinkingForEdit(value) {
 					throwIfDone(this.anchor);
 					const part = new extHostTypes.AideAgentThinkingForEditPart(value);
