@@ -145,6 +145,8 @@ export interface IChatWidget {
 	readonly inputEditor: ICodeEditor;
 	readonly supportsFileReferences: boolean;
 	readonly parsedInput: IParsedChatRequest;
+	readonly runningSessionId: string | undefined;
+	readonly runningExchangeId: string | undefined;
 	lastSelectedAgent: IChatAgentData | undefined;
 	readonly scopedContextKeyService: IContextKeyService;
 	completionContext: IChatWidgetCompletionContext;
@@ -162,6 +164,7 @@ export interface IChatWidget {
 	setInput(query?: string): void;
 	getInput(): string;
 	logInputHistory(): void;
+	acceptIterationInput(mode: AgentMode, query: string): Promise<IChatResponseModel | undefined>;
 	acceptInput(mode: AgentMode, query?: string): Promise<IChatResponseModel | undefined>;
 	acceptInputWithPrefix(prefix: string): void;
 	setInputPlaceholder(placeholder: string): void;
