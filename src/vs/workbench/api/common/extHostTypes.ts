@@ -4816,6 +4816,15 @@ export class AideAgentResponsePlanInfoPart {
 	}
 }
 
+export class AideAgentPlanRegenerateInformationPart {
+	sessionId: string;
+	exchangeId: string;
+	constructor(step: vscode.AideAgentPlanRegenerateInformation) {
+		this.sessionId = step.sessionId;
+		this.exchangeId = step.exchangeId;
+	}
+}
+
 export class AideAgentThinkingForEditPart {
 	sessionId: string;
 	exchangeId: string;

@@ -117,6 +117,7 @@ type ExchangeMessageEvent = {
 	EditsExchangeState: EditsExchangeEditsState;
 	PlansExchangeState: EditsExchangeEditsState;
 	ExecutionState: ExecutionExchangeStateEvent;
+	RegeneratePlan: RegeneratePlanExchangeEvent;
 };
 
 type ExecutionExchangeStateEvent = 'Inference' | 'InReview' | 'Cancelled';
@@ -155,6 +156,11 @@ interface PlanStepDescriptionUpdateEvent {
 	delta: string | null;
 	description_up_until_now: string;
 	index: number;
+}
+
+interface RegeneratePlanExchangeEvent {
+	exchange_id: string;
+	session_id: string;
 }
 
 interface FinishedExchangeEvent {
