@@ -373,7 +373,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	 * this also updates the feedback on the sidecar side so we can tell the agent if its
 	 * chagnes were accepted or not
 	 */
-	handleExchangeUserAction(sessionId: string, exchangeId: string, stepIndex: number | undefined, action: vscode.AideSessionExchangeUserAction): void {
+	async handleExchangeUserAction(sessionId: string, exchangeId: string, stepIndex: number | undefined, action: vscode.AideSessionExchangeUserAction): Promise<void> {
 		// we ping the sidecar over here telling it about the state of the edits after
 		// the user has reacted to it appropriately
 		const editorUrl = this.editorUrl;
@@ -385,7 +385,9 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			// TODO(skcd): Not sure if an async stream like this works, but considering
 			// js/ts this should be okay from what I remember, pending futures do not
 			// get cleaned up via GC
-			const responseStream = this.sidecarClient.userFeedbackOnExchange(sessionId, exchangeId, stepIndex, editorUrl, isAccepted);
+			const session = await vscode.csAuthentication.getSession();
+			const accessToken = session?.accessToken ?? '';
+			const responseStream = this.sidecarClient.userFeedbackOnExchange(sessionId, exchangeId, stepIndex, editorUrl, isAccepted, accessToken);
 			this.reportAgentEventsToChat(true, responseStream);
 		}
 	}

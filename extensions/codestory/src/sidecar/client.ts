@@ -1276,6 +1276,7 @@ export class SideCarClient {
 		stepIndex: number | undefined,
 		editorUrl: string,
 		accepted: boolean,
+		accessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agentic/user_feedback_on_exchange';
@@ -1286,6 +1287,7 @@ export class SideCarClient {
 			editor_url: editorUrl,
 			step_index: stepIndex,
 			accepted,
+			access_token: accessToken,
 		};
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
