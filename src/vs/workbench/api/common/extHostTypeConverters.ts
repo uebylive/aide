@@ -2889,6 +2889,7 @@ export namespace AideAgentMode {
 		switch (mode) {
 			case AgentMode.Edit: return types.AideAgentMode.Edit;
 			case AgentMode.Chat: return types.AideAgentMode.Chat;
+			case AgentMode.Plan: return types.AideAgentMode.Plan;
 		}
 	}
 
@@ -2896,6 +2897,7 @@ export namespace AideAgentMode {
 		switch (mode) {
 			case types.AideAgentMode.Edit: return AgentMode.Edit;
 			case types.AideAgentMode.Chat: return AgentMode.Chat;
+			case types.AideAgentMode.Plan: return AgentMode.Plan;
 		}
 	}
 }

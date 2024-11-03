@@ -26,12 +26,11 @@ import { ILogService } from '../../../../platform/log/common/log.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgentData } from '../common/aideAgentAgents.js';
-import { CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_SESSION, CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER, CONTEXT_RESPONSE_FILTERED } from '../common/aideAgentContextKeys.js';
+import { CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_SESSION, CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER, CONTEXT_RESPONSE_FILTERED } from '../common/aideAgentContextKeys.js';
 import { AgentMode, AgentScope, ChatModelInitState, IChatModel, IChatRequestVariableEntry, IChatResponseModel } from '../common/aideAgentModel.js';
-import { ChatRequestAgentPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader, formatChatQuestion } from '../common/aideAgentParserTypes.js';
+import { ChatRequestAgentPart, IParsedChatRequest, formatChatQuestion } from '../common/aideAgentParserTypes.js';
 import { ChatRequestParser } from '../common/aideAgentRequestParser.js';
 import { IAideAgentService, IChatFollowup, IChatLocationData } from '../common/aideAgentService.js';
-import { IAideAgentSlashCommandService } from '../common/aideAgentSlashCommands.js';
 import { ChatViewModel, IChatResponseViewModel, isRequestVM, isResponseVM, isWelcomeVM } from '../common/aideAgentViewModel.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
 import { ChatTreeItem, IAideAgentAccessibilityService, IAideAgentWidgetService, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions, IChatWidget, IChatWidgetViewContext, IChatWidgetViewOptions, showChatView } from './aideAgent.js';
@@ -206,7 +205,6 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		@IAideAgentAccessibilityService private readonly chatAccessibilityService: IAideAgentAccessibilityService,
 		@ILogService private readonly logService: ILogService,
 		@IThemeService private readonly themeService: IThemeService,
-		@IAideAgentSlashCommandService private readonly chatSlashCommandService: IAideAgentSlashCommandService,
 		@IViewsService private readonly viewsService: IViewsService,
 	) {
 		super();
@@ -501,10 +499,11 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			this._codeBlockModelCollection,
 			overflowWidgetsContainer,
 		));
+		/* TODO(@ghostwriternr): This was used for followups, but not sure if it's needed anymore.
 		this._register(this.renderer.onDidClickFollowup(item => {
-			// is this used anymore?
 			this.acceptInput(item.message);
 		}));
+		*/
 		this._register(this.renderer.onDidClickRerunWithAgentOrCommandDetection(item => {
 			/* TODO(@ghostwriternr): Commenting this out definitely breaks rerunning requests. Fix this.
 			const request = this.chatService.getSession(item.sessionId)?.getExchanges().find(candidate => candidate.id === item.requestId);
@@ -621,6 +620,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		}));
 		this._register(this.inputPart.onDidFocus(() => this._onDidFocus.fire()));
 		this._register(this.inputPart.onDidChangeContext((e) => this._onDidChangeContext.fire(e)));
+		/* TODO(@ghostwriternr): This was used for followups, but not sure if it's needed anymore.
 		this._register(this.inputPart.onDidAcceptFollowup(e => {
 			if (!this.viewModel) {
 				return;
@@ -665,6 +665,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 				},
 			});
 		}));
+		*/
 		this._register(this.inputPart.onDidChangeHeight(() => {
 			if (this.bodyDimension) {
 				this.layout(this.bodyDimension.height, this.bodyDimension.width);
@@ -780,8 +781,8 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this.inputPart.logInputHistory();
 	}
 
-	async acceptInput(query?: string): Promise<IChatResponseModel | undefined> {
-		return this._acceptInput(query ? { query } : undefined);
+	async acceptInput(mode: AgentMode, query?: string): Promise<IChatResponseModel | undefined> {
+		return this._acceptInput(query && mode ? { query, mode } : undefined);
 	}
 
 	async acceptInputWithPrefix(prefix: string): Promise<void> {
@@ -798,7 +799,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		return inputState;
 	}
 
-	private async _acceptInput(opts: { query: string } | { prefix: string } | undefined): Promise<IChatResponseModel | undefined> {
+	private async _acceptInput(opts: { query: string; mode: AgentMode } | { prefix: string } | undefined): Promise<IChatResponseModel | undefined> {
 		if (this.viewModel) {
 			const editorValue = this.getInput();
 			if ('isPassthrough' in this.viewContext && this.viewContext.isPassthrough) {
@@ -808,7 +809,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 				}
 
 				widget.transferQueryState(AgentMode.Edit, this.inputPart.currentAgentScope);
-				widget.acceptInput(editorValue);
+				widget.acceptInput(AgentMode.Edit, editorValue);
 				widget.focusInput();
 				this._onDidAcceptInput.fire();
 				return;
@@ -820,9 +821,24 @@ export class ChatWidget extends Disposable implements IChatWidget {
 				'query' in opts ? opts.query :
 					`${opts.prefix} ${editorValue}`;
 			const isUserQuery = !opts || 'prefix' in opts;
+			let agentMode = AgentMode.Chat;
+			if (opts && 'mode' in opts) {
+				agentMode = opts.mode;
+			}
+
+			// This is also tied to just the edit and to nothing else right now
+			// which kind of feels weird ngl
+			let agentScope = this.inputPart.currentAgentScope;
+			// If we are inPassthrough which implies a floating widget then
+			// our scope is always Selection
+			if ('isPassthrough' in this.viewContext && this.viewContext.isPassthrough) {
+				agentScope = AgentScope.Selection;
+			}
+			// scope here is dicated by how the command is run, not on the internal state
+			// of the inputPart which was based on a selector before
 			const result = await this.chatService.sendRequest(this.viewModel.sessionId, input, {
-				agentMode: this.inputPart.currentAgentMode,
-				agentScope: this.inputPart.currentAgentScope,
+				agentMode,
+				agentScope,
 				userSelectedModelId: this.inputPart.currentLanguageModel,
 				location: this.location,
 				locationData: this._location.resolveData?.(),
@@ -854,6 +870,14 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	transferQueryState(mode: AgentMode, scope: AgentScope): void {
 		this.inputPart.currentAgentMode = mode;
 		this.inputPart.currentAgentScope = scope;
+	}
+
+	get planningEnabled(): boolean {
+		return this.inputPart.planningEnabled;
+	}
+
+	togglePlanning(): void {
+		this.inputPart.planningEnabled = !this.inputPart.planningEnabled;
 	}
 
 	setContext(overwrite: boolean, ...contentReferences: IChatRequestVariableEntry[]) {

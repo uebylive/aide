@@ -29,6 +29,7 @@ import { IAideAgentWidgetHistoryService } from '../../common/aideAgentWidgetHist
 import { IEditorGroupsService } from '../../../../services/editor/common/editorGroupsService.js';
 import { ACTIVE_GROUP, IEditorService } from '../../../../services/editor/common/editorService.js';
 import { IViewsService } from '../../../../services/views/common/viewsService.js';
+import { AgentMode } from '../../common/aideAgentModel.js';
 
 export interface IChatViewTitleActionContext {
 	chatView: ChatViewPane;
@@ -96,7 +97,7 @@ class OpenChatGlobalAction extends Action2 {
 			if (opts.isPartialQuery) {
 				chatWidget.setInput(opts.query);
 			} else {
-				chatWidget.acceptInput(opts.query);
+				chatWidget.acceptInput(AgentMode.Chat, opts.query);
 			}
 		}
 

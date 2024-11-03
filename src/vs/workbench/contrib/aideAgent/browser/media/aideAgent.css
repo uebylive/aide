@@ -508,16 +508,16 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	padding-left: 4px;
 }
 
-.interactive-session .chat-input-toolbars {
+.interactive-session .aideagent-input-toolbars {
 	display: flex;
 }
 
-.interactive-session .chat-input-toolbars :first-child {
+.interactive-session .aideagent-input-toolbars :first-child {
 	margin-right: auto;
 }
 
-.interactive-session .chat-input-toolbars .agentmode-picker-item .action-label,
-.interactive-session .chat-input-toolbars .agentscope-picker-item .action-label {
+.interactive-session .aideagent-input-toolbars .agentmode-picker-item .action-label,
+.interactive-session .aideagent-input-toolbars .agentscope-picker-item .action-label {
 	font-size: 12px;
 	height: 16px;
 	padding: 3px 0px 3px 6px;
@@ -525,19 +525,24 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	align-items: center;
 }
 
-.interactive-session .chat-input-toolbars .agentmode-picker-item .action-label .codicon-chevron-down,
-.interactive-session .chat-input-toolbars .agentscope-picker-item .action-label .codicon-chevron-down {
+.interactive-session .aideagent-input-toolbars .agentmode-picker-item .action-label .codicon-chevron-down,
+.interactive-session .aideagent-input-toolbars .agentscope-picker-item .action-label .codicon-chevron-down {
 	font-size: 12px;
 	margin-left: 2px;
 }
 
-.interactive-session .chat-input-toolbars .monaco-action-bar .actions-container {
+.interactive-session .aideagent-input-toolbars .monaco-action-bar .actions-container {
 	display: flex;
 	gap: 4px;
 }
 
-.interactive-session .chat-input-toolbars .codicon-debug-stop {
+.interactive-session .aideagent-input-toolbars .codicon-debug-stop {
 	color: var(--vscode-icon-foreground) !important;
+}
+
+.interactive-session .aideagent-input-toolbars .action-item:has(.codicon-compass-active) {
+	background-color: var(--vscode-toolbar-activeBackground);
+	border-radius: 4px;
 }
 
 .interactive-response .interactive-result-code-block .interactive-result-editor .monaco-editor,
@@ -761,7 +766,7 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	margin: 0 3px;
 }
 
-.quick-input-widget .interactive-session .interactive-input-part .chat-input-toolbars {
+.quick-input-widget .interactive-session .interactive-input-part .aideagent-input-toolbars {
 	margin-bottom: 1px;
 }
 

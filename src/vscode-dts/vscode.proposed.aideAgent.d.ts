@@ -6,7 +6,8 @@
 declare module 'vscode' {
 	export enum AideAgentMode {
 		Edit = 1,
-		Chat = 2
+		Chat = 2,
+		Plan = 3
 	}
 
 	export enum AideAgentScope {

@@ -191,10 +191,6 @@ export class ChatViewPane extends ViewPane {
 		}
 	}
 
-	acceptInput(query?: string): void {
-		this._widget.acceptInput(query);
-	}
-
 	private clear(): void {
 		if (this.widget.viewModel) {
 			this.chatService.clearSession(this.widget.viewModel.sessionId);
