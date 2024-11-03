@@ -238,11 +238,11 @@ export class ContinueEditing extends Action2 {
 				group: 'navigation',
 			}],
 			keybinding: {
-				when: CONTEXT_IN_CHAT_INPUT,
-				weight: KeybindingWeight.WorkbenchContrib,
+				when: ContextKeyExpr.and(CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_AIDE_PLAN_INPUT),
+				weight: KeybindingWeight.WorkbenchContrib + 51,
 				// This keycombination is totally fucked but its a good start
 				// TODO(codestory): Fix this to render better
-				primary: KeyMod.CtrlCmd | KeyCode.Shift | KeyCode.Enter,
+				primary: KeyCode.Enter,
 				win: { primary: KeyMod.Alt | KeyCode.Backspace },
 			}
 		});
@@ -258,7 +258,6 @@ export class ContinueEditing extends Action2 {
 		}
 		const sessionId = widget.runningSessionId;
 		const exchangeId = widget.runningExchangeId;
-		console.log('continueEditing', sessionId, exchangeId);
 		const input = widget?.getInput() ?? context?.inputValue;
 		if (sessionId && exchangeId) {
 			widget?.acceptIterationInput(input, sessionId, exchangeId);

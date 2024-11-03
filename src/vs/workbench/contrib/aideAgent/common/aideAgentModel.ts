@@ -1195,6 +1195,9 @@ export class ChatModel extends Disposable implements IChatModel {
 		return this._exchanges;
 	}
 
+	// Over here we are pushing new ChatRequestModels over here
+	// this can be used to solve the problem of updating request
+	// if ChatRequestModel supports updating
 	addRequest(message: IParsedChatRequest, variableData: IChatRequestVariableData, attempt: number, chatAgent?: IChatAgentData, slashCommand?: IChatAgentCommand, confirmation?: string, locationData?: IChatLocationData, attachments?: IChatRequestVariableEntry[]): ChatRequestModel {
 		const request = new ChatRequestModel(this, message, variableData, attempt, confirmation, locationData, attachments);
 
