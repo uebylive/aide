@@ -27,7 +27,7 @@ import { IThemeService } from '../../../../platform/theme/common/themeService.js
 import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgentData } from '../common/aideAgentAgents.js';
 import { IAideAgentCodeEditingService } from '../common/aideAgentCodeEditingService.js';
-import { CONTEXT_AIDE_PLAN_REVIEW_STATE_EXCHANGEID, CONTEXT_AIDE_PLAN_REVIEW_STATE_SESSIONID, CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_RESPONSE_WITH_PLAN_STEPS, CONTEXT_IN_CHAT_SESSION, CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER, CONTEXT_RESPONSE_FILTERED, CONTEXT_STREAMING_STATE } from '../common/aideAgentContextKeys.js';
+import { CONTEXT_AIDE_PLAN_INPUT, CONTEXT_AIDE_PLAN_REVIEW_STATE_EXCHANGEID, CONTEXT_AIDE_PLAN_REVIEW_STATE_SESSIONID, CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_RESPONSE_WITH_PLAN_STEPS, CONTEXT_IN_CHAT_SESSION, CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER, CONTEXT_RESPONSE_FILTERED, CONTEXT_STREAMING_STATE } from '../common/aideAgentContextKeys.js';
 import { AgentMode, AgentScope, ChatModelInitState, IChatModel, IChatRequestVariableEntry, IChatResponseModel } from '../common/aideAgentModel.js';
 import { ChatRequestAgentPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader, formatChatQuestion } from '../common/aideAgentParserTypes.js';
 import { ChatRequestParser } from '../common/aideAgentRequestParser.js';
@@ -139,6 +139,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 	private bodyDimension: dom.Dimension | undefined;
 	private visibleChangeCount = 0;
+	private isIterationAllowed: IContextKey<boolean>;
 	private requestInProgress: IContextKey<boolean>;
 	private agentInInput: IContextKey<boolean>;
 	private agentSupportsModelPicker: IContextKey<boolean>;
@@ -242,6 +243,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this._runningSessionId = CONTEXT_AIDE_PLAN_REVIEW_STATE_SESSIONID.bindTo(this.contextKeyService);
 		this._runningExchangeId = CONTEXT_AIDE_PLAN_REVIEW_STATE_EXCHANGEID.bindTo(this.contextKeyService);
 		this.requestInProgress = CONTEXT_CHAT_REQUEST_IN_PROGRESS.bindTo(contextKeyService);
+		this.isIterationAllowed = CONTEXT_AIDE_PLAN_INPUT.bindTo(contextKeyService);
 
 		this._register((chatWidgetService as ChatWidgetService).register(this));
 
@@ -841,7 +843,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this.inputPart.logInputHistory();
 	}
 
-	async acceptIterationInput(mode: AgentMode, query: string, sessionId: string, exchangeId: string): Promise<IChatResponseModel | undefined> {
+	async acceptIterationInput(query: string, sessionId: string, exchangeId: string): Promise<IChatResponseModel | undefined> {
 		// this does not show up we have to gather it somewhere else I presume
 		if (this.viewModel) {
 			// scope here is dicated by how the command is run, not on the internal state
@@ -944,6 +946,12 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			let agentMode = AgentMode.Chat;
 			if (opts && 'mode' in opts) {
 				agentMode = opts.mode;
+			}
+
+			if (agentMode === AgentMode.Edit || agentMode === AgentMode.Plan) {
+				this.isIterationAllowed.set(true);
+			} else {
+				this.isIterationAllowed.set(false);
 			}
 
 			// This is also tied to just the edit and to nothing else right now
