@@ -447,7 +447,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		this._container = elements.root;
 		container.append(this._container);
 		if (this.location === ChatAgentLocation.Panel) {
-			this._streamingStateWidget = this._register(this.instantiationService.createInstance(StreamingStateWidget, { state: ChatStreamingState.Loading, isError: false }, elements.streamingStateContainer, false));
+			this._streamingStateWidget = this._register(this.instantiationService.createInstance(StreamingStateWidget, { state: ChatStreamingState.Loading, isError: false, files: [] }, elements.streamingStateContainer, false));
 		}
 		this._container.classList.toggle('compact', this.options.renderStyle === 'compact');
 		this.followupsContainer = elements.followupsContainer;

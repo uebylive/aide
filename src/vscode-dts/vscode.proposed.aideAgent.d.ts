@@ -233,6 +233,10 @@ declare module 'vscode' {
 		state: `${AideAgentStreamingStateEnum}`;
 		loadingLabel?: `${AideAgentStreamingStateLoadingLabel}`;
 		exchangeId: string;
+		// the files which are part of the streaming state
+		// what we really want is to tie this state to the edits started
+		// state, but .... 🫡 (I am lazy)
+		files: string[];
 		sessionId: string;
 		isError: boolean;
 		message?: string;
