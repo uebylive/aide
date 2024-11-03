@@ -1062,6 +1062,7 @@ export class SideCarClient {
 		repoRef: RepoRef,
 		projectLabels: string[],
 		codebaseSearch: boolean,
+		workosAccessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agentic/agent_session_plan';
@@ -1077,6 +1078,7 @@ export class SideCarClient {
 			root_directory: vscode.workspace.rootPath,
 			project_labels: projectLabels,
 			codebase_search: codebaseSearch,
+			access_token: workosAccessToken,
 		};
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
@@ -1162,6 +1164,48 @@ export class SideCarClient {
 		}
 	}
 
+	async *agentSessionEditFeedback(
+		query: string,
+		sessionId: string,
+		exchangeId: string,
+		editorUrl: string,
+		agentMode: vscode.AideAgentMode,
+		variables: readonly vscode.ChatPromptReference[],
+		repoRef: RepoRef,
+		projectLabels: string[],
+		workosAccessToken: string,
+	): AsyncIterableIterator<SideCarAgentEvent> {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/agentic/agent_session_plan_iterate';
+		const url = baseUrl.toString();
+		const body = {
+			session_id: sessionId,
+			exchange_id: exchangeId,
+			editor_url: editorUrl,
+			query,
+			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query),
+			agent_mode: agentMode.toString(),
+			repo_ref: repoRef.getRepresentation(),
+			project_labels: projectLabels,
+			root_directory: vscode.workspace.rootPath,
+			codebase_search: false,
+			access_token: workosAccessToken,
+		};
+
+		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
+		for await (const line of asyncIterableResponse) {
+			const lineParts = line.split('data:{');
+			for (const lineSinglePart of lineParts) {
+				const lineSinglePartTrimmed = lineSinglePart.trim();
+				if (lineSinglePartTrimmed === '') {
+					continue;
+				}
+				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as SideCarAgentEvent;
+				yield conversationMessage;
+			}
+		}
+	}
+
 	async *agentSessionAnchoredEdit(
 		query: string,
 		sessionId: string,
@@ -1171,6 +1215,7 @@ export class SideCarClient {
 		variables: readonly vscode.ChatPromptReference[],
 		repoRef: RepoRef,
 		projectLabels: string[],
+		workosAccessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agentic/agent_session_edit_anchored';
@@ -1186,6 +1231,7 @@ export class SideCarClient {
 			project_labels: projectLabels,
 			root_directory: vscode.workspace.rootPath,
 			codebase_search: false,
+			access_token: workosAccessToken,
 		};
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
@@ -1270,6 +1316,7 @@ export class SideCarClient {
 		variables: readonly vscode.ChatPromptReference[],
 		repoRef: RepoRef,
 		projectLabels: string[],
+		workosAccessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agentic/agent_session_chat';
@@ -1285,9 +1332,15 @@ export class SideCarClient {
 			project_labels: projectLabels,
 			root_directory: vscode.workspace.rootPath,
 			codebase_search: false,
+			access_token: workosAccessToken,
 		};
 
-		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
+		// consider using headers
+		const headers = {
+			'Authorization': `Bearer ${workosAccessToken}`,
+		};
+
+		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body, headers);
 		for await (const line of asyncIterableResponse) {
 			const lineParts = line.split('data:{');
 			for (const lineSinglePart of lineParts) {

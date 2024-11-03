@@ -117,6 +117,7 @@ type ExchangeMessageEvent = {
 	EditsExchangeState: EditsExchangeEditsState;
 	PlansExchangeState: EditsExchangeEditsState;
 	ExecutionState: ExecutionExchangeStateEvent;
+	RegeneratePlan: RegeneratePlanExchangeEvent;
 };
 
 type ExecutionExchangeStateEvent = 'Inference' | 'InReview' | 'Cancelled';
@@ -157,6 +158,11 @@ interface PlanStepDescriptionUpdateEvent {
 	index: number;
 }
 
+interface RegeneratePlanExchangeEvent {
+	exchange_id: string;
+	session_id: string;
+}
+
 interface FinishedExchangeEvent {
 	exchange_id: string;
 	session_id: string;
@@ -186,8 +192,8 @@ interface SearchQuery {
 }
 
 type SearchResultSnippet =
-	| { type: 'FileContent', content: Uint8Array }
-	| { type: 'Tag', tag: string };
+	| { type: 'FileContent'; content: Uint8Array }
+	| { type: 'Tag'; tag: string };
 
 interface SearchResult {
 	path: string;
@@ -212,14 +218,14 @@ interface DecideResponse {
 
 type IterativeSearchEvent =
 	| { type: 'SearchStarted' }
-	| { type: 'SeedApplied', duration: Duration }
-	| { type: 'SearchQueriesGenerated', queries: SearchQuery[], duration: Duration }
-	| { type: 'SearchExecuted', results: SearchResult[], duration: Duration }
-	| { type: 'IdentificationCompleted', response: IdentifyResponse, duration: Duration }
-	| { type: 'FileOutlineGenerated', duration: Duration }
-	| { type: 'DecisionMade', response: DecideResponse, duration: Duration }
-	| { type: 'LoopCompleted', iteration: number, duration: Duration }
-	| { type: 'SearchCompleted', duration: Duration };
+	| { type: 'SeedApplied'; duration: Duration }
+	| { type: 'SearchQueriesGenerated'; queries: SearchQuery[]; duration: Duration }
+	| { type: 'SearchExecuted'; results: SearchResult[]; duration: Duration }
+	| { type: 'IdentificationCompleted'; response: IdentifyResponse; duration: Duration }
+	| { type: 'FileOutlineGenerated'; duration: Duration }
+	| { type: 'DecisionMade'; response: DecideResponse; duration: Duration }
+	| { type: 'LoopCompleted'; iteration: number; duration: Duration }
+	| { type: 'SearchCompleted'; duration: Duration };
 
 interface Duration {
 	secs: number;
@@ -1054,7 +1060,7 @@ export type SidecarDiagnosticsResponse = {
 
 export type SidecarParameterHints = {
 	signature_labels: string[];
-}
+};
 
 export interface SidecarOpenFileContextEvent {
 	fs_file_path: string;

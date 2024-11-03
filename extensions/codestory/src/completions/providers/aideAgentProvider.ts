@@ -141,6 +141,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			handleEvent: this.handleEvent.bind(this),
 			handleExchangeUserAction: this.handleExchangeUserAction.bind(this),
 			handleSessionUndo: this.handleSessionUndo.bind(this),
+			handleSessionIterationRequest: this.handleSessionIterationRequest.bind(this),
 		});
 		this.aideAgent.iconPath = vscode.Uri.joinPath(vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''), 'assets', 'aide-agent.png');
 		this.aideAgent.requester = {
@@ -359,6 +360,13 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		// this.sessionId = sessionId;
 	}
 
+	async handleSessionIterationRequest(sessionId: string, exchangeId: string, iterationQuery: string, references: readonly vscode.AideAgentPromptReference[]): Promise<void> {
+		const session = await vscode.csAuthentication.getSession();
+		const token = session?.accessToken ?? '';
+		const stream = this.sidecarClient.agentSessionEditFeedback(iterationQuery, sessionId, exchangeId, this.editorUrl!, vscode.AideAgentMode.Edit, references, this.currentRepoRef, this.projectContext.labels, token);
+		this.reportAgentEventsToChat(true, stream);
+	}
+
 	handleSessionUndo(sessionId: string, exchangeId: string): void {
 		// TODO(skcd): Handle this properly that we are doing an undo over here
 		this.sidecarClient.handleSessionUndo(sessionId, exchangeId, this.editorUrl!);
@@ -407,7 +415,12 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		}
 
 		const session = await vscode.csAuthentication.getSession();
-		const email = session?.account.email || '';
+
+		// Nullish coalescing more appropriate here
+		const email = session?.account.email ?? '';
+
+		// accessToken required for sidecar requests (through codestory provider)
+		const token = session?.accessToken ?? '';
 
 		// capture launch success metric
 		postHogClient?.capture({
@@ -422,7 +435,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		});
 		// New flow migration
 		if (event.mode === vscode.AideAgentMode.Chat || event.mode === vscode.AideAgentMode.Edit || event.mode === vscode.AideAgentMode.Plan) {
-			await this.streamResponse(event, event.sessionId, this.editorUrl);
+			await this.streamResponse(event, event.sessionId, this.editorUrl, token);
 			return;
 		}
 	}
@@ -432,13 +445,13 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	 * type, since on the sidecar side we are taking care of streaming the right thing
 	 * depending on the agent mode
 	 */
-	private async streamResponse(event: vscode.AideAgentRequest, sessionId: string, editorUrl: string) {
+	private async streamResponse(event: vscode.AideAgentRequest, sessionId: string, editorUrl: string, workosAccessToken: string) {
 		const prompt = event.prompt;
 		const exchangeIdForEvent = event.exchangeId;
 		const agentMode = event.mode;
 		const variables = event.references;
 		if (event.mode === vscode.AideAgentMode.Chat) {
-			const responseStream = this.sidecarClient.agentSessionChat(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels);
+			const responseStream = this.sidecarClient.agentSessionChat(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, workosAccessToken);
 			await this.reportAgentEventsToChat(true, responseStream);
 		}
 		// Now lets try to handle the edit event first
@@ -448,11 +461,11 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		// if its selection scope then its agentic
 		if (event.mode === vscode.AideAgentMode.Edit) {
 			if (event.scope === vscode.AideAgentScope.Selection) {
-				const responseStream = await this.sidecarClient.agentSessionAnchoredEdit(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels);
+				const responseStream = await this.sidecarClient.agentSessionAnchoredEdit(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, workosAccessToken);
 				await this.reportAgentEventsToChat(true, responseStream);
 			} else {
 				const isWholeCodebase = event.scope === vscode.AideAgentScope.Codebase;
-				const responseStream = await this.sidecarClient.agentSessionPlanStep(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, isWholeCodebase);
+				const responseStream = await this.sidecarClient.agentSessionPlanStep(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, isWholeCodebase, workosAccessToken);
 				await this.reportAgentEventsToChat(true, responseStream);
 			}
 		}
@@ -463,7 +476,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		// once we have a step of the plan we should stream it along with the edits of the plan
 		// and keep doing that until we are done completely
 		if (event.mode === vscode.AideAgentMode.Plan) {
-			const responseStream = await this.sidecarClient.agentSessionPlanStep(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, false);
+			const responseStream = await this.sidecarClient.agentSessionPlanStep(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, false, workosAccessToken);
 			await this.reportAgentEventsToChat(true, responseStream);
 		}
 	}
@@ -838,6 +851,13 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					}
 					continue;
 				}
+				if (event.event.ExchangeEvent.RegeneratePlan) {
+					// This event help sus regenerate the plan
+					responseStream?.stream.regeneratePlan({
+						sessionId: event.event.ExchangeEvent.RegeneratePlan.session_id,
+						exchangeId: event.event.ExchangeEvent.RegeneratePlan.exchange_id,
+					});
+				}
 				if (event.event.ExchangeEvent.FinishedExchange) {
 					// Update our streaming state that we are finished
 					responseStream?.stream.streamingState({
@@ -850,12 +870,12 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					if (responseStream) {
 						responseStream.stream.close();
 					}
+					// remove the response stream from the collection
+					this.responseStreamCollection.removeResponseStream({
+						sessionId,
+						exchangeId,
+					});
 				}
-				// remove the response stream from the collection
-				this.responseStreamCollection.removeResponseStream({
-					sessionId,
-					exchangeId,
-				});
 			}
 		}
 	}

@@ -101,12 +101,14 @@ export async function* callServerEventStreamingBufferedGET(url: string): AsyncIt
 	}
 }
 
-export async function* callServerEventStreamingBufferedPOST(url: string, body: any): AsyncIterableIterator<string> {
+// auth header may be passed here
+export async function* callServerEventStreamingBufferedPOST(url: string, body: any, headers?: Record<string, string>): AsyncIterableIterator<string> {
 	const response = await fetch(url, {
 		method: 'POST',
 		headers: {
 			'Content-Type': 'application/json',
 			'accept': 'text/event-stream',
+			...headers,
 		},
 		body: JSON.stringify(body),
 	});
