@@ -174,7 +174,10 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadAideA
 			},
 			provideSampleQuestions: (location: ChatAgentLocation, token: CancellationToken) => {
 				return this._proxy.$provideSampleQuestions(handle, location, token);
-			}
+			},
+			handleUserIterationRequest: (sessionId: string, exchangeId: string, iterationQuery: string, references) => {
+				return this._proxy.$handleUserIterationRequest(handle, sessionId, exchangeId, iterationQuery, references);
+			},
 		};
 
 		let disposable: IDisposable;

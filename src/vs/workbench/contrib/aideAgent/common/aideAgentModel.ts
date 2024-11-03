@@ -1533,6 +1533,10 @@ export class ChatModel extends Disposable implements IChatModel {
 		response.complete();
 	}
 
+	handleUserIterationRequest(sessionId: string, exchangeId: string, iterationQuery: string, references: IChatRequestVariableData): void {
+		this.chatAgentService.handleUserIterationRequest(sessionId, exchangeId, iterationQuery, references);
+	}
+
 	handleUserActionForSession(sessionId: string, exchangeId: string, stepIndex: number | undefined, agentId: string | undefined, accepted: boolean): void {
 		this.chatAgentService.handleUserFeedbackForSession(sessionId, exchangeId, stepIndex, agentId, accepted);
 	}

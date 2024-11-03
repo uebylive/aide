@@ -307,6 +307,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	private _lastSelectedAgent: IChatAgentData | undefined;
 	set lastSelectedAgent(agent: IChatAgentData | undefined) {
 		this.parsedChatRequest = undefined;
+		console.log('lastSelectedAgent', agent !== undefined);
 		this._lastSelectedAgent = agent;
 		this._onDidChangeParsedInput.fire();
 	}
@@ -840,9 +841,23 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this.inputPart.logInputHistory();
 	}
 
-	async acceptIterationInput(mode: AgentMode, query: string): Promise<IChatResponseModel | undefined> {
+	async acceptIterationInput(mode: AgentMode, query: string, sessionId: string, exchangeId: string): Promise<IChatResponseModel | undefined> {
+		// this does not show up we have to gather it somewhere else I presume
 		console.log(this.inputPart.attachedContext);
-		this.inputPart.acceptInput(true);
+		// this.inputPart.acceptInput(true);
+		if (this.viewModel) {
+			// scope here is dicated by how the command is run, not on the internal state
+			// of the inputPart which was based on a selector before
+			await this.chatService.sendIterationRequest(sessionId, exchangeId, query, {
+				agentMode: AgentMode.Edit,
+				agentScope: AgentScope.PinnedContext,
+				userSelectedModelId: this.inputPart.currentLanguageModel,
+				location: this.location,
+				locationData: this._location.resolveData?.(),
+				parserContext: { selectedAgent: this._lastSelectedAgent },
+				attachedContext: [...this.inputPart.attachedContext.values()]
+			});
+		}
 		return undefined;
 	}
 

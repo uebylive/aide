@@ -547,6 +547,7 @@ export interface IAideAgentService {
 	getOrRestoreSession(sessionId: string): IChatModel | undefined;
 	loadSessionFromContent(data: IExportableChatData | ISerializableChatData): IChatModel | undefined;
 
+	sendIterationRequest(sessionId: string, exchangeId: string, iterationQuery: string, options?: IChatSendRequestOptions): Promise<void>;
 	/**
 	 * Returns whether the request was accepted.
 	 */

@@ -259,6 +259,10 @@ export class ContinueEditing extends Action2 {
 		const sessionId = widget.runningSessionId;
 		const exchangeId = widget.runningExchangeId;
 		console.log('continueEditing', sessionId, exchangeId);
+		const input = widget?.getInput() ?? context?.inputValue;
+		if (sessionId && exchangeId) {
+			widget?.acceptIterationInput(AgentMode.Plan, input, sessionId, exchangeId);
+		}
 	}
 }
 

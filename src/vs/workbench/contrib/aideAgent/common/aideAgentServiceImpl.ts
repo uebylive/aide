@@ -495,6 +495,38 @@ export class ChatService extends Disposable implements IAideAgentService {
 		// inherently readonly at this layer and talks in terms of interfaces
 	}
 
+	async sendIterationRequest(sessionId: string, exchangeId: string, iterationQuery: string, options?: IChatSendRequestOptions): Promise<void> {
+		// implement this somehow
+		const model = this._sessionModels.get(sessionId);
+		if (!model) {
+			throw new Error(`Unknown session: ${sessionId}`);
+		}
+
+		await model.waitForInitialization();
+		const location = options?.location ?? model.initialLocation;
+
+		const parsedRequest = this.parseChatRequest(sessionId, iterationQuery, location, options);
+
+		const cancellationToken = new CancellationTokenSource();
+		const token = cancellationToken.token;
+
+		// Variables may have changed if the agent and slash command changed, so resolve them again even if we already had a chatRequest
+		const variableData = await this.chatVariablesService.resolveVariables(
+			parsedRequest,
+			undefined,
+			model,
+			// TODO(@ghostwriternr): Do we still need this? The lifecycle of the request object is unclear, and the cancellation token too.
+			(part) => this.progressCallback(model, undefined, part, token),
+			options,
+			token
+		);
+		const promptTextResult = getPromptText(parsedRequest);
+		const updatedVariableData = updateRanges(variableData, promptTextResult.diff); // TODO bit of a hack
+		// we have all the information we need over here to send it over to the
+		// extension layer
+		model.handleUserIterationRequest(sessionId, exchangeId, iterationQuery, updatedVariableData);
+	}
+
 	async sendRequest(sessionId: string, request: string, options?: IChatSendRequestOptions): Promise<IChatSendRequestData | undefined> {
 		this.trace('sendRequest', `sessionId: ${sessionId}, message: ${request.substring(0, 20)}${request.length > 20 ? '[...]' : ''}}`);
 		if (!request.trim() && !options?.slashCommand && !options?.agentId) {
