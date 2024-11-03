@@ -360,10 +360,11 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		// this.sessionId = sessionId;
 	}
 
-	handleSessionIterationRequest(sessionId: string, exchangeId: string, iterationQuery: string, references: readonly vscode.AideAgentPromptReference[]): void {
-		console.log('hanldeSessionIterationRequest', sessionId, exchangeId);
-		console.log(iterationQuery);
-		console.log(references);
+	async handleSessionIterationRequest(sessionId: string, exchangeId: string, iterationQuery: string, references: readonly vscode.AideAgentPromptReference[]): Promise<void> {
+		const session = await vscode.csAuthentication.getSession();
+		const token = session?.accessToken ?? '';
+		const stream = this.sidecarClient.agentSessionEditFeedback(iterationQuery, sessionId, exchangeId, this.editorUrl!, vscode.AideAgentMode.Edit, references, this.currentRepoRef, this.projectContext.labels, token);
+		this.reportAgentEventsToChat(true, stream);
 	}
 
 	handleSessionUndo(sessionId: string, exchangeId: string): void {
