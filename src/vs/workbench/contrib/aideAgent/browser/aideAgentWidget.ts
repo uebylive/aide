@@ -844,7 +844,6 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	async acceptIterationInput(mode: AgentMode, query: string, sessionId: string, exchangeId: string): Promise<IChatResponseModel | undefined> {
 		// this does not show up we have to gather it somewhere else I presume
 		console.log(this.inputPart.attachedContext);
-		// this.inputPart.acceptInput(true);
 		if (this.viewModel) {
 			// scope here is dicated by how the command is run, not on the internal state
 			// of the inputPart which was based on a selector before
@@ -857,6 +856,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 				parserContext: { selectedAgent: this._lastSelectedAgent },
 				attachedContext: [...this.inputPart.attachedContext.values()]
 			});
+			this.inputPart.acceptInput(true);
 		}
 		return undefined;
 	}
