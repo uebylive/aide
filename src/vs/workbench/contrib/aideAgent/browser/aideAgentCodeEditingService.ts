@@ -867,6 +867,14 @@ export class AideAgentCodeEditingService extends Disposable implements IAideAgen
 		super();
 	}
 
+	rejectEditsMadeDuringExchange(sessionId: string, exchangeId: string): void {
+		const editingSession = this._sessions.get(sessionId);
+		if (!editingSession) {
+			return;
+		}
+		editingSession.rejectForExchange(sessionId, exchangeId);
+	}
+
 	doesExchangeHaveEdits(sessionId: string, exchangeId: string): boolean {
 		const editingSession = this._sessions.get(sessionId);
 		if (!editingSession) {

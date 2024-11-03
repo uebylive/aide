@@ -45,6 +45,11 @@ export interface IAideAgentCodeEditingService {
 	getOrStartCodeEditingSession(sessionId: string): IAideAgentCodeEditingSession;
 
 	/**
+	 * Rejects the edits which we might have made for the session and the exchange
+	 */
+	rejectEditsMadeDuringExchange(sessionId: string, exchangeId: string): void;
+
+	/**
 	 * Helper fucntion to check if there are edits associated with the session and the exchange
 	 */
 	doesExchangeHaveEdits(sessionId: string, exchangeId: string): boolean;
