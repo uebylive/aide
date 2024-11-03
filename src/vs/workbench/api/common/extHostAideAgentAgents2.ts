@@ -133,6 +133,13 @@ class AideAgentResponseStream {
 					_report(dto, task);
 					return this;
 				},
+				step(value) {
+					throwIfDone(this.anchor);
+					const part = new extHostTypes.AideAgentResponsePlanPart(value);
+					const dto = typeConvert.AideAgentResponsePlanPart.from(part);
+					_report(dto);
+					return this;
+				},
 				warning(value) {
 					throwIfDone(this.progress);
 					const part = new extHostTypes.ChatResponseWarningPart(value);

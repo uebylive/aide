@@ -1561,20 +1561,20 @@ export async function convertVSCodeVariableToSidecarHackingForPlan(
 	for (const variable of variables) {
 		// vscode.editor.selection is a special id which is also present in the editor
 		// this help us understand that this is a selection and not a file reference
-		if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile' || variable.id === 'vscode.editor.selection' || variable.id === 'vscode.file.pinnedContext') {
+		if (variable.id === 'vscode.file' || variable.id === 'vscode.editor.selection' || variable.id === 'vscode.file.pinnedContext') {
 			const v = variable as vscode.AideAgentFileReference;
 			const value = v.value;
 			const attachedFile = await resolveFile(value.uri);
 			let range = value.range;
 			let type: SidecarVariableType = 'File';
-			if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile' || variable.id === 'vscode.file.pinnedContext') {
+			if (variable.id === 'vscode.file' || variable.id === 'vscode.file.pinnedContext') {
 				type = 'File';
 			} else if (variable.id === 'vscode.editor.selection') {
 				type = 'Selection';
 			}
 			// we do this shoe-horning over here to make sure that we do not perform
 			// extensive reads or creation of the text models on the editor layer
-			if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile') {
+			if (variable.id === 'vscode.file') {
 				const textModel = await vscode.workspace.openTextDocument(v.value.uri);
 				// get the full range over here somehow
 				const lastLine = textModel.lineCount;
@@ -1841,7 +1841,7 @@ async function newConvertVSCodeVariableToSidecar(
 	for (const variable of variables) {
 		// vscode.editor.selection is a special id which is also present in the editor
 		// this help us understand that this is a selection and not a file reference
-		if (variable.id === 'vscode.file' || variable.id === 'vscode.editor.selection' || variable.id === 'vscode.file.rangeNotSetProperlyFullFile') {
+		if (variable.id === 'vscode.file' || variable.id === 'vscode.editor.selection' || variable.id === 'vscode.file') {
 			const v = variable as vscode.AideAgentFileReference;
 			const value = v.value;
 			const attachedFile = await resolveFile(value.uri);
@@ -1852,14 +1852,14 @@ async function newConvertVSCodeVariableToSidecar(
 			} else if (variable.id === 'vscode.editor.selection') {
 				type = 'Selection';
 			}
-			if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile') {
+			if (variable.id === 'vscode.file') {
 				type = 'File';
 			} else if (variable.id === 'vscode.editor.selection') {
 				type = 'Selection';
 			}
 			// we do this shoe-horning over here to make sure that we do not perform
 			// extensive reads or creation of the text models on the editor layer
-			if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile') {
+			if (variable.id === 'vscode.file') {
 				const textModel = await vscode.workspace.openTextDocument(v.value.uri);
 				// get the full range over here somehow
 				const lastLine = textModel.lineCount;

@@ -719,6 +719,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						state: 'Started',
 						description: event.event.PlanEvent.PlanStepTitleAdded.title,
 					});
+					*/
 					// TODO(codestory): Remove this soon after cause we will just rely
 					// on the title for now to provide updates to the side panel
 					responseStream?.stream.step({
@@ -730,11 +731,9 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						title: event.event.PlanEvent.PlanStepTitleAdded.title,
 						descriptionDelta: null,
 					});
-					*/
 				}
 				if (event.event.PlanEvent.PlanStepDescriptionUpdate) {
 					console.log('planEvent::description::update_for', event.event.PlanEvent.PlanStepDescriptionUpdate.index);
-					/*
 					responseStream?.stream.step({
 						description: event.event.PlanEvent.PlanStepDescriptionUpdate.description_up_until_now,
 						index: event.event.PlanEvent.PlanStepDescriptionUpdate.index,
@@ -744,7 +743,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						title: '',
 						descriptionDelta: `\n${event.event.PlanEvent.PlanStepDescriptionUpdate.delta}`,
 					});
-					*/
 				}
 			} else if (event.event.ExchangeEvent) {
 				const sessionId = event.request_id;

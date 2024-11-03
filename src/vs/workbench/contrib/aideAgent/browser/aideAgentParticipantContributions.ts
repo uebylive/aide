@@ -178,7 +178,7 @@ const planViewContainerId = AIDE_AGENT_PLAN_VIEW_PANE_ID;
 const planViewContainer: ViewContainer = Registry.as<IViewContainersRegistry>(ViewExtensions.ViewContainersRegistry).registerViewContainer({
 	id: planViewContainerId,
 	title: localize2('aideAgent.planViewContainer.label', "Edits review"),
-	icon: Codicon.listTree,
+	icon: Codicon.map,
 	ctorDescriptor: new SyncDescriptor(ViewPaneContainer, [planViewContainerId, { mergeViewWithContainerWhenSingleView: true }]),
 	storageId: planViewContainerId,
 	hideIfEmpty: false,

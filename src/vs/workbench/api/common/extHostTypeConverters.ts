@@ -38,7 +38,7 @@ import { DEFAULT_EDITOR_ASSOCIATION, SaveReason } from '../../common/editor.js';
 import { IViewBadge } from '../../common/views.js';
 import { IChatAgentRequest as IAideAgentRequest } from '../../contrib/aideAgent/common/aideAgentAgents.js';
 import { AgentMode, AgentScope } from '../../contrib/aideAgent/common/aideAgentModel.js';
-import { IChatEndResponse } from '../../contrib/aideAgent/common/aideAgentService.js';
+import { IAideAgentPlanStep, IChatEndResponse } from '../../contrib/aideAgent/common/aideAgentService.js';
 import { ChatAgentLocation, IChatAgentRequest, IChatAgentResult } from '../../contrib/chat/common/chatAgents.js';
 import { IChatRequestVariableEntry } from '../../contrib/chat/common/chatModel.js';
 import { IChatAgentDetection, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatMarkdownContent, IChatMoveMessage, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatTaskDto, IChatTaskResult, IChatTextEdit, IChatTreeData, IChatUserActionEvent, IChatWarningMessage } from '../../contrib/chat/common/chatService.js';
@@ -2917,6 +2917,19 @@ export namespace AideAgentScope {
 			case types.AideAgentScope.PinnedContext: return AgentScope.PinnedContext;
 			case types.AideAgentScope.Codebase: return AgentScope.Codebase;
 		}
+	}
+}
+
+export namespace AideAgentResponsePlanPart {
+	export function from(part: types.AideAgentResponsePlanPart): Dto<IAideAgentPlanStep> {
+		return {
+			kind: 'planStep',
+			index: part.index,
+			title: part.title,
+			description: MarkdownString.from(part.description),
+			descriptionDelta: part.descriptionDelta ? MarkdownString.from(part.descriptionDelta) : null,
+			isLast: part.isLast,
+		};
 	}
 }
 

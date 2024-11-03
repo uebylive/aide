@@ -52,11 +52,35 @@ declare module 'vscode' {
 		constructor(edits: WorkspaceEdit);
 	}
 
+	export interface AideAgentPlanStepPart {
+		/**
+		 * The index of the step in the plan
+		 */
+		readonly index: number;
+		/**
+		 * The title of the step in the plan
+		 */
+		readonly title: string;
+		/*
+		 * Description of the edits
+		 */
+		readonly description: string | MarkdownString;
+		/**
+		 * Progressive update on the description over here
+		 */
+		readonly descriptionDelta: string | MarkdownString | null;
+		/**
+		 * Whether it's the last step in the plan
+		 */
+		readonly isLast: boolean;
+	}
+
 	export type AideAgentResponsePart = ExtendedChatResponsePart | ChatResponseCodeEditPart;
 
 	export interface AideAgentResponseStream extends ChatResponseStream {
 		codeEdit(edits: WorkspaceEdit): void;
 		push(part: AideAgentResponsePart): void;
+		step(step: AideAgentPlanStepPart): void;
 		close(): void;
 	}
 
