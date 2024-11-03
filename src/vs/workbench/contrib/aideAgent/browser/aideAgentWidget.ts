@@ -883,25 +883,29 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			CONTEXT_STREAMING_STATE.bindTo(this.contextKeyService).set(undefined);
 			this.inputPart.hideStreamingState();
 		} else if (state === 'cancelled') {
+			// we have to make sure our editor reverts back to the basic
+			this.aideAgentCodeEditingService.rejectEditsMadeDuringExchange(event.sessionId, event.exchangeId);
 			// If the streaming state is showing cancelled, then we have to first
 			// check if there are any edits associated with the session and the exchange
 			// and do operations based on top of that
-			if (this.aideAgentCodeEditingService.doesExchangeHaveEdits(event.sessionId, event.exchangeId)) {
-				CONTEXT_STREAMING_STATE.bindTo(this.contextKeyService).set('waitingFeedback');
-				this.inputPart.updateStreamingState({
-					exchangeId: event.exchangeId,
-					sessionId: event.sessionId,
-					files: [],
-					isError: event.isError,
-					kind: 'streamingState',
-					state: 'waitingFeedback',
-					loadingLabel: event.loadingLabel,
-					message: event.message,
-				});
-			} else {
-				CONTEXT_STREAMING_STATE.bindTo(this.contextKeyService).set(undefined);
-				this.inputPart.hideStreamingState();
-			}
+			// if (this.aideAgentCodeEditingService.doesExchangeHaveEdits(event.sessionId, event.exchangeId)) {
+			// 	CONTEXT_STREAMING_STATE.bindTo(this.contextKeyService).set('waitingFeedback');
+			// 	this.inputPart.updateStreamingState({
+			// 		exchangeId: event.exchangeId,
+			// 		sessionId: event.sessionId,
+			// 		files: [],
+			// 		isError: event.isError,
+			// 		kind: 'streamingState',
+			// 		state: 'waitingFeedback',
+			// 		loadingLabel: event.loadingLabel,
+			// 		message: event.message,
+			// 	});
+			// } else {
+			// 	CONTEXT_STREAMING_STATE.bindTo(this.contextKeyService).set(undefined);
+			// 	this.inputPart.hideStreamingState();
+			// }
+			CONTEXT_STREAMING_STATE.bindTo(this.contextKeyService).set(undefined);
+			this.inputPart.hideStreamingState();
 		} else {
 			CONTEXT_STREAMING_STATE.bindTo(this.contextKeyService).set(state);
 			// waiting for the feedback always goes over here for some reason
