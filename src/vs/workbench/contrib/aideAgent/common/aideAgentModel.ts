@@ -1204,6 +1204,18 @@ export class ChatModel extends Disposable implements IChatModel {
 		return request;
 	}
 
+	private resetResponses() {
+		this._mutableExchanges.forEach((exchange) => {
+			exchange.dispose();
+		});
+		this._mutableExchanges = [];
+		const removed = this._exchanges;
+		this._exchanges = [];
+		const from = 0;
+		const remaining: IChatExchangeModel[] = [];
+		this._onDidChange.fire({ kind: 'removeExchanges', from, remaining, removed });
+	}
+
 	addResponse(): ChatResponseModel {
 		const response = new ChatResponseModel(
 			this.aideAgentCodeEditingService,
@@ -1297,6 +1309,7 @@ export class ChatModel extends Disposable implements IChatModel {
 		if (runningPlan === undefined) {
 			return;
 		}
+		runningPlan.resetResponses();
 		CONTEXT_AIDE_PLAN_REVIEW_STATE_SESSIONID.bindTo(this.contextKeyService).set(progress.sessionId);
 		CONTEXT_AIDE_PLAN_REVIEW_STATE_EXCHANGEID.bindTo(this.contextKeyService).set(progress.exchangeId);
 		runningPlan.dispose();
