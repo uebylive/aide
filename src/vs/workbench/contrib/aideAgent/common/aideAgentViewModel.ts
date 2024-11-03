@@ -492,7 +492,7 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 			return this._usedReferencesExpanded;
 		}
 
-		return this.response.value.length === 0;
+		return false;
 	}
 
 	set usedReferencesExpanded(v: boolean) {

@@ -45,13 +45,13 @@ import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatConfirmation, ICh
 import { IChatCodeCitations, IChatReferences, IChatRendererContent, IChatRequestViewModel, IChatResponseViewModel, IChatWelcomeMessageViewModel, isRequestVM, isResponseVM, isWelcomeVM } from '../common/aideAgentViewModel.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
 import { MarkUnhelpfulActionId } from './actions/aideAgentTitleActions.js';
-import { ChatTreeItem, GeneratingPhrase, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions } from './aideAgent.js';
+import { ChatTreeItem, GeneratingPhrase, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions, IEditPreviewCodeBlockInfo } from './aideAgent.js';
 import { ChatAttachmentsContentPart } from './aideAgentContentParts/aideAgentAttachmentsContentPart.js';
 import { ChatCodeCitationContentPart } from './aideAgentContentParts/aideAgentCodeCitationContentPart.js';
 import { ChatCommandButtonContentPart } from './aideAgentContentParts/aideAgentCommandContentPart.js';
 import { ChatConfirmationContentPart } from './aideAgentContentParts/aideAgentConfirmationContentPart.js';
 import { IChatContentPart, IChatContentPartRenderContext } from './aideAgentContentParts/aideAgentContentParts.js';
-import { ChatMarkdownContentPart, EditorPool } from './aideAgentContentParts/aideAgentMarkdownContentPart.js';
+import { ChatMarkdownContentPart, EditorPool, EditPreviewEditorPool } from './aideAgentContentParts/aideAgentMarkdownContentPart.js';
 import { ChatProgressContentPart } from './aideAgentContentParts/aideAgentProgressContentPart.js';
 import { ChatCollapsibleListContentPart, CollapsibleListPool } from './aideAgentContentParts/aideAgentReferencesContentPart.js';
 import { ChatTaskContentPart } from './aideAgentContentParts/aideAgentTaskContentPart.js';
@@ -101,6 +101,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 	private readonly codeBlocksByResponseId = new Map<string, IChatCodeBlockInfo[]>();
 	private readonly codeBlocksByEditorUri = new ResourceMap<IChatCodeBlockInfo>();
+	private readonly editPreviewBlocksByResponseId = new Map<string, IEditPreviewCodeBlockInfo[]>();
 
 	private readonly fileTreesByResponseId = new Map<string, IChatFileTreeInfo[]>();
 	private readonly focusedFileTreesByResponseId = new Map<string, number>();
@@ -119,6 +120,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 	private readonly _editorPool: EditorPool;
 	private readonly _diffEditorPool: DiffEditorPool;
+	private readonly _editPreviewEditorPool: EditPreviewEditorPool;
 	private readonly _treePool: TreePool;
 	private readonly _contentReferencesListPool: CollapsibleListPool;
 
@@ -145,6 +147,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		this.markdownDecorationsRenderer = this.instantiationService.createInstance(ChatMarkdownDecorationsRenderer);
 		this._editorPool = this._register(this.instantiationService.createInstance(EditorPool, editorOptions, delegate, overflowWidgetsDomNode));
 		this._diffEditorPool = this._register(this.instantiationService.createInstance(DiffEditorPool, editorOptions, delegate, overflowWidgetsDomNode));
+		this._editPreviewEditorPool = this._register(this.instantiationService.createInstance(EditPreviewEditorPool, editorOptions, delegate, overflowWidgetsDomNode));
 		this._treePool = this._register(this.instantiationService.createInstance(TreePool, this._onDidChangeVisibility.event));
 		this._contentReferencesListPool = this._register(this.instantiationService.createInstance(CollapsibleListPool, this._onDidChangeVisibility.event));
 
@@ -202,6 +205,9 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		}
 		for (const diffEditor of this._diffEditorPool.inUse()) {
 			diffEditor.layout(this._currentLayoutWidth);
+		}
+		for (const editPreviewEditor of this._editPreviewEditorPool.inUse()) {
+			editPreviewEditor.layout(this._currentLayoutWidth);
 		}
 	}
 
@@ -423,12 +429,12 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 				this.markdownDecorationsRenderer.convertParsedRequestToMarkdown(element.message);
 			value = [{ content: new MarkdownString(markdown), kind: 'markdownContent' }];
 		} else if (isResponseVM(element)) {
-			if (element.contentReferences.length) {
-				value.push({ kind: 'references', references: element.contentReferences });
-			}
-			value.push(...annotateSpecialMarkdownContent(element.response.value));
 			if (element.codeCitations.length) {
 				value.push({ kind: 'codeCitations', citations: element.codeCitations });
+			}
+			value.push(...annotateSpecialMarkdownContent(element.response.value));
+			if (element.contentReferences.length) {
+				value.push({ kind: 'references', references: element.contentReferences });
 			}
 		}
 
@@ -625,12 +631,13 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		const renderableResponse = annotateSpecialMarkdownContent(element.response.value);
 
 		const partsToRender: IChatRendererContent[] = [];
-		if (element.contentReferences.length) {
-			partsToRender.push({ kind: 'references', references: element.contentReferences });
-		}
 
 		// Simply add all parts to render
 		partsToRender.push(...renderableResponse);
+
+		if (element.contentReferences.length) {
+			partsToRender.push({ kind: 'references', references: element.contentReferences });
+		}
 
 		// Update the render data
 		const newRenderedWordCount = renderableResponse.reduce((count, part) => {
@@ -777,14 +784,15 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 	private renderMarkdown(markdown: IMarkdownString, templateData: IChatListItemTemplate, context: IChatContentPartRenderContext): IChatContentPart {
 		const element = context.element;
 		const fillInIncompleteTokens = isResponseVM(element) && (!element.isComplete || element.isCanceled || element.errorDetails?.responseIsFiltered || element.errorDetails?.responseIsIncomplete || !!element.renderData);
-		const codeBlockStartIndex = context.preceedingContentParts.reduce((acc, part) => acc + (part instanceof ChatMarkdownContentPart ? part.codeblocks.length : 0), 0);
-		const markdownPart = this.instantiationService.createInstance(ChatMarkdownContentPart, markdown, context, this._editorPool, fillInIncompleteTokens, codeBlockStartIndex, this.renderer, this._currentLayoutWidth, this.codeBlockModelCollection, this.rendererOptions);
+		const codeBlockStartIndex = context.preceedingContentParts.reduce((acc, part) => acc + (part instanceof ChatMarkdownContentPart ? part.codeblocks.length + part.editPreviewBlocks.length : 0), 0);
+		const markdownPart = this.instantiationService.createInstance(ChatMarkdownContentPart, markdown, context, this._editorPool, this._editPreviewEditorPool, fillInIncompleteTokens, codeBlockStartIndex, this.renderer, this._currentLayoutWidth, this.codeBlockModelCollection, this.rendererOptions);
 		const markdownPartId = markdownPart.id;
 		markdownPart.addDisposable(markdownPart.onDidChangeHeight(() => {
 			markdownPart.layout(this._currentLayoutWidth);
 			this.updateItemHeight(templateData);
 		}));
 
+		// Code blocks
 		const codeBlocksByResponseId = this.codeBlocksByResponseId.get(element.id) ?? [];
 		this.codeBlocksByResponseId.set(element.id, codeBlocksByResponseId);
 		markdownPart.addDisposable(toDisposable(() => {
@@ -812,6 +820,25 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 					}
 				}));
 			}
+		});
+
+		// Edit previews
+		const editPreviewBlocksByResponseId = this.editPreviewBlocksByResponseId.get(element.id) ?? [];
+		this.editPreviewBlocksByResponseId.set(element.id, editPreviewBlocksByResponseId);
+		markdownPart.addDisposable(toDisposable(() => {
+			const editPreviewBlocksByResponseId = this.editPreviewBlocksByResponseId.get(element.id);
+			if (editPreviewBlocksByResponseId) {
+				markdownPart.editPreviewBlocks.forEach((info, i) => {
+					const editPreviewBlock = editPreviewBlocksByResponseId[codeBlockStartIndex + i];
+					if (editPreviewBlock?.ownerMarkdownPartId === markdownPartId) {
+						delete editPreviewBlocksByResponseId[codeBlockStartIndex + i];
+					}
+				});
+			}
+		}));
+
+		markdownPart.editPreviewBlocks.forEach((info, i) => {
+			editPreviewBlocksByResponseId[codeBlockStartIndex + i] = info;
 		});
 
 		return markdownPart;

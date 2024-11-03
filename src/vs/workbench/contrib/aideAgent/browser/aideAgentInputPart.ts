@@ -29,6 +29,7 @@ import { ITextModel } from '../../../../editor/common/model.js';
 import { IModelService } from '../../../../editor/common/services/model.js';
 import { ContentHoverController } from '../../../../editor/contrib/hover/browser/contentHoverController.js';
 import { GlyphHoverController } from '../../../../editor/contrib/hover/browser/glyphHoverController.js';
+import { SuggestController } from '../../../../editor/contrib/suggest/browser/suggestController.js';
 import { localize } from '../../../../nls.js';
 import { IAccessibilityService } from '../../../../platform/accessibility/common/accessibility.js';
 import { ActionViewItemWithKb } from '../../../../platform/actionbarWithKeybindings/browser/actionViewItemWithKb.js';
@@ -486,11 +487,22 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		options.scrollbar = { ...(options.scrollbar ?? {}), vertical: 'hidden' };
 		options.stickyScroll = { enabled: false };
 		options.acceptSuggestionOnEnter = 'on';
+		// TODO(@ghostwriternr): This condition is a hack, to avoid going through the pain of adding a new aide agent location.
+		// But this condition is necessary because we currently use the compact style for the floating widget.
+		// And the floating widget has fixed position relative to the window, so it helps to have the suggest controller
+		// be absolutely positioned relative to the input, rather than the whole window since the calculation goes haywire.
+		const isFloatingWidget = this.options.renderStyle === 'compact';
+		options.fixedOverflowWidgets = !isFloatingWidget;
 
 		this._inputEditorElement = dom.append(editorContainer!, $(chatInputEditorContainerSelector));
 		const editorOptions = getSimpleCodeEditorWidgetOptions();
 		editorOptions.contributions?.push(...EditorExtensionsRegistry.getSomeEditorContributions([ContentHoverController.ID, GlyphHoverController.ID]));
 		this._inputEditor = this._register(scopedInstantiationService.createInstance(CodeEditorWidget, this._inputEditorElement, options, editorOptions));
+
+		if (!isFloatingWidget) {
+			const suggestController = SuggestController.get(this._inputEditor);
+			suggestController?.forceRenderingAbove();
+		}
 
 		this._register(this._inputEditor.onDidChangeModelContent(() => {
 			const currentHeight = Math.min(this._inputEditor.getContentHeight(), this.inputEditorMaxHeight);
