@@ -384,7 +384,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	handleExchangeUserAction(sessionId: string, exchangeId: string, stepIndex: number | undefined, action: vscode.AideSessionExchangeUserAction): void {
 		// we ping the sidecar over here telling it about the state of the edits after
 		// the user has reacted to it appropriately
-		console.log('handleExchangeUserAction', sessionId, exchangeId, stepIndex, action);
 		const editorUrl = this.editorUrl;
 		let isAccepted = false;
 		if (action === vscode.AideSessionExchangeUserAction.AcceptAll) {
@@ -750,7 +749,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					console.log('resonseStreamNotFound::ExchangeEvent::ExchangeEvent::exchangeId::sessionId', exchangeId, sessionId);
 				}
 				if (event.event.ExchangeEvent.PlansExchangeState) {
-					const editsState = event.event.ExchangeEvent.PlansExchangeState.EditsState;
+					const editsState = event.event.ExchangeEvent.PlansExchangeState.edits_state;
 					if (editsState === 'Loading') {
 						responseStream?.stream.planInfo({
 							exchangeId,
@@ -785,12 +784,13 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					continue;
 				}
 				if (event.event.ExchangeEvent.EditsExchangeState) {
-					const editsState = event.event.ExchangeEvent.EditsExchangeState.EditsState;
+					const editsState = event.event.ExchangeEvent.EditsExchangeState.edits_state;
+					const files = event.event.ExchangeEvent.EditsExchangeState.files.map((file) => vscode.Uri.file(file));
 					if (editsState === 'Loading') {
 						responseStream?.stream.editsInfo({
 							exchangeId,
 							sessionId,
-							files: [],
+							files,
 							isStale: false,
 							state: 'loading',
 						});
@@ -798,7 +798,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						responseStream?.stream.editsInfo({
 							exchangeId,
 							sessionId,
-							files: [],
+							files,
 							isStale: false,
 							state: 'cancelled',
 						});
@@ -806,7 +806,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						responseStream?.stream.editsInfo({
 							exchangeId,
 							sessionId,
-							files: [],
+							files,
 							isStale: false,
 							state: 'inReview',
 						});
@@ -814,7 +814,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						responseStream?.stream.editsInfo({
 							exchangeId,
 							sessionId,
-							files: [],
+							files,
 							isStale: false,
 							state: 'markedComplete',
 						});
