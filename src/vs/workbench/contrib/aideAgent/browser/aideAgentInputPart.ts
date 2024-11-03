@@ -176,7 +176,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 
 	private _planningEnabled: IContextKey<boolean>;
 	get planningEnabled() {
-		return this._planningEnabled.get() ?? false;
+		return this._planningEnabled.get() ?? true;
 	}
 
 	set planningEnabled(enabled: boolean) {
