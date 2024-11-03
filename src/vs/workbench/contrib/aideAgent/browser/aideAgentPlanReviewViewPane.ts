@@ -374,7 +374,6 @@ export class PlanReviewPane extends ViewPane {
 
 	protected override renderBody(parent: HTMLElement): void {
 		try {
-			console.log('renderBody::again');
 			super.renderBody(parent);
 			this.listContainer = dom.append(parent, $(`.aide-review-plan-list-container`));
 			this.createList(this.listContainer);

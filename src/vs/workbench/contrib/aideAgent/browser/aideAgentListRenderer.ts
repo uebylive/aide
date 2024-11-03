@@ -507,13 +507,11 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 				// TODO (g-danna) This won't work, probably should append event listeners to the DOM element here
 				// instead of setting a callback
 				templateData.actionViewItem.onPreview = () => {
-					console.log('preview ', index);
 					if (this.delegate.kind === 'chat') {
 						this.delegate.setWillBeSavedStep(index);
 					}
 				};
 				templateData.actionViewItem.onDismiss = () => {
-					console.log('preview ', index);
 					if (this.delegate.kind === 'chat') {
 						this.delegate.setWillBeSavedStep(undefined);
 					}
