@@ -431,7 +431,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 						dom.h('.aideagent-input-toolbars@inputToolbars'),
 					]),
 				]),
-				dom.h('.chat-attached-context@attachedContextContainer'),
+				dom.h('.aideagent-attached-context@attachedContextContainer'),
 				dom.h('.interactive-input-followups@followupsContainer'),
 			]);
 		} else {
@@ -439,7 +439,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 				dom.h('.interactive-input-followups@followupsContainer'),
 				dom.h('.interactive-input-and-side-toolbar@inputAndSideToolbar', [
 					dom.h('.chat-input-container@inputContainer', [
-						dom.h('.chat-attached-context@attachedContextContainer'),
+						dom.h('.aideagent-attached-context@attachedContextContainer'),
 						dom.h('.chat-editor-container@editorContainer'),
 						dom.h('.aideagent-input-toolbars@inputToolbars'),
 					]),
@@ -631,7 +631,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			this._indexOfLastAttachedContextDeletedWithKeyboard = -1;
 		}
 		[...this.attachedContext.values()].forEach((attachment, index) => {
-			const widget = dom.append(container, $('.chat-attached-context-attachment.show-file-icons'));
+			const widget = dom.append(container, $('.aideagent-attached-context-attachment.show-file-icons'));
 			const label = this._contextResourceLabels.create(widget, { supportIcons: true });
 			const file = URI.isUri(attachment.value) ? attachment.value : attachment.value && typeof attachment.value === 'object' && 'uri' in attachment.value && URI.isUri(attachment.value.uri) ? attachment.value.uri : undefined;
 			const range = attachment.value && typeof attachment.value === 'object' && 'range' in attachment.value && Range.isIRange(attachment.value.range) ? attachment.value.range : undefined;
