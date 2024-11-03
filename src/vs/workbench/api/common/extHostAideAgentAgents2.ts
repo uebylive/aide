@@ -6,7 +6,7 @@
 import type * as vscode from 'vscode';
 import { coalesce } from '../../../base/common/arrays.js';
 import { raceCancellation } from '../../../base/common/async.js';
-import { CancellationToken } from '../../../base/common/cancellation.js';
+import { CancellationToken, CancellationTokenSource } from '../../../base/common/cancellation.js';
 import { toErrorMessage } from '../../../base/common/errorMessage.js';
 import { Emitter } from '../../../base/common/event.js';
 import { IMarkdownString } from '../../../base/common/htmlContent.js';
@@ -405,15 +405,29 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 		}
 	}
 
-	private async initResponse(sessionId: string): Promise<{ stream: vscode.AideAgentResponseStream; token: CancellationToken } | undefined> {
+	private async initResponse(sessionId: string): Promise<{ stream: vscode.AideAgentResponseStream; token: CancellationToken; exchangeId: string } | undefined> {
 		const sessionDisposables = this._sessionDisposables.get(sessionId);
 		if (!sessionDisposables) {
 			return undefined;
 		}
 
-		const { responseId, token } = await this._proxy.$initResponse(sessionId);
+		// Create a new cancellation token over here, this will proxy whatever
+		// is happening on the editor side and relay this back to the extension
+		const cancellationTokenSource = new CancellationTokenSource();
+		// forcefully create the cancellation token over here
+		const cancellationToken = cancellationTokenSource.token;
+
+		const { responseId } = await this._proxy.$initResponse(sessionId);
 		const stream = new AideAgentResponseStream(responseId, this._proxy, this._commands.converter, sessionDisposables);
-		return { stream: stream.apiObject, token };
+		// javascript ftw, since this is an async function it does not get cleared
+		// by the GC and keeps spinning in the background, what this means for us
+		// is that we have a way to send to the extension layer what the cancellation
+		// token status is as it is present on the editor layer
+		this._proxy.$cancelExchange(sessionId, responseId).then(() => {
+			// cancel the pending source over here
+			cancellationTokenSource.cancel();
+		});
+		return { stream: stream.apiObject, token: cancellationToken, exchangeId: responseId };
 	}
 
 	private async prepareHistoryTurns(agentId: string, context: { history: IChatAgentHistoryEntryDto[] }): Promise<(vscode.ChatRequestTurn | vscode.ChatResponseTurn)[]> {

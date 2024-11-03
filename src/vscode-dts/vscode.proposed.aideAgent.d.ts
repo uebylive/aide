@@ -52,6 +52,7 @@ declare module 'vscode' {
 	}
 
 	export interface AideAgentEventSenderResponse {
+		exchangeId: string;
 		stream: AideAgentResponseStream;
 		token: CancellationToken;
 	}

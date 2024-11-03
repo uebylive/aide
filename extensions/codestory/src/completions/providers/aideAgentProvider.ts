@@ -43,6 +43,7 @@ class AideResponseStreamCollection {
 			console.log('responseStream::token_cancelled');
 			// over here we get the stream of events from the cancellation
 			// we need to send it over on the stream as usual so we can work on it
+
 			// we can send empty access token here since we are not making llm calls
 			// on the sidecar... pretty sure I will forget and scream at myself later on
 			// for having herd knowledged like this
