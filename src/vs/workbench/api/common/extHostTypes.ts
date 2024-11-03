@@ -4839,6 +4839,7 @@ export class AideAgentThinkingForEditPart {
 export class AideAgentResponseStreamingStatePart {
 	state: vscode.AideAgentStreamingStateType;
 	loadingLabel?: vscode.AideAgentStreamingStateLoadingLabelType;
+	files: string[];
 	exchangeId: string;
 	sessionId: string;
 	isError: boolean;
@@ -4846,6 +4847,7 @@ export class AideAgentResponseStreamingStatePart {
 	constructor(step: vscode.AideAgentStreamingState) {
 		this.state = step.state;
 		this.loadingLabel = step.loadingLabel;
+		this.files = step.files;
 		this.exchangeId = step.exchangeId;
 		this.sessionId = step.sessionId;
 		this.isError = step.isError;

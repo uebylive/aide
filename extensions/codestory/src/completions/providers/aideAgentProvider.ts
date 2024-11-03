@@ -243,6 +243,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		responseStream?.stream.streamingState({
 			exchangeId: request.exchange_id,
 			sessionId: request.session_id,
+			files: [request.fs_file_path],
 			isError: false,
 			state: 'editsStarted',
 			loadingLabel: 'generating',
@@ -297,15 +298,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				await editsManager.streamProcessor.processLine(currentLine);
 			}
 			editsManager.streamProcessor.cleanup();
-
-			responseStream?.stream.streamingState({
-				exchangeId: request.exchange_id,
-				sessionId: request.session_id,
-				isError: false,
-				state: 'editsStarted',
-				loadingLabel: 'generating',
-				message: 'Finished editing',
-			});
 
 			await vscode.workspace.save(vscode.Uri.file(editStreamEvent.fs_file_path)); // save files upon stream completion
 			console.log('provideEditsStreamed::finished', editStreamEvent.fs_file_path);
@@ -827,6 +819,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						responseStream?.stream.streamingState({
 							exchangeId,
 							sessionId,
+							files: [],
 							isError: false,
 							state: 'loading',
 							loadingLabel: 'reasoning',
@@ -835,6 +828,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						responseStream?.stream.streamingState({
 							exchangeId,
 							sessionId,
+							files: [],
 							isError: false,
 							state: 'waitingFeedback',
 							loadingLabel: 'generating',
@@ -843,6 +837,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						responseStream?.stream.streamingState({
 							exchangeId,
 							sessionId,
+							files: [],
 							isError: false,
 							state: 'cancelled',
 							loadingLabel: 'generating',
@@ -863,6 +858,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					responseStream?.stream.streamingState({
 						exchangeId,
 						sessionId,
+						files: [],
 						isError: false,
 						state: 'finished',
 						message: 'Finished',

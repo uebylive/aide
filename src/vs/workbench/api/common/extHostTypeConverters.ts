@@ -3017,6 +3017,7 @@ export namespace AideAgentResponseStreamingStatePart {
 			kind: 'streamingState',
 			state: part.state,
 			loadingLabel: part.loadingLabel,
+			files: part.files,
 			sessionId: part.sessionId,
 			exchangeId: part.exchangeId,
 			isError: part.isError,

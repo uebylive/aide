@@ -247,6 +247,7 @@ export interface IChatStreamingState {
 	kind: 'streamingState';
 	state: `${ChatStreamingState}`;
 	loadingLabel?: `${ChatStreamingStateLoadingLabel}`;
+	files: string[];
 	sessionId: string;
 	exchangeId: string;
 	isError: boolean;

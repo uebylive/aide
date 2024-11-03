@@ -12,6 +12,7 @@ import { IInstantiationService } from '../../../../platform/instantiation/common
 import { IChatStreamingState, ChatStreamingState, ChatStreamingStateLoadingLabel } from '../common/aideAgentService.js';
 import { Heroicon } from '../../../browser/heroicon.js';
 import './media/aideAgentStreamingState.css';
+import { URI } from '../../../../base/common/uri.js';
 import { CONTEXT_STREAMING_STATE } from '../common/aideAgentContextKeys.js';
 import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 
@@ -72,10 +73,10 @@ export class StreamingStateWidget extends Disposable {
 	}
 
 	private updateLabel(state: StreamingState) {
-		if (state.message) {
-			this.textLabelElement.textContent = state.message;
-			return;
-		}
+		// if (state.message) {
+		// 	this.textLabelElement.textContent = state.message;
+		// 	return;
+		// }
 
 		if (state.state === ChatStreamingState.Loading) {
 			let label = localize('aideAgent.streamingState.generalLoading', "Loading");
@@ -93,8 +94,20 @@ export class StreamingStateWidget extends Disposable {
 					break;
 			}
 			this.textLabelElement.textContent = label;
-		} else if (state.state === ChatStreamingState.WaitingFeedback || state.state === ChatStreamingState.EditsStarted) {
+		} else if (state.state === ChatStreamingState.WaitingFeedback) {
 			this.textLabelElement.textContent = localize('aideAgent.streamingState.waitingFeedback', "Waiting for feedback");
+		} else if (state.state === ChatStreamingState.EditsStarted) {
+			const files = state.files.map((file) => {
+				const uri = URI.file(file);
+				const segments = uri.path.split('/');
+				if (segments.length === 0) {
+					return file;
+				}
+				const basename = segments[segments.length - 1];
+				return basename;
+			}).join(' ,');
+			const filesMessage = `Editing ${files} ...`.toString();
+			this.textLabelElement.textContent = filesMessage;
 		}
 	}
 

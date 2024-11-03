@@ -891,6 +891,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 				this.inputPart.updateStreamingState({
 					exchangeId: event.exchangeId,
 					sessionId: event.sessionId,
+					files: [],
 					isError: event.isError,
 					kind: 'streamingState',
 					state: 'waitingFeedback',
