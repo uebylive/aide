@@ -1101,6 +1101,8 @@ export class SideCarClient {
 	async *cancelRunningEvent(
 		sessionId: string,
 		exchangeId: string,
+		editorUrl: string,
+		accessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agentic/cancel_running_event';
@@ -1108,6 +1110,8 @@ export class SideCarClient {
 		const body = {
 			session_id: sessionId,
 			exchange_id: exchangeId,
+			editor_url: editorUrl,
+			access_token: accessToken,
 		};
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
