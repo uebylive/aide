@@ -496,7 +496,6 @@ export class ChatService extends Disposable implements IAideAgentService {
 	}
 
 	async sendIterationRequest(sessionId: string, exchangeId: string, iterationQuery: string, options?: IChatSendRequestOptions): Promise<void> {
-		// implement this somehow
 		const model = this._sessionModels.get(sessionId);
 		if (!model) {
 			throw new Error(`Unknown session: ${sessionId}`);
