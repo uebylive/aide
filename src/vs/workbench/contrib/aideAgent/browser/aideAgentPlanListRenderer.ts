@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from '../../../../base/browser/dom.js';
+import { IListVirtualDelegate } from '../../../../base/browser/ui/list/list.js';
 import { ITreeNode, ITreeRenderer } from '../../../../base/browser/ui/tree/tree.js';
 import { coalesce } from '../../../../base/common/arrays.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
@@ -215,5 +216,22 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 
 	disposeTemplate(templateData: IAideAgentPlanListItemTemplate): void {
 		templateData.templateDisposables.dispose();
+	}
+}
+
+export class AideAgentPlanListDelegate implements IListVirtualDelegate<AideAgentPlanTreeItem> {
+	private readonly defaultElementHeight = 200;
+
+	getHeight(element: AideAgentPlanTreeItem): number {
+		const height = ('currentRenderedHeight' in element ? element.currentRenderedHeight : undefined) ?? this.defaultElementHeight;
+		return height;
+	}
+
+	getTemplateId(element: AideAgentPlanTreeItem): string {
+		return AideAgentPlanListRenderer.ID;
+	}
+
+	hasDynamicHeight(element: AideAgentPlanTreeItem): boolean {
+		return true;
 	}
 }

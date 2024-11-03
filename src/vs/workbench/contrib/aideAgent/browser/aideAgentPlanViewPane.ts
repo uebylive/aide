@@ -8,15 +8,19 @@ import { IContextKeyService } from '../../../../platform/contextkey/common/conte
 import { IContextMenuService } from '../../../../platform/contextview/browser/contextView.js';
 import { IHoverService } from '../../../../platform/hover/browser/hover.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { ServiceCollection } from '../../../../platform/instantiation/common/serviceCollection.js';
 import { IKeybindingService } from '../../../../platform/keybinding/common/keybinding.js';
 import { IOpenerService } from '../../../../platform/opener/common/opener.js';
 import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { IViewPaneOptions, ViewPane } from '../../../browser/parts/views/viewPane.js';
 import { IViewDescriptorService } from '../../../common/views.js';
+import { AideAgentPlanWidget } from './aideAgentPlanWidget.js';
 
 export const AIDE_AGENT_PLAN_VIEW_PANE_ID = 'workbench.panel.aideAgentPlan';
 export class AideAgentPlanViewPane extends ViewPane {
+	private _widget!: AideAgentPlanWidget;
+
 	constructor(
 		options: IViewPaneOptions,
 		@IConfigurationService configurationService: IConfigurationService,
@@ -35,5 +39,11 @@ export class AideAgentPlanViewPane extends ViewPane {
 
 	protected override renderBody(parent: HTMLElement): void {
 		super.renderBody(parent);
+
+		const scopedInstantiationService = this._register(this.instantiationService.createChild(new ServiceCollection([IContextKeyService, this.scopedContextKeyService])));
+		this._widget = this._register(scopedInstantiationService.createInstance(
+			AideAgentPlanWidget,
+		));
+		this._widget.render(parent);
 	}
 }
