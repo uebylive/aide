@@ -164,7 +164,7 @@ export interface IChatWidget {
 	setInput(query?: string): void;
 	getInput(): string;
 	logInputHistory(): void;
-	acceptIterationInput(mode: AgentMode, query: string, sessionId: string, exchangeId: string): Promise<IChatResponseModel | undefined>;
+	acceptIterationInput(query: string, sessionId: string, exchangeId: string): Promise<IChatResponseModel | undefined>;
 	acceptInput(mode: AgentMode, query?: string): Promise<IChatResponseModel | undefined>;
 	acceptInputWithPrefix(prefix: string): void;
 	setInputPlaceholder(placeholder: string): void;

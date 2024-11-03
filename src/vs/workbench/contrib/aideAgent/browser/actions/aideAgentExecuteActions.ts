@@ -11,7 +11,7 @@ import { Action2, MenuId, registerAction2 } from '../../../../../platform/action
 import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
 import { IsDevelopmentContext } from '../../../../../platform/contextkey/common/contextkeys.js';
 import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
-import { CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_INPUT, CONTEXT_STREAMING_STATE } from '../../common/aideAgentContextKeys.js';
+import { CONTEXT_AIDE_PLAN_INPUT, CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_INPUT, CONTEXT_STREAMING_STATE } from '../../common/aideAgentContextKeys.js';
 import { AgentMode } from '../../common/aideAgentModel.js';
 import { ChatStreamingState, IAideAgentService } from '../../common/aideAgentService.js';
 import { IAideAgentWidgetService, IChatWidget } from '../aideAgent.js';
@@ -233,7 +233,7 @@ export class ContinueEditing extends Action2 {
 			icon: Codicon.send,
 			menu: [{
 				id: MenuId.AideAgentExecute,
-				when: CONTEXT_CHAT_REQUEST_IN_PROGRESS,
+				when: ContextKeyExpr.and(CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_AIDE_PLAN_INPUT),
 				order: 2,
 				group: 'navigation',
 			}],
@@ -261,7 +261,7 @@ export class ContinueEditing extends Action2 {
 		console.log('continueEditing', sessionId, exchangeId);
 		const input = widget?.getInput() ?? context?.inputValue;
 		if (sessionId && exchangeId) {
-			widget?.acceptIterationInput(AgentMode.Plan, input, sessionId, exchangeId);
+			widget?.acceptIterationInput(input, sessionId, exchangeId);
 		}
 	}
 }
