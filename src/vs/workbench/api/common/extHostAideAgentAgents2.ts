@@ -26,6 +26,7 @@ import { CommandsConverter, ExtHostCommands } from './extHostCommands.js';
 import { ExtHostDocuments } from './extHostDocuments.js';
 import * as typeConvert from './extHostTypeConverters.js';
 import * as extHostTypes from './extHostTypes.js';
+import { IChatRequestVariableData } from '../../contrib/chat/common/chatModel.js';
 
 class AideAgentResponseStream {
 	private _isClosed: boolean = false;
@@ -333,7 +334,7 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 			extension, id, this._proxy, handle,
 			// Preserve the correct 'this' context
 			(sessionId: string) => this.initResponse(sessionId),
-			handler.newSession, handler.handleEvent, handler.handleExchangeUserAction, handler.handleSessionUndo
+			handler.newSession, handler.handleEvent, handler.handleExchangeUserAction, handler.handleSessionUndo, handler.handleSessionIterationRequest
 		);
 		this._agents.set(handle, agent);
 
@@ -416,6 +417,13 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 		const agent = this._agents.get(handle);
 		if (agent) {
 			agent.handleSessionUndo(sessionId, exchangeId);
+		}
+	}
+
+	$handleUserIterationRequest(handle: number, sessionId: string, exchangeId: string, iterationQuery: string, references: IChatRequestVariableData): void {
+		const agent = this._agents.get(handle);
+		if (agent) {
+			agent.handleUserIterationRequest(sessionId, exchangeId, iterationQuery, references.variables.filter(v => !v.isTool).map(typeConvert.AideAgentPromptReference.to));
 		}
 	}
 
@@ -666,6 +674,7 @@ class ExtHostChatAgent {
 		private _requestHandler: vscode.AideSessionEventHandler,
 		private _sessionHandleUserActionHandler: vscode.AideSessionHandleUserAction,
 		private _sessionHandleSessionUndo: vscode.AideSessionUndoAction,
+		private _sessionUserIterationRequest: vscode.AideSessionIterationRequest,
 	) { }
 
 	initSession(sessionId: string): void {
@@ -710,6 +719,10 @@ class ExtHostChatAgent {
 			action = extHostTypes.AideSessionExchangeUserAction.RejectAll;
 		}
 		this._sessionHandleUserActionHandler(sessionId, exchangeId, stepIndex, action);
+	}
+
+	handleUserIterationRequest(sessionId: string, exchangeId: string, iterationQuery: string, references: vscode.AideAgentPromptReference[]) {
+		this._sessionUserIterationRequest(sessionId, exchangeId, iterationQuery, references);
 	}
 
 	handleSessionUndo(sessionId: string, exchangeId: string): void {

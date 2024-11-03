@@ -28,6 +28,7 @@ import { ChatAgentVoteDirection, IChatContentReference, IChatFollowup, IChatResp
 import { checkProposedApiEnabled, isProposedApiEnabled } from '../../services/extensions/common/extensions.js';
 import { Dto } from '../../services/extensions/common/proxyIdentifier.js';
 import type * as vscode from 'vscode';
+import { IChatRequestVariableData } from '../../contrib/chat/common/chatModel.js';
 
 class ChatAgentResponseStream {
 
@@ -293,6 +294,10 @@ export class ExtHostChatAgents2 extends Disposable implements ExtHostChatAgentsS
 	) {
 		super();
 		this._proxy = mainContext.getProxy(MainContext.MainThreadChatAgents2);
+	}
+
+	$handleUserIterationRequest(handle: number, sessionId: string, exchangeId: string, iterationQuery: string, references: Dto<IChatRequestVariableData>): void {
+		throw new Error('Method not implemented.');
 	}
 
 	$handleSessionUndo(handle: number, sessionId: string, exchangeId: string): void {

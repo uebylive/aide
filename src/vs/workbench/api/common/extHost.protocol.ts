@@ -56,7 +56,7 @@ import { IChatCodeEdit, IChatCommandButton as IAideChatCommandButton, IChatComma
 import { CallHierarchyItem } from '../../contrib/callHierarchy/common/callHierarchy.js';
 import { ChatAgentLocation, IChatAgentMetadata, IChatAgentRequest, IChatAgentResult } from '../../contrib/chat/common/chatAgents.js';
 import { ICodeMapperRequest, ICodeMapperResult } from '../../contrib/chat/common/chatCodeMapperService.js';
-import { IAideChatProgressResponseContent, IChatProgressResponseContent } from '../../contrib/chat/common/chatModel.js';
+import { IAideChatProgressResponseContent, IChatProgressResponseContent, IChatRequestVariableData } from '../../contrib/chat/common/chatModel.js';
 import { IChatFollowup, IChatProgress, IChatResponseErrorDetails, IChatTask, IChatTaskDto, IChatUserActionEvent, IChatVoteAction } from '../../contrib/chat/common/chatService.js';
 import { IChatRequestVariableValue, IChatVariableData, IChatVariableResolverProgress } from '../../contrib/chat/common/chatVariables.js';
 import { IChatMessage, IChatResponseFragment, ILanguageModelChatMetadata, ILanguageModelChatSelector, ILanguageModelsChangeEvent } from '../../contrib/chat/common/languageModels.js';
@@ -1341,6 +1341,7 @@ export interface ExtHostChatAgentsShape2 {
 	$detectChatParticipant(handle: number, request: Dto<IChatAgentRequest>, context: { history: IChatAgentHistoryEntryDto[] }, options: { participants: IChatParticipantMetadata[]; location: ChatAgentLocation }, token: CancellationToken): Promise<IChatParticipantDetectionResult | null | undefined>;
 	$handleUserFeedbackSession(handle: number, sessionId: string, exchangeId: string, stepIndex: number | undefined, accepted: boolean): void;
 	$handleSessionUndo(handle: number, sessionId: string, exchangeId: string): void;
+	$handleUserIterationRequest(handle: number, sessionId: string, exchangeId: string, iterationQuery: string, references: Dto<IChatRequestVariableData>): void;
 }
 
 export interface IChatParticipantMetadata {

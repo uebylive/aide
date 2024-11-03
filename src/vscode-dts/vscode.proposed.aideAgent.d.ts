@@ -266,6 +266,7 @@ declare module 'vscode' {
 	export type AideSessionHandler = (id: string) => void;
 	export type AideSessionHandleUserAction = (sessionId: string, exchangeId: string, stepIndex: number | undefined, action: AideSessionExchangeUserAction) => void;
 	export type AideSessionUndoAction = (sessionId: string, exchangeId: string) => void;
+	export type AideSessionIterationRequest = (sessionId: string, exchangeId: string, iterationQuery: string, references: readonly AideAgentPromptReference[]) => void;
 	export type AideSessionEventHandler = (event: AideAgentRequest, token: CancellationToken) => ProviderResult<ChatResult | void>;
 	export type AideSessionEventSender = (sessionId: string) => Thenable<AideAgentEventSenderResponse | undefined>;
 
@@ -277,6 +278,7 @@ declare module 'vscode' {
 		// changes until necessary
 		handleExchangeUserAction: AideSessionHandleUserAction;
 		handleSessionUndo: AideSessionUndoAction;
+		handleSessionIterationRequest: AideSessionIterationRequest;
 	}
 
 	interface AideSessionAgent extends Omit<ChatParticipant, 'requestHandler'> {

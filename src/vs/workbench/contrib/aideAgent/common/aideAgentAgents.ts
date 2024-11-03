@@ -87,6 +87,7 @@ export interface IChatAgentImplementation {
 	provideSampleQuestions?(location: ChatAgentLocation, token: CancellationToken): ProviderResult<IChatFollowup[] | undefined>;
 	handleUserFeedbackSession(sessionId: string, exchangeId: string, stepIndex: number | undefined, accepted: boolean): void;
 	handleSessionUndo(sessionId: string, exchangeId: string): void;
+	handleUserIterationRequest(sessionId: string, exchangeId: string, iterationQuery: string, references: IChatRequestVariableData): void;
 }
 
 export interface IChatParticipantDetectionResult {
@@ -227,6 +228,7 @@ export interface IAideAgentAgentService {
 	updateAgent(id: string, updateMetadata: IChatAgentMetadata): void;
 	handleUserFeedbackForSession(sessionId: string, exchangeId: string, stepIndex: number | undefined, agentId: string | undefined, accepted: boolean): void;
 	handleUserActionUndoSession(sessionId: string, exchangeId: string): void;
+	handleUserIterationRequest(sessionId: string, exchangeId: string, iterationQuery: string, references: IChatRequestVariableData): void;
 }
 
 export class ChatAgentService implements IAideAgentAgentService {
@@ -517,6 +519,13 @@ export class ChatAgentService implements IAideAgentAgentService {
 			agent.handleSessionUndo(sessionId, exchangeId);
 		}
 	}
+
+	handleUserIterationRequest(sessionId: string, exchangeId: string, iterationQuery: string, references: IChatRequestVariableData): void {
+		const agent = this.getDefaultAgent(ChatAgentLocation.Panel);
+		if (agent) {
+			agent.handleUserIterationRequest(sessionId, exchangeId, iterationQuery, references);
+		}
+	}
 }
 
 export class MergedChatAgent implements IChatAgent {
@@ -580,6 +589,10 @@ export class MergedChatAgent implements IChatAgent {
 
 	handleSessionUndo(sessionId: string, exchangeId: string): void {
 		return this.impl.handleSessionUndo(sessionId, exchangeId);
+	}
+
+	handleUserIterationRequest(sessionId: string, exchangeId: string, iterationQuery: string, references: IChatRequestVariableData): void {
+		return this.impl.handleUserIterationRequest(sessionId, exchangeId, iterationQuery, references);
 	}
 
 	toJSON(): IChatAgentData {
