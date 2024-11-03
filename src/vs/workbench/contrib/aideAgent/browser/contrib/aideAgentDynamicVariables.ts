@@ -53,7 +53,6 @@ export class ChatDynamicVariableModel extends Disposable implements IChatWidgetC
 		private readonly widget: IChatWidget,
 		@ILabelService private readonly labelService: ILabelService,
 	) {
-		console.log('creating::ChatDynamicVariableModel');
 		super();
 		this._register(widget.inputEditor.onDidChangeModelContent(e => {
 			e.changes.forEach(c => {
