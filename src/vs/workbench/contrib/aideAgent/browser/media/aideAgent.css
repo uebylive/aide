@@ -12,13 +12,18 @@
 	position: relative;
 }
 
+#workbench\.panel\.aideAgentSidebar .pane-body .pinned-context-widget {
+	padding: 6px 10px 6px 10px;
+	border-bottom: 1px solid var(--vscode-chat-requestBorder);
+}
+
 .interactive-list > .monaco-list > .monaco-scrollable-element > .monaco-list-rows > .monaco-list-row > .monaco-tl-row > .monaco-tl-twistie {
 	/* Hide twisties from chat tree rows, but not from nested trees within a chat response */
 	display: none !important;
 }
 
 .aideagent-item-container {
-	padding: 12px 16px;
+	padding: 6px 16px;
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
