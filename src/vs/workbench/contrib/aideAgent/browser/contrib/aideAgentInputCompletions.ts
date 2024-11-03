@@ -558,6 +558,14 @@ class BuiltinDynamicCompletions extends Disposable {
 
 		for (const pick of entries) {
 			const label = pick.label;
+			const uri = pick.symbol?.location.uri;
+			const range = pick.symbol?.location.range;
+			// if any of this is null, then hard continue, we do not want to send
+			// nullable data to the extension
+			if (uri === undefined || range === undefined) {
+				continue;
+			}
+
 			// label looks like `$(symbol-type) symbol-name`, but we want to insert `@symbol-name`.
 			const insertText = `${chatVariableLeader}${label.replace(/^\$\([^)]+\) /, '')}`;
 			result.suggestions.push({
@@ -571,7 +579,7 @@ class BuiltinDynamicCompletions extends Disposable {
 					id: BuiltinDynamicCompletions.addReferenceCommand, title: '', arguments: [new ReferenceArgument(widget, {
 						id: 'vscode.code',
 						range: { startLineNumber: info.replace.startLineNumber, startColumn: info.replace.startColumn, endLineNumber: info.replace.endLineNumber, endColumn: info.replace.startColumn + insertText.length },
-						data: pick
+						data: { uri, range }
 					})]
 				}
 			});

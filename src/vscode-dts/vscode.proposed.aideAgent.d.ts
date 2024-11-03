@@ -24,11 +24,20 @@ declare module 'vscode' {
 		};
 	}
 
+	export interface AideAgentCodeReference extends ChatPromptReference {
+		readonly id: 'vscode.code';
+		readonly value: {
+			uri: Uri;
+			range: Range;
+		};
+	}
+
 	// This is a cool looking type, but TypeScript currently doesn't enforce it. But it helps understand
 	// the intent for us to use it correctly.
 	export type AideAgentPromptReference =
 		| AideAgentFileReference
-		| (Omit<ChatPromptReference, 'id'> & { id: Exclude<string, 'vscode.file'> });
+		| AideAgentCodeReference
+		| (Omit<ChatPromptReference, 'id'> & { id: string });
 
 	export interface AideAgentRequest extends ChatRequest {
 		readonly exchangeId: string;

@@ -2941,6 +2941,19 @@ export namespace AideAgentPromptReference {
 					modelDescription: variable.modelDescription
 				};
 			}
+			case 'vscode.code': {
+				const valueObj = value as { uri: UriComponents; range: editorRange.IRange };
+				return {
+					id: 'vscode.code',
+					name: variable.name,
+					range: variable.range && [variable.range.start, variable.range.endExclusive],
+					value: {
+						uri: URI.revive(valueObj.uri),
+						range: Range.to(valueObj.range)
+					},
+					modelDescription: variable.modelDescription
+				};
+			}
 			default:
 				return {
 					id: variable.id,

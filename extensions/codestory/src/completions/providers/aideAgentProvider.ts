@@ -143,9 +143,9 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		this.aideAgent = vscode.aideAgent.createChatParticipant('aide', {
 			newSession: this.newSession.bind(this),
 			handleEvent: this.handleEvent.bind(this),
-			handleExchangeUserAction: this.handleExchangeUserAction.bind(this),
-			handleSessionUndo: this.handleSessionUndo.bind(this),
-			handleSessionIterationRequest: this.handleSessionIterationRequest.bind(this),
+			// handleExchangeUserAction: this.handleExchangeUserAction.bind(this),
+			// handleSessionUndo: this.handleSessionUndo.bind(this),
+			// handleSessionIterationRequest: this.handleSessionIterationRequest.bind(this),
 		});
 		this.aideAgent.iconPath = vscode.Uri.joinPath(vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''), 'assets', 'aide-agent.png');
 		this.aideAgent.requester = {
@@ -244,6 +244,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			};
 		}
 		// send a streamingstate widget over here that we have started editing
+		/*
 		responseStream?.stream.streamingState({
 			exchangeId: request.exchange_id,
 			sessionId: request.session_id,
@@ -253,6 +254,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			loadingLabel: 'generating',
 			message: 'Started editing',
 		});
+		*/
 		const editStreamEvent = request;
 		const fileDocument = editStreamEvent.fs_file_path;
 		if ('Start' === editStreamEvent.event) {
@@ -377,6 +379,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	 * this also updates the feedback on the sidecar side so we can tell the agent if its
 	 * chagnes were accepted or not
 	 */
+	/*
 	async handleExchangeUserAction(sessionId: string, exchangeId: string, stepIndex: number | undefined, action: vscode.AideSessionExchangeUserAction): Promise<void> {
 		// we ping the sidecar over here telling it about the state of the edits after
 		// the user has reacted to it appropriately
@@ -395,6 +398,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			this.reportAgentEventsToChat(true, responseStream);
 		}
 	}
+	*/
 
 	handleEvent(event: vscode.AideAgentRequest): void {
 		this.eventQueue.push(event);
@@ -617,11 +621,13 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					// even with the search and replace blocks we do want to show it
 					// to the user
 					if (editEvent.ThinkingForEdit.delta) {
+						/*
 						responseStream.stream.thinkingForEdit({
 							exchangeId,
 							sessionId,
 							thinkingDelta: editEvent.ThinkingForEdit.delta
 						});
+						*/
 					}
 					if (editEvent.RangeSelectionForEdit) {
 						// response.breakdown({
@@ -705,6 +711,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					// we still want to send the planInfo over here (we should check
 					// why the rendering is so slow for this... weird reason)
 					console.log('planEvent::title::update_for', event.event.PlanEvent.PlanStepTitleAdded.index);
+					/*
 					responseStream?.stream.planInfo({
 						exchangeId,
 						sessionId,
@@ -723,9 +730,11 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						title: event.event.PlanEvent.PlanStepTitleAdded.title,
 						descriptionDelta: null,
 					});
+					*/
 				}
 				if (event.event.PlanEvent.PlanStepDescriptionUpdate) {
 					console.log('planEvent::description::update_for', event.event.PlanEvent.PlanStepDescriptionUpdate.index);
+					/*
 					responseStream?.stream.step({
 						description: event.event.PlanEvent.PlanStepDescriptionUpdate.description_up_until_now,
 						index: event.event.PlanEvent.PlanStepDescriptionUpdate.index,
@@ -735,6 +744,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						title: '',
 						descriptionDelta: `\n${event.event.PlanEvent.PlanStepDescriptionUpdate.delta}`,
 					});
+					*/
 				}
 			} else if (event.event.ExchangeEvent) {
 				const sessionId = event.request_id;
@@ -748,6 +758,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				}
 				if (event.event.ExchangeEvent.PlansExchangeState) {
 					const editsState = event.event.ExchangeEvent.PlansExchangeState.edits_state;
+					/*
 					if (editsState === 'Loading') {
 						responseStream?.stream.planInfo({
 							exchangeId,
@@ -779,11 +790,13 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 							state: 'Complete',
 						});
 					}
+					*/
 					continue;
 				}
 				if (event.event.ExchangeEvent.EditsExchangeState) {
 					const editsState = event.event.ExchangeEvent.EditsExchangeState.edits_state;
 					const files = event.event.ExchangeEvent.EditsExchangeState.files.map((file) => vscode.Uri.file(file));
+					/*
 					if (editsState === 'Loading') {
 						responseStream?.stream.editsInfo({
 							exchangeId,
@@ -817,9 +830,11 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 							state: 'markedComplete',
 						});
 					}
+					*/
 					continue;
 				}
 				if (event.event.ExchangeEvent.ExecutionState) {
+					/*
 					const executionState = event.event.ExchangeEvent.ExecutionState;
 					if (executionState === 'Inference') {
 						responseStream?.stream.streamingState({
@@ -850,17 +865,21 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 							message: 'Cancelled',
 						});
 					}
+					*/
 					continue;
 				}
 				if (event.event.ExchangeEvent.RegeneratePlan) {
 					// This event help sus regenerate the plan
+					/*
 					responseStream?.stream.regeneratePlan({
 						sessionId: event.event.ExchangeEvent.RegeneratePlan.session_id,
 						exchangeId: event.event.ExchangeEvent.RegeneratePlan.exchange_id,
 					});
+					*/
 				}
 				if (event.event.ExchangeEvent.FinishedExchange) {
 					// Update our streaming state that we are finished
+					/*
 					responseStream?.stream.streamingState({
 						exchangeId,
 						sessionId,
@@ -869,6 +888,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						state: 'finished',
 						message: 'Finished',
 					});
+					*/
 					if (responseStream) {
 						responseStream.stream.close();
 					}
