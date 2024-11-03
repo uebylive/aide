@@ -384,7 +384,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	handleExchangeUserAction(sessionId: string, exchangeId: string, stepIndex: number | undefined, action: vscode.AideSessionExchangeUserAction): void {
 		// we ping the sidecar over here telling it about the state of the edits after
 		// the user has reacted to it appropriately
-		console.log('handleExchangeUserAction', sessionId, exchangeId, stepIndex, action);
 		const editorUrl = this.editorUrl;
 		let isAccepted = false;
 		if (action === vscode.AideSessionExchangeUserAction.AcceptAll) {
