@@ -58,7 +58,7 @@ import { IChatFollowup } from '../common/aideAgentService.js';
 import { IChatResponseViewModel } from '../common/aideAgentViewModel.js';
 import { IAideAgentWidgetHistoryService, IChatHistoryEntry } from '../common/aideAgentWidgetHistoryService.js';
 import { IAideAgentLMService } from '../common/languageModels.js';
-import { AgentModePickerActionId, AgentScopePickerActionId, CancelAction, IChatExecuteActionContext, SubmitAction } from './actions/aideAgentExecuteActions.js';
+import { AgentScopePickerActionId, CancelAction, IChatExecuteActionContext, SubmitChatAction, SubmitEditAction } from './actions/aideAgentExecuteActions.js';
 import { IChatWidget } from './aideAgent.js';
 import { ChatFollowups } from './aideAgentFollowups.js';
 
@@ -563,18 +563,8 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			},
 			hiddenItemStrategy: HiddenItemStrategy.Ignore, // keep it lean when hiding items and avoid a "..." overflow menu
 			actionViewItemProvider: (action, options) => {
-				if ((action.id === SubmitAction.ID || action.id === CancelAction.ID) && action instanceof MenuItemAction) {
+				if ((action.id === SubmitChatAction.ID || SubmitEditAction.ID || action.id === CancelAction.ID) && action instanceof MenuItemAction) {
 					return this.instantiationService.createInstance(ActionViewItemWithKb, action);
-				}
-
-				if (action.id === AgentModePickerActionId && action instanceof MenuItemAction) {
-					const itemDelegate: AgentModeSetterDelegate = {
-						onDidChangeMode: this._onDidChangeCurrentAgentMode.event,
-						setMode: (modeId: string) => {
-							this._currentAgentMode = modeId as AgentMode;
-						}
-					};
-					return this.instantiationService.createInstance(AgentModeActionViewItem, action, this._currentAgentMode, itemDelegate);
 				}
 
 				return undefined;
@@ -784,74 +774,6 @@ const historyKeyFn = (entry: IChatHistoryEntry) => JSON.stringify(entry);
 
 function getLastPosition(model: ITextModel): IPosition {
 	return { lineNumber: model.getLineCount(), column: model.getLineLength(model.getLineCount()) + 1 };
-}
-
-interface AgentModeSetterDelegate {
-	onDidChangeMode: Event<string>;
-	setMode(selectedModeId: string): void;
-}
-
-class AgentModeActionViewItem extends MenuEntryActionViewItem {
-	constructor(
-		action: MenuItemAction,
-		private currentAgentMode: AgentMode,
-		private delegate: AgentModeSetterDelegate,
-		@IKeybindingService keybindingService: IKeybindingService,
-		@INotificationService notificationService: INotificationService,
-		@IContextKeyService contextKeyService: IContextKeyService,
-		@IThemeService themeService: IThemeService,
-		@IContextMenuService contextMenuService: IContextMenuService,
-		@IAccessibilityService _accessibilityService: IAccessibilityService
-	) {
-		super(action, undefined, keybindingService, notificationService, contextKeyService, themeService, contextMenuService, _accessibilityService);
-
-		this._register(delegate.onDidChangeMode(modeId => {
-			this.currentAgentMode = modeId as AgentMode;
-			this.updateLabel();
-		}));
-	}
-
-	override async onClick(): Promise<void> {
-		this._openContextMenu();
-	}
-
-	override render(container: HTMLElement): void {
-		super.render(container);
-		container.classList.add('agentmode-picker-item');
-	}
-
-	protected override updateLabel(): void {
-		if (this.label) {
-			this.label.textContent = this.currentAgentMode;
-			dom.reset(this.label, ...renderLabelWithIcons(`${this.currentAgentMode}$(chevron-down)`));
-		}
-	}
-
-	private _openContextMenu() {
-		const setAgentModeAction = (mode: string): IAction => {
-			return {
-				id: mode,
-				label: mode,
-				tooltip: '',
-				class: undefined,
-				enabled: true,
-				checked: mode === this.currentAgentMode,
-				run: () => {
-					this.currentAgentMode = mode as AgentMode;
-					this.delegate.setMode(mode);
-					this.updateLabel();
-				}
-			};
-		};
-
-		this._contextMenuService.showContextMenu({
-			getAnchor: () => this.element!,
-			getActions: () => [
-				setAgentModeAction('Edit'),
-				setAgentModeAction('Chat'),
-			]
-		});
-	}
 }
 
 export interface AgentScopeSetterDelegate {

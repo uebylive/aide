@@ -37,7 +37,7 @@ import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestTextPa
 import { IAideAgentSlashCommandService } from '../../common/aideAgentSlashCommands.js';
 import { IAideAgentVariablesService, IDynamicVariable } from '../../common/aideAgentVariables.js';
 import { IAideAgentLMToolsService } from '../../common/languageModelToolsService.js';
-import { SubmitAction } from '../actions/aideAgentExecuteActions.js';
+import { SubmitChatAction } from '../actions/aideAgentExecuteActions.js';
 import { IAideAgentWidgetService, IChatWidget } from '../aideAgent.js';
 import { ChatInputPart } from '../aideAgentInputPart.js';
 import { IChatWidgetCompletionContext } from '../aideAgentWidget.js';
@@ -89,7 +89,7 @@ class SlashCommandCompletions extends Disposable {
 							range: new Range(1, 1, 1, 1),
 							sortText: c.sortText ?? 'a'.repeat(i + 1),
 							kind: CompletionItemKind.Text, // The icons are disabled here anyway,
-							command: c.executeImmediately ? { id: SubmitAction.ID, title: withSlash, arguments: [{ widget, inputValue: `${withSlash} ` }] } : undefined,
+							command: c.executeImmediately ? { id: SubmitChatAction.ID, title: withSlash, arguments: [{ widget, inputValue: `${withSlash} ` }] } : undefined,
 						};
 					})
 				};

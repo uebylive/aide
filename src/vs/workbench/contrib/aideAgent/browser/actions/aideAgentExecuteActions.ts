@@ -27,13 +27,56 @@ export interface IChatExecuteActionContext {
 	voice?: IVoiceChatExecuteActionContext;
 }
 
-export class SubmitAction extends Action2 {
-	static readonly ID = 'workbench.action.aideAgent.submit';
+export class SubmitChatAction extends Action2 {
+	static readonly ID = 'workbench.action.aideAgent.submitChat';
 
 	constructor() {
 		super({
-			id: SubmitAction.ID,
-			title: localize2('interactive.submit.label', "Send"),
+			id: SubmitChatAction.ID,
+			title: localize2('interactive.submitChat.label', "Chat"),
+			f1: false,
+			category: CHAT_CATEGORY,
+			icon: Codicon.send,
+			precondition: ContextKeyExpr.and(CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate(), CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET.negate()),
+			keybinding: {
+				when: CONTEXT_IN_CHAT_INPUT,
+				primary: KeyMod.CtrlCmd | KeyCode.Enter,
+				weight: KeybindingWeight.EditorContrib
+			},
+			menu: [
+				{
+					id: MenuId.AideAgentExecuteSecondary,
+					group: 'group_1',
+					when: CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET.negate(),
+				},
+				{
+					id: MenuId.AideAgentExecute,
+					order: 2,
+					when: ContextKeyExpr.and(CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET.negate(), CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate()),
+					group: 'navigation',
+				},
+			]
+		});
+	}
+
+	run(accessor: ServicesAccessor, ...args: any[]) {
+		const context: IChatExecuteActionContext | undefined = args[0];
+
+		const widgetService = accessor.get(IAideAgentWidgetService);
+		const widget = context?.widget ?? widgetService.lastFocusedWidget;
+		const input = widget?.getInput() ?? context?.inputValue;
+
+		widget?.acceptInput(AgentMode.Chat, input);
+	}
+}
+
+export class SubmitEditAction extends Action2 {
+	static readonly ID = 'workbench.action.aideAgent.submitEdit';
+
+	constructor() {
+		super({
+			id: SubmitEditAction.ID,
+			title: localize2('interactive.submitEdit.label', "Edit"),
 			f1: false,
 			category: CHAT_CATEGORY,
 			icon: Codicon.send,
@@ -75,7 +118,7 @@ class TogglePlanningAction extends Action2 {
 	constructor() {
 		super({
 			id: TogglePlanningAction.ID,
-			title: localize2('interactive.togglePlanning.label', "Toggle additional reasoning"),
+			title: localize2('interactive.togglePlanning.label', "Toggle deep reasoning"),
 			f1: false,
 			category: CHAT_CATEGORY,
 			icon: Codicon.compass,
@@ -101,24 +144,12 @@ function registerPlanningToggleMenu() {
 		group: 'navigation',
 		command: {
 			id: TogglePlanningAction.ID,
-			title: localize2('interactive.togglePlanning.label', "Toggle additional reasoning"),
+			title: localize2('interactive.togglePlanning.label', "Toggle deep reasoning"),
 			icon: Codicon.compass,
 			toggled: { condition: CONTEXT_CHAT_INPUT_PLANNING_ENABLED, icon: Codicon.compassActive }
 		},
 	});
 }
-
-export const AgentModePickerActionId = 'workbench.action.aideAgent.setMode';
-MenuRegistry.appendMenuItem(MenuId.AideAgentExecute, {
-	command: {
-		id: AgentModePickerActionId,
-		title: localize2('aideAgent.setMode.label', "Set Mode"),
-	},
-	order: 1,
-	group: 'navigation',
-	// TODO(@ghostwriternr): This is a hack to get around the pain (very high) of adding a new entry to the chat location
-	when: ContextKeyExpr.and(CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET.negate(), ContextKeyExpr.equals(CONTEXT_CHAT_LOCATION.key, 'panel')),
-});
 
 export const AgentScopePickerActionId = 'workbench.action.aideAgent.setScope';
 MenuRegistry.appendMenuItem(MenuId.AideAgentInput, {
@@ -172,7 +203,8 @@ export class CancelAction extends Action2 {
 }
 
 export function registerChatExecuteActions() {
-	registerAction2(SubmitAction);
+	registerAction2(SubmitChatAction);
+	registerAction2(SubmitEditAction);
 	registerAction2(CancelAction);
 	registerAction2(TogglePlanningAction);
 	registerPlanningToggleMenu();
