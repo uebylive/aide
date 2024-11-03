@@ -43,7 +43,10 @@ class AideResponseStreamCollection {
 			console.log('responseStream::token_cancelled');
 			// over here we get the stream of events from the cancellation
 			// we need to send it over on the stream as usual so we can work on it
-			const responseStreamAnswer = this.sidecarClient.cancelRunningEvent(responseStreamIdentifier.sessionId, responseStreamIdentifier.exchangeId);
+			// we can send empty access token here since we are not making llm calls
+			// on the sidecar... pretty sure I will forget and scream at myself later on
+			// for having herd knowledged like this
+			const responseStreamAnswer = this.sidecarClient.cancelRunningEvent(responseStreamIdentifier.sessionId, responseStreamIdentifier.exchangeId, this.aideAgentSessionProvider.editorUrl!, '');
 			this.aideAgentSessionProvider.reportAgentEventsToChat(true, responseStreamAnswer);
 		}));
 		this.responseStreamCollection.set(this.getKey(responseStreamIdentifier), responseStream);
@@ -243,6 +246,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		responseStream?.stream.streamingState({
 			exchangeId: request.exchange_id,
 			sessionId: request.session_id,
+			files: [request.fs_file_path],
 			isError: false,
 			state: 'editsStarted',
 			loadingLabel: 'generating',
@@ -297,15 +301,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				await editsManager.streamProcessor.processLine(currentLine);
 			}
 			editsManager.streamProcessor.cleanup();
-
-			responseStream?.stream.streamingState({
-				exchangeId: request.exchange_id,
-				sessionId: request.session_id,
-				isError: false,
-				state: 'editsStarted',
-				loadingLabel: 'generating',
-				message: 'Finished editing',
-			});
 
 			await vscode.workspace.save(vscode.Uri.file(editStreamEvent.fs_file_path)); // save files upon stream completion
 			console.log('provideEditsStreamed::finished', editStreamEvent.fs_file_path);
@@ -381,7 +376,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	 * this also updates the feedback on the sidecar side so we can tell the agent if its
 	 * chagnes were accepted or not
 	 */
-	handleExchangeUserAction(sessionId: string, exchangeId: string, stepIndex: number | undefined, action: vscode.AideSessionExchangeUserAction): void {
+	async handleExchangeUserAction(sessionId: string, exchangeId: string, stepIndex: number | undefined, action: vscode.AideSessionExchangeUserAction): Promise<void> {
 		// we ping the sidecar over here telling it about the state of the edits after
 		// the user has reacted to it appropriately
 		const editorUrl = this.editorUrl;
@@ -393,7 +388,9 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			// TODO(skcd): Not sure if an async stream like this works, but considering
 			// js/ts this should be okay from what I remember, pending futures do not
 			// get cleaned up via GC
-			const responseStream = this.sidecarClient.userFeedbackOnExchange(sessionId, exchangeId, stepIndex, editorUrl, isAccepted);
+			const session = await vscode.csAuthentication.getSession();
+			const accessToken = session?.accessToken ?? '';
+			const responseStream = this.sidecarClient.userFeedbackOnExchange(sessionId, exchangeId, stepIndex, editorUrl, isAccepted, accessToken);
 			this.reportAgentEventsToChat(true, responseStream);
 		}
 	}
@@ -827,6 +824,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						responseStream?.stream.streamingState({
 							exchangeId,
 							sessionId,
+							files: [],
 							isError: false,
 							state: 'loading',
 							loadingLabel: 'reasoning',
@@ -835,6 +833,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						responseStream?.stream.streamingState({
 							exchangeId,
 							sessionId,
+							files: [],
 							isError: false,
 							state: 'waitingFeedback',
 							loadingLabel: 'generating',
@@ -843,6 +842,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						responseStream?.stream.streamingState({
 							exchangeId,
 							sessionId,
+							files: [],
 							isError: false,
 							state: 'cancelled',
 							loadingLabel: 'generating',
@@ -863,6 +863,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					responseStream?.stream.streamingState({
 						exchangeId,
 						sessionId,
+						files: [],
 						isError: false,
 						state: 'finished',
 						message: 'Finished',
