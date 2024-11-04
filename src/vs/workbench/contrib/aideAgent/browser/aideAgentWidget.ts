@@ -756,8 +756,8 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			// Reacting to the streamingState over here since these influence the
 			// streamingStateWidget which is part of the ChatWidget
 			events.filter((event) => (event?.kind === 'planInfo' || event?.kind === 'editsInfo')).forEach((event) => {
-				if (event.kind === 'planInfo' && event.state === ChatPlanState.Started
-					|| event.kind === 'editsInfo' && event.state === ChatEditsState.Loading
+				if (event.kind === 'planInfo' && (event.state === ChatPlanState.Started || event.state === ChatPlanState.Complete)
+					|| event.kind === 'editsInfo' && (event.state === ChatEditsState.Loading || event.state === ChatEditsState.MarkedComplete)
 				) {
 					this.updateStreamingState(event);
 				} else {

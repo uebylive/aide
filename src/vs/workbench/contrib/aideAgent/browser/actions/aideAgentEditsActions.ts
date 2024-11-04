@@ -29,11 +29,11 @@ export class AcceptEditsAction extends Action2 {
 				weight: KeybindingWeight.EditorContrib
 			},
 			menu: [
-				{
-					id: MenuId.AideAgentPlanLoading, // Debug workaround since sidecar states are not fixed yet
-					group: 'navigation',
-					order: 0
-				},
+				//{
+				//	id: MenuId.AideAgentPlanLoading, // Debug workaround since sidecar states are not fixed yet
+				//	group: 'navigation',
+				//	order: 0
+				//},
 				// Following two states should be merged
 				{
 					id: MenuId.AideAgentEditsReview,
@@ -104,11 +104,11 @@ export class RejectEditsAction extends Action2 {
 			},
 			menu: [
 				// no need to check for when as we swap the toolbar menu completely
-				{
-					id: MenuId.AideAgentPlanLoading, // Debug workaround since sidecar states are not fixed yet
-					group: 'navigation',
-					order: 1
-				},
+				//{
+				//	id: MenuId.AideAgentPlanLoading, // Debug workaround since sidecar states are not fixed yet
+				//	group: 'navigation',
+				//	order: 1
+				//},
 				// Following two states should be merged
 				{
 					id: MenuId.AideAgentEditsReview,
@@ -178,11 +178,11 @@ class ViewEditsDetailAction extends Action2 {
 					group: 'navigation',
 					order: 0, // First element
 				},
-				{
-					id: MenuId.AideAgentPlanReview,
-					group: 'navigation',
-					order: 0 // First hidden element
-				}
+				//{
+				//	id: MenuId.AideAgentPlanReview,
+				//	group: 'navigation',
+				//	order: 0 // First hidden element
+				//}
 			],
 			icon: Codicon.diff,
 			f1: false,

@@ -16,7 +16,6 @@ import { Emitter } from '../../../../../base/common/event.js';
 import { ChatMarkdownContentPart } from './aideAgentMarkdownContentPart.js';
 import { IAideAgentPlanService } from '../../common/aideAgentPlanService.js';
 import './media/aideAgentRichItem.css';
-import { CheckpointFlag } from './aideAgentCheckpointFlag.js';
 import { ICommandService } from '../../../../../platform/commands/common/commands.js';
 import { ActionViewItemWithKb } from '../../../../../platform/actionbarWithKeybindings/browser/actionViewItemWithKb.js';
 
@@ -39,7 +38,7 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 	_toolbar: MenuWorkbenchToolBar | undefined;
 	// private actionsPreviewElement: HTMLElement;
 
-	private readonly context: IRichItemContext;
+	//private readonly context: IRichItemContext;
 
 	private readonly _onDidChangeHeight = this._register(new Emitter<void>());
 	public readonly onDidChangeHeight = this._onDidChangeHeight.event;
@@ -51,7 +50,6 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 		private sessionId: string,
 		private exchangeId: string,
 		readonly menuId: MenuId | null,
-		readonly supportsCheckpoint: boolean,
 		//readonly previewOptions: IActionsPreviewOptions = { start: -1, end: -1 },
 		readonly descriptionOrDescriptionPart: string | ChatMarkdownContentPart | undefined,
 		readonly instantiationService: IInstantiationService,
@@ -62,33 +60,33 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 		super();
 		const domNode = this.domNode = $('.aide-rich-block');
 
-		this.context = {
-			aideAgentSessionId: this.sessionId,
-			aideAgentExchangeId: this.exchangeId
-		};
+		//this.context = {
+		//	aideAgentSessionId: this.sessionId,
+		//	aideAgentExchangeId: this.exchangeId
+		//};
 
-		if (supportsCheckpoint) {
-			const checkpointButton = this._register(this.instantiationService.createInstance(CheckpointFlag, true, undefined));
-
-			this._register(dom.addDisposableListener(checkpointButton.domNode, dom.EventType.CLICK, async (e: MouseEvent) => {
-				this.commandsService.executeCommand('workbench.action.aideAgent.revert', this.context);
-			}));
-
-			domNode.appendChild(checkpointButton.domNode);
-			// const planReviewButtonContainer = $('.aide-rich-item-plan');
-			// const planReviewButton = this._register(this.instantiationService.createInstance(Button, planReviewButtonContainer, defaultButtonStyles));
-			// planReviewButton.label = 'planView';
-			// planReviewButton.onDidClick(() => {
-			// 	// forces the view pane to open up
-			// 	this.aideAgentPlanService.anchorPlanViewPane(sessionId, exchangeId);
-			// });
-			//
-			// dom.addDisposableListener(planReviewButton.element, dom.EventType.CLICK, async (e: MouseEvent) => {
-			// 	dom.EventHelper.stop(e, true);
-			// 	this.aideAgentPlanService.anchorPlanViewPane(sessionId, exchangeId);
-			// });
-			// domNode.appendChild(planReviewButtonContainer);
-		}
+		//if (supportsCheckpoint) {
+		//const checkpointButton = this._register(this.instantiationService.createInstance(CheckpointFlag, true, undefined));
+		//
+		//this._register(dom.addDisposableListener(checkpointButton.domNode, dom.EventType.CLICK, async (e: MouseEvent) => {
+		//	this.commandsService.executeCommand('workbench.action.aideAgent.revert', this.context);
+		//}));
+		//
+		//domNode.appendChild(checkpointButton.domNode);
+		// const planReviewButtonContainer = $('.aide-rich-item-plan');
+		// const planReviewButton = this._register(this.instantiationService.createInstance(Button, planReviewButtonContainer, defaultButtonStyles));
+		// planReviewButton.label = 'planView';
+		// planReviewButton.onDidClick(() => {
+		// 	// forces the view pane to open up
+		// 	this.aideAgentPlanService.anchorPlanViewPane(sessionId, exchangeId);
+		// });
+		//
+		// dom.addDisposableListener(planReviewButton.element, dom.EventType.CLICK, async (e: MouseEvent) => {
+		// 	dom.EventHelper.stop(e, true);
+		// 	this.aideAgentPlanService.anchorPlanViewPane(sessionId, exchangeId);
+		// });
+		// domNode.appendChild(planReviewButtonContainer);
+		//}
 
 		const itemElement = domNode.appendChild($('.aide-rich-item'));
 

@@ -35,7 +35,6 @@ export class EditsContentPart extends AideAgentRichItemContent {
 			edits.sessionId,
 			edits.exchangeId,
 			menuId,
-			edits.state === ChatEditsState.MarkedComplete,
 			descriptionOrDescriptionPart,
 			instantiationService,
 			keybindingService,

@@ -10,7 +10,7 @@ import { IInstantiationService } from '../../../../../platform/instantiation/com
 import { IKeybindingService } from '../../../../../platform/keybinding/common/keybinding.js';
 import { IChatProgressRenderableResponseContent } from '../../common/aideAgentModel.js';
 import { IAideAgentPlanService } from '../../common/aideAgentPlanService.js';
-import { ChatPlanState, IChatPlanInfo } from '../../common/aideAgentService.js';
+import { IChatPlanInfo } from '../../common/aideAgentService.js';
 import { ChatMarkdownContentPart } from './aideAgentMarkdownContentPart.js';
 import { AideAgentRichItem as AideAgentRichItemContent } from './aideAgentRichItem.js';
 
@@ -36,7 +36,6 @@ export class PlanContentPart extends AideAgentRichItemContent {
 			plan.exchangeId,
 			menuId,
 			// changing this to true for now, we will change it back later on
-			plan.state === ChatPlanState.Complete,
 			descriptionOrDescriptionPart,
 			instantiationService,
 			keybindingService,
@@ -78,10 +77,8 @@ function assignMenuId(edits: IChatPlanInfo): MenuId | null {
 	switch (edits.state) {
 		case 'Started':
 			return MenuId.AideAgentPlanLoading;
-
 		case 'Complete':
 			return MenuId.AideAgentPlanReview;
-
 		case 'Cancelled':
 			return MenuId.AideAgentEditsCompleted;
 		default:
