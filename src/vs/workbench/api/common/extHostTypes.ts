@@ -4746,6 +4746,7 @@ export class AideAgentResponsePlanPart {
 	descriptionDelta: string | vscode.MarkdownString | null;
 	sessionId: string;
 	exchangeId: string;
+	files: URI[];
 	index: number;
 	isLast: boolean;
 	title: string;
@@ -4757,6 +4758,7 @@ export class AideAgentResponsePlanPart {
 		this.index = step.index;
 		this.isLast = step.isLast;
 		this.title = step.title;
+		this.files = step.files;
 	}
 }
 

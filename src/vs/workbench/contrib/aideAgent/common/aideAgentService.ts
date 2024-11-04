@@ -290,6 +290,7 @@ export interface IChatPlanInfo {
 export interface IChatPlanStep {
 	description: IMarkdownString;
 	descriptionDelta: IMarkdownString | null;
+	files: URI[];
 	sessionId: string;
 	exchangeId: string;
 	title: string;

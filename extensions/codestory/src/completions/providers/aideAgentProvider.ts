@@ -719,6 +719,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						isLast: false,
 						title: event.event.PlanEvent.PlanStepTitleAdded.title,
 						descriptionDelta: null,
+						files: event.event.PlanEvent.PlanStepTitleAdded.files_to_edit.map((file) => vscode.Uri.file(file)),
 					});
 				}
 				if (event.event.PlanEvent.PlanStepDescriptionUpdate) {
@@ -731,6 +732,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						isLast: false,
 						title: '',
 						descriptionDelta: `\n${event.event.PlanEvent.PlanStepDescriptionUpdate.delta}`,
+						files: event.event.PlanEvent.PlanStepDescriptionUpdate.files_to_edit.map((file) => vscode.Uri.file(file)),
 					});
 				}
 			} else if (event.event.ExchangeEvent) {

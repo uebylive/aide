@@ -286,6 +286,19 @@
 	margin: 16px 0;
 }
 
+.aideagent-item-container.editing-session .value .rendered-markdown [data-code] {
+	margin: 8px 0 16px 0;
+}
+
+.aideagent-item-container .value .rendered-markdown .codicon {
+	position: relative;
+	top: 2px;
+}
+
+.aideagent-item-container .value .rendered-markdown .aideagent-codeblock-pill-widget .codicon {
+	top: 0px;
+}
+
 .aideagent-item-container .value .rendered-markdown p {
 	line-height: 1.5em;
 }

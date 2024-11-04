@@ -1377,12 +1377,22 @@ export class ChatModel extends Disposable implements IChatModel {
 					'kind': 'markdownContent',
 					content: progress.descriptionDelta,
 				});
+				this.detectCodeBlockAndUpdateURI(planMaybe, progress, responseModel);
 			}
 		}
 
 		// For now we can also make sure that we bring the review pane over here into the view
 		// automagically since the plan is getting generated
 		this.aideAgentPlanService.anchorPlanViewPane(progress.sessionId, progress.exchangeId);
+	}
+
+	detectCodeBlockAndUpdateURI(plan: ChatModel, progress: IChatPlanStep, responseModel: ChatResponseModel | undefined) {
+		if (progress.description.value.includes('```') && progress.files.length > 0) {
+			plan.acceptResponseProgress(responseModel, {
+				'kind': 'codeblockUri',
+				uri: progress.files[0],
+			});
+		}
 	}
 
 	/**

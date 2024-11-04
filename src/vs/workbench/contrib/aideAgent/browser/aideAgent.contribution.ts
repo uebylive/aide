@@ -49,7 +49,6 @@ import { registerChatEditsActions } from './actions/aideAgentEditsActions.js';
 import { SubmitChatRequestAction, registerChatExecuteActions } from './actions/aideAgentExecuteActions.js';
 import { registerChatFileTreeActions } from './actions/aideAgentFileTreeActions.js';
 import { registerAideAgentFloatingWidgetActions } from './actions/aideAgentFloatingWidgetActions.js';
-import { registerPlanReviewActions } from './actions/aideAgentPlanReviewActions.js';
 import { registerChatPlanStepActions } from './actions/aideAgentPlanStepsActions.js';
 import { registerChatTitleActions } from './actions/aideAgentTitleActions.js';
 import { IAideAgentAccessibilityService, IAideAgentCodeBlockContextProviderService, IAideAgentWidgetService } from './aideAgent.js';
@@ -290,7 +289,7 @@ registerChatDeveloperActions();
 registerAideAgentFloatingWidgetActions();
 registerCodeEditActions();
 registerPlanReviewViewAndViewContainer();
-registerPlanReviewActions();
+// registerPlanReviewActions();
 
 registerSingleton(IAideAgentService, ChatService, InstantiationType.Delayed);
 registerSingleton(IAideAgentWidgetService, ChatWidgetService, InstantiationType.Delayed);
