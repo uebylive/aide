@@ -761,15 +761,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 							isStale: false,
 							state: 'Cancelled',
 						});
-					} else if (editsState === 'InReview') {
-						responseStream?.stream.planInfo({
-							exchangeId,
-							sessionId,
-							isStale: false,
-							// this state is wrong over here, we should show
-							// that the plan is in review right now
-							state: 'InReview',
-						});
 					} else if (editsState === 'MarkedComplete') {
 						responseStream?.stream.planInfo({
 							exchangeId,
@@ -798,14 +789,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 							files,
 							isStale: false,
 							state: 'cancelled',
-						});
-					} else if (editsState === 'InReview') {
-						responseStream?.stream.editsInfo({
-							exchangeId,
-							sessionId,
-							files,
-							isStale: false,
-							state: 'inReview',
 						});
 					} else if (editsState === 'MarkedComplete') {
 						responseStream?.stream.editsInfo({
