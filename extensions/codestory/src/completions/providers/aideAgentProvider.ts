@@ -768,6 +768,13 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 							isStale: false,
 							state: 'Complete',
 						});
+					} else if (editsState === 'Accepted') {
+						responseStream?.stream.planInfo({
+							exchangeId,
+							sessionId,
+							isStale: false,
+							state: 'Accepted',
+						});
 					}
 					continue;
 				}

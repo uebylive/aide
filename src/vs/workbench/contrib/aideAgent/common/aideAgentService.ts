@@ -265,6 +265,7 @@ export enum ChatPlanState {
 	Started = 'Started',
 	Complete = 'Complete',
 	Cancelled = 'Cancelled',
+	Accepted = 'Accepted',
 }
 
 export interface IChatEditsInfo {
