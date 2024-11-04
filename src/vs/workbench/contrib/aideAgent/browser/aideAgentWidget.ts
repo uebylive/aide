@@ -31,7 +31,7 @@ import { CONTEXT_AIDE_PLAN_INPUT, CONTEXT_AIDE_PLAN_REVIEW_STATE_EXCHANGEID, CON
 import { AgentMode, AgentScope, ChatModelInitState, IChatModel, IChatRequestVariableEntry, IChatResponseModel } from '../common/aideAgentModel.js';
 import { ChatRequestAgentPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader, formatChatQuestion } from '../common/aideAgentParserTypes.js';
 import { ChatRequestParser } from '../common/aideAgentRequestParser.js';
-import { IAideAgentService, IChatAideAgentPlanRegenerateInformationPart, IChatFollowup, IChatLocationData, IChatStreamingState } from '../common/aideAgentService.js';
+import { IAideAgentService, IChatAideAgentPlanRegenerateInformationPart, IChatEditsInfo, IChatFollowup, IChatLocationData, IChatPlanInfo } from '../common/aideAgentService.js';
 import { IAideAgentSlashCommandService } from '../common/aideAgentSlashCommands.js';
 import { ChatViewModel, IChatResponseViewModel, isRequestVM, isResponseVM, isWelcomeVM } from '../common/aideAgentViewModel.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
@@ -755,7 +755,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 			// Reacting to the streamingState over here since these influence the
 			// streamingStateWidget which is part of the ChatWidget
-			events.filter((event) => event?.kind === 'streamingState').forEach((event) => {
+			events.filter((event) => (event?.kind === 'planInfo' || event?.kind === 'editsInfo')).forEach((event) => {
 				this.updateStreamingState(event);
 			});
 
@@ -876,13 +876,15 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this._runningExchangeId.set(event.exchangeId);
 	}
 
-	private updateStreamingState(event: IChatStreamingState) {
+	private updateStreamingState(event: IChatEditsInfo | IChatPlanInfo) {
 		const state = event.state;
 		// If we are finished with the exchange, then set the streaming state to undefined
-		if (state === 'finished') {
-			CONTEXT_STREAMING_STATE.bindTo(this.contextKeyService).set(undefined);
-			this.inputPart.hideStreamingState();
-		} else if (state === 'cancelled') {
+		//if (state === 'finished') {
+		//CONTEXT_STREAMING_STATE.bindTo(this.contextKeyService).set(undefined);
+		//this.inputPart.hideStreamingState();
+		//} else
+		// TODO should handle how to hide the streaming state
+		if (state === 'cancelled') {
 			// we have to make sure our editor reverts back to the basic
 			this.aideAgentCodeEditingService.rejectEditsMadeDuringExchange(event.sessionId, event.exchangeId);
 			// If the streaming state is showing cancelled, then we have to first

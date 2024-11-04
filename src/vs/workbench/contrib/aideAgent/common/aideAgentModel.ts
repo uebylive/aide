@@ -829,6 +829,7 @@ export function isSerializableSessionData(obj: unknown): obj is ISerializableCha
 export type IChatChangeEvent =
 	| IChatInitEvent
 	| IChatAddRequestEvent | IChatChangedRequestEvent | IChatRemoveRequestEvent
+	| IChatEditsInfo | IChatPlanInfo
 	| IChatAddResponseEvent
 	| IChatSetAgentEvent
 	| IChatMoveEvent
@@ -1505,8 +1506,10 @@ export class ChatModel extends Disposable implements IChatModel {
 			this._onDidChange.fire({ kind: 'codeEdit', edits: progress.edits });
 		} else if (progress.kind === 'editsInfo') {
 			response.applyEditsInfo(progress);
+			this._onDidChange.fire(progress);
 		} else if (progress.kind === 'planInfo') {
 			response.applyPlanInfo(progress);
+			this._onDidChange.fire(progress);
 		} else {
 			this.logService.error(`Couldn't handle progress: ${JSON.stringify(progress)}`);
 		}

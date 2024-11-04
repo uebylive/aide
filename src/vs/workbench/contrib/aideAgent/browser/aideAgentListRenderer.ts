@@ -1097,7 +1097,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		if (edits.description) {
 			descriptionPart = this.renderMarkdown(edits.description, templateData, context) as ChatMarkdownContentPart;
 		}
-		const editsContentPart = this.instantiationService.createInstance(EditsContentPart, edits, sessionId, exchangeId, descriptionPart);
+		const editsContentPart = this.instantiationService.createInstance(EditsContentPart, edits, descriptionPart);
 		editsContentPart.addDisposable(editsContentPart.onDidChangeHeight(() => {
 			this.updateItemHeight(templateData);
 		}));
@@ -1110,7 +1110,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		if (plan.description) {
 			descriptionPart = this.renderMarkdown(plan.description, templateData, context) as ChatMarkdownContentPart;
 		}
-		const planContentPart = this.instantiationService.createInstance(PlanContentPart, plan, sessionId, exchangeId, descriptionPart);
+		const planContentPart = this.instantiationService.createInstance(PlanContentPart, plan, descriptionPart);
 		planContentPart.addDisposable(planContentPart.onDidChangeHeight(() => {
 			this.updateItemHeight(templateData);
 		}));

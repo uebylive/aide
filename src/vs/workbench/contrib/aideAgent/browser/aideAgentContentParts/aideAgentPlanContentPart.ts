@@ -17,8 +17,6 @@ import { AideAgentRichItem as AideAgentRichItemContent, IActionsPreviewOptions }
 export class PlanContentPart extends AideAgentRichItemContent {
 	constructor(
 		readonly plan: IChatPlanInfo,
-		sessionId: string,
-		exchangeId: string,
 		descriptionPart: ChatMarkdownContentPart | undefined,
 		@IInstantiationService instantiationService: IInstantiationService,
 		@IKeybindingService keybindingService: IKeybindingService,
@@ -34,8 +32,8 @@ export class PlanContentPart extends AideAgentRichItemContent {
 			label,
 			icon,
 			plan.isStale,
-			sessionId,
-			exchangeId,
+			plan.sessionId,
+			plan.exchangeId,
 			menuId,
 			// changing this to true for now, we will change it back later on
 			plan.state === ChatPlanState.Complete,

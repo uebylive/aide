@@ -36,7 +36,7 @@ export interface IRichItemContext {
 export abstract class AideAgentRichItem extends Disposable implements IChatContentPart {
 	public readonly domNode: HTMLElement;
 
-	protected toolbar: MenuWorkbenchToolBar | undefined;
+	_toolbar: MenuWorkbenchToolBar | undefined;
 	private actionsPreviewElement: HTMLElement;
 
 	private readonly context: IRichItemContext;
@@ -127,7 +127,7 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 			const toolbarContainer = $('.aide-rich-item-actions');
 			header.appendChild(toolbarContainer);
 
-			this.toolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, toolbarContainer, menuId, {
+			this._toolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, toolbarContainer, menuId, {
 				menuOptions: { shouldForwardArgs: true },
 				hiddenItemStrategy: HiddenItemStrategy.NoHide,
 				actionViewItemProvider: (action) => {
@@ -139,7 +139,7 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 			}));
 
 			// pass relevent information to the context over here
-			this.toolbar.context = {
+			this._toolbar.context = {
 				'aideAgentSessionId': this.sessionId,
 				'aideAgentExchangeId': this.exchangeId,
 			};
@@ -155,7 +155,7 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 
 			this.updatePreview();
 
-			this._register(this.toolbar.onDidChangeMenuItems(() => {
+			this._register(this._toolbar.onDidChangeMenuItems(() => {
 				this.updatePreview();
 			}));
 		}
@@ -164,11 +164,11 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 	abstract hasSameContent(other: IChatProgressRenderableResponseContent): boolean;
 
 	private updatePreview() {
-		if (!this.toolbar) {
+		if (!this._toolbar) {
 			return;
 
 		}
-		const numberOfItems = this.toolbar.getItemsLength();
+		const numberOfItems = this._toolbar.getItemsLength();
 		dom.clearNode(this.actionsPreviewElement);
 
 		for (let i = 0; i < numberOfItems; i++) {
@@ -176,7 +176,7 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 			const endIndex = getIndex(this.previewOptions.end, numberOfItems);
 
 			if (i >= startIndex && i <= endIndex) {
-				const action = this.toolbar.getItemAction(i);
+				const action = this._toolbar.getItemAction(i);
 				if (!action?.class) {
 					console.warn(`Action class not found for ${action?.id} in ${this.menuId}`);
 					continue;
