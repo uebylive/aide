@@ -4733,6 +4733,7 @@ export enum AideAgentPlanState {
 	Complete = 'Complete',
 	Cancelled = 'Cancelled',
 	InReview = 'InReview',
+	Accepted = 'Accepted',
 }
 
 export enum AideButtonLook {

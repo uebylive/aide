@@ -65,6 +65,8 @@ function assignLabel(plan: IChatPlanInfo): string {
 			return localize('agent.planComplete', "Edits");
 		case 'Cancelled':
 			return localize('agent.planCancelled', "Edits");
+		case 'Accepted':
+			return localize('agent.planAccepted', "Edits");
 	}
 }
 
