@@ -835,11 +835,12 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					continue;
 				}
 				if (event.event.ExchangeEvent.RegeneratePlan) {
-					// This event help sus regenerate the plan
+					// This event help us regenerate the plan and set details on the editor layer
 					responseStream?.stream.regeneratePlan({
 						sessionId: event.event.ExchangeEvent.RegeneratePlan.session_id,
 						exchangeId: event.event.ExchangeEvent.RegeneratePlan.exchange_id,
 					});
+					continue;
 				}
 				if (event.event.ExchangeEvent.FinishedExchange) {
 					// Update our streaming state that we are finished
