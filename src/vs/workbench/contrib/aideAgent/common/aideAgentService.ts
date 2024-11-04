@@ -260,7 +260,7 @@ export enum ChatEditsState {
 	Cancelled = 'cancelled',
 }
 
-
+// Use the same enum as above, rename every plan to multi-step edit
 export enum ChatPlanState {
 	Started = 'Started',
 	Complete = 'Complete',
