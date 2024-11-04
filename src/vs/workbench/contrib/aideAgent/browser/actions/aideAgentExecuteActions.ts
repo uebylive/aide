@@ -11,9 +11,9 @@ import { Action2, MenuId, registerAction2 } from '../../../../../platform/action
 import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
 import { IsDevelopmentContext } from '../../../../../platform/contextkey/common/contextkeys.js';
 import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
-import { CONTEXT_AIDE_PLAN_INPUT, CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_INPUT, CONTEXT_STREAMING_STATE } from '../../common/aideAgentContextKeys.js';
+import { CONTEXT_AIDE_PLAN_INPUT, CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_INPUT } from '../../common/aideAgentContextKeys.js';
 import { AgentMode } from '../../common/aideAgentModel.js';
-import { ChatStreamingState, IAideAgentService } from '../../common/aideAgentService.js';
+import { IAideAgentService } from '../../common/aideAgentService.js';
 import { IAideAgentWidgetService, IChatWidget } from '../aideAgent.js';
 import { CHAT_CATEGORY } from './aideAgentChatActions.js';
 
@@ -37,7 +37,7 @@ export class SubmitChatRequestAction extends Action2 {
 			f1: false,
 			category: CHAT_CATEGORY,
 			icon: Codicon.send,
-			precondition: ContextKeyExpr.and(CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate()),
+			precondition: ContextKeyExpr.and(CONTEXT_CHAT_INPUT_HAS_TEXT),
 			keybinding: {
 				when: CONTEXT_IN_CHAT_INPUT,
 				primary: KeyMod.CtrlCmd | KeyCode.Enter,
@@ -191,11 +191,18 @@ export class CancelAction extends Action2 {
 				// 	group: 'navigation',
 				// },
 				{
-					id: MenuId.AideAgentStreamingState,
-					when: CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.Loading),
-					order: 2,
+					id: MenuId.AideAgentPlanLoading,
+					// no need to check for when as we swap the toolbar menu completely
+					order: 1,
 					group: 'navigation',
-				}],
+				}
+				//{
+				//	id: MenuId.AideAgentStreamingState,
+				//	when: CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.Loading),
+				//	order: 2,
+				//	group: 'navigation',
+				//}
+			],
 			keybinding: {
 				when: CONTEXT_IN_CHAT_INPUT,
 				weight: KeybindingWeight.WorkbenchContrib,

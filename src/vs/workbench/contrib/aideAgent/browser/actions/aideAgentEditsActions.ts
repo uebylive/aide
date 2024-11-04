@@ -29,22 +29,30 @@ export class AcceptEditsAction extends Action2 {
 				weight: KeybindingWeight.EditorContrib
 			},
 			menu: [
+				//{
+				//	id: MenuId.AideAgentPlanLoading, // Debug workaround since sidecar states are not fixed yet
+				//	group: 'navigation',
+				//	order: 0
+				//},
+				// Following two states should be merged
 				{
 					id: MenuId.AideAgentEditsReview,
 					group: 'navigation',
 					order: 1
-				}, {
-					id: MenuId.AideAgentStreamingState,
-					when: ContextKeyExpr.or(CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.WaitingFeedback)),
-					order: 0,
-					group: 'navigation',
 				},
 				{
-					id: MenuId.AideAgentExecute,
-					order: 3,
-					when: ContextKeyExpr.or(CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.WaitingFeedback)),
+					id: MenuId.AideAgentPlanReview,
+					order: 1,
+					// no need to check for when as we swap the toolbar menu completely
 					group: 'navigation',
-				}
+				},
+
+				// {
+				// 	id: MenuId.AideAgentExecute,
+				// 	order: 3,
+				// 	when: ContextKeyExpr.or(CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.WaitingFeedback)),
+				// 	group: 'navigation',
+				// }
 			],
 			icon: Codicon.check,
 			f1: false,
@@ -95,22 +103,29 @@ export class RejectEditsAction extends Action2 {
 				weight: KeybindingWeight.EditorContrib
 			},
 			menu: [
+				// no need to check for when as we swap the toolbar menu completely
+				//{
+				//	id: MenuId.AideAgentPlanLoading, // Debug workaround since sidecar states are not fixed yet
+				//	group: 'navigation',
+				//	order: 1
+				//},
+				// Following two states should be merged
 				{
 					id: MenuId.AideAgentEditsReview,
 					group: 'navigation',
 					order: 2
-				}, {
-					id: MenuId.AideAgentStreamingState,
-					when: ContextKeyExpr.or(CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.WaitingFeedback)),
+				},
+				{
+					id: MenuId.AideAgentPlanReview,
 					order: 2,
 					group: 'navigation',
 				},
-				{
-					id: MenuId.AideAgentExecute,
-					order: 3,
-					when: ContextKeyExpr.or(CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.WaitingFeedback)), // CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate()
-					group: 'navigation',
-				}
+				// {
+				// 	id: MenuId.AideAgentExecute,
+				// 	order: 3,
+				// 	when: ContextKeyExpr.or(CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.WaitingFeedback)), // CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate()
+				// 	group: 'navigation',
+				// }
 			],
 			icon: Codicon.close,
 			f1: false,
@@ -147,83 +162,48 @@ export class RejectEditsAction extends Action2 {
 	}
 }
 
-export function registerChatEditsActions() {
-	registerAction2(class SeeEditsAction extends Action2 {
-		constructor() {
-			super({
-				id: 'workbench.action.aideAgent.seeEdits',
-				title: localize2('interactiveSession.seeEdits.label', "See edits"),
-				menu: {
-					id: MenuId.AideAgentEditsLoading,
-					group: 'navigation',
-					order: 1
-				},
-				icon: Codicon.diffMultiple,
-				f1: false,
-			});
-		}
-		run(accessor: ServicesAccessor, ...args: any[]) {
-			console.log('See edits');
-		}
-	});
-
-
-	registerAction2(class ProvideFeebackAction extends Action2 {
-		constructor() {
-			super({
-				id: 'workbench.action.aideAgent.provideFeedback',
-				title: localize2('interactiveSession.provideFeedback.label', "Provide feedback"),
-				menu: [{
-					id: MenuId.AideAgentEditsLoading,
-					group: 'navigation',
-					order: 0
-				}, {
-					id: MenuId.AideAgentEditsReview,
-					group: 'navigation',
-					order: 0
-				}],
-				icon: Codicon.commentDiscussion,
-				f1: false,
-			});
-		}
-		run(accessor: ServicesAccessor, ...args: any[]) {
-			console.log('Provide feedback on edits');
-		}
-	});
-
-	registerAction2(AcceptEditsAction);
-	registerAction2(RejectEditsAction);
-
-	registerAction2(class PlanReviewPaneAction extends Action2 {
-		constructor() {
-			super({
-				id: 'workbench.action.aideAgent.planReviewPaneAction',
-				title: localize2('interactiveSession.planReview.label', "Plan Review Actions"),
-				menu: [{
+class ViewEditsDetailAction extends Action2 {
+	constructor() {
+		super({
+			id: 'workbench.action.aideAgent.planReviewPaneAction',
+			title: localize2('interactiveSession.planReview.label', "View details"),
+			keybinding: {
+				when: ContextKeyExpr.or(CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.WaitingFeedback)),
+				primary: KeyMod.CtrlCmd | KeyCode.KeyD,
+				weight: KeybindingWeight.EditorContrib
+			},
+			menu: [
+				{
 					id: MenuId.AideAgentPlanLoading,
 					group: 'navigation',
-					order: 2,
+					order: 0, // First element
 				},
-				{
-					id: MenuId.AideAgentPlanReview,
-					group: 'navigation',
-					order: 2
-				}],
-				icon: Codicon.preview,
-				f1: false,
-			});
+				//{
+				//	id: MenuId.AideAgentPlanReview,
+				//	group: 'navigation',
+				//	order: 0 // First hidden element
+				//}
+			],
+			icon: Codicon.diff,
+			f1: false,
+		});
+	}
+	run(accessor: ServicesAccessor, ...args: any[]) {
+		const context = args[0];
+		// These values are set on the toolbar present over in aideAgentRichItem
+		const exchangeId = context['aideAgentExchangeId'];
+		const sessionId = context['aideAgentSessionId'];
+		try {
+			const aidePlanService = accessor.get(IAideAgentPlanService);
+			aidePlanService.anchorPlanViewPane(sessionId, exchangeId);
+		} catch (exception) {
+			console.error(exception);
 		}
-		run(accessor: ServicesAccessor, ...args: any[]) {
-			const context = args[0];
-			// These values are set on the toolbar present over in aideAgentRichItem
-			const exchangeId = context['aideAgentExchangeId'];
-			const sessionId = context['aideAgentSessionId'];
-			try {
-				const aidePlanService = accessor.get(IAideAgentPlanService);
-				aidePlanService.anchorPlanViewPane(sessionId, exchangeId);
-			} catch (exception) {
-				console.error(exception);
-			}
-		}
-	});
+	}
+}
+
+export function registerChatEditsActions() {
+	registerAction2(AcceptEditsAction);
+	registerAction2(RejectEditsAction);
+	registerAction2(ViewEditsDetailAction);
 }

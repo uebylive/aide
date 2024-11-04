@@ -16,7 +16,7 @@ import { ILogService } from '../../../../platform/log/common/log.js';
 import { getFullyQualifiedId, IAideAgentAgentNameService, IChatAgentCommand, IChatAgentData, IChatAgentResult } from './aideAgentAgents.js';
 import { ChatModelInitState, IChatModel, IChatProgressRenderableResponseContent, IChatRequestModel, IChatRequestVariableEntry, IChatResponseModel, IChatTextEditGroup, IChatWelcomeMessageContent, IResponse } from './aideAgentModel.js';
 import { IParsedChatRequest } from './aideAgentParserTypes.js';
-import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatAideAgentPlanRegenerateInformationPart, IChatCodeCitation, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatPlanInfo, IChatProgressMessage, IChatResponseErrorDetails, IChatStreamingState, IChatTask, IChatUsedContext } from './aideAgentService.js';
+import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatAideAgentPlanRegenerateInformationPart, IChatCodeCitation, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatPlanInfo, IChatProgressMessage, IChatResponseErrorDetails, IChatTask, IChatUsedContext } from './aideAgentService.js';
 import { countWords } from './aideAgentWordCounter.js';
 import { annotateVulnerabilitiesInText } from './annotations.js';
 import { CodeBlockModelCollection } from './codeBlockModelCollection.js';
@@ -33,7 +33,7 @@ export function isWelcomeVM(item: unknown): item is IChatWelcomeMessageViewModel
 	return !!item && typeof item === 'object' && 'content' in item;
 }
 
-export type IChatViewModelChangeEvent = IChatAddRequestEvent | IChangePlaceholderEvent | IChatSessionInitEvent | IChatStreamingState | IChatRemoveExchangesEvent | IChatAideAgentPlanRegenerateInformationPart | null;
+export type IChatViewModelChangeEvent = IChatAddRequestEvent | IChangePlaceholderEvent | IChatSessionInitEvent | IChatEditsInfo | IChatPlanInfo | IChatRemoveExchangesEvent | IChatAideAgentPlanRegenerateInformationPart | null;
 
 export interface IChatAddRequestEvent {
 	kind: 'addRequest';
@@ -329,7 +329,7 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 						item.dispose();
 					}
 				}
-			} else if (e.kind === 'streamingState' || e.kind === 'planRegeneration') {
+			} else if (e.kind === 'planInfo' || e.kind === 'editsInfo' || e.kind === 'planRegeneration') {
 				this._onDidChange.fire(e);
 			} else if (e.kind === 'removeExchanges') {
 				this._items.splice(e.from, this._items.length);

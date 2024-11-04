@@ -54,7 +54,7 @@ import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions, setupSimpleEd
 import { ChatAgentLocation } from '../common/aideAgentAgents.js';
 import { CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_INPUT_PLANNING_ENABLED, CONTEXT_IN_CHAT_INPUT } from '../common/aideAgentContextKeys.js';
 import { AgentScope, IChatRequestVariableEntry } from '../common/aideAgentModel.js';
-import { ChatStreamingState, IChatFollowup, IChatStreamingState } from '../common/aideAgentService.js';
+import { IChatEditsInfo, IChatFollowup, IChatPlanInfo } from '../common/aideAgentService.js';
 import { IChatResponseViewModel } from '../common/aideAgentViewModel.js';
 import { IAideAgentWidgetHistoryService, IChatHistoryEntry } from '../common/aideAgentWidgetHistoryService.js';
 import { IAideAgentLMService } from '../common/languageModels.js';
@@ -447,7 +447,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		this._container = elements.root;
 		container.append(this._container);
 		if (this.location === ChatAgentLocation.Panel) {
-			this._streamingStateWidget = this._register(this.instantiationService.createInstance(StreamingStateWidget, { state: ChatStreamingState.Loading, isError: false, files: [] }, elements.streamingStateContainer, false));
+			this._streamingStateWidget = this._register(this.instantiationService.createInstance(StreamingStateWidget, undefined, elements.streamingStateContainer, false));
 		}
 		this._container.classList.toggle('compact', this.options.renderStyle === 'compact');
 		this.followupsContainer = elements.followupsContainer;
@@ -638,7 +638,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	}
 
 
-	updateStreamingState(state: IChatStreamingState): void {
+	updateStreamingState(state: IChatPlanInfo | IChatEditsInfo): void {
 		this._streamingStateWidget?.update(state);
 	}
 

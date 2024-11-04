@@ -711,8 +711,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						state: 'Started',
 						description: event.event.PlanEvent.PlanStepTitleAdded.title,
 					});
-					// TODO(codestory): Remove this soon after cause we will just rely
-					// on the title for now to provide updates to the side panel
 					responseStream?.stream.step({
 						description: '',
 						index: event.event.PlanEvent.PlanStepTitleAdded.index,
@@ -769,6 +767,13 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 							sessionId,
 							isStale: false,
 							state: 'Complete',
+						});
+					} else if (editsState === 'Accepted') {
+						responseStream?.stream.planInfo({
+							exchangeId,
+							sessionId,
+							isStale: false,
+							state: 'Accepted',
 						});
 					}
 					continue;
@@ -837,11 +842,12 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					continue;
 				}
 				if (event.event.ExchangeEvent.RegeneratePlan) {
-					// This event help sus regenerate the plan
+					// This event help us regenerate the plan and set details on the editor layer
 					responseStream?.stream.regeneratePlan({
 						sessionId: event.event.ExchangeEvent.RegeneratePlan.session_id,
 						exchangeId: event.event.ExchangeEvent.RegeneratePlan.exchange_id,
 					});
+					continue;
 				}
 				if (event.event.ExchangeEvent.FinishedExchange) {
 					// Update our streaming state that we are finished

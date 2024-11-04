@@ -10,16 +10,14 @@ import { IInstantiationService } from '../../../../../platform/instantiation/com
 import { IKeybindingService } from '../../../../../platform/keybinding/common/keybinding.js';
 import { IChatProgressRenderableResponseContent } from '../../common/aideAgentModel.js';
 import { IAideAgentPlanService } from '../../common/aideAgentPlanService.js';
-import { ChatPlanState, IChatPlanInfo } from '../../common/aideAgentService.js';
+import { IChatPlanInfo } from '../../common/aideAgentService.js';
 import { ChatMarkdownContentPart } from './aideAgentMarkdownContentPart.js';
-import { AideAgentRichItem as AideAgentRichItemContent, IActionsPreviewOptions } from './aideAgentRichItem.js';
+import { AideAgentRichItem as AideAgentRichItemContent } from './aideAgentRichItem.js';
 
 export class PlanContentPart extends AideAgentRichItemContent {
 	constructor(
 		readonly plan: IChatPlanInfo,
-		sessionId: string,
-		exchangeId: string,
-		descriptionPart: ChatMarkdownContentPart | undefined,
+		descriptionOrDescriptionPart: string | ChatMarkdownContentPart | undefined,
 		@IInstantiationService instantiationService: IInstantiationService,
 		@IKeybindingService keybindingService: IKeybindingService,
 		@IAideAgentPlanService aideAgentPlanService: IAideAgentPlanService,
@@ -28,19 +26,17 @@ export class PlanContentPart extends AideAgentRichItemContent {
 
 		const label = assignLabel(plan);
 		const icon = assignIcon(plan);
-		const { menuId, previewOptions } = assignMenuAndPreviewOptions(plan);
+		const menuId = assignMenuId(plan);
 
 		super(
 			label,
 			icon,
 			plan.isStale,
-			sessionId,
-			exchangeId,
+			plan.sessionId,
+			plan.exchangeId,
 			menuId,
 			// changing this to true for now, we will change it back later on
-			plan.state === ChatPlanState.Complete,
-			previewOptions,
-			descriptionPart,
+			descriptionOrDescriptionPart,
 			instantiationService,
 			keybindingService,
 			aideAgentPlanService,
@@ -59,12 +55,12 @@ export class PlanContentPart extends AideAgentRichItemContent {
 function assignLabel(plan: IChatPlanInfo): string {
 	// call everything edits
 	switch (plan.state) {
-		case 'Started':
-			return localize('agent.planStarted', "Edits");
-		case 'Complete':
-			return localize('agent.planComplete', "Edits");
 		case 'Cancelled':
-			return localize('agent.planCancelled', "Edits");
+			return localize('agent.planCancelled', "Edits cancelled");
+		case 'Accepted':
+			return localize('agent.planAccepted', "Edits accepted");
+		default:
+			return localize('agent.edits', "Edits");
 	}
 }
 
@@ -77,26 +73,15 @@ function assignIcon(plan: IChatPlanInfo): string {
 	}
 }
 
-function assignMenuAndPreviewOptions(edits: IChatPlanInfo): { menuId: MenuId | null; previewOptions: IActionsPreviewOptions } {
-	let menuId = null;
-	let previewOptions: IActionsPreviewOptions = { start: -1, end: -1 };
-
-	const startLabel: string = 'Planning';
-
+function assignMenuId(edits: IChatPlanInfo): MenuId | null {
 	switch (edits.state) {
 		case 'Started':
-			menuId = MenuId.AideAgentPlanLoading;
-			previewOptions = { startLabel, start: -2, end: -1 };
-			break;
+			return MenuId.AideAgentPlanLoading;
 		case 'Complete':
-			menuId = MenuId.AideAgentPlanReview;
-			previewOptions = { startLabel, start: -2, end: -1 };
-			break;
+			return MenuId.AideAgentPlanReview;
 		case 'Cancelled':
-			menuId = MenuId.AideAgentEditsCompleted;
-			break;
+			return MenuId.AideAgentEditsCompleted;
 		default:
-			break;
+			return null;
 	}
-	return { menuId, previewOptions };
 }

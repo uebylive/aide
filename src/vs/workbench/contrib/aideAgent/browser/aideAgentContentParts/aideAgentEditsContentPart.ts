@@ -12,14 +12,12 @@ import { IChatProgressRenderableResponseContent } from '../../common/aideAgentMo
 import { IAideAgentPlanService } from '../../common/aideAgentPlanService.js';
 import { ChatEditsState, IChatEditsInfo } from '../../common/aideAgentService.js';
 import { ChatMarkdownContentPart } from './aideAgentMarkdownContentPart.js';
-import { AideAgentRichItem as AideAgentRichItemContent, IActionsPreviewOptions } from './aideAgentRichItem.js';
+import { AideAgentRichItem as AideAgentRichItemContent } from './aideAgentRichItem.js';
 
 export class EditsContentPart extends AideAgentRichItemContent {
 	constructor(
 		readonly edits: IChatEditsInfo,
-		sessionId: string,
-		exchangeId: string,
-		descriptionPart: ChatMarkdownContentPart | undefined,
+		descriptionOrDescriptionPart: string | ChatMarkdownContentPart | undefined,
 		@IInstantiationService instantiationService: IInstantiationService,
 		@IKeybindingService keybindingService: IKeybindingService,
 		@IAideAgentPlanService aideAgentPlanService: IAideAgentPlanService,
@@ -28,18 +26,16 @@ export class EditsContentPart extends AideAgentRichItemContent {
 
 		const label = assignLabel(edits);
 		const icon = assignIcon(edits);
-		const { menuId, previewOptions } = assignMenuAndPreviewOptions(edits);
+		const menuId = assignMenuId(edits);
 
 		super(
 			label,
 			icon,
 			edits.isStale,
-			sessionId,
-			exchangeId,
+			edits.sessionId,
+			edits.exchangeId,
 			menuId,
-			edits.state === ChatEditsState.MarkedComplete,
-			previewOptions,
-			descriptionPart,
+			descriptionOrDescriptionPart,
 			instantiationService,
 			keybindingService,
 			aideAgentPlanService,
@@ -81,27 +77,13 @@ function assignIcon(edits: IChatEditsInfo): string {
 	}
 }
 
-function assignMenuAndPreviewOptions(edits: IChatEditsInfo): { menuId: MenuId | null; previewOptions: IActionsPreviewOptions } {
-	let menuId = null;
-	let previewOptions: IActionsPreviewOptions = { start: -1, end: -1 };
-
-	let startLabel: string | undefined;
-	if (edits.files.length === 1) {
-		startLabel = localize('editedFile', "{0} file edited", edits.files.length);
-	} else if (edits.files.length > 1) {
-		startLabel = localize('editedFiles', "{0} files edited", edits.files.length);
-	}
-
+function assignMenuId(edits: IChatEditsInfo): MenuId | null {
 	switch (edits.state) {
 		case ChatEditsState.Loading:
-			menuId = MenuId.AideAgentEditsLoading;
-			previewOptions = { startLabel, start: -2, end: -1 };
-			break;
+			return MenuId.AideAgentEditsLoading;
 		case ChatEditsState.MarkedComplete:
-			menuId = MenuId.AideAgentEditsCompleted;
-			break;
+			return MenuId.AideAgentEditsCompleted;
 		default:
-			break;
+			return null;
 	}
-	return { menuId, previewOptions };
 }

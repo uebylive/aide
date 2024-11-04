@@ -51,7 +51,7 @@
 	margin-block: 1px;
 	cursor: text;
 }
-
+/*
 .aide-rich-item .aide-rich-item-header .aide-rich-item-actions {
 	position: absolute;
 	right: 0;
@@ -85,7 +85,7 @@
 	height: 16px;
 	padding: 3px;
 	color: inherit;
-}
+}*/
 
 .aide-rich-item-description {
 	color: var(--vscode-editorLineNumber-foreground);

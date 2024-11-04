@@ -606,7 +606,13 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 				value.push({ ...element.editsInfo });
 			}
 			if (element.planInfo) {
-				value.push({ ...element.planInfo });
+				const basePlanInfoMessage = 'OK, I am working on it';
+				if (element.planInfo.description) {
+					const planInfoMessage = `${basePlanInfoMessage} - ${element.planInfo.description.value}`;
+					value.push({ content: new MarkdownString(planInfoMessage), kind: 'markdownContent' });
+				} else {
+					value.push({ content: new MarkdownString(basePlanInfoMessage), kind: 'markdownContent' });
+				}
 			}
 			value.push(...annotateSpecialMarkdownContent(element.response.value));
 			if (element.codeEdits?.size) {
@@ -823,7 +829,14 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		}
 
 		if (element.planInfo) {
-			partsToRender.push(element.planInfo);
+			// Duplicated content above to remove
+			const basePlanInfoMessage = 'Understood, I am working on it';
+			if (element.planInfo.description) {
+				const planInfoMessage = `${basePlanInfoMessage} - ${element.planInfo.description.value}`;
+				partsToRender.push({ content: new MarkdownString(planInfoMessage), kind: 'markdownContent' });
+			} else {
+				partsToRender.push({ content: new MarkdownString(basePlanInfoMessage), kind: 'markdownContent' });
+			}
 		}
 
 		// Simply add all parts to render
@@ -1097,7 +1110,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		if (edits.description) {
 			descriptionPart = this.renderMarkdown(edits.description, templateData, context) as ChatMarkdownContentPart;
 		}
-		const editsContentPart = this.instantiationService.createInstance(EditsContentPart, edits, sessionId, exchangeId, descriptionPart);
+		const editsContentPart = this.instantiationService.createInstance(EditsContentPart, edits, descriptionPart);
 		editsContentPart.addDisposable(editsContentPart.onDidChangeHeight(() => {
 			this.updateItemHeight(templateData);
 		}));
@@ -1110,7 +1123,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		if (plan.description) {
 			descriptionPart = this.renderMarkdown(plan.description, templateData, context) as ChatMarkdownContentPart;
 		}
-		const planContentPart = this.instantiationService.createInstance(PlanContentPart, plan, sessionId, exchangeId, descriptionPart);
+		const planContentPart = this.instantiationService.createInstance(PlanContentPart, plan, descriptionPart);
 		planContentPart.addDisposable(planContentPart.onDidChangeHeight(() => {
 			this.updateItemHeight(templateData);
 		}));

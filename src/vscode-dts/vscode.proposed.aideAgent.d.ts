@@ -20,6 +20,7 @@ declare module 'vscode' {
 		Started = 'Started',
 		Complete = 'Complete',
 		Cancelled = 'Cancelled',
+		Accepted = 'Accepted',
 	}
 
 	export type AideAgentPlanStateType = `${AideAgentPlanState}`;
