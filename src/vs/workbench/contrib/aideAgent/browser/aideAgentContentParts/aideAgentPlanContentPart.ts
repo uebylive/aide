@@ -57,10 +57,6 @@ export class PlanContentPart extends AideAgentRichItemContent {
 }
 
 function assignLabel(plan: IChatPlanInfo): string {
-	let mutableDescription = 'Edits';
-	if (plan.state === 'InReview') {
-		mutableDescription = plan.description?.value ?? mutableDescription;
-	}
 	// call everything edits
 	switch (plan.state) {
 		case 'Started':
@@ -69,11 +65,6 @@ function assignLabel(plan: IChatPlanInfo): string {
 			return localize('agent.planComplete', "Edits");
 		case 'Cancelled':
 			return localize('agent.planCancelled', "Edits");
-		case 'InReview':
-			// not returning a localized string, is this really bad??
-			return mutableDescription;
-		default:
-			return defaultLabel;
 	}
 }
 
