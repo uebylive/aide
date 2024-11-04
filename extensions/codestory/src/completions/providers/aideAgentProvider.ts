@@ -711,8 +711,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						state: 'Started',
 						description: event.event.PlanEvent.PlanStepTitleAdded.title,
 					});
-					// TODO(codestory): Remove this soon after cause we will just rely
-					// on the title for now to provide updates to the side panel
 					responseStream?.stream.step({
 						description: '',
 						index: event.event.PlanEvent.PlanStepTitleAdded.index,
