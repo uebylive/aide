@@ -544,6 +544,16 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					// 	symbolName: ref.symbol_name,
 					// 	reason: ref.reason,
 					// });
+				} else if (event.event.FrameworkEvent.ReferencesUsed) {
+					const references = event.event.FrameworkEvent.ReferencesUsed.variables;
+					references.forEach((reference) => {
+						// send to the response stream that we have a bunch of references
+						// to look at
+						responseStream.stream.reference2({
+							variableName: reference.name,
+							value: new vscode.Location(vscode.Uri.file(reference.fs_file_path), new vscode.Range(new vscode.Position(reference.start_position.line, reference.start_position.character), new vscode.Position(reference.end_position.line, reference.end_position.character))),
+						});
+					});
 				} else if (event.event.FrameworkEvent.GroupedReferences) {
 					const groupedRefs = event.event.FrameworkEvent.GroupedReferences;
 					const followups: { [key: string]: { symbolName: string; uri: vscode.Uri }[] } = {};
