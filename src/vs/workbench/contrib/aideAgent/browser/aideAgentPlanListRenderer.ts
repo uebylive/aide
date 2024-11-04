@@ -17,7 +17,7 @@ import { ILogService } from '../../../../platform/log/common/log.js';
 import { IChatRendererContent } from '../common/aideAgentViewModel.js';
 import { annotateSpecialMarkdownContent } from '../common/annotations.js';
 import { ChatMarkdownRenderer } from './aideAgentMarkdownRenderer.js';
-import { AideAgentPlanTreeItem } from './aideAgentPlan.js';
+import { AideAgentPlanTreeItem } from '../common/aideAgentPlanViewModel.js';
 import { IAideAgentPlanContentPart, IAideAgentPlanContentPartRenderContext } from './aideAgentPlanContentParts/aideAgentPlanContentParts.js';
 import { AideAgentPlanMarkdownContentPart } from './aideAgentPlanContentParts/aideAgentPlanMarkdownContentPart.js';
 

@@ -205,6 +205,8 @@ export interface IAideAgentPlanStep {
 	kind: 'planStep';
 }
 
+export type IAideAgentPlanProgressMessage = IAideAgentPlanStep;
+
 export interface IChatEndResponse {
 	kind: 'endResponse';
 }

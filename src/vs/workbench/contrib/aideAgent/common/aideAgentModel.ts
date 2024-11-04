@@ -26,7 +26,8 @@ import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgen
 import { IAideAgentCodeEditingService, IAideAgentCodeEditingSession } from './aideAgentCodeEditingService.js';
 import { HunkData } from './aideAgentEditingSession.js';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from './aideAgentParserTypes.js';
-import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
+import { IAideAgentPlanModel, IAideAgentPlanStepModel } from './aideAgentPlanModel.js';
+import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IAideAgentPlanStep, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
 import { IChatRequestVariableValue } from './aideAgentVariables.js';
 
 export function isRequestModel(item: unknown): item is IChatRequestModel {
@@ -492,13 +493,6 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		for (const edit of codeEdit.edits.edits) {
 			if (isWorkspaceTextEdit(edit)) {
 				this._editingSession.apply(edit);
-				// TODO(@ghostwriternr): This is a temporary hack to show the edited resource, until we build the UI component for showing this
-				// in a special manner for edits.
-				const resource = edit.resource;
-				this.applyReference({
-					kind: 'reference',
-					reference: resource
-				});
 			}
 		}
 	}
@@ -593,6 +587,7 @@ export interface IChatModel {
 	readonly welcomeMessage: IChatWelcomeMessageModel | undefined;
 	readonly requestInProgress: boolean;
 	readonly inputPlaceholder?: string;
+	readonly plan?: IAideAgentPlanModel;
 	getExchanges(): IChatExchangeModel[];
 	toExport(): IExportableChatData;
 	toJSON(): ISerializableChatData;
@@ -915,6 +910,11 @@ export class ChatModel extends Disposable implements IChatModel {
 		return this._initialLocation;
 	}
 
+	private _plan: IAideAgentPlanModel | undefined;
+	get plan(): IAideAgentPlanModel | undefined {
+		return this._plan;
+	}
+
 	constructor(
 		private readonly initialData: ISerializableChatData | IExportableChatData | undefined,
 		private readonly _initialLocation: ChatAgentLocation,
@@ -1145,9 +1145,35 @@ export class ChatModel extends Disposable implements IChatModel {
 		} else if (progress.kind === 'codeEdit') {
 			response.applyCodeEdit(progress);
 			this._onDidChange.fire({ kind: 'codeEdit', edits: progress.edits });
+		} else if (progress.kind === 'planStep') {
+			this.applyPlanStep(progress);
 		} else {
 			this.logService.error(`Couldn't handle progress: ${JSON.stringify(progress)}`);
 		}
+	}
+
+	private applyPlanStep(progress: IAideAgentPlanStep) {
+		if (!this._plan) {
+			this._plan = {
+				sessionId: this.sessionId,
+				steps: [{
+					index: progress.index,
+					title: progress.title,
+					description: progress.description,
+					isLast: progress.isLast
+				}]
+			};
+		} else {
+			const step: IAideAgentPlanStepModel = {
+				index: progress.index,
+				title: progress.title,
+				description: progress.description,
+				isLast: progress.isLast
+			};
+			this._plan.steps[progress.index] = step;
+		}
+
+		this._onDidChange.fire({ kind: 'changedPlan', plan: this._plan });
 	}
 
 	/* TODO(@ghostwriternr): This method was used to remove/resend requests. We can add it back in if we need it.

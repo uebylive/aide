@@ -3,17 +3,10 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { IMarkdownString } from '../../../../base/common/htmlContent.js';
-import { IResponse } from '../common/aideAgentModel.js';
-
-interface IAideAgentPlanProgressMessage {
-	content: IMarkdownString;
-	kind: 'progressMessage';
-}
+import { IAideAgentPlanProgressMessage } from './aideAgentService.js';
 
 export interface AideAgentPlanTreeItem {
 	readonly id: string;
-	readonly response: IResponse;
 	readonly progressMessages: ReadonlyArray<IAideAgentPlanProgressMessage>;
 	readonly isComplete: boolean;
 	currentRenderedHeight: number | undefined;

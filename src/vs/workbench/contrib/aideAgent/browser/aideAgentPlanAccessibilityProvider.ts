@@ -7,7 +7,7 @@ import { AriaRole } from '../../../../base/browser/ui/aria/aria.js';
 import { IListAccessibilityProvider } from '../../../../base/browser/ui/list/listWidget.js';
 import { IObservable } from '../../../../base/common/observable.js';
 import { localize } from '../../../../nls.js';
-import { AideAgentPlanTreeItem } from './aideAgentPlan.js';
+import { AideAgentPlanTreeItem } from '../common/aideAgentPlanViewModel.js';
 
 export class AideAgentPlanAccessibilityProvider implements IListAccessibilityProvider<AideAgentPlanTreeItem> {
 	getWidgetRole(): AriaRole {

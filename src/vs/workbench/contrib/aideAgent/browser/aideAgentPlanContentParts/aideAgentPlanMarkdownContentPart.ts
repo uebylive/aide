@@ -10,7 +10,7 @@ import { MarkdownRenderer } from '../../../../../editor/browser/widget/markdownR
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { IChatRendererContent } from '../../common/aideAgentViewModel.js';
 import { ChatMarkdownDecorationsRenderer } from '../aideAgentMarkdownDecorationsRenderer.js';
-import { AideAgentPlanTreeItem } from '../aideAgentPlan.js';
+import { AideAgentPlanTreeItem } from '../../common/aideAgentPlanViewModel.js';
 import { IAideAgentPlanContentPart, IAideAgentPlanContentPartRenderContext } from './aideAgentPlanContentParts.js';
 
 const $ = dom.$;

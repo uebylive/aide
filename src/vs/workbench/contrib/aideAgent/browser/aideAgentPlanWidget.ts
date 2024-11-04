@@ -3,18 +3,24 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Disposable } from '../../../../base/common/lifecycle.js';
+import { ITreeElement } from '../../../../base/browser/ui/tree/tree.js';
+import { Disposable, DisposableStore } from '../../../../base/common/lifecycle.js';
 import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ServiceCollection } from '../../../../platform/instantiation/common/serviceCollection.js';
 import { WorkbenchObjectTree } from '../../../../platform/list/browser/listService.js';
-import { AideAgentPlanTreeItem } from './aideAgentPlan.js';
+import { IChatModel } from '../common/aideAgentModel.js';
+import { IAideAgentPlanModel } from '../common/aideAgentPlanModel.js';
+import { AideAgentPlanTreeItem } from '../common/aideAgentPlanViewModel.js';
 import { AideAgentPlanAccessibilityProvider } from './aideAgentPlanAccessibilityProvider.js';
 import { AideAgentPlanListDelegate, AideAgentPlanListRenderer } from './aideAgentPlanListRenderer.js';
 
 export class AideAgentPlanWidget extends Disposable {
 	private tree!: WorkbenchObjectTree<AideAgentPlanTreeItem>;
 	private renderer!: AideAgentPlanListRenderer;
+
+	private _model: IAideAgentPlanModel | undefined;
+	private readonly modelDisposables = this._register(new DisposableStore());
 
 	constructor(
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
@@ -51,5 +57,37 @@ export class AideAgentPlanWidget extends Disposable {
 				setRowLineHeight: false,
 			}
 		));
+	}
+
+	setModel(model: IChatModel): void {
+		if (this._model?.sessionId !== model.sessionId) {
+			this._model = undefined;
+			this.modelDisposables.clear();
+		}
+
+		this._model = model.plan;
+		this.modelDisposables.add(model.onDidChange((e) => {
+			if (e.kind === 'changedPlan') {
+				this.onDidChangeItems();
+			}
+		}));
+
+		if (this.tree) {
+			this.onDidChangeItems();
+		}
+	}
+
+	private onDidChangeItems(): void {
+		if (this.tree) {
+			const treeItems = this._model?.steps.map((step): ITreeElement<AideAgentPlanTreeItem> => {
+				return {
+					element: step,
+					collapsed: false,
+					collapsible: false
+				};
+			});
+
+			this.tree.setChildren(null, treeItems);
+		}
 	}
 }

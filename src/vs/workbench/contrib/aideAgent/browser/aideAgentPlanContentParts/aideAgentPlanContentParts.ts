@@ -5,7 +5,7 @@
 
 import { IDisposable } from '../../../../../base/common/lifecycle.js';
 import { IChatRendererContent } from '../../common/aideAgentViewModel.js';
-import { AideAgentPlanTreeItem } from '../aideAgentPlan.js';
+import { AideAgentPlanTreeItem } from '../../common/aideAgentPlanViewModel.js';
 
 export interface IAideAgentPlanContentPart extends IDisposable {
 	domNode: HTMLElement;
