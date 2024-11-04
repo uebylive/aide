@@ -492,9 +492,11 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		templateData.rowContainer.classList.toggle('show-detail-progress', isResponseVM(element) && !element.isComplete && !element.progressMessages.length);
 
 		if (templateData.kind === 'chatTemplate') {
-			templateData.username.textContent = (isResponseVM(element) || isWelcomeVM(element)) ? element.username : localize('chatUser', "You");
-			if (isResponseVM(element) || isWelcomeVM(element)) {
+			templateData.username.textContent = (isResponseVM(element) && !element.model.isUserResponse || isWelcomeVM(element)) ? element.username : localize('chatUser', "You");
+			if (isResponseVM(element) && !element.model.isUserResponse || isWelcomeVM(element)) {
 				templateData.username.classList.add('agent');
+			} else {
+				templateData.username.classList.remove('agent');
 			}
 
 			dom.clearNode(templateData.detail);
@@ -603,27 +605,42 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 				value.push({ kind: 'codeCitations', citations: element.codeCitations });
 			}
 			if (element.editsInfo) {
-				value.push({ ...element.editsInfo });
+				if (!element.model.isUserResponse) {
+					const basePlanInfoMessage = 'OK, I am working on it';
+					if (element.editsInfo.description) {
+						const planInfoMessage = `${basePlanInfoMessage} - ${element.editsInfo.description.value}`;
+						value.push({ content: new MarkdownString(planInfoMessage), kind: 'markdownContent' });
+					} else {
+						value.push({ content: new MarkdownString(basePlanInfoMessage), kind: 'markdownContent' });
+					}
+				} else {
+					value.push({ ...element.editsInfo });
+				}
 			}
 			if (element.planInfo) {
-				// Duplicated content above to remove
-				if (element.planInfo.description) {
-					const planInfoMessage = `Working on: ${element.planInfo.description.value}`;
-					value.push({ content: new MarkdownString(planInfoMessage), kind: 'markdownContent' });
-				} else {
-					if (element.planInfo.state === 'Complete') {
-						const completeMessage = 'Finished editing';
-						value.push({ content: new MarkdownString(completeMessage), kind: 'markdownContent' });
-					} else if (element.planInfo.state === 'Cancelled') {
-						const completeMessage = 'Cancelled by the user';
-						value.push({ content: new MarkdownString(completeMessage), kind: 'markdownContent' });
-					} else if (element.planInfo.state === 'Accepted') {
-						const completeMessage = 'Accepted by user';
-						value.push({ content: new MarkdownString(completeMessage), kind: 'markdownContent' });
-					} else if (element.planInfo.state === 'Started') {
-						const completeMessage = 'Thinking';
-						value.push({ content: new MarkdownString(completeMessage), kind: 'markdownContent' });
+				if (!element.model.isUserResponse) {
+					// Duplicated content above to remove
+					if (element.planInfo.description) {
+						const planInfoMessage = `Working on: ${element.planInfo.description.value}`;
+						value.push({ content: new MarkdownString(planInfoMessage), kind: 'markdownContent' });
+					} else {
+						if (element.planInfo.state === 'Complete') {
+							const completeMessage = 'Finished editing';
+							value.push({ content: new MarkdownString(completeMessage), kind: 'markdownContent' });
+						} else if (element.planInfo.state === 'Cancelled') {
+							const completeMessage = 'Cancelled by the user';
+							value.push({ content: new MarkdownString(completeMessage), kind: 'markdownContent' });
+						} else if (element.planInfo.state === 'Accepted') {
+							const completeMessage = 'Accepted by user';
+							value.push({ content: new MarkdownString(completeMessage), kind: 'markdownContent' });
+
+						} else if (element.planInfo.state === 'Started') {
+							const completeMessage = 'Thinking';
+							value.push({ content: new MarkdownString(completeMessage), kind: 'markdownContent' });
+						}
 					}
+				} else {
+					value.push({ ...element.planInfo });
 				}
 			}
 			value.push(...annotateSpecialMarkdownContent(element.response.value));

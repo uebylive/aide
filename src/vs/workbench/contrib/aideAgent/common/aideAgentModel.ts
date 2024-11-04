@@ -28,7 +28,7 @@ import { IAideAgentCodeEditingService, IAideAgentCodeEditingSession } from './ai
 import { CONTEXT_AIDE_PLAN_REVIEW_STATE_EXCHANGEID, CONTEXT_AIDE_PLAN_REVIEW_STATE_SESSIONID } from './aideAgentContextKeys.js';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from './aideAgentParserTypes.js';
 import { IAideAgentPlanService, IAideAgentPlanSession } from './aideAgentPlanService.js';
-import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IAideAgentService, IChatAgentMarkdownContentWithVulnerability, IChatAideAgentPlanRegenerateInformationPart, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatCommandGroup, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanInfo, IChatPlanStep, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatRollbackCompleted, IChatStreamingState, IChatTask, IChatTextEdit, IChatThinkingForEditPart, IChatTreeData, IChatUsedContext, IChatWarningMessage, ICodePlanEditInfo, isIUsedContext } from './aideAgentService.js';
+import { ChatAgentVoteDirection, ChatAgentVoteDownReason, ChatPlanState, IAideAgentService, IChatAgentMarkdownContentWithVulnerability, IChatAideAgentPlanRegenerateInformationPart, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatCommandGroup, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanInfo, IChatPlanStep, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatRollbackCompleted, IChatStreamingState, IChatTask, IChatTextEdit, IChatThinkingForEditPart, IChatTreeData, IChatUsedContext, IChatWarningMessage, ICodePlanEditInfo, isIUsedContext } from './aideAgentService.js';
 import { IChatRequestVariableValue } from './aideAgentVariables.js';
 
 export function isRequestModel(item: unknown): item is IChatRequestModel {
@@ -119,6 +119,7 @@ export interface IResponse {
 
 export interface IChatResponseModel {
 	readonly onDidChange: Event<void>;
+	readonly isUserResponse: boolean;
 	readonly id: string;
 	// readonly requestId: string;
 	readonly username: string;
@@ -513,6 +514,11 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		this._planSessionId = planSessionId;
 	}
 
+	_isUserResponse: boolean;
+	get isUserResponse() {
+		return this._isUserResponse;
+	}
+
 	constructor(
 		@IAideAgentCodeEditingService private readonly _aideAgentCodeEditingService: IAideAgentCodeEditingService,
 		@IAideAgentPlanService private readonly _aidePlanService: IAideAgentPlanService,
@@ -527,8 +533,11 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		private _voteDownReason?: ChatAgentVoteDownReason,
 		private _result?: IChatAgentResult,
 		followups?: ReadonlyArray<IChatFollowup>,
+		isUserResponse = false,
 	) {
 		super();
+
+		this._isUserResponse = isUserResponse;
 
 		// If we are creating a response with some existing content, consider it stale
 		this._isStale = Array.isArray(_response) && (_response.length !== 0 || isMarkdownString(_response) && _response.value.length !== 0);
@@ -685,6 +694,7 @@ export interface IChatModel {
 	readonly welcomeMessage: IChatWelcomeMessageModel | undefined;
 	readonly requestInProgress: boolean;
 	readonly inputPlaceholder?: string;
+	handleUserCancelActionForSession(): void;
 	getExchanges(): IChatExchangeModel[];
 	toExport(): IExportableChatData;
 	toJSON(): ISerializableChatData;
@@ -1220,11 +1230,14 @@ export class ChatModel extends Disposable implements IChatModel {
 		this._onDidChange.fire({ kind: 'removeExchanges', from, remaining, removed });
 	}
 
-	addResponse(): ChatResponseModel {
+	addResponse(isUserResponse = false): ChatResponseModel {
 		const response = new ChatResponseModel(
 			this.aideAgentCodeEditingService,
 			this.aideAgentPlanService,
-			[], this, undefined, undefined
+			[],
+			this,
+			undefined, undefined, undefined, undefined, undefined, undefined, undefined, undefined,
+			isUserResponse
 		);
 		this._exchanges.push(response);
 		this._mutableExchanges.push(response);
@@ -1568,8 +1581,22 @@ export class ChatModel extends Disposable implements IChatModel {
 
 	handleUserActionForSession(sessionId: string, exchangeId: string, stepIndex: number | undefined, agentId: string | undefined, accepted: boolean): void {
 		this.chatAgentService.handleUserFeedbackForSession(sessionId, exchangeId, stepIndex, agentId, accepted);
-		// TODO(codestory): Understand why this is important otherwise do not do this
-		// this.addRequest({ text: accepted ? 'accepted' : 'rejected', parts: [] }, { variables: [] }, 0);
+		const response = this.addResponse(true);
+		// We just display plan info for now
+		this.acceptResponseProgress(response, { kind: 'planInfo', sessionId, exchangeId, state: accepted ? ChatPlanState.Accepted : ChatPlanState.Cancelled, isStale: false });
+	}
+
+	handleUserCancelActionForSession() {
+		const response = this.addResponse(true);
+		this.acceptResponseProgress(response,
+			{
+				kind: 'planInfo',
+				sessionId: this.sessionId,
+				exchangeId: 'fake-fake', // terrible hack
+				state: ChatPlanState.Cancelled,
+				isStale: false
+			}
+		);
 	}
 
 	async handleUserActionUndoSession(sessionId: string, exchangeId: string): Promise<void> {

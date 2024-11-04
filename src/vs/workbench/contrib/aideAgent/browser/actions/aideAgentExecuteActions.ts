@@ -227,6 +227,8 @@ export class CancelAction extends Action2 {
 		const chatService = accessor.get(IAideAgentService);
 		if (widget.viewModel) {
 			chatService.cancelAllExchangesForSession();
+			const model = chatService.getSession(widget.viewModel.sessionId);
+			model?.handleUserCancelActionForSession();
 		}
 	}
 }
