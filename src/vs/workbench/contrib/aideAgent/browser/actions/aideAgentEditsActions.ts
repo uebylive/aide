@@ -8,7 +8,7 @@ import { KeyCode, KeyMod } from '../../../../../base/common/keyCodes.js';
 import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions.js';
 import { localize2 } from '../../../../../nls.js';
 import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
-import { ContextKeyExpr, ContextKeyTrueExpr, IContextKeyService } from '../../../../../platform/contextkey/common/contextkey.js';
+import { ContextKeyExpr, IContextKeyService } from '../../../../../platform/contextkey/common/contextkey.js';
 import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { IAideAgentCodeEditingService } from '../../common/aideAgentCodeEditingService.js';
 import { CONTEXT_AIDE_PLAN_REVIEW_STATE_EXCHANGEID, CONTEXT_AIDE_PLAN_REVIEW_STATE_SESSIONID, CONTEXT_AIDE_PLAN_REVIEW_STATE_STEP_INDEX, CONTEXT_STREAMING_STATE } from '../../common/aideAgentContextKeys.js';
@@ -24,7 +24,7 @@ export class AcceptEditsAction extends Action2 {
 			id: AcceptEditsAction.ID,
 			title: localize2('interactiveSession.acceptEdits.label', "Accept edits"),
 			keybinding: {
-				when: ContextKeyExpr.or(CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.EditsStarted), CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.WaitingFeedback)),
+				when: ContextKeyExpr.or(CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.WaitingFeedback)),
 				primary: KeyMod.Alt | KeyCode.Enter,
 				weight: KeybindingWeight.EditorContrib
 			},
@@ -35,14 +35,14 @@ export class AcceptEditsAction extends Action2 {
 					order: 1
 				}, {
 					id: MenuId.AideAgentStreamingState,
-					when: ContextKeyExpr.or(CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.EditsStarted), CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.WaitingFeedback)),
+					when: ContextKeyExpr.or(CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.WaitingFeedback)),
 					order: 0,
 					group: 'navigation',
 				},
 				{
 					id: MenuId.AideAgentExecute,
 					order: 3,
-					when: ContextKeyTrueExpr.INSTANCE, // CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate()
+					when: ContextKeyExpr.or(CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.WaitingFeedback)),
 					group: 'navigation',
 				}
 			],
@@ -90,7 +90,7 @@ export class RejectEditsAction extends Action2 {
 			id: RejectEditsAction.ID,
 			title: localize2('interactiveSession.rejectEdits.label', "Reject edits"),
 			keybinding: {
-				when: ContextKeyExpr.or(CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.EditsStarted), CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.WaitingFeedback)),
+				when: ContextKeyExpr.or(CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.WaitingFeedback)),
 				primary: KeyMod.Alt | KeyCode.Backspace,
 				weight: KeybindingWeight.EditorContrib
 			},
@@ -101,14 +101,14 @@ export class RejectEditsAction extends Action2 {
 					order: 2
 				}, {
 					id: MenuId.AideAgentStreamingState,
-					when: ContextKeyExpr.or(CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.EditsStarted), CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.WaitingFeedback)),
+					when: ContextKeyExpr.or(CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.WaitingFeedback)),
 					order: 2,
 					group: 'navigation',
 				},
 				{
 					id: MenuId.AideAgentExecute,
 					order: 3,
-					when: ContextKeyTrueExpr.INSTANCE, // CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate()
+					when: ContextKeyExpr.or(CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.WaitingFeedback)), // CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate()
 					group: 'navigation',
 				}
 			],
