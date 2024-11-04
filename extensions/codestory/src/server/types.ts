@@ -123,7 +123,7 @@ type ExchangeMessageEvent = {
 type ExecutionExchangeStateEvent = 'Inference' | 'InReview' | 'Cancelled';
 
 interface EditsExchangeEditsState {
-	edits_state: 'Loading' | 'Cancelled' | 'InReview' | 'MarkedComplete';
+	edits_state: 'Loading' | 'Cancelled' | 'MarkedComplete';
 	files: string[];
 }
 

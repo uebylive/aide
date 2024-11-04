@@ -8,7 +8,7 @@ import { KeyCode, KeyMod } from '../../../../../base/common/keyCodes.js';
 import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions.js';
 import { localize2 } from '../../../../../nls.js';
 import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
-import { ContextKeyExpr, ContextKeyTrueExpr } from '../../../../../platform/contextkey/common/contextkey.js';
+import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
 import { IsDevelopmentContext } from '../../../../../platform/contextkey/common/contextkeys.js';
 import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { CONTEXT_AIDE_PLAN_INPUT, CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_INPUT, CONTEXT_STREAMING_STATE } from '../../common/aideAgentContextKeys.js';
@@ -92,7 +92,7 @@ export class SubmitPlanRequestAction extends Action2 {
 				{
 					id: MenuId.AideAgentExecute,
 					order: 2,
-					when: ContextKeyTrueExpr.INSTANCE, // CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate()
+					when: CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate(), // CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate()
 					group: 'navigation',
 				},
 			]
@@ -235,12 +235,12 @@ export class ContinueEditing extends Action2 {
 			icon: Codicon.send,
 			menu: [{
 				id: MenuId.AideAgentExecute,
-				when: ContextKeyExpr.and(CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_AIDE_PLAN_INPUT),
+				when: ContextKeyExpr.and(CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_AIDE_PLAN_INPUT, CONTEXT_CHAT_INPUT_HAS_TEXT),
 				order: 2,
 				group: 'navigation',
 			}],
 			keybinding: {
-				when: ContextKeyExpr.and(CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_AIDE_PLAN_INPUT),
+				when: ContextKeyExpr.and(CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_AIDE_PLAN_INPUT, CONTEXT_CHAT_INPUT_HAS_TEXT),
 				weight: KeybindingWeight.WorkbenchContrib + 51,
 				// This keycombination is totally fucked but its a good start
 				// TODO(codestory): Fix this to render better
