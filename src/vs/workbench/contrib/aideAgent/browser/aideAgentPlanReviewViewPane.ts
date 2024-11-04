@@ -4,10 +4,18 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as dom from '../../../../base/browser/dom.js';
+import { ITreeElement } from '../../../../base/browser/ui/tree/tree.js';
+import { disposableTimeout, timeout } from '../../../../base/common/async.js';
+import { Emitter, Event } from '../../../../base/common/event.js';
 import { DisposableStore, MutableDisposable } from '../../../../base/common/lifecycle.js';
+import { Schemas } from '../../../../base/common/network.js';
+import { extUri } from '../../../../base/common/resources.js';
+import { ICodeEditor } from '../../../../editor/browser/editorBrowser.js';
+import { ICodeEditorService } from '../../../../editor/browser/services/codeEditorService.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IContextMenuService } from '../../../../platform/contextview/browser/contextView.js';
+import { ITextResourceEditorInput } from '../../../../platform/editor/common/editor.js';
 import { IHoverService } from '../../../../platform/hover/browser/hover.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ServiceCollection } from '../../../../platform/instantiation/common/serviceCollection.js';
@@ -16,37 +24,22 @@ import { WorkbenchObjectTree } from '../../../../platform/list/browser/listServi
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { IOpenerService } from '../../../../platform/opener/common/opener.js';
 import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
+import { editorBackground } from '../../../../platform/theme/common/colorRegistry.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { IViewPaneOptions, ViewPane } from '../../../browser/parts/views/viewPane.js';
+import { PANEL_BACKGROUND, PANEL_SECTION_DRAG_AND_DROP_BACKGROUND, SIDE_BAR_BACKGROUND, SIDE_BAR_FOREGROUND } from '../../../common/theme.js';
 import { IViewDescriptorService } from '../../../common/views.js';
-import { Emitter, Event } from '../../../../base/common/event.js';
-import { ITreeElement } from '../../../../base/browser/ui/tree/tree.js';
-import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
-
-// Common agent
-import { ChatTreeItem, IChatWidgetViewOptions, TreeUser } from './aideAgent.js';
-import { ChatEditorOptions } from './aideAgentOptions.js';
-
-
-// Taken from chat
-import { ChatViewModel, isRequestVM, isResponseVM } from '../common/aideAgentViewModel.js';
-import { ChatAccessibilityProvider } from './aideAgentAccessibilityProvider.js';
-
-// Proprietary for this feature
-import { IPlanReviewViewTitleActionContext } from './actions/aideAgentPlanReviewActions.js';
-
-import './media/aideAgentPlanReview.css';
-import { ChatListDelegate, ChatListItemRenderer, IReviewPlanRendererDelegate } from './aideAgentListRenderer.js';
-import { AideEditorStyleOptions } from './aideAgentEditor.js';
 import { ChatAgentLocation } from '../common/aideAgentAgents.js';
-import { disposableTimeout, timeout } from '../../../../base/common/async.js';
-import { IAideAgentService } from '../common/aideAgentService.js';
-import { extUri } from '../../../../base/common/resources.js';
-import { ITextResourceEditorInput } from '../../../../platform/editor/common/editor.js';
-import { ICodeEditor } from '../../../../editor/browser/editorBrowser.js';
-import { Schemas } from '../../../../base/common/network.js';
-import { ICodeEditorService } from '../../../../editor/browser/services/codeEditorService.js';
 import { IAideAgentPlanService } from '../common/aideAgentPlanService.js';
+import { IAideAgentService } from '../common/aideAgentService.js';
+import { ChatViewModel, isRequestVM, isResponseVM } from '../common/aideAgentViewModel.js';
+import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
+import { IPlanReviewViewTitleActionContext } from './actions/aideAgentPlanReviewActions.js';
+import { ChatTreeItem, IChatWidgetViewOptions, TreeUser } from './aideAgent.js';
+import { ChatAccessibilityProvider } from './aideAgentAccessibilityProvider.js';
+import { ChatListDelegate, ChatListItemRenderer, IReviewPlanRendererDelegate } from './aideAgentListRenderer.js';
+import { ChatEditorOptions } from './aideAgentOptions.js';
+import './media/aideAgentPlanReview.css';
 
 const $ = dom.$;
 
@@ -55,6 +48,14 @@ export const PLAN_REVIEW_PANEL_ID = 'workbench.panel.aideAgentPlanReview';
 function revealLastElement(list: WorkbenchObjectTree<any>) {
 	list.scrollTop = list.scrollHeight - list.renderHeight;
 }
+
+const AideEditorStyleOptions = {
+	listForeground: SIDE_BAR_FOREGROUND,
+	listBackground: SIDE_BAR_BACKGROUND,
+	overlayBackground: PANEL_SECTION_DRAG_AND_DROP_BACKGROUND,
+	inputEditorBackground: PANEL_BACKGROUND,
+	resultEditorBackground: editorBackground
+};
 
 // TODO(codestory): Make sure to purge the state here
 // when the session gets dispsed
