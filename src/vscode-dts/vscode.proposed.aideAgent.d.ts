@@ -131,6 +131,10 @@ declare module 'vscode' {
 		 * Progressive update on the description over here
 		 */
 		readonly descriptionDelta: string | MarkdownString | null;
+		/**
+		 * The files which are part of the step
+		 */
+		readonly files: Uri[];
 	}
 
 

@@ -1362,6 +1362,12 @@ export class ChatModel extends Disposable implements IChatModel {
 				'kind': 'markdownContent',
 				content: new MarkdownString(`## ${progress.title}\n`)
 			});
+			if (progress.files.length > 0) {
+				planMaybe.acceptResponseProgress(response, {
+					'kind': 'codeblockUri',
+					uri: progress.files[0],
+				});
+			}
 			// do not mark this as complete yet.. we are not done
 			return;
 		}
@@ -1376,6 +1382,12 @@ export class ChatModel extends Disposable implements IChatModel {
 					'kind': 'markdownContent',
 					content: progress.descriptionDelta,
 				});
+				if (progress.files.length > 0) {
+					planMaybe.acceptResponseProgress(responseModel, {
+						'kind': 'codeblockUri',
+						uri: progress.files[0],
+					});
+				}
 			}
 		}
 

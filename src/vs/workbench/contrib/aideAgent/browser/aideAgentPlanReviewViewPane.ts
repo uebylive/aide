@@ -425,7 +425,7 @@ export class PlanReviewPane extends ViewPane {
 			this._register(this.instantiationService.createInstance(ChatEditorOptions, 'planReview', AideEditorStyleOptions.listForeground, AideEditorStyleOptions.inputEditorBackground, AideEditorStyleOptions.resultEditorBackground)),
 			// fuck it we ball
 			ChatAgentLocation.Notebook,
-			{ ...supportsFileReferences },
+			{ ...supportsFileReferences, renderCodeBlockPills: true },
 			rendererDelegate,
 			this._codeBlockModelCollection,
 			overflowWidgetsContainer,

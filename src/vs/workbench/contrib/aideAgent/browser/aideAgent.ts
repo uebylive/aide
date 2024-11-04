@@ -59,6 +59,7 @@ export interface IChatCodeBlockInfo {
 	readonly codeBlockIndex: number;
 	readonly uri: URI | undefined;
 	codemapperUri: URI | undefined;
+	readonly isStreaming: boolean;
 	focus(): void;
 	getContent(): string;
 	readonly element: ChatTreeItem;
@@ -93,6 +94,7 @@ export interface IChatListItemRendererOptions {
 	readonly noHeader?: boolean;
 	readonly noPadding?: boolean;
 	readonly editableCodeBlock?: boolean;
+	readonly renderCodeBlockPills?: boolean;
 	readonly renderTextEditsAsSummary?: (uri: URI) => boolean;
 }
 
