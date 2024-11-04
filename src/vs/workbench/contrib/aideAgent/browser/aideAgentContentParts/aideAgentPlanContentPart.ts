@@ -56,12 +56,12 @@ export class PlanContentPart extends AideAgentRichItemContent {
 function assignLabel(plan: IChatPlanInfo): string {
 	// call everything edits
 	switch (plan.state) {
-		case 'Complete':
-			return localize('agent.editsCanceled', "Edits complete");
 		case 'Cancelled':
-			return localize('agent.planCancelled', "Edits");
+			return localize('agent.planCancelled', "Edits cancelled");
 		case 'Accepted':
-			return localize('agent.planAccepted', "Edits");
+			return localize('agent.planAccepted', "Edits accepted");
+		default:
+			return localize('agent.edits', "Edits");
 	}
 }
 
