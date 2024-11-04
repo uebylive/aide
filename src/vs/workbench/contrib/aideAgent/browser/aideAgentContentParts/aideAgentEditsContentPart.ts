@@ -17,7 +17,7 @@ import { AideAgentRichItem as AideAgentRichItemContent } from './aideAgentRichIt
 export class EditsContentPart extends AideAgentRichItemContent {
 	constructor(
 		readonly edits: IChatEditsInfo,
-		descriptionPart: ChatMarkdownContentPart | undefined,
+		descriptionOrDescriptionPart: string | ChatMarkdownContentPart | undefined,
 		@IInstantiationService instantiationService: IInstantiationService,
 		@IKeybindingService keybindingService: IKeybindingService,
 		@IAideAgentPlanService aideAgentPlanService: IAideAgentPlanService,
@@ -36,7 +36,7 @@ export class EditsContentPart extends AideAgentRichItemContent {
 			edits.exchangeId,
 			menuId,
 			edits.state === ChatEditsState.MarkedComplete,
-			descriptionPart,
+			descriptionOrDescriptionPart,
 			instantiationService,
 			keybindingService,
 			aideAgentPlanService,

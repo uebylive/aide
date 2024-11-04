@@ -17,7 +17,7 @@ import { AideAgentRichItem as AideAgentRichItemContent } from './aideAgentRichIt
 export class PlanContentPart extends AideAgentRichItemContent {
 	constructor(
 		readonly plan: IChatPlanInfo,
-		descriptionPart: ChatMarkdownContentPart | undefined,
+		descriptionOrDescriptionPart: string | ChatMarkdownContentPart | undefined,
 		@IInstantiationService instantiationService: IInstantiationService,
 		@IKeybindingService keybindingService: IKeybindingService,
 		@IAideAgentPlanService aideAgentPlanService: IAideAgentPlanService,
@@ -37,7 +37,7 @@ export class PlanContentPart extends AideAgentRichItemContent {
 			menuId,
 			// changing this to true for now, we will change it back later on
 			plan.state === ChatPlanState.Complete,
-			descriptionPart,
+			descriptionOrDescriptionPart,
 			instantiationService,
 			keybindingService,
 			aideAgentPlanService,

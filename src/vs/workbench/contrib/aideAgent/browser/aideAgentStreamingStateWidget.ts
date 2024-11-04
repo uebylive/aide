@@ -59,7 +59,7 @@ export class StreamingStateWidget extends Disposable {
 
 		if (newState.kind === 'planInfo') {
 			const plan = newState;
-			const planContentPart = this.instantiationService.createInstance(PlanContentPart, plan, undefined);
+			const planContentPart = this.instantiationService.createInstance(PlanContentPart, plan, newState.description?.value);
 			if (planContentPart._toolbar) {
 				planContentPart._toolbar.context = {
 					'aideAgentSessionId': newState.sessionId,
@@ -69,7 +69,7 @@ export class StreamingStateWidget extends Disposable {
 			this.rootElement.appendChild(planContentPart.domNode);
 		} else if (newState.kind === 'editsInfo') {
 			const edits = newState;
-			const planContentPart = this.instantiationService.createInstance(EditsContentPart, edits, undefined);
+			const planContentPart = this.instantiationService.createInstance(EditsContentPart, edits, newState.description?.value);
 			if (planContentPart._toolbar) {
 				planContentPart._toolbar.context = {
 					'aideAgentSessionId': newState.sessionId,
