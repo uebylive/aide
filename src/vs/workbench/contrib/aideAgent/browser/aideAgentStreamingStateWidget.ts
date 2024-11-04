@@ -20,8 +20,6 @@ type StreamingState = IChatPlanInfo | IChatEditsInfo;
 // grep for `MenuId.AideAgentStreamingState` and follow the hits, the registration of commands
 // happens using the `MenuId.AideAgentStreamingState` state
 
-
-
 export class StreamingStateWidget extends Disposable {
 
 	private rootElement: HTMLElement;
@@ -53,6 +51,7 @@ export class StreamingStateWidget extends Disposable {
 	}
 
 	update(newState: StreamingState, quiet = false) {
+		dom.clearNode(this.rootElement);
 
 		if (!quiet && !this._isVisible) {
 			this.show();
@@ -67,6 +66,7 @@ export class StreamingStateWidget extends Disposable {
 					'aideAgentExchangeId': newState.exchangeId,
 				};
 			}
+			this.rootElement.appendChild(planContentPart.domNode);
 		} else if (newState.kind === 'editsInfo') {
 			const edits = newState;
 			const planContentPart = this.instantiationService.createInstance(EditsContentPart, edits, undefined);
@@ -76,6 +76,7 @@ export class StreamingStateWidget extends Disposable {
 					'aideAgentExchangeId': newState.exchangeId,
 				};
 			}
+			this.rootElement.appendChild(planContentPart.domNode);
 		}
 	}
 

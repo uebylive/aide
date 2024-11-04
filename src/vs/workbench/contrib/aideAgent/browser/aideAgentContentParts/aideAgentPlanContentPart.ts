@@ -12,7 +12,7 @@ import { IChatProgressRenderableResponseContent } from '../../common/aideAgentMo
 import { IAideAgentPlanService } from '../../common/aideAgentPlanService.js';
 import { ChatPlanState, IChatPlanInfo } from '../../common/aideAgentService.js';
 import { ChatMarkdownContentPart } from './aideAgentMarkdownContentPart.js';
-import { AideAgentRichItem as AideAgentRichItemContent, IActionsPreviewOptions } from './aideAgentRichItem.js';
+import { AideAgentRichItem as AideAgentRichItemContent } from './aideAgentRichItem.js';
 
 export class PlanContentPart extends AideAgentRichItemContent {
 	constructor(
@@ -26,7 +26,7 @@ export class PlanContentPart extends AideAgentRichItemContent {
 
 		const label = assignLabel(plan);
 		const icon = assignIcon(plan);
-		const { menuId, previewOptions } = assignMenuAndPreviewOptions(plan);
+		const menuId = assignMenuId(plan);
 
 		super(
 			label,
@@ -37,7 +37,6 @@ export class PlanContentPart extends AideAgentRichItemContent {
 			menuId,
 			// changing this to true for now, we will change it back later on
 			plan.state === ChatPlanState.Complete,
-			previewOptions,
 			descriptionPart,
 			instantiationService,
 			keybindingService,
@@ -75,26 +74,17 @@ function assignIcon(plan: IChatPlanInfo): string {
 	}
 }
 
-function assignMenuAndPreviewOptions(edits: IChatPlanInfo): { menuId: MenuId | null; previewOptions: IActionsPreviewOptions } {
-	let menuId = null;
-	let previewOptions: IActionsPreviewOptions = { start: -1, end: -1 };
-
-	const startLabel: string = 'Planning';
-
+function assignMenuId(edits: IChatPlanInfo): MenuId | null {
 	switch (edits.state) {
 		case 'Started':
-			menuId = MenuId.AideAgentPlanLoading;
-			previewOptions = { startLabel, start: -2, end: -1 };
-			break;
+			return MenuId.AideAgentPlanLoading;
+
 		case 'Complete':
-			menuId = MenuId.AideAgentPlanReview;
-			previewOptions = { startLabel, start: -2, end: -1 };
-			break;
+			return MenuId.AideAgentPlanReview;
+
 		case 'Cancelled':
-			menuId = MenuId.AideAgentEditsCompleted;
-			break;
+			return MenuId.AideAgentEditsCompleted;
 		default:
-			break;
+			return null;
 	}
-	return { menuId, previewOptions };
 }

@@ -10,7 +10,6 @@ import { HiddenItemStrategy, MenuWorkbenchToolBar } from '../../../../../platfor
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { IKeybindingService } from '../../../../../platform/keybinding/common/keybinding.js';
 import { Heroicon } from '../../../../browser/heroicon.js';
-import { MenuEntryActionViewItem } from '../../../../../platform/actions/browser/menuEntryActionViewItem.js';
 import { IChatContentPart } from './aideAgentContentParts.js';
 import { IChatProgressRenderableResponseContent } from '../../common/aideAgentModel.js';
 import { Emitter } from '../../../../../base/common/event.js';
@@ -19,14 +18,15 @@ import { IAideAgentPlanService } from '../../common/aideAgentPlanService.js';
 import './media/aideAgentRichItem.css';
 import { CheckpointFlag } from './aideAgentCheckpointFlag.js';
 import { ICommandService } from '../../../../../platform/commands/common/commands.js';
+import { ActionViewItemWithKb } from '../../../../../platform/actionbarWithKeybindings/browser/actionViewItemWithKb.js';
 
 const $ = dom.$;
 
-export interface IActionsPreviewOptions {
+/*export interface IActionsPreviewOptions {
 	start: number;
 	startLabel?: string;
 	end: number;
-}
+}*/
 
 export interface IRichItemContext {
 	aideAgentSessionId: string;
@@ -37,7 +37,7 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 	public readonly domNode: HTMLElement;
 
 	_toolbar: MenuWorkbenchToolBar | undefined;
-	private actionsPreviewElement: HTMLElement;
+	// private actionsPreviewElement: HTMLElement;
 
 	private readonly context: IRichItemContext;
 
@@ -52,8 +52,8 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 		private exchangeId: string,
 		readonly menuId: MenuId | null,
 		readonly supportsCheckpoint: boolean,
-		readonly previewOptions: IActionsPreviewOptions = { start: -1, end: -1 },
-		readonly descriptionPart: ChatMarkdownContentPart | undefined,
+		//readonly previewOptions: IActionsPreviewOptions = { start: -1, end: -1 },
+		readonly descriptionOrDescriptionPart: string | ChatMarkdownContentPart | undefined,
 		readonly instantiationService: IInstantiationService,
 		readonly keybindingService: IKeybindingService,
 		readonly aideAgentPlanService: IAideAgentPlanService,
@@ -109,19 +109,22 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 		heading.appendChild(title);
 		title.textContent = headerTitle;
 
-		if (this.descriptionPart) {
-			itemElement.appendChild(this.descriptionPart.domNode);
-			this.descriptionPart.domNode.classList.add('aide-rich-item-description');
+		if (this.descriptionOrDescriptionPart) {
+			if (typeof this.descriptionOrDescriptionPart === 'string') {
+				const description = this.descriptionOrDescriptionPart;
+				const descriptionElement = itemElement.appendChild($('.aide-rich-item-description'));
+				descriptionElement.textContent = description;
+			} else if (this.descriptionOrDescriptionPart instanceof ChatMarkdownContentPart) {
+				const descriptionPart = this.descriptionOrDescriptionPart;
+				itemElement.appendChild(descriptionPart.domNode);
+				descriptionPart.domNode.classList.add('aide-rich-item-description');
+				this._register(descriptionPart.onDidChangeHeight(() => {
+					this._onDidChangeHeight.fire();
+				}));
+			}
 		}
-
-		if (this.descriptionPart) {
-			this._register(this.descriptionPart.onDidChangeHeight(() => {
-				this._onDidChangeHeight.fire();
-			}));
-		}
-
-		const actionsPreviewElement = this.actionsPreviewElement = $('.aide-rich-item-actions-preview');
-		header.appendChild(actionsPreviewElement);
+		//const actionsPreviewElement = this.actionsPreviewElement = $('.aide-rich-item-actions-preview');
+		// header.appendChild(actionsPreviewElement);
 
 		if (menuId) {
 			const toolbarContainer = $('.aide-rich-item-actions');
@@ -132,7 +135,7 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 				hiddenItemStrategy: HiddenItemStrategy.NoHide,
 				actionViewItemProvider: (action) => {
 					if (action instanceof MenuItemAction) {
-						return this.instantiationService.createInstance(MenuEntryActionViewItem, action, undefined);
+						return this.instantiationService.createInstance(ActionViewItemWithKb, action);
 					}
 					return undefined;
 				}
@@ -153,16 +156,16 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 				itemElement.classList.remove('focused');
 			});
 
-			this.updatePreview();
+			//this.updatePreview();
 
-			this._register(this._toolbar.onDidChangeMenuItems(() => {
-				this.updatePreview();
-			}));
+			// this._register(this._toolbar.onDidChangeMenuItems(() => {
+			// 	this.updatePreview();
+			// }));
 		}
 	}
 
 	abstract hasSameContent(other: IChatProgressRenderableResponseContent): boolean;
-
+	/*
 	private updatePreview() {
 		if (!this._toolbar) {
 			return;
@@ -192,13 +195,13 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 				actionPreview.classList.add(...action.class.split(' '));
 			}
 		}
-	}
+	}*/
 
 	addDisposable(disposable: IDisposable): void {
 		this._register(disposable);
 	}
 }
 
-function getIndex(indexOrCountBack: number, length: number): number {
-	return indexOrCountBack < 0 ? length + indexOrCountBack : indexOrCountBack;
-}
+// function getIndex(indexOrCountBack: number, length: number): number {
+// 	return indexOrCountBack < 0 ? length + indexOrCountBack : indexOrCountBack;
+// }
