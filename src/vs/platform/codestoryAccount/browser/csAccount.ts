@@ -74,7 +74,7 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 			let csAuthSession = await this.csAuthenticationService.getSession();
 			if (!csAuthSession) {
 				// Notify the user that they need to authenticate
-				this.notificationService.info('You need to log in to access this feature.');
+				this.notificationService.info('You have used up your 5 free requests. Please log in for unlimited requests.');
 				// Show the account card
 				this.toggle();
 				// Wait for the user to authenticate
@@ -149,7 +149,9 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 			const loginPrompt = dom.append(this.csAccountCard, $('.login-prompt'));
 			loginPrompt.textContent = 'Log in to CodeStory Account';
 			const loginDescription = dom.append(this.csAccountCard, $('.login-description'));
-			loginDescription.textContent = 'To get access to AI features';
+
+			// zi: for now.
+			loginDescription.textContent = 'For unlimited requests';
 
 			const loginButton = this._register(this.instantiationService.createInstance(Button, csAccountCard, defaultButtonStyles));
 			loginButton.label = 'Log In...';
