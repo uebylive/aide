@@ -606,12 +606,24 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 				value.push({ ...element.editsInfo });
 			}
 			if (element.planInfo) {
-				const basePlanInfoMessage = 'OK, I am working on it';
+				// Duplicated content above to remove
 				if (element.planInfo.description) {
-					const planInfoMessage = `${basePlanInfoMessage} - ${element.planInfo.description.value}`;
+					const planInfoMessage = `Working on: ${element.planInfo.description.value}`;
 					value.push({ content: new MarkdownString(planInfoMessage), kind: 'markdownContent' });
 				} else {
-					value.push({ content: new MarkdownString(basePlanInfoMessage), kind: 'markdownContent' });
+					if (element.planInfo.state === 'Complete') {
+						const completeMessage = 'Finished editing';
+						value.push({ content: new MarkdownString(completeMessage), kind: 'markdownContent' });
+					} else if (element.planInfo.state === 'Cancelled') {
+						const completeMessage = 'Cancelled by the user';
+						value.push({ content: new MarkdownString(completeMessage), kind: 'markdownContent' });
+					} else if (element.planInfo.state === 'Accepted') {
+						const completeMessage = 'Accepted by user';
+						value.push({ content: new MarkdownString(completeMessage), kind: 'markdownContent' });
+					} else if (element.planInfo.state === 'Started') {
+						const completeMessage = 'Thinking';
+						value.push({ content: new MarkdownString(completeMessage), kind: 'markdownContent' });
+					}
 				}
 			}
 			value.push(...annotateSpecialMarkdownContent(element.response.value));
@@ -830,12 +842,23 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 		if (element.planInfo) {
 			// Duplicated content above to remove
-			const basePlanInfoMessage = 'Understood, I am working on it';
 			if (element.planInfo.description) {
-				const planInfoMessage = `${basePlanInfoMessage} - ${element.planInfo.description.value}`;
+				const planInfoMessage = `Working on: ${element.planInfo.description.value}`;
 				partsToRender.push({ content: new MarkdownString(planInfoMessage), kind: 'markdownContent' });
 			} else {
-				partsToRender.push({ content: new MarkdownString(basePlanInfoMessage), kind: 'markdownContent' });
+				if (element.planInfo.state === 'Complete') {
+					const completeMessage = 'Finished with edits';
+					partsToRender.push({ content: new MarkdownString(completeMessage), kind: 'markdownContent' });
+				} else if (element.planInfo.state === 'Cancelled') {
+					const completeMessage = 'Cancelled by the user';
+					partsToRender.push({ content: new MarkdownString(completeMessage), kind: 'markdownContent' });
+				} else if (element.planInfo.state === 'Accepted') {
+					const completeMessage = 'Accepted by user';
+					partsToRender.push({ content: new MarkdownString(completeMessage), kind: 'markdownContent' });
+				} else if (element.planInfo.state === 'Started') {
+					const completeMessage = 'Thinking';
+					partsToRender.push({ content: new MarkdownString(completeMessage), kind: 'markdownContent' });
+				}
 			}
 		}
 

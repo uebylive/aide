@@ -255,7 +255,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		const editStreamEvent = request;
 		const fileDocument = editStreamEvent.fs_file_path;
 		if ('Start' === editStreamEvent.event) {
-			const timeNow = Date.now();
 			const document = await vscode.workspace.openTextDocument(fileDocument);
 			if (document === undefined || document === null) {
 				return {
@@ -263,11 +262,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					success: false,
 				};
 			}
-			console.log('editsStreamed::content', timeNow, document.getText());
 			const documentLines = document.getText().split(/\r\n|\r|\n/g);
-			console.log('editStreaming.start', editStreamEvent.fs_file_path);
-			console.log(editStreamEvent.range);
-			console.log(documentLines);
 			this.editsMap.set(editStreamEvent.edit_request_id, {
 				answerSplitter: new AnswerSplitOnNewLineAccumulatorStreaming(),
 				// Now here we want to pass a proper id as we want to make sure that
@@ -703,7 +698,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				if (event.event.PlanEvent.PlanStepTitleAdded) {
 					// we still want to send the planInfo over here (we should check
 					// why the rendering is so slow for this... weird reason)
-					console.log('planEvent::title::update_for', event.event.PlanEvent.PlanStepTitleAdded.index);
 					responseStream?.stream.planInfo({
 						exchangeId,
 						sessionId,
@@ -723,7 +717,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					});
 				}
 				if (event.event.PlanEvent.PlanStepDescriptionUpdate) {
-					console.log('planEvent::description::update_for', event.event.PlanEvent.PlanStepDescriptionUpdate.index);
 					responseStream?.stream.step({
 						description: event.event.PlanEvent.PlanStepDescriptionUpdate.description_up_until_now,
 						index: event.event.PlanEvent.PlanStepDescriptionUpdate.index,
