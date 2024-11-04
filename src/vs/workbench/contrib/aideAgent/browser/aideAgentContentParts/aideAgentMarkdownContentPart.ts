@@ -105,6 +105,13 @@ export class ChatMarkdownContentPart extends Disposable implements IChatContentP
 					return $('div');
 				}
 
+				if (raw?.includes('```')) {
+					const uriTagAfterBackticks = raw.match(/```[\s\n]*<vscode_codeblock_uri>.*?<\/vscode_codeblock_uri>/);
+					if (uriTagAfterBackticks) {
+						raw = raw.replace(uriTagAfterBackticks[0], '```');
+					}
+				}
+
 				const isCodeBlockComplete = !isResponseVM(context.element) || context.element.isComplete || !raw || raw?.endsWith('```');
 				if ((!text || (text.startsWith('<vscode_codeblock_uri>') && !text.includes('\n'))) && !isCodeBlockComplete && rendererOptions.renderCodeBlockPills) {
 					const hideEmptyCodeblock = $('div');
@@ -199,7 +206,9 @@ export class ChatMarkdownContentPart extends Disposable implements IChatContentP
 					orderedDisposablesList.push(ref);
 					return ref.object.element;
 				} else {
-					const isStreaming = isResponseVM(element) ? !element.isComplete : !isCodeBlockComplete;
+					// TODO(@ghostwriternr): This check is not the best, because it's hit far before we're done making edits. But I'm unable to get the isComplete
+					// condition to work properly here. Come back and fix this.
+					const isStreaming = /* isResponseVM(element) ? !element.isComplete : */ !isCodeBlockComplete;
 					const ref = this.renderCodeBlockPill(codeBlockInfo.codemapperUri, !isStreaming);
 					if (isResponseVM(codeBlockInfo.element)) {
 						// TODO@joyceerhl: remove this code when we change the codeblockUri API to make the URI available synchronously
