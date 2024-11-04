@@ -18,12 +18,12 @@ export function registerPlanReviewViewAndViewContainer() {
 	const viewContainer: ViewContainer = Registry.as<IViewContainersRegistry>(ViewExtensions.ViewContainersRegistry).registerViewContainer({
 		id: viewContainerId,
 		title: localize2('chat.viewContainer.label', "Review plan"), // Should be dinamically changed
-		icon: Codicon.commentDiscussion,
+		icon: Codicon.mapVertical,
 		ctorDescriptor: new SyncDescriptor(ViewPaneContainer, [viewContainerId, { mergeViewWithContainerWhenSingleView: true }]),
 		storageId: viewContainerId,
 		hideIfEmpty: false,
-		order: 0,
-	}, ViewContainerLocation.Sidebar, { isDefault: true });
+		order: 5,
+	}, ViewContainerLocation.Sidebar);
 
 
 	const name = 'Aide';
