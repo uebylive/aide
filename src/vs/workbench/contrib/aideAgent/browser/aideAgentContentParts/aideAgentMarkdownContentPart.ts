@@ -161,7 +161,7 @@ export class ChatMarkdownContentPart extends Disposable implements IChatContentP
 					const modelEntry = this.codeBlockModelCollection.getOrCreate(sessionId, element, index);
 					const fastUpdateModelEntry = this.codeBlockModelCollection.updateSync(sessionId, element, index, { text, languageId });
 					vulns = modelEntry.vulns;
-					codemapperUri = modelEntry.codemapperUri;
+					codemapperUri = fastUpdateModelEntry.codemapperUri;
 					textModel = modelEntry.model;
 				}
 
