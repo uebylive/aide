@@ -36,7 +36,7 @@ export class AcceptEditsAction extends Action2 {
 				//},
 				// Following two states should be merged
 				{
-					id: MenuId.AideAgentEditsReview,
+					id: MenuId.AideAgentEditsCompleted,
 					group: 'navigation',
 					order: 1
 				},
@@ -111,7 +111,7 @@ export class RejectEditsAction extends Action2 {
 				//},
 				// Following two states should be merged
 				{
-					id: MenuId.AideAgentEditsReview,
+					id: MenuId.AideAgentEditsCompleted,
 					group: 'navigation',
 					order: 2
 				},
