@@ -60,6 +60,12 @@ Docker / the Codespace should have at least **4 Cores and 6 GB of RAM (8 GB reco
 
 This project has adopted the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). Please read the Code of Conduct before contributing to this project.
 
+## Acknowledgements
+
+We would like to acknowledge [Cody](https://github.com/sourcegraph/cody) for Open Sourcing and creating the inline completion bit. This is one of those parts of the codebase where we borrowed heavily from Cody's work and we are grateful for that. We added our own necessities on top of this to make it work with the `sidecar`.
+This part of the codebase is no longer maintained, we have since moved forward our focus to working on agentic workflows and if you want to revamp this part, please let us know!
+We believe inline completion UX is ripe for innovation and there are many directions we can take this.
+
 ## License
 
 Copyright (c) 2024 CodeStory AI. All rights reserved.
