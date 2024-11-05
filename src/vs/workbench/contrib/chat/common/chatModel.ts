@@ -20,7 +20,7 @@ import { TextEdit } from '../../../../editor/common/languages.js';
 import { localize } from '../../../../nls.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
-import { IChatCommandGroup, IChatEditsInfo, IChatPlanInfo, IChatPlanStep, IChatRollbackCompleted, IChatThinkingForEditPart } from '../../aideAgent/common/aideAgentService.js';
+import { IChatCheckpointAdded, IChatCommandGroup, IChatEditsInfo, IChatPlanInfo, IChatPlanStep, IChatRollbackCompleted, IChatThinkingForEditPart } from '../../aideAgent/common/aideAgentService.js';
 import { ChatAgentLocation, IChatAgentCommand, IChatAgentData, IChatAgentResult, IChatAgentService, reviveSerializedAgent } from './chatAgents.js';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from './chatParserTypes.js';
 import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './chatService.js';
@@ -83,7 +83,8 @@ export type IChatProgressResponseContent =
 	| IChatWarningMessage
 	| IChatTask
 	| IChatTextEditGroup
-	| IChatConfirmation;
+	| IChatConfirmation
+	| IChatCheckpointAdded;
 
 export type IAideChatProgressResponseContent = IChatPlanStep | IChatCommandGroup | IChatEditsInfo | IChatPlanInfo | IChatThinkingForEditPart | IChatRollbackCompleted;
 
@@ -306,6 +307,8 @@ export class Response extends Disposable implements IResponse {
 			} else if (part.kind === 'textEditGroup') {
 				return localize('editsSummary', "Made changes.");
 			} else if (part.kind === 'progressMessage' || part.kind === 'codeblockUri') {
+				return '';
+			} else if (part.kind === 'checkpointAdded') {
 				return '';
 			} else if (part.kind === 'confirmation') {
 				return `${part.title}\n${part.message}`;
