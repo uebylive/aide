@@ -1603,6 +1603,7 @@ export class ChatModel extends Disposable implements IChatModel {
 		if (accepted) {
 			this.acceptResponseProgress(response, { kind: 'checkpointAdded', sessionId, exchangeId });
 		}
+		response.complete();
 	}
 
 	handleUserCancelActionForSession() {
@@ -1616,6 +1617,7 @@ export class ChatModel extends Disposable implements IChatModel {
 				isStale: false
 			}
 		);
+		response.complete();
 	}
 
 	async handleUserActionUndoSession(sessionId: string, exchangeId: string): Promise<void> {
@@ -1629,6 +1631,7 @@ export class ChatModel extends Disposable implements IChatModel {
 			// We will respond to this event entirely on the ide layer, but it should probably be triggered by sidecar
 			const response = this.addResponse(true);
 			this.acceptResponseProgress(response, { kind: 'rollbackCompleted', sessionId, exchangeId, exchangesRemoved: removed.length });
+			response.complete();
 			// this.acceptResponseProgress(response, { kind: 'endResponse' }); @g-danna can I remove this?
 		}
 	}
