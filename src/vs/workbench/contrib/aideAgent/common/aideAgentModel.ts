@@ -253,7 +253,7 @@ export class Response extends Disposable implements IResponse {
 		this._updateRepr(true);
 	}
 
-	updateContent(progress: IChatProgressResponseContent | IChatTextEdit | IChatTask, quiet?: boolean): void {
+	updateContent(progress: IChatProgressResponseContent | IChatTextEdit | IChatTask | IChatAideAgentPlanRegenerateInformationPart, quiet?: boolean): void {
 		if (progress.kind === 'markdownContent') {
 			const responsePartLength = this._responseParts.length - 1;
 			const lastResponsePart = this._responseParts[responsePartLength];
@@ -304,6 +304,17 @@ export class Response extends Disposable implements IResponse {
 				}
 				this._updateRepr(false);
 			});
+		} else if (progress.kind === 'planRegeneration') {
+			console.log('planRegeneration');
+			const responsePartLength = this._responseParts.length - 1;
+			const lastResponsePart = this._responseParts[responsePartLength];
+
+			if (!lastResponsePart || lastResponsePart.kind !== 'markdownContent') {
+				console.log('planRegeneration::notResetting');
+			} else {
+				lastResponsePart.content = new MarkdownString('');
+			}
+			this._updateRepr(quiet);
 		} else {
 			this._responseParts.push(progress);
 			this._updateRepr(quiet);
@@ -554,7 +565,7 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 	/**
 	 * Apply a progress update to the actual response content.
 	 */
-	updateContent(responsePart: IChatProgressResponseContent | IChatTextEdit, quiet?: boolean) {
+	updateContent(responsePart: IChatProgressResponseContent | IChatTextEdit | IChatAideAgentPlanRegenerateInformationPart, quiet?: boolean) {
 		this._response.updateContent(responsePart, quiet);
 	}
 
@@ -1467,6 +1478,7 @@ export class ChatModel extends Disposable implements IChatModel {
 		}
 
 		if (progress.kind === 'planRegeneration') {
+			response.updateContent(progress, quiet);
 			this.acceptPlanRegeneration(progress);
 			this._onDidChange.fire(progress);
 			return;
