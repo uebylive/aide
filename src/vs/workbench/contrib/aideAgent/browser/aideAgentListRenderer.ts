@@ -642,6 +642,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 						}
 					}
 				} else {
+					// Display it as a rich element
 					value.push({ ...element.planInfo });
 				}
 			}
@@ -860,24 +861,30 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		}
 
 		if (element.planInfo) {
-			// Duplicated content above to remove
-			if (element.planInfo.description) {
-				const planInfoMessage = `Working on: ${element.planInfo.description.value}`;
-				partsToRender.push({ content: new MarkdownString(planInfoMessage), kind: 'markdownContent' });
-			} else {
-				if (element.planInfo.state === 'Complete') {
-					const completeMessage = 'Finished with edits';
-					partsToRender.push({ content: new MarkdownString(completeMessage), kind: 'markdownContent' });
-				} else if (element.planInfo.state === 'Cancelled') {
-					const completeMessage = 'Cancelled by the user';
-					partsToRender.push({ content: new MarkdownString(completeMessage), kind: 'markdownContent' });
-				} else if (element.planInfo.state === 'Accepted') {
-					const completeMessage = 'Accepted by user';
-					partsToRender.push({ content: new MarkdownString(completeMessage), kind: 'markdownContent' });
-				} else if (element.planInfo.state === 'Started') {
-					const completeMessage = 'Thinking';
-					partsToRender.push({ content: new MarkdownString(completeMessage), kind: 'markdownContent' });
+			if (!element.model.isUserResponse) {
+				// Duplicated content above to remove
+				if (element.planInfo.description) {
+					const planInfoMessage = `Working on: ${element.planInfo.description.value}`;
+					partsToRender.push({ content: new MarkdownString(planInfoMessage), kind: 'markdownContent' });
+				} else {
+					if (element.planInfo.state === 'Complete') {
+						const completeMessage = 'Finished editing';
+						partsToRender.push({ content: new MarkdownString(completeMessage), kind: 'markdownContent' });
+					} else if (element.planInfo.state === 'Cancelled') {
+						const completeMessage = 'Cancelled by the user';
+						partsToRender.push({ content: new MarkdownString(completeMessage), kind: 'markdownContent' });
+					} else if (element.planInfo.state === 'Accepted') {
+						const completeMessage = 'Accepted by user';
+						partsToRender.push({ content: new MarkdownString(completeMessage), kind: 'markdownContent' });
+
+					} else if (element.planInfo.state === 'Started') {
+						const completeMessage = 'Thinking';
+						partsToRender.push({ content: new MarkdownString(completeMessage), kind: 'markdownContent' });
+					}
 				}
+			} else {
+				// Display it as a rich element
+				partsToRender.push({ ...element.planInfo });
 			}
 		}
 

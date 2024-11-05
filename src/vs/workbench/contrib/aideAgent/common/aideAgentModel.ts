@@ -1600,7 +1600,6 @@ export class ChatModel extends Disposable implements IChatModel {
 		const response = this.addResponse(true);
 		// We just display plan info for now
 		this.acceptResponseProgress(response, { kind: 'planInfo', sessionId, exchangeId, state: accepted ? ChatPlanState.Accepted : ChatPlanState.Cancelled, isStale: false });
-
 		if (accepted) {
 			this.acceptResponseProgress(response, { kind: 'checkpointAdded', sessionId, exchangeId });
 		}
