@@ -241,7 +241,6 @@ export class MenuId {
 	static readonly AideAgentPlanReview = new MenuId('AideAgentPlanReview');
 	static readonly AideAgentPlanCompleted = new MenuId('AideAgentPlanCompleted');
 	static readonly AideAgentEditsCompleted = new MenuId('AideAgentEditsCompleted');
-	static readonly AideAgentEditsReview = new MenuId('AideAgentEditsReview');
 	static readonly AideAgentStreamingState = new MenuId('AideAgentStreamingState');
 	static readonly AideAgentInlineResourceAnchorContext = new MenuId('AideAgentInlineResourceAnchorContext');
 	static readonly AideAgentInlineSymbolAnchorContext = new MenuId('AideAgentInlineSymbolAnchorContext');

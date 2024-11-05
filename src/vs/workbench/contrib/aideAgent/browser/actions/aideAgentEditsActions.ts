@@ -40,13 +40,6 @@ export class AcceptEditsAction extends Action2 {
 					group: 'navigation',
 					order: 1
 				},
-				{
-					id: MenuId.AideAgentPlanReview,
-					order: 1,
-					// no need to check for when as we swap the toolbar menu completely
-					group: 'navigation',
-				},
-
 				// {
 				// 	id: MenuId.AideAgentExecute,
 				// 	order: 3,
@@ -114,11 +107,6 @@ export class RejectEditsAction extends Action2 {
 					id: MenuId.AideAgentEditsCompleted,
 					group: 'navigation',
 					order: 2
-				},
-				{
-					id: MenuId.AideAgentPlanReview,
-					order: 2,
-					group: 'navigation',
 				},
 				// {
 				// 	id: MenuId.AideAgentExecute,

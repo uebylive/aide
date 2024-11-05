@@ -31,7 +31,7 @@ export class CheckpointFlag extends Disposable implements IChatContentPart {
 		this._register(this.instantiationService.createInstance(Heroicon, checkPointButton, 'micro/flag', { 'class': 'aide-checkpoint-flag-flag-icon' }));
 
 		const checkpointLabel = checkPointButton.appendChild($('.aide-checkpoint-flag-label'));
-		checkpointLabel.textContent = text || localize('agent.checkpoint', "Checkpoint made"); // TODO(g-danna) Include more information about the checkpoint
+		checkpointLabel.textContent = text || localize('agent.checkpoint', "Checkpoint made before edits"); // TODO(g-danna) Include more information about the checkpoint
 
 
 		const discardIcon = checkPointButton.appendChild($('.aide-checkpoint-flag-discard-icon.codicon.codicon-discard'));

@@ -78,8 +78,6 @@ function assignMenuId(edits: IChatPlanInfo): MenuId | null {
 		case 'Started':
 			return MenuId.AideAgentPlanLoading;
 		case 'Complete':
-			return MenuId.AideAgentPlanReview;
-		case 'Cancelled':
 			return MenuId.AideAgentEditsCompleted;
 		default:
 			return null;
