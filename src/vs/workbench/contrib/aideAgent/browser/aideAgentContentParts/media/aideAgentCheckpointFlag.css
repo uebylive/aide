@@ -4,7 +4,8 @@
  *--------------------------------------------------------------------------------------------*/
 
 
-.aide-checkpoint-flag {
+.aide-checkpoint-flag,
+.aide-rollback-complete {
 	box-sizing: border-box;
 	padding-block: 6px;
 	padding-inline: 10px;

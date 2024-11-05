@@ -311,12 +311,19 @@ export interface ICodePlanEditInfo {
 	startStepIndex: number;
 }
 
+export interface IChatCheckpointAdded {
+	kind: 'checkpointAdded';
+	sessionId: string;
+	exchangeId: string;
+}
+
 export interface IChatRollbackCompleted {
 	kind: 'rollbackCompleted';
 	sessionId: string;
 	exchangeId: string;
 	exchangesRemoved: number;
 }
+
 
 export type IChatProgress =
 	| IChatMarkdownContent
@@ -345,6 +352,7 @@ export type IChatProgress =
 	| IChatEndResponse
 	| IChatThinkingForEditPart
 	| IChatRollbackCompleted
+	| IChatCheckpointAdded
 	| ICodePlanEditInfo
 	| IChatAideAgentPlanRegenerateInformationPart;
 

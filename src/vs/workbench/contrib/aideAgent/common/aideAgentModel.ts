@@ -28,7 +28,7 @@ import { IAideAgentCodeEditingService, IAideAgentCodeEditingSession } from './ai
 import { CONTEXT_AIDE_PLAN_REVIEW_STATE_EXCHANGEID, CONTEXT_AIDE_PLAN_REVIEW_STATE_SESSIONID } from './aideAgentContextKeys.js';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from './aideAgentParserTypes.js';
 import { IAideAgentPlanService, IAideAgentPlanSession } from './aideAgentPlanService.js';
-import { ChatAgentVoteDirection, ChatAgentVoteDownReason, ChatPlanState, IAideAgentService, IChatAgentMarkdownContentWithVulnerability, IChatAideAgentPlanRegenerateInformationPart, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatCommandGroup, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanInfo, IChatPlanStep, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatRollbackCompleted, IChatStreamingState, IChatTask, IChatTextEdit, IChatThinkingForEditPart, IChatTreeData, IChatUsedContext, IChatWarningMessage, ICodePlanEditInfo, isIUsedContext } from './aideAgentService.js';
+import { ChatAgentVoteDirection, ChatAgentVoteDownReason, ChatPlanState, IAideAgentService, IChatAgentMarkdownContentWithVulnerability, IChatAideAgentPlanRegenerateInformationPart, IChatCheckpointAdded, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatCommandGroup, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatEditsInfo, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatPlanInfo, IChatPlanStep, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatRollbackCompleted, IChatStreamingState, IChatTask, IChatTextEdit, IChatThinkingForEditPart, IChatTreeData, IChatUsedContext, IChatWarningMessage, ICodePlanEditInfo, isIUsedContext } from './aideAgentService.js';
 import { IChatRequestVariableValue } from './aideAgentVariables.js';
 
 export function isRequestModel(item: unknown): item is IChatRequestModel {
@@ -107,6 +107,7 @@ export type IChatProgressResponseContent =
 	| IChatPlanInfo
 	| IChatConfirmation
 	| IChatRollbackCompleted
+	| IChatCheckpointAdded
 	| IChatThinkingForEditPart;
 
 export type IChatProgressRenderableResponseContent = Exclude<IChatProgressResponseContent, IChatContentInlineReference | IChatAgentMarkdownContentWithVulnerability | IChatResponseCodeblockUriPart>;
@@ -324,6 +325,8 @@ export class Response extends Disposable implements IResponse {
 				return '';
 			} else if (part.kind === 'rollbackCompleted') {
 				return 'rollback completed';
+			} else if (part.kind === 'checkpointAdded') {
+				return 'checkpoint added';
 			} else if (part.kind === 'inlineReference') {
 				return inlineRefToRepr(part);
 			} else if (part.kind === 'command') {
@@ -1584,6 +1587,10 @@ export class ChatModel extends Disposable implements IChatModel {
 		const response = this.addResponse(true);
 		// We just display plan info for now
 		this.acceptResponseProgress(response, { kind: 'planInfo', sessionId, exchangeId, state: accepted ? ChatPlanState.Accepted : ChatPlanState.Cancelled, isStale: false });
+
+		if (accepted) {
+			this.acceptResponseProgress(response, { kind: 'checkpointAdded', sessionId, exchangeId });
+		}
 	}
 
 	handleUserCancelActionForSession() {

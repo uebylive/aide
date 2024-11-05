@@ -8,11 +8,14 @@ import { Disposable } from '../../../../../base/common/lifecycle.js';
 import { localize } from '../../../../../nls.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { Heroicon } from '../../../../browser/heroicon.js';
+import { IChatRendererContent } from '../../common/aideAgentViewModel.js';
+import { ChatTreeItem } from '../aideAgent.js';
+import { IChatContentPart } from './aideAgentContentParts.js';
 import './media/aideAgentCheckpointFlag.css';
 
 const $ = dom.$;
 
-export class CheckpointFlag extends Disposable {
+export class CheckpointFlag extends Disposable implements IChatContentPart {
 
 	public readonly domNode: HTMLElement;
 
@@ -24,17 +27,21 @@ export class CheckpointFlag extends Disposable {
 		super();
 
 		const checkPointButton = this.domNode = $(`${isButton ? 'a' : 'div'}.aide-checkpoint-flag`);
-		this._register(dom.addDisposableListener(checkPointButton, dom.EventType.CLICK, async (e: MouseEvent) => {
-			console.log('revert to checkpoint');
-		}));
 
 		this._register(this.instantiationService.createInstance(Heroicon, checkPointButton, 'micro/flag', { 'class': 'aide-checkpoint-flag-flag-icon' }));
 
 		const checkpointLabel = checkPointButton.appendChild($('.aide-checkpoint-flag-label'));
-		checkpointLabel.textContent = text || localize('agent.checkpoint', "Checkpoint before edits"); // TODO(g-danna) Include more information about the checkpoint
+		checkpointLabel.textContent = text || localize('agent.checkpoint', "Checkpoint made"); // TODO(g-danna) Include more information about the checkpoint
 
-		if (isButton) {
-			checkPointButton.appendChild($('.aide-checkpoint-flag-discard-icon.codicon.codicon-discard'));
+
+		const discardIcon = checkPointButton.appendChild($('.aide-checkpoint-flag-discard-icon.codicon.codicon-discard'));
+		if (!isButton) {
+			discardIcon.style.opacity = '0.8';
 		}
+
+	}
+
+	hasSameContent(other: IChatRendererContent, followingContent: IChatRendererContent[], element: ChatTreeItem): boolean {
+		return other.kind === 'checkpointAdded';
 	}
 }

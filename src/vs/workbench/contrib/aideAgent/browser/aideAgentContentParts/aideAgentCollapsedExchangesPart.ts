@@ -11,6 +11,7 @@ import * as dom from '../../../../../base/browser/dom.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { CheckpointFlag } from './aideAgentCheckpointFlag.js';
 import './media/aideAgentCollapsedExchanges.css';
+import { Heroicon } from '../../../../browser/heroicon.js';
 
 const $ = dom.$;
 
@@ -24,12 +25,17 @@ export class CollapsedExchangesContentPart extends Disposable {
 		super();
 		const domNode = this.domNode = $('.aide-collapsed-exchanges-block');
 
-		const checkPointFlag = this._register(this.instantiationService.createInstance(CheckpointFlag, false, localize('agent.rollbackComplete', "Rollback complete")));
+		const checkPointFlag = this._register(this.instantiationService.createInstance(CheckpointFlag, false, undefined));
 		domNode.appendChild(checkPointFlag.domNode);
 
 		const rollbackInfo = domNode.appendChild($('.aide-collapsed-exchanges-info'));
 		const rollbackLabel = rollbackInfo.appendChild($('.aide-rollback-label'));
-		rollbackLabel.textContent = rollback.exchangesRemoved === 1 ? localize('agent.singleRollback', "Rolled back {0} exchange", 1) : localize('agent.rollbacks', "Rolled back {0} exchanges", rollback.exchangesRemoved);
+		rollbackLabel.textContent = rollback.exchangesRemoved === 1 ? localize('agent.singleRollback', "{0} exchange collapsed", 1) : localize('agent.rollbacks', "{0} exchanges collapse", rollback.exchangesRemoved);
+
+		const rollbackCompleteElement = rollbackInfo.appendChild($('.aide-rollback-complete'));
+		this._register(this.instantiationService.createInstance(Heroicon, rollbackCompleteElement, 'micro/arrow-uturn-left', { 'class': 'aide-checkpoint-flag-flag-icon' }));
+		const rollbackCompleteLabel = rollbackCompleteElement.appendChild($('.aide-rollback-complete-label'));
+		rollbackCompleteLabel.textContent = localize('agent.rollbackComplete', "Rollback complete");
 	}
 
 	hasSameContent(other: IChatProgressRenderableResponseContent): boolean {
