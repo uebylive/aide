@@ -7,7 +7,7 @@ import { CompletionRequest } from '../../inlineCompletion/sidecarCompletion';
 import { SideCarClient } from '../../sidecar/client';
 import { forkSignal, zipGenerators } from '../utils';
 import * as CompletionLogger from '../logger';
-import { FetchCompletionResult, StreamCompletionResponse, fetchAndProcessCompletions, fetchAndProcessDynamicMultilineCompletions } from './fetch-and-process-completions';
+import { FetchCompletionResult, StreamCompletionResponse, fetchAndProcessDynamicMultilineCompletions } from './fetch-and-process-completions';
 import { Provider, ProviderOptions } from './provider';
 import { TypeDefinitionProviderWithNode } from '../helpers/vscodeApi';
 
@@ -58,14 +58,11 @@ export class SidecarProvider extends Provider {
 
 	public generateCompletions(abortSignal: AbortSignal, startTime: number): AsyncGenerator<FetchCompletionResult[]> {
 		const { languageId, uri } = this.options.document;
-		const isDynamicMultiline = Boolean(this.options.dynamicMultilineCompletions);
 		this._logger.logInfo('sidecar.inlineProvider', {
 			'event_name': 'generate_completions',
 			'id': this.options.spanId,
 		});
-		const fetchAndProcessCompletionsImpl = isDynamicMultiline
-			? fetchAndProcessDynamicMultilineCompletions
-			: fetchAndProcessCompletions;
+		const fetchAndProcessCompletionsImpl = fetchAndProcessDynamicMultilineCompletions;
 		// send over the request to the sidecar
 		const completionRequest: CompletionRequest = {
 			filepath: uri.fsPath,
