@@ -30,9 +30,9 @@ export class CollapsedExchangesContentPart extends Disposable {
 
 		const rollbackInfo = domNode.appendChild($('.aide-collapsed-exchanges-info'));
 		const rollbackLabel = rollbackInfo.appendChild($('.aide-rollback-label'));
-		rollbackLabel.textContent = rollback.exchangesRemoved === 1 ? localize('agent.singleRollback', "{0} exchange collapsed", 1) : localize('agent.rollbacks', "{0} exchanges collapse", rollback.exchangesRemoved);
+		rollbackLabel.textContent = rollback.exchangesRemoved === 1 ? localize('agent.singleRollback', "{0} exchange collapsed", 1) : localize('agent.rollbacks', "{0} exchanges collapsed", rollback.exchangesRemoved);
 
-		const rollbackCompleteElement = rollbackInfo.appendChild($('.aide-rollback-complete'));
+		const rollbackCompleteElement = domNode.appendChild($('.aide-rollback-complete'));
 		this._register(this.instantiationService.createInstance(Heroicon, rollbackCompleteElement, 'micro/arrow-uturn-left', { 'class': 'aide-checkpoint-flag-flag-icon' }));
 		const rollbackCompleteLabel = rollbackCompleteElement.appendChild($('.aide-rollback-complete-label'));
 		rollbackCompleteLabel.textContent = localize('agent.rollbackComplete', "Rollback complete");

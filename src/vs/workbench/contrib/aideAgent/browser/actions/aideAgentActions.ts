@@ -26,8 +26,8 @@ export function registerAgentActions() {
 		}
 		run(accessor: ServicesAccessor, ...args: any[]) {
 			const context = args[0];
-			const exchangeId = context['aideAgentExchangeId'];
-			const sessionId = context['aideAgentSessionId'];
+			const exchangeId = context['exchangeId'];
+			const sessionId = context['sessionId'];
 			try {
 				const aideAgentSession = accessor.get(IAideAgentService);
 				aideAgentSession.handleUserActionUndoSession(sessionId, exchangeId);
@@ -35,7 +35,6 @@ export function registerAgentActions() {
 				console.error(exception);
 			}
 			// here we have the callback for the various services over here
-			console.log('Stop edits');
 		}
 	});
 }

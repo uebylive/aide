@@ -1524,7 +1524,8 @@ export class ChatModel extends Disposable implements IChatModel {
 			progress.kind === 'warning' ||
 			progress.kind === 'progressTask' ||
 			progress.kind === 'confirmation' ||
-			progress.kind === 'rollbackCompleted'
+			progress.kind === 'rollbackCompleted' ||
+			progress.kind === 'checkpointAdded'
 		) {
 			response.updateContent(progress, quiet);
 		} else if (progress.kind === 'usedContext' || progress.kind === 'reference') {
@@ -1625,9 +1626,9 @@ export class ChatModel extends Disposable implements IChatModel {
 		// TODO(ghostwriternr): Do the updates for the UI over here, including changing the responses etc
 		const exchangeIndex = this._exchanges.findIndex((exchange) => exchange.id === exchangeId);
 		if (exchangeIndex > 0) {
-			const { removed } = this.removeExchanges(exchangeIndex);
+			const { removed } = this.removeExchanges(exchangeIndex + 1);
 			// We will respond to this event entirely on the ide layer, but it should probably be triggered by sidecar
-			const response = this.addResponse();
+			const response = this.addResponse(true);
 			this.acceptResponseProgress(response, { kind: 'rollbackCompleted', sessionId, exchangeId, exchangesRemoved: removed.length });
 			// this.acceptResponseProgress(response, { kind: 'endResponse' }); @g-danna can I remove this?
 		}

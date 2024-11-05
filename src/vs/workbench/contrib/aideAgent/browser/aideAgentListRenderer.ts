@@ -930,7 +930,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		if (content.kind === 'treeData') {
 			return this.renderTreeData(content, templateData, context);
 		} else if (content.kind === 'rollbackCompleted') {
-			return this.renderRollbackCompleted(content, templateData, context);
+			return this.renderRollbackCompleted(content);
 		} else if (content.kind === 'checkpointAdded') {
 			return this.renderCheckpoint(content);
 		} else if (content.kind === 'progressMessage') {
@@ -1011,15 +1011,13 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 	private renderCheckpoint(content: IChatCheckpointAdded): IChatContentPart {
 		const checkpointPart = this._register(this.instantiationService.createInstance(CheckpointFlag, true, undefined));
-
 		this._register(dom.addDisposableListener(checkpointPart.domNode, dom.EventType.CLICK, async (e: MouseEvent) => {
 			this.commandService.executeCommand('workbench.action.aideAgent.revert', { sessionId: content.sessionId, exchangeId: content.exchangeId });
 		}));
-
 		return checkpointPart;
 	}
 
-	private renderRollbackCompleted(content: IChatRollbackCompleted, templateData: IAgentListItemTemplate, context: IChatContentPartRenderContext): IChatContentPart {
+	private renderRollbackCompleted(content: IChatRollbackCompleted): IChatContentPart {
 		const collapsedExchangesPart = this.instantiationService.createInstance(CollapsedExchangesContentPart, content);
 		return collapsedExchangesPart;
 	}
