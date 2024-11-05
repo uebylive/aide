@@ -5,6 +5,9 @@
 
 **Aide is the Open Source AI-native code editor. It is a fork of VS Code, and integrates tightly with [the leading agentic framework](https://github.com/codestoryai/sidecar) on swebench-lite.**
 
+![Latest release](https://img.shields.io/github/v/release/codestoryai/binaries?label=version)
+![Discord Shield](https://discord.com/api/guilds/1138070673756004464/widget.png?style=shield)
+
 <p align="center">
 	<img src="./media/hero_video.gif" alt="Aide in action" />
 </p>
@@ -40,7 +43,7 @@ please see the document [How to Contribute](https://github.com/codestoryai/aide/
 * [File an issue](https://github.com/codestoryai/aide/issues)
 * [Request a new feature](CONTRIBUTING.md)
 * Upvote [popular feature requests](https://github.com/codestoryai/aide/issues?q=is%3Aopen+is%3Aissue+label%3Afeature-request+sort%3Areactions-%2B1-desc)
-* Join our community: [Discord/Community Link]
+* Join our community: [Discord](https://discord.gg/mtgrhXM5Xf)
 
 ## Development Container
 
@@ -55,7 +58,7 @@ Docker / the Codespace should have at least **4 Cores and 6 GB of RAM (8 GB reco
 
 ## Code of Conduct
 
-This project has adopted the [Microsoft Open Source Code of Conduct](https://opensource.microsoft.com/codeofconduct/). For more information see the [Code of Conduct FAQ](https://opensource.microsoft.com/codeofconduct/faq/) or contact [opencode@microsoft.com](mailto:opencode@microsoft.com) with any additional questions or comments.
+This project has adopted the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). Please read the Code of Conduct before contributing to this project.
 
 ## License
 
