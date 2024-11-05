@@ -178,11 +178,11 @@ class ViewEditsDetailAction extends Action2 {
 					group: 'navigation',
 					order: 0, // First element
 				},
-				//{
-				//	id: MenuId.AideAgentPlanReview,
-				//	group: 'navigation',
-				//	order: 0 // First hidden element
-				//}
+				{
+					id: MenuId.AideAgentEditsLoading,
+					group: 'navigation',
+					order: 0 // First hidden element
+				}
 			],
 			icon: Codicon.diff,
 			f1: false,

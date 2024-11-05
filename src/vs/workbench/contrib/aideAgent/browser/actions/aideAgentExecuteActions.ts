@@ -195,13 +195,12 @@ export class CancelAction extends Action2 {
 					// no need to check for when as we swap the toolbar menu completely
 					order: 1,
 					group: 'navigation',
+				},
+				{
+					id: MenuId.AideAgentEditsLoading,
+					group: 'navigation',
+					order: 0 // First hidden element
 				}
-				//{
-				//	id: MenuId.AideAgentStreamingState,
-				//	when: CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.Loading),
-				//	order: 2,
-				//	group: 'navigation',
-				//}
 			],
 			keybinding: {
 				when: CONTEXT_IN_CHAT_INPUT,
