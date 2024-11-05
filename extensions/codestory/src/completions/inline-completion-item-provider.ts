@@ -200,7 +200,6 @@ export class InlineCompletionItemProvider
 		}
 		// @ts-ignore
 		const identifierNodes: TypeDefinitionProviderWithNode[] = responses;
-		console.log('GoToDefinition time taken: ', JSON.stringify(responses), performance.now() - responseStart);
 
 
 		// When the user has the completions popup open and an item is selected that does not match
