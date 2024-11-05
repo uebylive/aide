@@ -354,7 +354,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		const renderFollowups = this.viewOptions.renderFollowups ?? !renderInputOnTop;
 		const renderStyle = this.viewOptions.renderStyle;
 
-		this.container = dom.append(parent, $('.interactive-session'));
+		this.container = dom.append(parent, $('.interactive-session.aide-interactive-session'));
 		if (renderInputOnTop) {
 			this.createInput(this.container, { renderFollowups, renderStyle });
 			this.listContainer = dom.append(this.container, $(`.interactive-list`));
@@ -1072,7 +1072,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		const inputPartHeight = this.inputPart.inputPartHeight;
 		const lastElementVisible = this.tree.scrollTop + this.tree.renderHeight >= this.tree.scrollHeight;
 
-		const listHeight = height - inputPartHeight;
+		const listHeight = height - inputPartHeight - 70; // Temporary hack to make sure the last element is not hidden by streaming widget
 
 		this.tree.layout(listHeight, width);
 		this.tree.getHTMLElement().style.height = `${listHeight}px`;
