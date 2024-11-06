@@ -64,9 +64,12 @@ export class AideAgentPlanService extends Disposable implements IAideAgentPlanSe
 	}
 
 	async anchorPlanViewPane(sessionId: string, exchangeId: string): Promise<void> {
-		// we should very quickly close the plan review pane if it was open and then open it again
-		this.viewsService.closeView(PLAN_REVIEW_PANEL_ID);
-		const planReviewPane = await this.viewsService.openView<PlanReviewPane>(PLAN_REVIEW_PANEL_ID);
+		// we should very quickly close the plan review pane if it was open and then open it again – (@g-danna) why?
+		// this.viewsService.closeView(PLAN_REVIEW_PANEL_ID);
+		if (!this.viewsService.isViewVisible(PLAN_REVIEW_PANEL_ID)) {
+			await this.viewsService.openView<PlanReviewPane>(PLAN_REVIEW_PANEL_ID)
+		}
+		const planReviewPane = this.viewsService.getViewWithId<PlanReviewPane>(PLAN_REVIEW_PANEL_ID);
 		if (planReviewPane) {
 			planReviewPane.anchorPlanReviewPane(sessionId, exchangeId);
 		}
