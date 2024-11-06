@@ -9,7 +9,6 @@ import { MenuId, MenuItemAction } from '../../../../../platform/actions/common/a
 import { HiddenItemStrategy, MenuWorkbenchToolBar } from '../../../../../platform/actions/browser/toolbar.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { IKeybindingService } from '../../../../../platform/keybinding/common/keybinding.js';
-import { Heroicon } from '../../../../browser/heroicon.js';
 import { IChatContentPart } from './aideAgentContentParts.js';
 import { IChatProgressRenderableResponseContent } from '../../common/aideAgentModel.js';
 import { Emitter } from '../../../../../base/common/event.js';
@@ -101,7 +100,8 @@ export abstract class AideAgentRichItem extends Disposable implements IChatConte
 		const heading = $('.aide-rich-item-heading');
 		header.appendChild(heading);
 
-		this.instantiationService.createInstance(Heroicon, heading, iconId, { 'class': 'aide-rich-item-icon' });
+		// this.instantiationService.createInstance(Heroicon, heading, iconId, { 'class': 'aide-rich-item-icon' });
+		heading.appendChild($(`.aide-rich-item-icon.codicon.codicon-${iconId}`));
 
 		const title = $('.aide-rich-item-title');
 		heading.appendChild(title);

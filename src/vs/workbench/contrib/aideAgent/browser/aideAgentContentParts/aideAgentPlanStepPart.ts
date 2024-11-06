@@ -9,7 +9,6 @@ import { Disposable, IDisposable, toDisposable } from '../../../../../base/commo
 import { URI } from '../../../../../base/common/uri.js';
 import { IContextKey, IContextKeyService } from '../../../../../platform/contextkey/common/contextkey.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
-import { Heroicon } from '../../../../browser/heroicon.js';
 import { Spinner } from '../../../../browser/spinner.js';
 import { CONTEXT_IN_CHAT_PLAN_STEP } from '../../common/aideAgentContextKeys.js';
 import { AgentMode, IChatProgressRenderableResponseContent } from '../../common/aideAgentModel.js';
@@ -44,7 +43,7 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 	private inChatPlanStep: IContextKey<boolean>;
 
 	// private feedbackMode = false;
-	private chevronDownIcon: Heroicon;
+	// private chevronDownIcon: Heroicon;
 	private showDescription = false;
 
 	private reviewButtonsElement: HTMLElement; // Accept/reject changes
@@ -130,8 +129,8 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 		const planStepTitle = $('span.plan-step-title');
 		summaryButton.element.appendChild(planStepTitle);
 		planStepTitle.textContent = step.title;
-		this.chevronDownIcon = this._register(this.instantiationService.createInstance(Heroicon, summaryButton.element, 'micro/chevron-down'));
-		this.chevronDownIcon.svg.classList.add('plan-step-chevron');
+		// this.chevronDownIcon = this._register(this.instantiationService.createInstance(Heroicon, summaryButton.element, 'micro/chevron-down'));
+		// this.chevronDownIcon.svg.classList.add('plan-step-chevron');
 
 		this._register(summaryButton.onDidClick(() => {
 			this.showDescription = !this.showDescription;
@@ -143,7 +142,7 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 
 		const implementButton = this._register(this.instantiationService.createInstance(Button, this.planButtonsElement, { title: 'Implement changes' }));
 		implementButton.element.classList.add('plan-step-implement-until');
-		this._register(this.instantiationService.createInstance(Heroicon, implementButton.element, 'micro/bolt'));
+		// this._register(this.instantiationService.createInstance(Heroicon, implementButton.element, 'micro/bolt'));
 
 		implementButton.onDidClick(() => {
 			this._implementStep();
@@ -151,14 +150,14 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 
 		const appendButton = this._register(this.instantiationService.createInstance(Button, this.planButtonsElement, { title: 'Append steps' }));
 		appendButton.element.classList.add('plan-step-add-step');
-		this._register(this.instantiationService.createInstance(Heroicon, appendButton.element, 'micro/plus'));
+		//this._register(this.instantiationService.createInstance(Heroicon, appendButton.element, 'micro/plus'));
 
 		appendButton.onDidClick(() => {
 			this._appendStep();
 		});
 
 		const dropPlanStep = this._register(this.instantiationService.createInstance(Button, this.planButtonsElement, { title: 'Drop plan step' }));
-		this._register(this.instantiationService.createInstance(Heroicon, dropPlanStep.element, 'micro/trash'));
+		//this._register(this.instantiationService.createInstance(Heroicon, dropPlanStep.element, 'micro/trash'));
 		dropPlanStep.element.classList.add('plan-step-drop-step');
 
 		dropPlanStep.onDidClick(() => {
@@ -170,14 +169,14 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 
 		const acceptChangesButton = this._register(this.instantiationService.createInstance(Button, this.reviewButtonsElement, { title: 'Accept changes' }));
 		acceptChangesButton.element.classList.add('plan-step-accept-changes');
-		this._register(this.instantiationService.createInstance(Heroicon, acceptChangesButton.element, 'micro/check'));
+		//this._register(this.instantiationService.createInstance(Heroicon, acceptChangesButton.element, 'micro/check'));
 
 		acceptChangesButton.onDidClick(() => {
 			mockEditsService.acceptEdits(step.index);
 		});
 
 		const rejectChangesButton = this._register(this.instantiationService.createInstance(Button, this.reviewButtonsElement, { title: 'Reject changes' }));
-		this._register(this.instantiationService.createInstance(Heroicon, rejectChangesButton.element, 'micro/x-mark'));
+		//this._register(this.instantiationService.createInstance(Heroicon, rejectChangesButton.element, 'micro/x-mark'));
 		rejectChangesButton.element.classList.add('plan-step-reject-changes');
 
 		rejectChangesButton.onDidClick(() => {
@@ -199,8 +198,8 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 		this.loadingButton.element.classList.add('plan-step-stop-button');
 		const spinnerIcon = this._register(this.instantiationService.createInstance(Spinner, this.loadingButton.element));
 		spinnerIcon.svg.classList.add('plan-step-spinner-icon');
-		const stopIcon = this._register(this.instantiationService.createInstance(Heroicon, this.loadingButton.element, 'micro/stop'));
-		stopIcon.svg.classList.add('plan-step-stop-icon');
+		//const stopIcon = this._register(this.instantiationService.createInstance(Heroicon, this.loadingButton.element, 'micro/stop'));
+		//stopIcon.svg.classList.add('plan-step-stop-icon');
 
 
 		switch (this.state) {
@@ -323,10 +322,10 @@ export class ChatPlanStepPart extends Disposable implements IChatContentPart {
 
 		if (this.showDescription) {
 			dom.show(this.descriptionPart.domNode);
-			this.chevronDownIcon.svg.classList.add('plan-step-chevron-flipped');
+			//this.chevronDownIcon.svg.classList.add('plan-step-chevron-flipped');
 		} else {
 			dom.hide(this.descriptionPart.domNode);
-			this.chevronDownIcon.svg.classList.remove('plan-step-chevron-flipped');
+			//this.chevronDownIcon.svg.classList.remove('plan-step-chevron-flipped');
 		}
 
 		this._onDidChangeHeight.fire();

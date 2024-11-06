@@ -67,9 +67,9 @@ function assignLabel(plan: IChatPlanInfo): string {
 function assignIcon(plan: IChatPlanInfo): string {
 	switch (plan.state) {
 		case 'Cancelled':
-			return 'micro/x-mark';
+			return 'close';
 		default:
-			return 'micro/bolt';
+			return 'lightbulb-sparkle';
 	}
 }
 

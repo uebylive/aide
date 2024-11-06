@@ -67,11 +67,11 @@ function assignLabel(edits: IChatEditsInfo): string {
 function assignIcon(edits: IChatEditsInfo): string {
 	switch (edits.state) {
 		case ChatEditsState.Loading:
-			return 'micro/bolt';
+			return 'lightbulb-sparkle';
 		case ChatEditsState.MarkedComplete:
-			return 'micro/check-circle';
+			return 'checklist';
 		case ChatEditsState.Cancelled:
-			return 'micro/x-mark';
+			return 'close';
 		default:
 			throw new Error('Invalid state');
 	}

@@ -64,7 +64,6 @@ import { ChatMarkdownRenderer } from './aideAgentMarkdownRenderer.js';
 import { ChatEditorOptions } from './aideAgentOptions.js';
 import { ChatCodeBlockContentProvider, CodeBlockPart } from './codeBlockPart.js';
 import { PlanContentPart } from './aideAgentContentParts/aideAgentPlanContentPart.js';
-import { Heroicon } from '../../../browser/heroicon.js';
 import { IKeybindingService } from '../../../../platform/keybinding/common/keybinding.js';
 import { INotificationService } from '../../../../platform/notification/common/notification.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
@@ -96,8 +95,8 @@ interface IChatListItemTemplate extends IBaseListItemTemplate {
 
 interface IPlanReviewListItemTemplate extends IBaseListItemTemplate {
 	kind: 'planReviewTemplate';
-	readonly saveIcon: Heroicon;
-	readonly dropIcon: Heroicon;
+	// readonly saveIcon: Heroicon;
+	// readonly dropIcon: Heroicon;
 	readonly titleToolbar: MenuWorkbenchToolBar;
 }
 
@@ -381,8 +380,8 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		const dotContainer = timelineElement.appendChild($('.aideagent-timeline-dot-container'));
 		dotContainer.appendChild($('.aideagent-timeline-dot'));
 
-		const saveIcon = templateDisposables.add(this.instantiationService.createInstance(Heroicon, dotContainer, 'micro/check-circle', { 'class': 'aideagent-timeline-save-icon' }));
-		const dropIcon = templateDisposables.add(this.instantiationService.createInstance(Heroicon, dotContainer, 'micro/x-circle', { 'class': 'aideagent-timeline-drop-icon' }));
+		// const saveIcon = templateDisposables.add(this.instantiationService.createInstance(Heroicon, dotContainer, 'micro/check-circle', { 'class': 'aideagent-timeline-save-icon' }));
+		// const dropIcon = templateDisposables.add(this.instantiationService.createInstance(Heroicon, dotContainer, 'micro/x-circle', { 'class': 'aideagent-timeline-drop-icon' }));
 
 		const timelineContainer = timelineElement.appendChild($('.aideagent-timeline-line-container'));
 		timelineContainer.appendChild($('.aideagent-timeline-line'));
@@ -410,7 +409,10 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			}
 		}));
 
-		const template: IPlanReviewListItemTemplate = { kind: 'planReviewTemplate', saveIcon, dropIcon, value, rowContainer, elementDisposables, templateDisposables, contextKeyService, instantiationService: scopedInstantiationService, titleToolbar };
+		const template: IPlanReviewListItemTemplate = {
+			kind: 'planReviewTemplate', // saveIcon, dropIcon,
+			value, rowContainer, elementDisposables, templateDisposables, contextKeyService, instantiationService: scopedInstantiationService, titleToolbar
+		};
 		return template;
 
 	}
