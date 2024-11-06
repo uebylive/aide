@@ -30,9 +30,9 @@ There are many ways in which you can participate in this project, for example:
 * Review [source code changes](https://github.com/codestoryai/aide/pulls)
 
 If you are interested in fixing issues and contributing directly to the code base,
-please see the document [How to Contribute](https://github.com/codestoryai/aide/blob/cs-main/HOW_TO_CONTRIBUTE.md), which covers the following:
+please see the document **[How to Contribute](https://github.com/codestoryai/aide/blob/cs-main/HOW_TO_CONTRIBUTE.md)**, which covers the following:
 
-* [How to build and run from source](https://github.com/codestoryai/aide/blob/cs-main/HOW_TO_CONTRIBUTE.md)
+* **[How to build and run from source](https://github.com/codestoryai/aide/blob/cs-main/HOW_TO_CONTRIBUTE.md)**
 * [The development workflow, including debugging and running tests](https://github.com/codestoryai/aide/blob/cs-main/HOW_TO_CONTRIBUTE.md#debugging)
 * [Coding guidelines](https://github.com/codestoryai/aide/wiki/Coding-Guidelines)
 * [Submitting pull requests](https://github.com/codestoryai/aide/blob/cs-main/HOW_TO_CONTRIBUTE.md#pull-requests)
