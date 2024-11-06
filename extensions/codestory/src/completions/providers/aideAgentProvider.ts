@@ -714,7 +714,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				if (event.event.PlanEvent.PlanStepTitleAdded) {
 					// we still want to send the planInfo over here (we should check
 					// why the rendering is so slow for this... weird reason)
-					console.log('planEvent::title::update_for', event.event.PlanEvent.PlanStepTitleAdded.index);
 					/*
 					responseStream?.stream.planInfo({
 						exchangeId,
@@ -724,8 +723,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						description: event.event.PlanEvent.PlanStepTitleAdded.title,
 					});
 					*/
-					// TODO(codestory): Remove this soon after cause we will just rely
-					// on the title for now to provide updates to the side panel
 					responseStream?.stream.step({
 						description: '',
 						index: event.event.PlanEvent.PlanStepTitleAdded.index,
@@ -862,13 +859,14 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					continue;
 				}
 				if (event.event.ExchangeEvent.RegeneratePlan) {
-					// This event help sus regenerate the plan
+					// This event help us regenerate the plan and set details on the editor layer
 					/*
 					responseStream?.stream.regeneratePlan({
 						sessionId: event.event.ExchangeEvent.RegeneratePlan.session_id,
 						exchangeId: event.event.ExchangeEvent.RegeneratePlan.exchange_id,
 					});
 					*/
+					continue;
 				}
 				if (event.event.ExchangeEvent.FinishedExchange) {
 					// Update our streaming state that we are finished
