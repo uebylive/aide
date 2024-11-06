@@ -11,11 +11,6 @@ export interface TextChange {
 }
 
 export interface UpdateRangeOptions {
-    /**
-     * Whether to expand a range when a change is affixed to the original range.
-     * This changes the behaviour to support cases where we want to include appending or prepending to an original range.
-     * For example, allowing Cody to insert a docstring immediately before a function.
-     */
     supportRangeAffix?: boolean;
 }
 

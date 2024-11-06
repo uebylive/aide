@@ -5,7 +5,7 @@
 
 import { DocumentSymbol, SymbolInformation } from 'vscode';
 import { LLMProviderAPIKeys } from '../sidecar/providerConfigTypes';
-import { LLMProvider, LLMTypeVariant, SidecarVariableTypes } from '../sidecar/types';
+import { ConversationMessageVariableInformation, LLMProvider, LLMTypeVariant, SidecarVariableTypes } from '../sidecar/types';
 
 type SidecarFileContent = {
 	file_path: string;
@@ -107,6 +107,7 @@ type FrameworkEvent = {
 	ReferenceFound: FoundReference;
 	RelevantReference: RelevantReference;
 	GroupedReferences: GroupedReferences;
+	ReferencesUsed: FrameworkReferencesUsed;
 	SearchIteration: IterativeSearchEvent;
 	AgenticTopLevelThinking: string;
 	AgenticSymbolLevelThinking: StepListItem;
@@ -123,7 +124,7 @@ type ExchangeMessageEvent = {
 type ExecutionExchangeStateEvent = 'Inference' | 'InReview' | 'Cancelled';
 
 interface EditsExchangeEditsState {
-	edits_state: 'Loading' | 'Cancelled' | 'InReview' | 'MarkedComplete';
+	edits_state: 'Loading' | 'Cancelled' | 'MarkedComplete' | 'Accepted';
 	files: string[];
 }
 
@@ -408,6 +409,11 @@ interface OpenFileRequestFrameworkEvent {
 }
 
 type FoundReference = Record<string, number>;
+
+interface FrameworkReferencesUsed {
+	exchange_id: String;
+	variables: ConversationMessageVariableInformation[];
+}
 
 interface RelevantReference {
 	fs_file_path: string;

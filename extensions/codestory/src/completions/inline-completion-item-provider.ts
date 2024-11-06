@@ -185,7 +185,6 @@ export class InlineCompletionItemProvider
 		);
 		console.log('Time taken for identifier nodes: ', performance.now() - now);
 		console.log('Identifier nodes interested', response);
-		const responseStart = performance.now();
 		let responses: TypeDefinitionProviderWithNode[] | unknown = [];
 		try {
 			responses = await Promise.race([typeDefinitionForIdentifierNodes(response, document.uri, this.sidecarClient), new Promise((_, reject) => {
@@ -200,7 +199,6 @@ export class InlineCompletionItemProvider
 		}
 		// @ts-ignore
 		const identifierNodes: TypeDefinitionProviderWithNode[] = responses;
-		console.log('GoToDefinition time taken: ', JSON.stringify(responses), performance.now() - responseStart);
 
 
 		// When the user has the completions popup open and an item is selected that does not match
@@ -538,25 +536,6 @@ export class InlineCompletionItemProvider
 	 * are only shown once during the rate limit period.
 	 */
 	private onError(_error: Error): void {
-		// TODO(philipp-spiess): Bring back this code once we have fewer uncaught errors
-		//
-		// c.f. https://sourcegraph.slack.com/archives/C05AGQYD528/p1693471486690459
-		//
-		// const now = Date.now()
-		// if (
-		//    this.reportedErrorMessages.has(error.message) &&
-		//    this.reportedErrorMessages.get(error.message)! + ONE_HOUR >= now
-		// ) {
-		//    return
-		// }
-		// this.reportedErrorMessages.set(error.message, now)
-		// this.config.statusBar.addError({
-		//    title: 'Cody Autocomplete Encountered an Unexpected Error',
-		//    description: error.message,
-		//    onSelect: () => {
-		//        outputChannel.show()
-		//    },
-		// })
 	}
 
 	public dispose(): void {

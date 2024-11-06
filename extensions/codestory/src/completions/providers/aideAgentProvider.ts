@@ -43,7 +43,6 @@ class AideResponseStreamCollection {
 			console.log('responseStream::token_cancelled');
 			// over here we get the stream of events from the cancellation
 			// we need to send it over on the stream as usual so we can work on it
-
 			// we can send empty access token here since we are not making llm calls
 			// on the sidecar... pretty sure I will forget and scream at myself later on
 			// for having herd knowledged like this
@@ -258,7 +257,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		const editStreamEvent = request;
 		const fileDocument = editStreamEvent.fs_file_path;
 		if ('Start' === editStreamEvent.event) {
-			const timeNow = Date.now();
 			const document = await vscode.workspace.openTextDocument(fileDocument);
 			if (document === undefined || document === null) {
 				return {
@@ -266,11 +264,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					success: false,
 				};
 			}
-			console.log('editsStreamed::content', timeNow, document.getText());
 			const documentLines = document.getText().split(/\r\n|\r|\n/g);
-			console.log('editStreaming.start', editStreamEvent.fs_file_path);
-			console.log(editStreamEvent.range);
-			console.log(documentLines);
 			this.editsMap.set(editStreamEvent.edit_request_id, {
 				answerSplitter: new AnswerSplitOnNewLineAccumulatorStreaming(),
 				// Now here we want to pass a proper id as we want to make sure that
@@ -554,6 +548,16 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					// 	symbolName: ref.symbol_name,
 					// 	reason: ref.reason,
 					// });
+				} else if (event.event.FrameworkEvent.ReferencesUsed) {
+					const references = event.event.FrameworkEvent.ReferencesUsed.variables;
+					references.forEach((reference) => {
+						// send to the response stream that we have a bunch of references
+						// to look at
+						responseStream.stream.reference2({
+							variableName: reference.name,
+							value: new vscode.Location(vscode.Uri.file(reference.fs_file_path), new vscode.Range(new vscode.Position(reference.start_position.line, reference.start_position.character), new vscode.Position(reference.end_position.line, reference.end_position.character))),
+						});
+					});
 				} else if (event.event.FrameworkEvent.GroupedReferences) {
 					const groupedRefs = event.event.FrameworkEvent.GroupedReferences;
 					const followups: { [key: string]: { symbolName: string; uri: vscode.Uri }[] } = {};
@@ -730,10 +734,10 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						isLast: false,
 						title: event.event.PlanEvent.PlanStepTitleAdded.title,
 						descriptionDelta: null,
+						files: event.event.PlanEvent.PlanStepTitleAdded.files_to_edit.map((file) => vscode.Uri.file(file)),
 					});
 				}
 				if (event.event.PlanEvent.PlanStepDescriptionUpdate) {
-					console.log('planEvent::description::update_for', event.event.PlanEvent.PlanStepDescriptionUpdate.index);
 					responseStream?.stream.step({
 						description: event.event.PlanEvent.PlanStepDescriptionUpdate.description_up_until_now,
 						index: event.event.PlanEvent.PlanStepDescriptionUpdate.index,
@@ -742,6 +746,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						isLast: false,
 						title: '',
 						descriptionDelta: `\n${event.event.PlanEvent.PlanStepDescriptionUpdate.delta}`,
+						files: event.event.PlanEvent.PlanStepDescriptionUpdate.files_to_edit.map((file) => vscode.Uri.file(file)),
 					});
 				}
 			} else if (event.event.ExchangeEvent) {
@@ -771,21 +776,19 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 							isStale: false,
 							state: 'Cancelled',
 						});
-					} else if (editsState === 'InReview') {
-						responseStream?.stream.planInfo({
-							exchangeId,
-							sessionId,
-							isStale: false,
-							// this state is wrong over here, we should show
-							// that the plan is in review right now
-							state: 'InReview',
-						});
 					} else if (editsState === 'MarkedComplete') {
 						responseStream?.stream.planInfo({
 							exchangeId,
 							sessionId,
 							isStale: false,
 							state: 'Complete',
+						});
+					} else if (editsState === 'Accepted') {
+						responseStream?.stream.planInfo({
+							exchangeId,
+							sessionId,
+							isStale: false,
+							state: 'Accepted',
 						});
 					}
 					*/
@@ -810,14 +813,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 							files,
 							isStale: false,
 							state: 'cancelled',
-						});
-					} else if (editsState === 'InReview') {
-						responseStream?.stream.editsInfo({
-							exchangeId,
-							sessionId,
-							files,
-							isStale: false,
-							state: 'inReview',
 						});
 					} else if (editsState === 'MarkedComplete') {
 						responseStream?.stream.editsInfo({
