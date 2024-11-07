@@ -6,7 +6,7 @@ There are several ways in which you can contribute, beyond writing code. The goa
 
 ## Contributing Fixes
 
-If you are interested in writing code to fix issues, please see [How to Contribute](https://github.com/codestoryai/aide/blob/cs-main/HOW_TO_CONTRIBUTE.md.md).
+If you are interested in writing code to fix issues, please see [How to Contribute](https://github.com/codestoryai/aide/blob/cs-main/HOW_TO_CONTRIBUTE.md).
 
 ## Asking Questions
 
@@ -99,7 +99,7 @@ Please include the following with each issue:
 
 ### Creating Pull Requests
 
-* Please refer to the article on [creating pull requests](https://github.com/codestoryai/aide/blob/cs-main/HOW_TO_CONTRIBUTE.md.md#pull-requests) and contributing to this project.
+* Please refer to the article on [creating pull requests](https://github.com/codestoryai/aide/blob/cs-main/HOW_TO_CONTRIBUTE.md#pull-requests) and contributing to this project.
 
 ### Final Checklist
 
