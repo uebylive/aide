@@ -11,9 +11,10 @@ import { Action2, MenuId, registerAction2 } from '../../../../../platform/action
 import { ContextKeyExpr, IContextKeyService } from '../../../../../platform/contextkey/common/contextkey.js';
 import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { IAideAgentCodeEditingService } from '../../common/aideAgentCodeEditingService.js';
-import { CONTEXT_AIDE_PLAN_REVIEW_STATE_EXCHANGEID, CONTEXT_AIDE_PLAN_REVIEW_STATE_SESSIONID, CONTEXT_AIDE_PLAN_REVIEW_STATE_STEP_INDEX, CONTEXT_STREAMING_STATE } from '../../common/aideAgentContextKeys.js';
+import { CONTEXT_AIDE_PLAN_REVIEW_STATE_EXCHANGEID, CONTEXT_AIDE_PLAN_REVIEW_STATE_SESSIONID, CONTEXT_AIDE_PLAN_REVIEW_STATE_STEP_INDEX, CONTEXT_IN_CHAT_INPUT, CONTEXT_STREAMING_STATE } from '../../common/aideAgentContextKeys.js';
 import { IAideAgentPlanService } from '../../common/aideAgentPlanService.js';
-import { ChatStreamingState, IAideAgentService } from '../../common/aideAgentService.js';
+import { IAideAgentService } from '../../common/aideAgentService.js';
+import { IAideAgentWidgetService } from '../aideAgent.js';
 
 
 export class AcceptEditsAction extends Action2 {
@@ -24,7 +25,7 @@ export class AcceptEditsAction extends Action2 {
 			id: AcceptEditsAction.ID,
 			title: localize2('interactiveSession.acceptEdits.label', "Accept edits"),
 			keybinding: {
-				when: ContextKeyExpr.or(CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.WaitingFeedback)),
+				when: ContextKeyExpr.or(CONTEXT_STREAMING_STATE.isEqualTo('Complete'), CONTEXT_STREAMING_STATE.isEqualTo('markedComplete')),
 				primary: KeyMod.Alt | KeyCode.Enter,
 				weight: KeybindingWeight.EditorContrib
 			},
@@ -52,10 +53,22 @@ export class AcceptEditsAction extends Action2 {
 		});
 	}
 	run(accessor: ServicesAccessor, ...args: any[]) {
-		const context = args[0];
-		// These values are set on the toolbar present over in aideAgentRichItem
-		const exchangeId = context['aideAgentExchangeId'];
-		const sessionId = context['aideAgentSessionId'];
+		let exchangeId: string | undefined;
+		let sessionId: string | undefined;
+
+		const chatWidgetService = accessor.get(IAideAgentWidgetService);
+		const widget = chatWidgetService.lastFocusedWidget;
+		const context = widget?.inputPart.streamingStateWidget?.toolbarContext;
+		if (context) {
+			exchangeId = context['aideAgentExchangeId'];
+			sessionId = context['aideAgentSessionId'];
+		}
+
+		if (!exchangeId || !sessionId) {
+			console.error(`No exchange id or session id provided for this action: ${AcceptEditsAction.ID}`);
+			return;
+		}
+
 		// Also grab the variables which are set in the global context since this can be part
 		// of the plan review flow
 		const contextKeyService = accessor.get(IContextKeyService);
@@ -91,7 +104,7 @@ export class RejectEditsAction extends Action2 {
 			id: RejectEditsAction.ID,
 			title: localize2('interactiveSession.rejectEdits.label', "Reject edits"),
 			keybinding: {
-				when: ContextKeyExpr.or(CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.WaitingFeedback)),
+				when: ContextKeyExpr.or(CONTEXT_STREAMING_STATE.isEqualTo('Complete'), CONTEXT_STREAMING_STATE.isEqualTo('markedComplete')),
 				primary: KeyMod.Alt | KeyCode.Backspace,
 				weight: KeybindingWeight.EditorContrib
 			},
@@ -120,10 +133,21 @@ export class RejectEditsAction extends Action2 {
 		});
 	}
 	run(accessor: ServicesAccessor, ...args: any[]) {
-		const context = args[0];
-		// These values are set on the toolbar present over in aideAgentRichItem
-		const exchangeId = context['aideAgentExchangeId'];
-		const sessionId = context['aideAgentSessionId'];
+		let exchangeId: string | undefined;
+		let sessionId: string | undefined;
+
+		const chatWidgetService = accessor.get(IAideAgentWidgetService);
+		const widget = chatWidgetService.lastFocusedWidget;
+		const context = widget?.inputPart.streamingStateWidget?.toolbarContext;
+		if (context) {
+			exchangeId = context['aideAgentExchangeId'];
+			sessionId = context['aideAgentSessionId'];
+		}
+
+		if (!exchangeId || !sessionId) {
+			console.error(`No exchange id or session id provided for this action: ${AcceptEditsAction.ID}`);
+			return;
+		}
 
 		const contextKeyService = accessor.get(IContextKeyService);
 		const aidePlanReviewStateSessionId = CONTEXT_AIDE_PLAN_REVIEW_STATE_SESSIONID.getValue(contextKeyService);
@@ -156,7 +180,7 @@ class ViewEditsDetailAction extends Action2 {
 			id: 'workbench.action.aideAgent.planReviewPaneAction',
 			title: localize2('interactiveSession.planReview.label', "View details"),
 			keybinding: {
-				when: ContextKeyExpr.or(CONTEXT_STREAMING_STATE.isEqualTo(ChatStreamingState.WaitingFeedback)),
+				when: CONTEXT_IN_CHAT_INPUT,
 				primary: KeyMod.CtrlCmd | KeyCode.KeyD,
 				weight: KeybindingWeight.EditorContrib
 			},
@@ -177,10 +201,20 @@ class ViewEditsDetailAction extends Action2 {
 		});
 	}
 	run(accessor: ServicesAccessor, ...args: any[]) {
-		const context = args[0];
-		// These values are set on the toolbar present over in aideAgentRichItem
-		const exchangeId = context['aideAgentExchangeId'];
-		const sessionId = context['aideAgentSessionId'];
+		let exchangeId: string | undefined;
+		let sessionId: string | undefined;
+
+		const chatWidgetService = accessor.get(IAideAgentWidgetService);
+		const widget = chatWidgetService.lastFocusedWidget;
+		const context = widget?.inputPart.streamingStateWidget?.toolbarContext;
+		if (context) {
+			exchangeId = context['aideAgentExchangeId'];
+			sessionId = context['aideAgentSessionId'];
+		}
+
+		if (!exchangeId || !sessionId) {
+			return;
+		}
 		try {
 			const aidePlanService = accessor.get(IAideAgentPlanService);
 			aidePlanService.anchorPlanViewPane(sessionId, exchangeId);

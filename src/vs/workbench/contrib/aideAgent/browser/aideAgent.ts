@@ -20,6 +20,7 @@ import { IParsedChatRequest } from '../common/aideAgentParserTypes.js';
 import { CHAT_PROVIDER_ID } from '../common/aideAgentParticipantContribTypes.js';
 import { IChatRequestViewModel, IChatResponseViewModel, IChatViewModel, IChatWelcomeMessageViewModel } from '../common/aideAgentViewModel.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
+import { ChatInputPart } from './aideAgentInputPart.js';
 
 export const IAideAgentWidgetService = createDecorator<IAideAgentWidgetService>('aideAgentWidgetService');
 
@@ -153,6 +154,7 @@ export interface IChatWidget {
 	readonly scopedContextKeyService: IContextKeyService;
 	completionContext: IChatWidgetCompletionContext;
 	readonly planningEnabled: boolean;
+	readonly inputPart: ChatInputPart;
 
 	setSavedStep(stepIndex: number): void;
 	setWillBeSavedStep(stepIndex: number): void;

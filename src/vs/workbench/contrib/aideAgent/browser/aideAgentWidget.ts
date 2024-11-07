@@ -131,7 +131,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	private renderer!: ChatListItemRenderer;
 	private readonly _codeBlockModelCollection: CodeBlockModelCollection;
 
-	private inputPart!: ChatInputPart;
+	inputPart!: ChatInputPart;
 	private editorOptions!: ChatEditorOptions;
 
 	private listContainer!: HTMLElement;

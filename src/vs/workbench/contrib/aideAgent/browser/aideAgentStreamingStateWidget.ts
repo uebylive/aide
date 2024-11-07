@@ -20,10 +20,20 @@ type StreamingState = IChatPlanInfo | IChatEditsInfo;
 // grep for `MenuId.AideAgentStreamingState` and follow the hits, the registration of commands
 // happens using the `MenuId.AideAgentStreamingState` state
 
+
+export interface StreamingStateToolbarContext {
+	aideAgentSessionId: string;
+	aideAgentExchangeId: string;
+}
+
 export class StreamingStateWidget extends Disposable {
 
 	private rootElement: HTMLElement;
 	private _isVisible: boolean;
+	_toolbarContext?: StreamingStateToolbarContext;
+	get toolbarContext() {
+		return this._toolbarContext;
+	}
 
 	constructor(
 		streamingState: StreamingState | undefined,
@@ -61,20 +71,24 @@ export class StreamingStateWidget extends Disposable {
 			const plan = newState;
 			const planContentPart = this.instantiationService.createInstance(PlanContentPart, plan, newState.description?.value);
 			if (planContentPart._toolbar) {
-				planContentPart._toolbar.context = {
-					'aideAgentSessionId': newState.sessionId,
-					'aideAgentExchangeId': newState.exchangeId,
+				const context = {
+					aideAgentSessionId: newState.sessionId,
+					aideAgentExchangeId: newState.exchangeId,
 				};
+				this._toolbarContext = context;
+				planContentPart._toolbar.context = context;
 			}
 			this.rootElement.appendChild(planContentPart.domNode);
 		} else if (newState.kind === 'editsInfo') {
 			const edits = newState;
 			const planContentPart = this.instantiationService.createInstance(EditsContentPart, edits, newState.description?.value);
 			if (planContentPart._toolbar) {
-				planContentPart._toolbar.context = {
-					'aideAgentSessionId': newState.sessionId,
-					'aideAgentExchangeId': newState.exchangeId,
+				const context = {
+					aideAgentSessionId: newState.sessionId,
+					aideAgentExchangeId: newState.exchangeId,
 				};
+				this._toolbarContext = context;
+				planContentPart._toolbar.context = context;
 			}
 			this.rootElement.appendChild(planContentPart.domNode);
 		}
