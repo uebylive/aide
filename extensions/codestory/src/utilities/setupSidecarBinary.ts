@@ -339,14 +339,10 @@ async function runSideCarBinary(sidecarDestination: string, serverUrl: string) {
 			setTimeout(spawnChild, delay);
 		};
 		try {
-			// NodeJS bug requires not using detached on Windows, otherwise windowsHide is ineffective
-			// Otherwise, detach is preferable
 			const windowsSettings = {
 				windowsHide: true,
 			};
 			const macLinuxSettings = {
-				detached: true,
-				stdio: 'ignore',
 			};
 			const settings: any = os.platform() === 'win32' ? windowsSettings : macLinuxSettings;
 
