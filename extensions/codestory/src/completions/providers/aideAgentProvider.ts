@@ -351,6 +351,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	}
 
 	async handleSessionIterationRequest(sessionId: string, exchangeId: string, iterationQuery: string, references: readonly vscode.AideAgentPromptReference[]): Promise<void> {
+		// check here that we do not look at the user info over here if the llm keys are set
 		const session = await vscode.csAuthentication.getSession();
 		const token = session?.accessToken ?? '';
 		const stream = this.sidecarClient.agentSessionEditFeedback(iterationQuery, sessionId, exchangeId, this.editorUrl!, vscode.AideAgentMode.Edit, references, this.currentRepoRef, this.projectContext.labels, token);
