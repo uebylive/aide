@@ -1851,7 +1851,7 @@ async function newConvertVSCodeVariableToSidecar(
 	for (const variable of variables) {
 		// vscode.editor.selection is a special id which is also present in the editor
 		// this help us understand that this is a selection and not a file reference
-		if (variable.id === 'vscode.file' || variable.id === 'vscode.editor.selection' || variable.id === 'vscode.file') {
+		if (variable.id === 'vscode.file' || variable.id === 'vscode.editor.selection') {
 			const v = variable as vscode.AideAgentFileReference;
 			const value = v.value;
 			const attachedFile = await resolveFile(value.uri);
