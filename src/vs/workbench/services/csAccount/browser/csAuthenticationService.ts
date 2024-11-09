@@ -229,17 +229,11 @@ export class CSAuthenticationService extends Themable implements ICSAuthenticati
 	}
 
 	async getSession(): Promise<CSAuthenticationSession | undefined> {
-		const modelConfiguration = await this.aideModelSelectionService.getValidatedModelSelectionSettings();
-		let shouldCreateSession = true;
-		for (const [key, _value] of Object.entries(modelConfiguration.providers)) {
-			if (key !== 'codestory') {
-				shouldCreateSession = false;
-			}
-		}
-
-		if (!shouldCreateSession) {
+		const nonCodeStoryModelSelection = await this.aideModelSelectionService.nonCodeStoryModelSelected();
+		if (nonCodeStoryModelSelection) {
 			return undefined;
 		}
+
 
 		const rawSession = await this.secretStorageService.get(SESSION_SECRET_KEY);
 		const session = rawSession ? JSON.parse(rawSession) : undefined;
