@@ -73,7 +73,6 @@ function createCompile(src: string, { build, emitError, transpileOnly, preserveE
 		const isUtf8Test = (f: File) => /(\/|\\)test(\/|\\).*utf8/.test(f.path);
 		const isRuntimeJs = (f: File) => f.path.endsWith('.js') && !f.path.includes('fixtures');
 		const isCSS = (f: File) => f.path.endsWith('.css') && !f.path.includes('fixtures');
-		//const isSVG = (f: File) => f.path.endsWith('.svg');
 		const noDeclarationsFilter = util.filter(data => !(/\.d\.ts$/.test(data.path)));
 
 		const postcssNesting = require('postcss-nesting');
@@ -83,7 +82,6 @@ function createCompile(src: string, { build, emitError, transpileOnly, preserveE
 			.pipe(util.$if(isUtf8Test, bom())) // this is required to preserve BOM in test files that loose it otherwise
 			.pipe(util.$if(!build && isRuntimeJs, util.appendOwnPathSourceURL()))
 			.pipe(util.$if(isCSS, gulpPostcss([postcssNesting()], err => reporter(String(err)))))
-			//.pipe(util.$if(isSVG, es.through()))
 			.pipe(tsFilter)
 			.pipe(util.loadSourcemaps())
 			.pipe(compilation(token))

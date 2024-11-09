@@ -23,11 +23,12 @@
 }
 
 .aideagent-item-container {
-	padding-block: 12px;
-	padding-inline: 10px;
+	padding: 6px 16px;
 	display: flex;
 	flex-direction: column;
+	gap: 8px;
 	color: var(--vscode-interactive-session-foreground);
+
 	cursor: default;
 	user-select: text;
 	-webkit-user-select: text;
@@ -190,17 +191,10 @@
 
 .aideagent-item-container .value {
 	width: 100%;
-	margin-top: 8px;
 }
 
-.aideagent-item-container > .value > :not(:first-child):not(.chat-used-context) {
-	margin-top: 8px;
-}
-
-/* Should handle this one separately */
-/* TODO(@ghostwriternr): Why? */
 .aideagent-item-container > .value .chat-used-context {
-	margin-top: 8px;
+	margin-bottom: 8px;
 }
 
 .aideagent-item-container .value .rendered-markdown blockquote {
@@ -249,6 +243,17 @@
 
 .interactive-list {
 	overflow: hidden;
+}
+
+.interactive-request {
+	border-bottom: 1px solid var(--vscode-chat-requestBorder);
+	border-top: 1px solid var(--vscode-chat-requestBorder);
+}
+
+.hc-black .interactive-request,
+.hc-light .interactive-request {
+	border-left: 3px solid var(--vscode-chat-requestBorder);
+	border-right: 3px solid var(--vscode-chat-requestBorder);
 }
 
 .aideagent-item-container .value {
@@ -500,7 +505,6 @@ have to be updated for changes to the rules above, or to support more deeply nes
 }
 
 .interactive-session .chat-input-container {
-	width: 100%;
 	box-sizing: border-box;
 	cursor: text;
 	background-color: var(--vscode-input-background);
@@ -520,7 +524,6 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	display: flex;
 	gap: 4px;
 	align-items: center;
-	width: 100%;
 }
 
 .interactive-session .chat-input-container.focused {
@@ -661,7 +664,6 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	padding: 12px 0px;
 	display: flex;
 	flex-direction: column;
-	position: relative;
 }
 
 .interactive-session .interactive-input-part.compact {
@@ -723,7 +725,7 @@ have to be updated for changes to the rules above, or to support more deeply nes
 }
 
 .interactive-session .aideagent-attached-context {
-	padding: 0;
+	padding: 0 0 8px 0;
 	display: flex;
 	gap: 4px;
 	flex-wrap: wrap;
@@ -734,6 +736,10 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	display: flex;
 	gap: 4px;
 	flex-wrap: wrap;
+}
+
+.interactive-session .aideagent-item-container.interactive-request .aideagent-attached-context {
+	margin-top: -8px;
 }
 
 .interactive-session .aideagent-attached-context .aideagent-attached-context-attachment {
@@ -823,7 +829,6 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	margin: 0;
 	border-radius: 2px;
 	padding: 0 4px 0 6px;
-	width: 100%;
 }
 
 .quick-input-widget .interactive-list {
@@ -952,6 +957,7 @@ have to be updated for changes to the rules above, or to support more deeply nes
 .interactive-session .aideagent-attachments-label .monaco-button:hover {
 	background-color: var(--vscode-list-hoverBackground);
 	color: var(--vscode-foreground);
+
 }
 
 .interactive-session .aideagent-used-context-label .monaco-text-button:focus,
@@ -995,16 +1001,7 @@ have to be updated for changes to the rules above, or to support more deeply nes
 
 .aideagent-item-container .chat-command-button {
 	display: flex;
-	margin-bottom: 0px;
-}
-
-.aideagent-item-container .chat-command-group {
-	display: flex;
-	justify-content: end;
-	gap: 10px;
-}
-.aideagent-item-container .chat-command-group .monaco-button.aide-button {
-	width: fit-content;
+	margin-bottom: 16px;
 }
 
 .aideagent-item-container .chat-notification-widget {
@@ -1039,10 +1036,6 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	border: none;
 	padding: 0;
 	color: var(--vscode-textLink-foreground);
-}
-
-.aideagent-item-container.interactive-request {
-	border-block: none;
 }
 
 .aideagent-item-container .aideagent-attachment-icons .icon {

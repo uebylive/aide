@@ -57,32 +57,6 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 		return this.modelSelection.modelSelection!;
 	}
 
-	async nonCodeStoryModelSelected(): Promise<boolean> {
-		const modelSelection = await this.getModelSelectionSettings();
-		const slowModel = modelSelection.slowModel;
-		try {
-			const providerForSlowModel = modelSelection.models[slowModel];
-			if (providerForSlowModel.provider.type !== 'codestory') {
-				return true;
-			} else {
-				return false;
-			}
-		} catch (exception) {
-			return false;
-		}
-	}
-
-	async getHasProvidedLLMProperties(): Promise<boolean> {
-		const validatedModelSettings = await this.getValidatedModelSelectionSettings();
-		const providers = validatedModelSettings.providers;
-		for (const [key, _value] of Object.entries(providers)) {
-			if (key !== 'codestory') {
-				return true;
-			}
-		}
-		return false;
-	}
-
 	async getValidatedModelSelectionSettings(): Promise<IModelSelectionSettings> {
 		const modelSelection = await this.getModelSelectionSettings();
 		const validatedProviders = Object.keys(modelSelection.providers).reduce((untypedAcc, untypedKey) => {

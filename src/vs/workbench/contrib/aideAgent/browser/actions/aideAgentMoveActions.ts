@@ -8,7 +8,7 @@ import { Action2, MenuId, registerAction2 } from '../../../../../platform/action
 import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
 import { ServicesAccessor } from '../../../../../platform/instantiation/common/instantiation.js';
 import { ActiveEditorContext } from '../../../../common/contextkeys.js';
-import { CHAT_CATEGORY, isChatViewTitleActionContext } from './aideAgentChatActions.js';
+import { CHAT_CATEGORY, isChatViewTitleActionContext } from './aideAgentActions.js';
 import { CHAT_VIEW_ID, IAideAgentWidgetService } from '../aideAgent.js';
 import { IChatEditorOptions } from '../aideAgentEditor.js';
 import { ChatEditorInput } from '../aideAgentEditorInput.js';

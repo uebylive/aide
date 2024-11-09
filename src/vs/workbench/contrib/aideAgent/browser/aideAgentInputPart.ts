@@ -53,15 +53,14 @@ import { AccessibilityCommandId } from '../../accessibility/common/accessibility
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions, setupSimpleEditorSelectionStyling } from '../../codeEditor/browser/simpleEditorOptions.js';
 import { ChatAgentLocation } from '../common/aideAgentAgents.js';
 import { CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_INPUT_PLANNING_ENABLED, CONTEXT_IN_CHAT_INPUT } from '../common/aideAgentContextKeys.js';
-import { AgentScope, IChatRequestVariableEntry } from '../common/aideAgentModel.js';
-import { IChatEditsInfo, IChatFollowup, IChatPlanInfo } from '../common/aideAgentService.js';
+import { AgentMode, AgentScope, IChatRequestVariableEntry } from '../common/aideAgentModel.js';
+import { IChatFollowup } from '../common/aideAgentService.js';
 import { IChatResponseViewModel } from '../common/aideAgentViewModel.js';
 import { IAideAgentWidgetHistoryService, IChatHistoryEntry } from '../common/aideAgentWidgetHistoryService.js';
 import { IAideAgentLMService } from '../common/languageModels.js';
-import { CancelAction, ContinueEditing, IChatExecuteActionContext, SubmitChatRequestAction, SubmitPlanRequestAction } from './actions/aideAgentExecuteActions.js';
+import { AgentScopePickerActionId, CancelAction, IChatExecuteActionContext, SubmitChatAction, SubmitEditAction } from './actions/aideAgentExecuteActions.js';
 import { IChatWidget } from './aideAgent.js';
 import { ChatFollowups } from './aideAgentFollowups.js';
-import { StreamingStateWidget } from './aideAgentStreamingStateWidget.js';
 
 const $ = dom.$;
 
@@ -112,17 +111,9 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 
 	private readonly inputEditorMaxHeight: number;
 	private inputEditorHeight = 0;
-	private _container!: HTMLElement;
-
-	get container() {
-		return this._container;
-	}
+	private container!: HTMLElement;
 
 	private inputSideToolbarContainer?: HTMLElement;
-	private _streamingStateWidget: StreamingStateWidget | undefined;
-	get streamingStateWidget() {
-		return this._streamingStateWidget;
-	}
 
 	private followupsContainer!: HTMLElement;
 	private readonly followupsDisposables = this._register(new DisposableStore());
@@ -161,6 +152,17 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		return metadataId;
 	}
 
+	private _onDidChangeCurrentAgentMode = this._register(new Emitter<string>());
+	private _currentAgentMode: AgentMode = AgentMode.Chat;
+	get currentAgentMode() {
+		return this._currentAgentMode;
+	}
+
+	set currentAgentMode(mode: AgentMode) {
+		this._currentAgentMode = mode;
+		this._onDidChangeCurrentAgentMode.fire(mode);
+	}
+
 	private _onDidChangeCurrentAgentScope = this._register(new Emitter<string>());
 	private _currentAgentScope: AgentScope = AgentScope.Selection;
 	get currentAgentScope() {
@@ -174,7 +176,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 
 	private _planningEnabled: IContextKey<boolean>;
 	get planningEnabled() {
-		return this._planningEnabled.get() ?? false;
+		return this._planningEnabled.get() ?? true;
 	}
 
 	set planningEnabled(enabled: boolean) {
@@ -284,7 +286,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	}
 
 	get element(): HTMLElement {
-		return this._container;
+		return this.container;
 	}
 
 	showPreviousValue(): void {
@@ -424,7 +426,6 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		let elements;
 		if (this.options.renderStyle === 'compact') {
 			elements = dom.h('.interactive-input-part', [
-				dom.h('.interactive-input-streaming-state@streamingStateContainer'),
 				dom.h('.interactive-input-and-side-toolbar@inputAndSideToolbar', [
 					dom.h('.chat-input-container@inputContainer', [
 						dom.h('.chat-editor-container@editorContainer'),
@@ -437,7 +438,6 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		} else {
 			elements = dom.h('.interactive-input-part', [
 				dom.h('.interactive-input-followups@followupsContainer'),
-				dom.h('.interactive-input-streaming-state@streamingStateContainer'),
 				dom.h('.interactive-input-and-side-toolbar@inputAndSideToolbar', [
 					dom.h('.chat-input-container@inputContainer', [
 						dom.h('.aideagent-attached-context@attachedContextContainer'),
@@ -447,12 +447,9 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 				]),
 			]);
 		}
-		this._container = elements.root;
-		container.append(this._container);
-		if (this.location === ChatAgentLocation.Panel) {
-			this._streamingStateWidget = this._register(this.instantiationService.createInstance(StreamingStateWidget, undefined, elements.streamingStateContainer, false));
-		}
-		this._container.classList.toggle('compact', this.options.renderStyle === 'compact');
+		this.container = elements.root;
+		container.append(this.container);
+		this.container.classList.toggle('compact', this.options.renderStyle === 'compact');
 		this.followupsContainer = elements.followupsContainer;
 		const inputAndSideToolbar = elements.inputAndSideToolbar; // The chat input and toolbar to the right
 		const inputContainer = elements.inputContainer; // The chat editor, attachments, and toolbars
@@ -490,7 +487,6 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		options.scrollbar = { ...(options.scrollbar ?? {}), vertical: 'hidden' };
 		options.stickyScroll = { enabled: false };
 		options.acceptSuggestionOnEnter = 'on';
-
 		// TODO(@ghostwriternr): This condition is a hack, to avoid going through the pain of adding a new aide agent location.
 		// But this condition is necessary because we currently use the compact style for the floating widget.
 		// And the floating widget has fixed position relative to the window, so it helps to have the suggest controller
@@ -537,16 +533,15 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			menuOptions: { shouldForwardArgs: true },
 			hiddenItemStrategy: HiddenItemStrategy.Ignore,
 			actionViewItemProvider: (action, options) => {
-				// if (action.id === AgentScopePickerActionId && action instanceof MenuItemAction) {
-				// const scopeDelegate: AgentScopeSetterDelegate = {
-				// onDidChangeScope: this._onDidChangeCurrentAgentScope.event,
-				// setScope: (scopeId: AgentScope) => {
-				// this._currentAgentScope = scopeId;
-				// }
-				// };
-				// const scopeSelect = this.instantiationService.createInstance(AgentScopeActionViewItem, action, this._currentAgentScope, scopeDelegate);
-				// return scopeSelect;
-				// }
+				if (action.id === AgentScopePickerActionId && action instanceof MenuItemAction) {
+					const scopeDelegate: AgentScopeSetterDelegate = {
+						onDidChangeScope: this._onDidChangeCurrentAgentScope.event,
+						setScope: (scopeId: AgentScope) => {
+							this._currentAgentScope = scopeId;
+						}
+					};
+					return this.instantiationService.createInstance(AgentScopeActionViewItem, action, this._currentAgentScope, scopeDelegate);
+				}
 
 				if (action instanceof MenuItemAction) {
 					return this.instantiationService.createInstance(MenuEntryActionViewItem, action, undefined);
@@ -568,20 +563,9 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			},
 			hiddenItemStrategy: HiddenItemStrategy.Ignore, // keep it lean when hiding items and avoid a "..." overflow menu
 			actionViewItemProvider: (action, options) => {
-				const kbActionsSet = new Set([SubmitChatRequestAction.ID, SubmitPlanRequestAction.ID, CancelAction.ID, ContinueEditing.ID]);
-				if (kbActionsSet.has(action.id) && action instanceof MenuItemAction) {
+				if ((action.id === SubmitChatAction.ID || SubmitEditAction.ID || action.id === CancelAction.ID) && action instanceof MenuItemAction) {
 					return this.instantiationService.createInstance(ActionViewItemWithKb, action);
 				}
-
-				// if (action.id === AgentModePickerActionId && action instanceof MenuItemAction) {
-				// 	const itemDelegate: AgentModeSetterDelegate = {
-				// 		onDidChangeMode: this._onDidChangeCurrentAgentMode.event,
-				// 		setMode: (modeId: string) => {
-				// 			this._currentAgentMode.set(modeId as AgentMode);
-				// 		}
-				// 	};
-				// 	return this.instantiationService.createInstance(AgentModeActionViewItem, action, this._currentAgentMode.get() || AgentMode.Chat, itemDelegate);
-				// }
 
 				return undefined;
 			}
@@ -638,15 +622,6 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		};
 		this._register(this._inputEditor.onDidChangeCursorPosition(e => onDidChangeCursorPosition()));
 		onDidChangeCursorPosition();
-	}
-
-
-	updateStreamingState(state: IChatPlanInfo | IChatEditsInfo): void {
-		this._streamingStateWidget?.update(state);
-	}
-
-	hideStreamingState(): void {
-		this._streamingStateWidget?.hide();
 	}
 
 	private initAttachedContext(container: HTMLElement, isLayout = false) {
@@ -801,7 +776,6 @@ function getLastPosition(model: ITextModel): IPosition {
 	return { lineNumber: model.getLineCount(), column: model.getLineLength(model.getLineCount()) + 1 };
 }
 
-
 export interface AgentScopeSetterDelegate {
 	onDidChangeScope: Event<string>;
 	setScope: (scopeId: AgentScope) => void;
@@ -873,72 +847,3 @@ export class AgentScopeActionViewItem extends MenuEntryActionViewItem {
 
 const chatInputEditorContainerSelector = '.interactive-input-editor';
 setupSimpleEditorSelectionStyling(chatInputEditorContainerSelector);
-
-// interface AgentModeSetterDelegate {
-// 	onDidChangeMode: Event<string>;
-// 	setMode(selectedModeId: string): void;
-// }
-
-// class AgentModeActionViewItem extends MenuEntryActionViewItem {
-// 	constructor(
-// 		action: MenuItemAction,
-// 		private currentAgentMode: AgentMode,
-// 		private delegate: AgentModeSetterDelegate,
-// 		@IKeybindingService keybindingService: IKeybindingService,
-// 		@INotificationService notificationService: INotificationService,
-// 		@IContextKeyService contextKeyService: IContextKeyService,
-// 		@IThemeService themeService: IThemeService,
-// 		@IContextMenuService contextMenuService: IContextMenuService,
-// 		@IAccessibilityService _accessibilityService: IAccessibilityService
-// 	) {
-// 		super(action, undefined, keybindingService, notificationService, contextKeyService, themeService, contextMenuService, _accessibilityService);
-
-// 		this._register(delegate.onDidChangeMode(modeId => {
-// 			this.currentAgentMode = modeId as AgentMode;
-// 			this.updateLabel();
-// 		}));
-// 	}
-
-// 	override async onClick(): Promise<void> {
-// 		this._openContextMenu();
-// 	}
-
-// 	override render(container: HTMLElement): void {
-// 		super.render(container);
-// 		container.classList.add('agentmode-picker-item');
-// 	}
-
-// 	protected override updateLabel(): void {
-// 		if (this.label) {
-// 			this.label.textContent = this.currentAgentMode;
-// 			dom.reset(this.label, ...renderLabelWithIcons(`${this.currentAgentMode}$(chevron-down)`));
-// 		}
-// 	}
-
-// 	private _openContextMenu() {
-// 		const setAgentModeAction = (mode: string): IAction => {
-// 			return {
-// 				id: mode,
-// 				label: mode,
-// 				tooltip: '',
-// 				class: undefined,
-// 				enabled: true,
-// 				checked: mode === this.currentAgentMode,
-// 				run: () => {
-// 					this.currentAgentMode = mode as AgentMode;
-// 					this.delegate.setMode(mode);
-// 					this.updateLabel();
-// 				}
-// 			};
-// 		};
-
-// 		this._contextMenuService.showContextMenu({
-// 			getAnchor: () => this.element!,
-// 			getActions: () => [
-// 				setAgentModeAction('Edit'),
-// 				setAgentModeAction('Chat'),
-// 				setAgentModeAction('Plan'),
-// 			]
-// 		});
-// 	}
-// }
