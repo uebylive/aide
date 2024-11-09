@@ -150,6 +150,7 @@ export interface IAIModelSelectionService {
 	getDefaultModelSelectionContent(): string;
 	getModelSelectionSettings(): Promise<IModelSelectionSettings>;
 	getValidatedModelSelectionSettings(): Promise<IModelSelectionSettings>;
+	nonCodeStoryModelSelected(): Promise<boolean>;
 	getHasProvidedLLMProperties(): Promise<boolean>;
 }
 
