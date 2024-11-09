@@ -1139,6 +1139,7 @@ export class SideCarClient {
 		codebaseSearch: boolean,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
+		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		baseUrl.pathname = '/api/agentic/agent_session_edit_agentic';
 		const url = baseUrl.toString();
 		const body = {
@@ -1152,6 +1153,7 @@ export class SideCarClient {
 			root_directory: vscode.workspace.rootPath,
 			project_labels: projectLabels,
 			codebase_search: codebaseSearch,
+			model_configuration: sideCarModelConfiguration,
 		};
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
@@ -1180,6 +1182,7 @@ export class SideCarClient {
 		workosAccessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
+		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		baseUrl.pathname = '/api/agentic/agent_session_plan_iterate';
 		const url = baseUrl.toString();
 		const body = {
@@ -1194,6 +1197,7 @@ export class SideCarClient {
 			root_directory: vscode.workspace.rootPath,
 			codebase_search: false,
 			access_token: workosAccessToken,
+			model_configuration: sideCarModelConfiguration,
 		};
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
@@ -1222,6 +1226,7 @@ export class SideCarClient {
 		workosAccessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
+		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		baseUrl.pathname = '/api/agentic/agent_session_edit_anchored';
 		const url = baseUrl.toString();
 		const body = {
@@ -1236,6 +1241,7 @@ export class SideCarClient {
 			root_directory: vscode.workspace.rootPath,
 			codebase_search: false,
 			access_token: workosAccessToken,
+			model_configuration: sideCarModelConfiguration,
 		};
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
@@ -1284,6 +1290,7 @@ export class SideCarClient {
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agentic/user_feedback_on_exchange';
+		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		const url = baseUrl.toString();
 		const body = {
 			session_id: sessionId,
@@ -1292,6 +1299,7 @@ export class SideCarClient {
 			step_index: stepIndex,
 			accepted,
 			access_token: accessToken,
+			model_configuration: sideCarModelConfiguration,
 		};
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
@@ -1325,6 +1333,7 @@ export class SideCarClient {
 		workosAccessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
+		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		baseUrl.pathname = '/api/agentic/agent_session_chat';
 		const url = baseUrl.toString();
 		const body = {
@@ -1339,6 +1348,7 @@ export class SideCarClient {
 			root_directory: vscode.workspace.rootPath,
 			codebase_search: false,
 			access_token: workosAccessToken,
+			model_configuration: sideCarModelConfiguration,
 		};
 
 		// consider using headers
