@@ -186,6 +186,7 @@ export async function startSidecarBinaryWithLocal(
 				// console.log('Sidecar binary exists locally, running it', sidecarValue);
 				return sidecarValue;
 			} catch (e) {
+				return false;
 				// console.log('Failed to run sidecar binary locally', e);
 			}
 		}
@@ -296,25 +297,12 @@ async function runSideCarBinary(sidecarDestination: string, serverUrl: string) {
 	if (os.platform() === 'darwin' || os.platform() === 'linux') {
 		// Now we want to change the permissions for the following files:
 		// target/release/webserver
-		// qdrant/qdrant_mac
-		// onnxruntime/libonnxruntime.dylib
-		// onnxruntime/libonnxruntime.so
-		const qdrantPath = path.join(sidecarDestination, 'sidecar', 'qdrant', 'qdrant_mac');
-		const onnxPath = path.join(sidecarDestination, 'sidecar', 'onnxruntime', 'libonnxruntime.dylib');
-		const onnxPathLinux = path.join(sidecarDestination, 'sidecar', 'onnxruntime', 'libonnxruntime.so');
 		fs.chmodSync(webserverPath, 0o7_5_5);
-		fs.chmodSync(qdrantPath, 0o7_5_5);
-		fs.chmodSync(onnxPath, 0o7_5_5);
-		fs.chmodSync(onnxPathLinux, 0o7_5_5);
 	}
 
 	if (os.platform() === 'darwin') {
 		// We need to run this command on the darwin platform
 		await runCommand(`xattr -dr com.apple.quarantine ${webserverPath}`);
-		const qdrantPath = path.join(sidecarDestination, 'sidecar', 'qdrant', 'qdrant_mac');
-		await runCommand(`xattr -dr com.apple.quarantine ${qdrantPath}`);
-		const onnxPath = path.join(sidecarDestination, 'sidecar', 'onnxruntime', 'libonnxruntime.dylib');
-		await runCommand(`xattr -dr com.apple.quarantine ${onnxPath}`);
 	}
 
 
@@ -346,19 +334,15 @@ async function runSideCarBinary(sidecarDestination: string, serverUrl: string) {
 			};
 			const settings: any = os.platform() === 'win32' ? windowsSettings : macLinuxSettings;
 
-			const qdrantDirectory = path.join(sidecarDestination, 'sidecar', 'qdrant');
-			const dylibDirectory = path.join(sidecarDestination, 'sidecar', 'onnxruntime');
-			const modelDirectory = path.join(sidecarDestination, 'sidecar', 'models', 'all-MiniLM-L6-v2');
 			let sidecarBinary = '';
 			if (os.platform() === 'win32') {
 				sidecarBinary = path.join(sidecarDestination, 'target', 'release', 'webserver.exe');
 			} else {
 				sidecarBinary = path.join(sidecarDestination, 'target', 'release', 'webserver');
 			}
-			const args = ['--qdrant-binary-directory', qdrantDirectory, '--dylib-directory', dylibDirectory, '--model-dir', modelDirectory, '--qdrant-url', 'http://127.0.0.1:6334'];
 			// console.log('what are the args');
 			// console.log(args, sidecarBinary);
-			const child = spawn(sidecarBinary, args, settings);
+			const child = spawn(sidecarBinary, settings);
 
 			// Either unref to avoid zombie process, or listen to events because you can
 			if (os.platform() === 'win32') {
