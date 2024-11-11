@@ -119,6 +119,7 @@ type ExchangeMessageEvent = {
 	PlansExchangeState: EditsExchangeEditsState;
 	ExecutionState: ExecutionExchangeStateEvent;
 	RegeneratePlan: RegeneratePlanExchangeEvent;
+	TerminalCommand: TerminalCommandEvent;
 };
 
 type ExecutionExchangeStateEvent = 'Inference' | 'InReview' | 'Cancelled';
@@ -254,6 +255,12 @@ interface UIEvent {
 	ChatEvent: ChatMessageEvent;
 	ExchangeEvent: ExchangeMessageEvent;
 	PlanEvent: PlanMessageEvent;
+}
+
+interface TerminalCommandEvent {
+	exchange_id: string;
+	session_id: string;
+	command: string;
 }
 
 interface SymbolEventSubStepRequest {

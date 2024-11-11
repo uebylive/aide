@@ -19,7 +19,7 @@ import { IEditorService } from '../../../services/editor/common/editorService.js
 import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { IPinnedContextService } from '../../pinnedContext/common/pinnedContext.js';
 import { ChatAgentLocation } from '../common/aideAgentAgents.js';
-import { AgentMode, AgentScope, IChatModel, IChatRequestVariableData, IChatRequestVariableEntry } from '../common/aideAgentModel.js';
+import { AgentScope, IChatModel, IChatRequestVariableData, IChatRequestVariableEntry } from '../common/aideAgentModel.js';
 import { ChatRequestDynamicVariablePart, ChatRequestToolPart, ChatRequestVariablePart, IParsedChatRequest } from '../common/aideAgentParserTypes.js';
 import { IChatContentReference, IChatSendRequestOptions } from '../common/aideAgentService.js';
 import { IAideAgentVariablesService, IChatRequestVariableValue, IChatVariableData, IChatVariableResolver, IChatVariableResolverProgress, IDynamicVariable } from '../common/aideAgentVariables.js';
@@ -106,57 +106,33 @@ export class ChatVariablesService implements IAideAgentVariablesService {
 
 		await Promise.allSettled(jobs);
 
-		// Attach pinned context, if the scope is set to 'Pinned Context'
-		if (options?.agentMode === AgentMode.Edit) {
-			if (options.agentScope === AgentScope.Selection) {
-				const activeEditor = this.editorService.activeTextEditorControl;
-				if (isCodeEditor(activeEditor)) {
-					const model = activeEditor.getModel();
-					if (model) {
-						const selection = activeEditor.getSelection();
-						let range: IRange;
-						if (selection && !selection.isEmpty()) {
-							// TODO(skcd): we send over 1 indexed here since we are going to fix
-							// it later on when converting it to a range which is 0 indexed
-							// on the Dto Layer, maybe?
-							range = {
-								startLineNumber: selection.startLineNumber,
-								startColumn: selection.startColumn,
-								endLineNumber: selection.endLineNumber,
-								endColumn: selection.endColumn,
-							};
-						} else {
-							range = model.getFullModelRange();
-						}
-
-						resolvedAttachedContext.push({
-							id: 'vscode.editor.selection',
-							name: basename(model.uri.fsPath),
-							value: { uri: model.uri, range },
-						});
-					}
+		// Always attach the active editor
+		const activeEditor = this.editorService.activeTextEditorControl;
+		if (isCodeEditor(activeEditor)) {
+			const model = activeEditor.getModel();
+			if (model) {
+				const selection = activeEditor.getSelection();
+				let range: IRange;
+				if (selection && !selection.isEmpty()) {
+					range = {
+						startLineNumber: selection.startLineNumber,
+						startColumn: selection.startColumn,
+						endLineNumber: selection.endLineNumber,
+						endColumn: selection.endColumn,
+					};
+				} else {
+					range = model.getFullModelRange();
 				}
-			} else if (options.agentScope === AgentScope.PinnedContext) {
-			} else if (options.agentScope === AgentScope.Codebase) {
-				const openEditors = this.editorService.editors;
-				openEditors.forEach(editor => {
-					const resource = editor.resource;
-					if (resource) {
-						const model = this.modelService.getModel(resource);
-						if (model) {
-							const range = model.getFullModelRange();
-							resolvedAttachedContext.push({
-								id: 'vscode.file',
-								name: basename(model.uri.fsPath),
-								value: { uri: model.uri, range }
-							});
-						}
-					}
+
+				resolvedAttachedContext.push({
+					id: 'vscode.editor.selection',
+					name: basename(model.uri.fsPath),
+					value: { uri: model.uri, range },
 				});
 			}
 		}
 
-		// we always want to get the pinned context over here
+		// Always attach pinned context
 		const pinnedContexts = this.pinnedContextService.getPinnedContexts();
 		pinnedContexts.forEach(context => {
 			const model = this.modelService.getModel(context);
@@ -169,6 +145,24 @@ export class ChatVariablesService implements IAideAgentVariablesService {
 				});
 			}
 		});
+
+		if (options?.agentScope === AgentScope.Codebase) {
+			const openEditors = this.editorService.editors;
+			openEditors.forEach(editor => {
+				const resource = editor.resource;
+				if (resource) {
+					const model = this.modelService.getModel(resource);
+					if (model) {
+						const range = model.getFullModelRange();
+						resolvedAttachedContext.push({
+							id: 'vscode.file',
+							name: basename(model.uri.fsPath),
+							value: { uri: model.uri, range }
+						});
+					}
+				}
+			});
+		}
 
 		// Make array not sparse
 		resolvedVariables = coalesce<IChatRequestVariableEntry>(resolvedVariables);
