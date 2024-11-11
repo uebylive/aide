@@ -1,4 +1,7 @@
-// ... existing code ...
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 
 export class TimeoutError extends Error {
 	constructor(message?: string) {
@@ -42,7 +45,11 @@ interface CancelablePromise<T> extends Promise<T> {
 	clear: () => void;
 }
 
-export default function pTimeout<T>(promise: Promise<T>, options: PTimeoutOptions): CancelablePromise<T> {
+interface CancelableInput<T> extends Promise<T> {
+	cancel?: () => void;
+}
+
+export default function pTimeout<T>(promise: CancelableInput<T>, options: PTimeoutOptions): CancelablePromise<T> {
 	const {
 		milliseconds,
 		fallback,
@@ -50,7 +57,7 @@ export default function pTimeout<T>(promise: Promise<T>, options: PTimeoutOption
 		customTimers = { setTimeout, clearTimeout },
 	} = options;
 
-	let timer;
+	let timer: ReturnType<typeof setTimeout> | undefined;
 
 	const wrappedPromise = new Promise((resolve, reject) => {
 		if (typeof milliseconds !== 'number' || Math.sign(milliseconds) !== 1) {
@@ -98,7 +105,7 @@ export default function pTimeout<T>(promise: Promise<T>, options: PTimeoutOption
 			}
 
 			if (message === false) {
-				resolve();
+				resolve(undefined);
 			} else if (message instanceof Error) {
 				reject(message);
 			} else {
@@ -118,7 +125,7 @@ export default function pTimeout<T>(promise: Promise<T>, options: PTimeoutOption
 
 	const cancelablePromise = wrappedPromise.finally(() => {
 		cancelablePromise.clear();
-	});
+	}) as CancelablePromise<T>;
 
 	cancelablePromise.clear = () => {
 		customTimers.clearTimeout.call(undefined, timer);
