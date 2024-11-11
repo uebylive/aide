@@ -748,12 +748,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					exchangeId,
 				});
 
-				console.log('ExchangeEvent');
-				console.log(event.event.ExchangeEvent);
-
 				if (event.event.ExchangeEvent.TerminalCommand) {
-					console.log('TerminalCommand');
-					console.log(event.event.ExchangeEvent.TerminalCommand);
 					const command = event.event.ExchangeEvent.TerminalCommand.command;
 
 					// this returns a promise
