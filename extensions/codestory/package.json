@@ -26,7 +26,8 @@
     "interactive",
     "mappedEditsProvider",
     "modelSelection",
-    "terminalSelection"
+    "terminalSelection",
+    "textSearchProviderNew"
   ],
   "files": [
     "src/llm/embeddings/models/**/*",
