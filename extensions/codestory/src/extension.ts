@@ -124,7 +124,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		sidecarClient.updateModelConfiguration(config);
 		// console.log('Model configuration updated:' + JSON.stringify(config));
 	});
-	await sidecarClient.indexRepositoryIfNotInvoked(currentRepo);
+	// await sidecarClient.indexRepositoryIfNotInvoked(currentRepo);
 	// Show the indexing percentage on startup
 	await reportIndexingPercentage(sidecarClient, currentRepo);
 

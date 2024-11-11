@@ -727,24 +727,18 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					responseStream?.stream.step({
 						description: '',
 						index: event.event.PlanEvent.PlanStepTitleAdded.index,
-						sessionId,
-						exchangeId: event.event.PlanEvent.PlanStepTitleAdded.exchange_id,
 						isLast: false,
 						title: event.event.PlanEvent.PlanStepTitleAdded.title,
 						descriptionDelta: null,
-						files: event.event.PlanEvent.PlanStepTitleAdded.files_to_edit.map((file) => vscode.Uri.file(file)),
 					});
 				}
 				if (event.event.PlanEvent.PlanStepDescriptionUpdate) {
 					responseStream?.stream.step({
 						description: event.event.PlanEvent.PlanStepDescriptionUpdate.description_up_until_now,
 						index: event.event.PlanEvent.PlanStepDescriptionUpdate.index,
-						sessionId,
-						exchangeId: event.event.PlanEvent.PlanStepDescriptionUpdate.exchange_id,
 						isLast: false,
 						title: '',
 						descriptionDelta: `\n${event.event.PlanEvent.PlanStepDescriptionUpdate.delta}`,
-						files: event.event.PlanEvent.PlanStepDescriptionUpdate.files_to_edit.map((file) => vscode.Uri.file(file)),
 					});
 				}
 			} else if (event.event.ExchangeEvent) {
