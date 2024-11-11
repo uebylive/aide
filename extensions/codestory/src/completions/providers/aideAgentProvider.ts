@@ -756,10 +756,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					console.log(event.event.ExchangeEvent.TerminalCommand);
 					const command = event.event.ExchangeEvent.TerminalCommand.command;
 
-					// does this need registering? Nope!
-					executeCommand(command)
-						.then(() => console.log('Command completed'))
-						.catch(err => console.error('Error:', err));
+					// this returns a promise
+					executeCommand(command);
 				}
 
 				if (responseStream === undefined) {
@@ -896,5 +894,4 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		this.aideAgent.dispose();
 	}
 }
-
 
