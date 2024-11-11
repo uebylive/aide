@@ -654,6 +654,10 @@ export type SidecarGoToDefinitionRequest = {
 	position: SidecarRequestPosition;
 };
 
+export type SidecarExecuteTerminalCommandRequest = {
+	command: string;
+};
+
 interface OpenFileRequest {
 	fs_file_path: string;
 	editor_url: string;

@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 
 // execute a command in a terminal
-export function executeCommand(command: string): Promise<void> {
+export function executeTerminalCommand(command: string): Promise<void> {
 	return new Promise((resolve, reject) => {
 		try {
 			const terminal = vscode.window.createTerminal('Command Terminal');
