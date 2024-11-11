@@ -17,7 +17,7 @@ import { RepoRef, SideCarClient } from '../../sidecar/client';
 import { getUniqueId, getUserId } from '../../utilities/uniqueId';
 import { ProjectContext } from '../../utilities/workspaceContext';
 import postHogClient from '../../posthog/client';
-import { executeCommand } from './terminalUse';
+import { executeTerminalCommand } from './terminalUse';
 
 /**
  * Stores the necessary identifiers required for identifying a response stream
@@ -757,7 +757,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					const command = event.event.ExchangeEvent.TerminalCommand.command;
 
 					// this returns a promise
-					executeCommand(command);
+					executeTerminalCommand(command);
 				}
 
 				if (responseStream === undefined) {

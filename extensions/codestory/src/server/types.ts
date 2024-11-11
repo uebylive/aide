@@ -654,7 +654,7 @@ export type SidecarGoToDefinitionRequest = {
 	position: SidecarRequestPosition;
 };
 
-export type SidecarExecuteCommandRequest = {
+export type SidecarExecuteTerminalCommandRequest = {
 	command: string;
 };
 
