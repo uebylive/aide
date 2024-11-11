@@ -111,6 +111,9 @@ CommandsRegistry.registerCommand(MANAGE_PINNED_CONTEXT, async (accessor) => {
 	}));
 
 	disposables.add(picker.onDidHide(() => {
+		const selectedItems = picker.selectedItems;
+		pinnedContextService.setContexts(selectedItems.map(item => item.uri));
+
 		disposables.dispose();
 	}));
 });
