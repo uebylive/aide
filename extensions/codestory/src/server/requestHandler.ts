@@ -19,7 +19,7 @@ import { createFileResponse } from './createFile';
 import { getPreviousWordAtPosition } from './previousWordCommand';
 import { goToTypeDefinition } from './goToTypeDefinition';
 import { getRipGrepPath } from '../utilities/ripGrep';
-import { executeTerminalCommand } from '../completions/providers/terminalUse';
+import { executeTerminalCommand } from '../terminal/TerminalManager';
 
 // Helper function to read the request body
 function readRequestBody(req: http.IncomingMessage): Promise<string> {
@@ -257,9 +257,9 @@ export function handleRequest(
 			} else if (req.method === 'POST' && req.url === '/execute_terminal_command') {
 				const body = await readRequestBody(req);
 				const request: SidecarExecuteTerminalCommandRequest = JSON.parse(body);
-				await executeTerminalCommand(request.command);
+				const response = await executeTerminalCommand(request.command, process.cwd());
 				res.writeHead(200, { 'Content-Type': 'application/json' });
-				res.end(JSON.stringify({ success: true }));
+				res.end(JSON.stringify({ output: response }));
 			} else {
 				// console.log('HC request');
 				res.writeHead(200, { 'Content-Type': 'application/json' });

@@ -17,7 +17,6 @@ import { RepoRef, SideCarClient } from '../../sidecar/client';
 import { getUniqueId, getUserId } from '../../utilities/uniqueId';
 import { ProjectContext } from '../../utilities/workspaceContext';
 import postHogClient from '../../posthog/client';
-import { executeTerminalCommand } from './terminalUse';
 
 /**
  * Stores the necessary identifiers required for identifying a response stream
@@ -747,13 +746,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					sessionId,
 					exchangeId,
 				});
-
-				if (event.event.ExchangeEvent.TerminalCommand) {
-					const command = event.event.ExchangeEvent.TerminalCommand.command;
-
-					// this returns a promise
-					executeTerminalCommand(command);
-				}
 
 				if (responseStream === undefined) {
 					console.log('resonseStreamNotFound::ExchangeEvent::ExchangeEvent::exchangeId::sessionId', exchangeId, sessionId);

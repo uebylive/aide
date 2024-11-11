@@ -1,10 +1,10 @@
 /* Credit to Cline: https://github.com/cline/cline/blob/main/src/integrations/terminal/TerminalManager.ts */
 
-import pWaitFor from "p-wait-for"
 import * as vscode from "vscode"
 import { arePathsEqual } from "../utilities/paths"
 import { mergePromise, TerminalProcess, TerminalProcessResultPromise } from "./TerminalProcess"
 import { TerminalInfo, TerminalRegistry } from "./TerminalRegistry"
+import pTimeout from './p-timeout'
 
 /*
 TerminalManager:
@@ -175,7 +175,10 @@ export class TerminalManager {
 			return availableTerminal
 		}
 
+		console.log('creating new terminal at', cwd);
+
 		const newTerminalInfo = TerminalRegistry.createTerminal(cwd)
+		console.log('newTerminalInfo', newTerminalInfo);
 		this.terminalIds.add(newTerminalInfo.id)
 		return newTerminalInfo
 	}
@@ -208,5 +211,84 @@ export class TerminalManager {
 		this.processes.clear()
 		this.disposables.forEach((disposable) => disposable.dispose())
 		this.disposables = []
+	}
+}
+
+export async function executeTerminalCommand(command: string, cwd: string = process.cwd()): Promise<string> {
+	// Create a terminal manager instance
+	const terminalManager = new TerminalManager();
+
+	try {
+		const terminalInfo = await terminalManager.getOrCreateTerminal(cwd);
+
+		const process = terminalManager.runCommand(terminalInfo, command);
+
+		let buffer = '';
+		process.on('line', (line) => {
+			buffer += line + '\n';
+		});
+
+		await process;
+
+		return buffer;
+	} finally {
+		terminalManager.disposeAll();
+	}
+}
+
+interface WaitForOptions {
+	interval?: number;
+	timeout?: number;
+	before?: boolean;
+}
+
+export default async function pWaitFor(
+	condition: () => boolean | Promise<boolean>,
+	options: WaitForOptions = {}
+): Promise<void> {
+	const {
+		interval = 20,
+		timeout = Number.POSITIVE_INFINITY,
+		before = true,
+	} = options;
+
+	let retryTimeout: NodeJS.Timeout | undefined;  // Initialize as undefined
+
+	let abort = false;
+
+	const promise = new Promise<void>((resolve, reject) => {
+		const check = async () => {
+			try {
+				const value = await condition();
+
+				if (typeof value !== 'boolean') {
+					throw new TypeError('Expected condition to return a boolean');
+				} else if (value === true) {
+					resolve();
+				} else if (!abort) {
+					retryTimeout = setTimeout(check, interval);
+				}
+			} catch (error) {
+				reject(error);
+			}
+		};
+
+		if (before) {
+			check();
+		} else {
+			retryTimeout = setTimeout(check, interval);
+		}
+	});
+
+	if (timeout === Number.POSITIVE_INFINITY) {
+		return promise;
+	}
+
+	try {
+		// Note: pTimeout function needs to be imported or defined
+		return await pTimeout(promise, typeof timeout === 'number' ? { milliseconds: timeout } : timeout);
+	} finally {
+		abort = true;
+		clearTimeout(retryTimeout);
 	}
 }
