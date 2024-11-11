@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { decodeBase64 } from '../../../../base/common/buffer.js';
+import { decodeBase64, encodeBase64, VSBuffer } from '../../../../base/common/buffer.js';
 import { CancellationTokenSource } from '../../../../base/common/cancellation.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
 import Severity from '../../../../base/common/severity.js';
@@ -176,7 +176,6 @@ export class CSAuthenticationService extends Themable implements ICSAuthenticati
 				await this.openerService.open(url);
 
 				try {
-					// Use the built-in VSCode API for handling cancellation
 					const timeoutPromise = new Promise<string>((_, reject) =>
 						setTimeout(() => reject('Cancelled'), 60000)
 					);
@@ -203,8 +202,53 @@ export class CSAuthenticationService extends Themable implements ICSAuthenticati
 						});
 					});
 
+					const pollingPromise = new Promise<string>((resolve, reject) => {
+						let isPolling = true;
+
+						// Handle cancellation for polling
+						cts.token.onCancellationRequested(() => {
+							isPolling = false;
+							reject('User Cancelled');
+						});
+
+						const poll = async () => {
+							if (!isPolling) {
+								return;
+							}
+
+							try {
+								const response = await fetch(`${this._subscriptionsAPIBase}/v1/auth/editor/status?state=${stateId}`);
+								if (response.ok) {
+									const data = await response.json();
+									if (data.access_token && data.refresh_token) {
+										const encodedData = encodeBase64(
+											VSBuffer.fromString(
+												JSON.stringify({
+													access_token: data.access_token,
+													refresh_token: data.refresh_token
+												})
+											)
+										);
+										resolve(encodedData);
+										return;
+									}
+								}
+
+								if (isPolling) {
+									setTimeout(poll, 1000);
+								}
+							} catch (error) {
+								if (isPolling) {
+									setTimeout(poll, 1000);
+								}
+							}
+						};
+						poll();
+					});
+
 					const result = await Promise.race([
 						loginPromise,
+						pollingPromise,
 						timeoutPromise,
 						cancellationPromise
 					]);
