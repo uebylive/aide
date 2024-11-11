@@ -1065,6 +1065,7 @@ export class SideCarClient {
 		workosAccessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
+		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		baseUrl.pathname = '/api/agentic/agent_session_plan';
 		const url = baseUrl.toString();
 		const body = {
@@ -1079,6 +1080,7 @@ export class SideCarClient {
 			project_labels: projectLabels,
 			codebase_search: codebaseSearch,
 			access_token: workosAccessToken,
+			model_configuration: sideCarModelConfiguration,
 		};
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
