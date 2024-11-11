@@ -5,15 +5,15 @@
 
 import { IDisposable } from '../../../../../base/common/lifecycle.js';
 import { IChatRendererContent } from '../../common/aideAgentViewModel.js';
-import { AideAgentPlanTreeItem } from '../../common/aideAgentPlanViewModel.js';
+import { IAideAgentPlanStepViewModel } from '../../common/aideAgentPlanViewModel.js';
 
 export interface IAideAgentPlanContentPart extends IDisposable {
 	domNode: HTMLElement;
-	hasSameContent(other: IChatRendererContent, followingContent: IChatRendererContent[], element: AideAgentPlanTreeItem): boolean;
+	hasSameContent(other: IChatRendererContent, followingContent: IChatRendererContent[], element: IAideAgentPlanStepViewModel): boolean;
 }
 
 export interface IAideAgentPlanContentPartRenderContext {
-	element: AideAgentPlanTreeItem;
+	element: IAideAgentPlanStepViewModel;
 	index: number;
 	content: ReadonlyArray<IChatRendererContent>;
 	preceedingContentParts: ReadonlyArray<IAideAgentPlanContentPart>;

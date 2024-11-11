@@ -4,14 +4,11 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
-
-export interface IAideAgentPlanSession {
-	readonly sessionId: string;
-}
+import { IAideAgentPlanModel } from './aideAgentPlanModel.js';
 
 export const IAideAgentPlanService = createDecorator<IAideAgentPlanService>('aideAgentPlanService');
 export interface IAideAgentPlanService {
 	_serviceBrand: undefined;
 
-	getOrCreatePlan(sessionId: string): IAideAgentPlanSession;
+	getActivePlan(sessionId: string): IAideAgentPlanModel | undefined;
 }

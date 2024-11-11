@@ -26,8 +26,8 @@ import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgen
 import { IAideAgentCodeEditingService, IAideAgentCodeEditingSession } from './aideAgentCodeEditingService.js';
 import { HunkData } from './aideAgentEditingSession.js';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from './aideAgentParserTypes.js';
-import { IAideAgentPlanModel, IAideAgentPlanStepModel } from './aideAgentPlanModel.js';
-import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IAideAgentPlanStep, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
+import { AideAgentPlanModel, IAideAgentPlanModel } from './aideAgentPlanModel.js';
+import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IAideAgentPlanProgressContent, IAideAgentPlanStep, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
 import { IChatRequestVariableValue } from './aideAgentVariables.js';
 
 export function isRequestModel(item: unknown): item is IChatRequestModel {
@@ -100,7 +100,8 @@ export type IChatProgressResponseContent =
 	| IChatWarningMessage
 	| IChatTask
 	| IChatTextEditGroup
-	| IChatConfirmation;
+	| IChatConfirmation
+	| IAideAgentPlanProgressContent;
 
 export type IChatProgressRenderableResponseContent = Exclude<IChatProgressResponseContent, IChatContentInlineReference | IChatAgentMarkdownContentWithVulnerability | IChatResponseCodeblockUriPart>;
 
@@ -326,6 +327,8 @@ export class Response extends Disposable implements IResponse {
 				return '';
 			} else if (part.kind === 'confirmation') {
 				return `${part.title}\n${part.message}`;
+			} else if (part.kind === 'planStep') {
+				return part.description.value;
 			} else {
 				return part.content.value;
 			}
@@ -910,8 +913,8 @@ export class ChatModel extends Disposable implements IChatModel {
 		return this._initialLocation;
 	}
 
-	private _plan: IAideAgentPlanModel | undefined;
-	get plan(): IAideAgentPlanModel | undefined {
+	private _plan: AideAgentPlanModel | undefined;
+	get plan(): AideAgentPlanModel | undefined {
 		return this._plan;
 	}
 
@@ -1154,26 +1157,10 @@ export class ChatModel extends Disposable implements IChatModel {
 
 	private applyPlanStep(progress: IAideAgentPlanStep) {
 		if (!this._plan) {
-			this._plan = {
-				sessionId: this.sessionId,
-				steps: [{
-					index: progress.index,
-					title: progress.title,
-					description: progress.description,
-					isLast: progress.isLast
-				}]
-			};
-		} else {
-			const step: IAideAgentPlanStepModel = {
-				index: progress.index,
-				title: progress.title,
-				description: progress.description,
-				isLast: progress.isLast
-			};
-			this._plan.steps[progress.index] = step;
+			this._plan = this.instantiationService.createInstance(AideAgentPlanModel, this.sessionId);
 		}
 
-		this._onDidChange.fire({ kind: 'changedPlan', plan: this._plan });
+		this._plan.updateSteps(progress);
 	}
 
 	/* TODO(@ghostwriternr): This method was used to remove/resend requests. We can add it back in if we need it.

@@ -14,17 +14,17 @@ import { Disposable, DisposableStore, dispose, IDisposable } from '../../../../b
 import { MarkdownRenderer } from '../../../../editor/browser/widget/markdownRenderer/browser/markdownRenderer.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
+import { IAideAgentPlanStepViewModel } from '../common/aideAgentPlanViewModel.js';
 import { IChatRendererContent } from '../common/aideAgentViewModel.js';
 import { annotateSpecialMarkdownContent } from '../common/annotations.js';
 import { ChatMarkdownRenderer } from './aideAgentMarkdownRenderer.js';
-import { AideAgentPlanTreeItem } from '../common/aideAgentPlanViewModel.js';
 import { IAideAgentPlanContentPart, IAideAgentPlanContentPartRenderContext } from './aideAgentPlanContentParts/aideAgentPlanContentParts.js';
 import { AideAgentPlanMarkdownContentPart } from './aideAgentPlanContentParts/aideAgentPlanMarkdownContentPart.js';
 
 const $ = dom.$;
 
 interface IAideAgentPlanListItemTemplate {
-	currentElement?: AideAgentPlanTreeItem;
+	currentElement?: IAideAgentPlanStepViewModel;
 	renderedParts?: IAideAgentPlanContentPart[];
 	readonly rowContainer: HTMLElement;
 	readonly value: HTMLElement;
@@ -33,11 +33,11 @@ interface IAideAgentPlanListItemTemplate {
 }
 
 interface IItemHeightChangeParams {
-	element: AideAgentPlanTreeItem;
+	element: IAideAgentPlanStepViewModel;
 	height: number;
 }
 
-export class AideAgentPlanListRenderer extends Disposable implements ITreeRenderer<AideAgentPlanTreeItem, FuzzyScore, IAideAgentPlanListItemTemplate> {
+export class AideAgentPlanListRenderer extends Disposable implements ITreeRenderer<IAideAgentPlanStepViewModel, FuzzyScore, IAideAgentPlanListItemTemplate> {
 	static readonly ID = 'aideAgentPlanListItem';
 
 	private readonly renderer: MarkdownRenderer;
@@ -68,7 +68,7 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 		return { elementDisposables, rowContainer, templateDisposables, value };
 	}
 
-	renderElement(node: ITreeNode<AideAgentPlanTreeItem, FuzzyScore>, index: number, templateData: IAideAgentPlanListItemTemplate, height: number | undefined): void {
+	renderElement(node: ITreeNode<IAideAgentPlanStepViewModel, FuzzyScore>, index: number, templateData: IAideAgentPlanListItemTemplate, height: number | undefined): void {
 		const element = node.element;
 
 		if (!element.isComplete) {
@@ -78,9 +78,9 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 		}
 	}
 
-	private basicRenderElement(element: AideAgentPlanTreeItem, index: number, templateData: IAideAgentPlanListItemTemplate): boolean {
+	private basicRenderElement(element: IAideAgentPlanStepViewModel, index: number, templateData: IAideAgentPlanListItemTemplate): boolean {
 		const value: IChatRendererContent[] = [];
-		value.push(...annotateSpecialMarkdownContent(element.response.value));
+		value.push(...annotateSpecialMarkdownContent(element.value));
 
 		dom.clearNode(templateData.value);
 
@@ -112,7 +112,7 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 		return true;
 	}
 
-	private doNextProgressiveRender(element: AideAgentPlanTreeItem, templateData: IAideAgentPlanListItemTemplate): boolean {
+	private doNextProgressiveRender(element: IAideAgentPlanStepViewModel, templateData: IAideAgentPlanListItemTemplate): boolean {
 		const contentForThisTurn = this.getNextProgressiveRenderContent(element);
 		const partsToRender = this.diff(templateData.renderedParts ?? [], contentForThisTurn, element);
 
@@ -126,7 +126,7 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 		return true;
 	}
 
-	private renderContentDiff(partsToRender: ReadonlyArray<IChatRendererContent | null>, contentForThisTurn: ReadonlyArray<IChatRendererContent>, element: AideAgentPlanTreeItem, templateData: IAideAgentPlanListItemTemplate): void {
+	private renderContentDiff(partsToRender: ReadonlyArray<IChatRendererContent | null>, contentForThisTurn: ReadonlyArray<IChatRendererContent>, element: IAideAgentPlanStepViewModel, templateData: IAideAgentPlanListItemTemplate): void {
 		const renderedParts = templateData.renderedParts ?? [];
 		partsToRender.forEach((partToRender, index) => {
 			if (!partToRender) {
@@ -164,12 +164,13 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 		});
 	}
 
-	private getNextProgressiveRenderContent(element: AideAgentPlanTreeItem): IChatRendererContent[] {
-		const renderableResponse = annotateSpecialMarkdownContent(element.response.value);
-		return renderableResponse;
+	private getNextProgressiveRenderContent(element: IAideAgentPlanStepViewModel): IChatRendererContent[] {
+		// const renderableResponse = annotateSpecialMarkdownContent(element.response.value);
+		// return renderableResponse;
+		return [];
 	}
 
-	private diff(renderedParts: ReadonlyArray<IAideAgentPlanContentPart>, contentToRender: ReadonlyArray<IChatRendererContent>, element: AideAgentPlanTreeItem): ReadonlyArray<IChatRendererContent | null> {
+	private diff(renderedParts: ReadonlyArray<IAideAgentPlanContentPart>, contentToRender: ReadonlyArray<IChatRendererContent>, element: IAideAgentPlanStepViewModel): ReadonlyArray<IChatRendererContent | null> {
 		const diff: (IChatRendererContent | null)[] = [];
 		for (let i = 0; i < contentToRender.length; i++) {
 			const content = contentToRender[i];
@@ -199,7 +200,7 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 		return this.instantiationService.createInstance(AideAgentPlanMarkdownContentPart, markdown, context, fillInIncompleteTokens, this.renderer);
 	}
 
-	disposeElement(element: ITreeNode<AideAgentPlanTreeItem, FuzzyScore>, index: number, templateData: IAideAgentPlanListItemTemplate, height: number | undefined): void {
+	disposeElement(element: ITreeNode<IAideAgentPlanStepViewModel, FuzzyScore>, index: number, templateData: IAideAgentPlanListItemTemplate, height: number | undefined): void {
 		if (templateData.renderedParts) {
 			try {
 				dispose(coalesce(templateData.renderedParts));
@@ -219,19 +220,19 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 	}
 }
 
-export class AideAgentPlanListDelegate implements IListVirtualDelegate<AideAgentPlanTreeItem> {
+export class AideAgentPlanListDelegate implements IListVirtualDelegate<IAideAgentPlanStepViewModel> {
 	private readonly defaultElementHeight = 200;
 
-	getHeight(element: AideAgentPlanTreeItem): number {
+	getHeight(element: IAideAgentPlanStepViewModel): number {
 		const height = ('currentRenderedHeight' in element ? element.currentRenderedHeight : undefined) ?? this.defaultElementHeight;
 		return height;
 	}
 
-	getTemplateId(element: AideAgentPlanTreeItem): string {
+	getTemplateId(element: IAideAgentPlanStepViewModel): string {
 		return AideAgentPlanListRenderer.ID;
 	}
 
-	hasDynamicHeight(element: AideAgentPlanTreeItem): boolean {
+	hasDynamicHeight(element: IAideAgentPlanStepViewModel): boolean {
 		return true;
 	}
 }

@@ -3028,8 +3028,8 @@ export namespace AideAgentResponsePart {
 		}
 	}
 
-	export function toContent(part: extHostProtocol.IChatContentProgressDto, commandsConverter: CommandsConverter): vscode.ChatResponseMarkdownPart | vscode.ChatResponseFileTreePart | vscode.ChatResponseAnchorPart | vscode.ChatResponseCommandButtonPart | undefined {
-		return ChatResponsePart.toContent(part, commandsConverter);
+	export function toContent(part: extHostProtocol.IAideAgentContentProgressDto, commandsConverter: CommandsConverter): vscode.ChatResponseMarkdownPart | vscode.ChatResponseFileTreePart | vscode.ChatResponseAnchorPart | vscode.ChatResponseCommandButtonPart | undefined {
+		return ChatResponsePart.toContent(part as extHostProtocol.IChatContentProgressDto, commandsConverter);
 	}
 }
 

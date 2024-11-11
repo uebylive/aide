@@ -52,6 +52,7 @@ import { EditSessionIdentityMatch } from '../../../platform/workspace/common/edi
 import { WorkspaceTrustRequestOptions } from '../../../platform/workspace/common/workspaceTrust.js';
 import { SaveReason } from '../../common/editor.js';
 import { IRevealOptions, ITreeItem, IViewBadge } from '../../common/views.js';
+import { IChatProgressResponseContent as IAideAgentProgressResponseContent } from '../../contrib/aideAgent/common/aideAgentModel.js';
 import { IAideAgentPlanStep, IChatCodeEdit, IChatEndResponse } from '../../contrib/aideAgent/common/aideAgentService.js';
 import { CallHierarchyItem } from '../../contrib/callHierarchy/common/callHierarchy.js';
 import { ChatAgentLocation, IChatAgentMetadata, IChatAgentRequest, IChatAgentResult } from '../../contrib/chat/common/chatAgents.js';
@@ -1423,6 +1424,10 @@ export type IChatProgressDto =
 
 ///////////////////////// START AIDE /////////////////////////
 export interface ExtHostAideAgentAgentsShape extends ExtHostChatAgentsShape2 {
+	$invokeAgent(handle: number, request: Dto<IChatAgentRequest>, context: { history: IAideAgentAgentHistoryEntryDto[] }, token: CancellationToken): Promise<IChatAgentResult | undefined>;
+	$provideFollowups(request: Dto<IChatAgentRequest>, handle: number, result: IChatAgentResult, context: { history: IAideAgentAgentHistoryEntryDto[] }, token: CancellationToken): Promise<IChatFollowup[]>;
+	$provideChatTitle(handle: number, context: IAideAgentAgentHistoryEntryDto[], token: CancellationToken): Promise<string | undefined>;
+	$detectChatParticipant(handle: number, request: Dto<IChatAgentRequest>, context: { history: IAideAgentAgentHistoryEntryDto[] }, options: { participants: IChatParticipantMetadata[]; location: ChatAgentLocation }, token: CancellationToken): Promise<IChatParticipantDetectionResult | null | undefined>;
 	$initSession(handle: number, sessionId: string): void;
 }
 
@@ -1432,6 +1437,14 @@ export type IAideAgentProgressDto =
 	| IChatCodeEditDto
 	| Dto<IAideAgentPlanStep>
 	| Dto<IChatEndResponse>;
+
+export type IAideAgentContentProgressDto =
+	| Dto<Exclude<IAideAgentProgressResponseContent, IChatTask>>
+	| IChatTaskDto;
+
+export type IAideAgentAgentHistoryEntryDto = Exclude<IChatAgentHistoryEntryDto, 'response'> & {
+	response: ReadonlyArray<IAideAgentContentProgressDto>;
+};
 
 export interface MainThreadAideAgentAgentsShape2 extends MainThreadChatAgentsShape2 {
 	$initResponse(sessionId: string): Promise<{ responseId: string; token: CancellationToken }>;

@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { DisposableStore } from '../../../../base/common/lifecycle.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IContextMenuService } from '../../../../platform/contextview/browser/contextView.js';
@@ -20,6 +21,8 @@ import { AideAgentPlanWidget } from './aideAgentPlanWidget.js';
 export const AIDE_AGENT_PLAN_VIEW_PANE_ID = 'workbench.panel.aideAgentPlan';
 export class AideAgentPlanViewPane extends ViewPane {
 	private _widget!: AideAgentPlanWidget;
+
+	private readonly modelDisposables = this._register(new DisposableStore());
 
 	constructor(
 		options: IViewPaneOptions,
@@ -45,5 +48,11 @@ export class AideAgentPlanViewPane extends ViewPane {
 			AideAgentPlanWidget,
 		));
 		this._widget.render(parent);
+		this.updateModel();
+	}
+
+	private updateModel(): void {
+		this.modelDisposables.clear();
+		this._widget.setModel(model);
 	}
 }

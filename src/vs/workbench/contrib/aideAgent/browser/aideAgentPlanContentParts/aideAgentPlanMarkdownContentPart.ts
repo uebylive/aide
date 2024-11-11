@@ -10,7 +10,7 @@ import { MarkdownRenderer } from '../../../../../editor/browser/widget/markdownR
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { IChatRendererContent } from '../../common/aideAgentViewModel.js';
 import { ChatMarkdownDecorationsRenderer } from '../aideAgentMarkdownDecorationsRenderer.js';
-import { AideAgentPlanTreeItem } from '../../common/aideAgentPlanViewModel.js';
+import { IAideAgentPlanStepViewModel } from '../../common/aideAgentPlanViewModel.js';
 import { IAideAgentPlanContentPart, IAideAgentPlanContentPartRenderContext } from './aideAgentPlanContentParts.js';
 
 const $ = dom.$;
@@ -43,7 +43,7 @@ export class AideAgentPlanMarkdownContentPart extends Disposable implements IAid
 		this.domNode = result.element;
 	}
 
-	hasSameContent(other: IChatRendererContent, followingContent: IChatRendererContent[], element: AideAgentPlanTreeItem): boolean {
+	hasSameContent(other: IChatRendererContent, followingContent: IChatRendererContent[], element: IAideAgentPlanStepViewModel): boolean {
 		return other.kind === 'markdownContent' && other.content.value === this.markdown.value;
 	}
 }

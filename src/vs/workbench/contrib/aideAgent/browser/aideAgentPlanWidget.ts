@@ -4,23 +4,39 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { ITreeElement } from '../../../../base/browser/ui/tree/tree.js';
+import { Event } from '../../../../base/common/event.js';
 import { Disposable, DisposableStore } from '../../../../base/common/lifecycle.js';
 import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ServiceCollection } from '../../../../platform/instantiation/common/serviceCollection.js';
 import { WorkbenchObjectTree } from '../../../../platform/list/browser/listService.js';
-import { IChatModel } from '../common/aideAgentModel.js';
 import { IAideAgentPlanModel } from '../common/aideAgentPlanModel.js';
-import { AideAgentPlanTreeItem } from '../common/aideAgentPlanViewModel.js';
+import { AideAgentPlanViewModel, IAideAgentPlanStepViewModel } from '../common/aideAgentPlanViewModel.js';
 import { AideAgentPlanAccessibilityProvider } from './aideAgentPlanAccessibilityProvider.js';
 import { AideAgentPlanListDelegate, AideAgentPlanListRenderer } from './aideAgentPlanListRenderer.js';
 
 export class AideAgentPlanWidget extends Disposable {
-	private tree!: WorkbenchObjectTree<AideAgentPlanTreeItem>;
+	private tree!: WorkbenchObjectTree<IAideAgentPlanStepViewModel>;
 	private renderer!: AideAgentPlanListRenderer;
 
-	private _model: IAideAgentPlanModel | undefined;
-	private readonly modelDisposables = this._register(new DisposableStore());
+	private readonly viewModelDisposables = this._register(new DisposableStore());
+	private _viewModel: AideAgentPlanViewModel | undefined;
+	private set viewModel(viewModel: AideAgentPlanViewModel | undefined) {
+		if (this._viewModel === viewModel) {
+			return;
+		}
+
+		this.viewModelDisposables.clear();
+
+		this._viewModel = viewModel;
+		if (viewModel) {
+			this.viewModelDisposables.add(viewModel);
+		}
+	}
+
+	get viewModel() {
+		return this._viewModel;
+	}
 
 	constructor(
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
@@ -41,14 +57,14 @@ export class AideAgentPlanWidget extends Disposable {
 			AideAgentPlanListRenderer,
 		));
 
-		this.tree = this._register(<WorkbenchObjectTree<AideAgentPlanTreeItem>>scopedInstantiationService.createInstance(
+		this.tree = this._register(<WorkbenchObjectTree<IAideAgentPlanStepViewModel>>scopedInstantiationService.createInstance(
 			WorkbenchObjectTree,
 			'AideAgentPlan',
 			listContainer,
 			delegate,
 			[this.renderer],
 			{
-				identityProvider: { getId: (e: AideAgentPlanTreeItem) => e.id },
+				identityProvider: { getId: (e: IAideAgentPlanStepViewModel) => e.id },
 				horizontalScrolling: false,
 				alwaysConsumeMouseWheel: false,
 				supportDynamicHeights: true,
@@ -59,17 +75,14 @@ export class AideAgentPlanWidget extends Disposable {
 		));
 	}
 
-	setModel(model: IChatModel): void {
-		if (this._model?.sessionId !== model.sessionId) {
-			this._model = undefined;
-			this.modelDisposables.clear();
-		}
-
-		this._model = model.plan;
-		this.modelDisposables.add(model.onDidChange((e) => {
-			if (e.kind === 'changedPlan') {
-				this.onDidChangeItems();
+	setModel(model: IAideAgentPlanModel): void {
+		this.viewModel = this.instantiationService.createInstance(AideAgentPlanViewModel, model);
+		this.viewModelDisposables.add(Event.accumulate(this.viewModel.onDidChange, 0)(events => {
+			if (!this.viewModel) {
+				return;
 			}
+
+			this.onDidChangeItems();
 		}));
 
 		if (this.tree) {
@@ -79,7 +92,7 @@ export class AideAgentPlanWidget extends Disposable {
 
 	private onDidChangeItems(): void {
 		if (this.tree) {
-			const treeItems = this._model?.steps.map((step): ITreeElement<AideAgentPlanTreeItem> => {
+			const treeItems = this.viewModel?.getItems().map((step): ITreeElement<IAideAgentPlanStepViewModel> => {
 				return {
 					element: step,
 					collapsed: false,

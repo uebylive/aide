@@ -9,7 +9,6 @@ import { Emitter, Event } from '../../../../base/common/event.js';
 import Severity from '../../../../base/common/severity.js';
 import { URI } from '../../../../base/common/uri.js';
 import { generateUuid } from '../../../../base/common/uuid.js';
-import { IAIModelSelectionService } from '../../../../platform/aiModel/common/aiModels.js';
 import { CSAuthenticationSession, CSUserProfileResponse, EncodedCSTokenData, ICSAuthenticationService } from '../../../../platform/codestoryAccount/common/csAccount.js';
 import { CommandsRegistry } from '../../../../platform/commands/common/commands.js';
 import { IEnvironmentService } from '../../../../platform/environment/common/environment.js';
@@ -43,7 +42,6 @@ export class CSAuthenticationService extends Themable implements ICSAuthenticati
 		@IOpenerService private readonly openerService: IOpenerService,
 		@IURLService private readonly urlService: IURLService,
 		@INotificationService private readonly notificationService: INotificationService,
-		@IAIModelSelectionService private readonly aideModelSelectionService: IAIModelSelectionService,
 	) {
 		super(themeService);
 
@@ -228,17 +226,6 @@ export class CSAuthenticationService extends Themable implements ICSAuthenticati
 	}
 
 	async getSession(): Promise<CSAuthenticationSession | undefined> {
-		const modelConfiguration = await this.aideModelSelectionService.getValidatedModelSelectionSettings();
-		let shouldCreateSession = true;
-		for (const [key, _value] of Object.entries(modelConfiguration.providers)) {
-			if (key !== 'codestory') {
-				shouldCreateSession = false;
-			}
-		}
-		if (!shouldCreateSession) {
-			return undefined;
-		}
-
 		const rawSession = await this.secretStorageService.get(SESSION_SECRET_KEY);
 		const session = rawSession ? JSON.parse(rawSession) : undefined;
 		if (session) {
