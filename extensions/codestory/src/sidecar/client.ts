@@ -1114,6 +1114,7 @@ export class SideCarClient {
 			exchange_id: exchangeId,
 			editor_url: editorUrl,
 			access_token: accessToken,
+			model_configuration: await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration()),
 		};
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
