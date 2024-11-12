@@ -50,11 +50,11 @@ export class AideAgentPlanStepViewModel extends Disposable implements IAideAgent
 	}
 
 	get id(): string {
-		return this._model.index.toString();
+		return this._model.id;
 	}
 
 	get dataId(): string {
-		return this.id + `_${this._modelChangeCount}`;
+		return this._model.id + `_${this._modelChangeCount}`;
 	}
 
 	get value(): ReadonlyArray<IAideAgentPlanProgressContent> {

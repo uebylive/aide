@@ -19,6 +19,7 @@ export interface IAideAgentPlanAddStepEvent {
 
 export interface IAideAgentPlanStepModel {
 	readonly onDidChange: Event<void>;
+	readonly id: string;
 	readonly index: number;
 	readonly title: string;
 	description: IMarkdownString;
@@ -36,6 +37,10 @@ export interface IAideAgentPlanModel {
 export class AideAgentPlanStepModel extends Disposable implements IAideAgentPlanStepModel {
 	private readonly _onDidChange = this._register(new Emitter<void>());
 	readonly onDidChange = this._onDidChange.event;
+
+	private static nextId = 0;
+
+	public readonly id: string;
 
 	private _index: number;
 	get index(): number {
@@ -72,6 +77,8 @@ export class AideAgentPlanStepModel extends Disposable implements IAideAgentPlan
 		this._index = initialValue.index;
 		this._title = initialValue.title;
 		this._description = initialValue.description;
+
+		this.id = 'step_' + AideAgentPlanStepModel.nextId++;
 	}
 
 	updateStep(progress: IAideAgentPlanStep): void {

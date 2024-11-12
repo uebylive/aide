@@ -73,6 +73,14 @@ export class AideAgentPlanWidget extends Disposable {
 				setRowLineHeight: false,
 			}
 		));
+
+		this._register(this.renderer.onDidChangeItemHeight((e) => {
+			this.tree.updateElementHeight(e.element, e.height);
+		}));
+
+		if (this.viewModel) {
+			this.onDidChangeItems();
+		}
 	}
 
 	setModel(model: IAideAgentPlanModel): void {
@@ -96,13 +104,14 @@ export class AideAgentPlanWidget extends Disposable {
 
 	private onDidChangeItems(): void {
 		if (this.tree) {
-			const treeItems = this.viewModel?.getItems().map((step): ITreeElement<IAideAgentPlanStepViewModel> => {
-				return {
-					element: step,
-					collapsed: false,
-					collapsible: false
-				};
-			});
+			const treeItems = (this.viewModel?.getItems() ?? [])
+				.map((step): ITreeElement<IAideAgentPlanStepViewModel> => {
+					return {
+						element: step,
+						collapsed: false,
+						collapsible: false
+					};
+				});
 
 			this.tree.setChildren(null, treeItems, {
 				diffIdentityProvider: {
