@@ -76,7 +76,23 @@ CommandsRegistry.registerCommand(MANAGE_PINNED_CONTEXT, async (accessor) => {
 	const fileQueryBuilder = instantiationService.createInstance(QueryBuilder);
 
 	const picker = disposables.add(quickInputService.createQuickPick<IQuickPickItem & PinnedContextItem>());
-	picker.items = historyService.getHistory().map(editor => createQuickPickItem(editor, labelService, modelService, languageService));
+
+	const pinnedItems = pinnedContextService.getPinnedContexts().map(uri => createQuickPickItem(uri, labelService, modelService, languageService));
+	const historyItems = historyService.getHistory().map(editor => createQuickPickItem(editor, labelService, modelService, languageService));
+	const uniqueItems = new Map<string, IQuickPickItem & PinnedContextItem>();
+
+	// Add pinned items first to preserve them
+	for (const item of pinnedItems) {
+		uniqueItems.set(item.uri.toString(), item);
+	}
+	// Add history items if not already present
+	for (const item of historyItems) {
+		if (!uniqueItems.has(item.uri.toString())) {
+			uniqueItems.set(item.uri.toString(), item);
+		}
+	}
+
+	picker.items = Array.from(uniqueItems.values());
 	picker.canSelectMany = true;
 	picker.hideCheckAll = true;
 	picker.placeholder = localize('pinnedContext.placeholder', "Select files to pin as context (press space to toggle)");
@@ -85,19 +101,53 @@ CommandsRegistry.registerCommand(MANAGE_PINNED_CONTEXT, async (accessor) => {
 		return pinnedContextService.hasContext(pickerItem.uri);
 	}) as (IQuickPickItem & PinnedContextItem)[];
 	picker.onDidChangeValue(async (query) => {
-		const files = await searchService.fileSearch(
-			fileQueryBuilder.file(
-				contextService.getWorkspace().folders,
-				{
-					extraFileResources: instantiationService.invokeFunction(getOutOfWorkspaceEditorResources),
-					filePattern: query || '',
-					sortByScore: true,
-					maxResults: 512,
+		// Keep currently selected items by their URIs
+		const selectedItemURIs = new Set(picker.selectedItems.map(item => item.uri.toString()));
+
+		// Create a map of unique items from all sources
+		const uniqueItems = new Map<string, IQuickPickItem & PinnedContextItem>();
+
+		// Add pinned items first
+		for (const item of pinnedItems) {
+			uniqueItems.set(item.uri.toString(), item);
+		}
+
+		// Add search results if there's a query
+		if (query) {
+			const files = await searchService.fileSearch(
+				fileQueryBuilder.file(
+					contextService.getWorkspace().folders,
+					{
+						extraFileResources: instantiationService.invokeFunction(getOutOfWorkspaceEditorResources),
+						filePattern: query,
+						sortByScore: true,
+						maxResults: 512,
+					}
+				),
+				cancellationTokenCts.token
+			);
+
+			for (const result of files.results) {
+				const item = createQuickPickItem(result.resource, labelService, modelService, languageService);
+				if (!uniqueItems.has(item.uri.toString())) {
+					uniqueItems.set(item.uri.toString(), item);
 				}
-			),
-			cancellationTokenCts.token
-		);
-		picker.items = files.results.map(result => createQuickPickItem(result.resource, labelService, modelService, languageService));
+			}
+		}
+
+		// Add history items if not already present
+		for (const item of historyItems) {
+			if (!uniqueItems.has(item.uri.toString())) {
+				uniqueItems.set(item.uri.toString(), item);
+			}
+		}
+
+		// Update picker items
+		const newItems = Array.from(uniqueItems.values());
+		picker.items = newItems;
+
+		// Restore selection by matching URIs
+		picker.selectedItems = newItems.filter(item => selectedItemURIs.has(item.uri.toString()));
 	});
 
 	picker.show();
