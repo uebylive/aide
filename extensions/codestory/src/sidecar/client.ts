@@ -17,10 +17,9 @@ import { sleep } from '../utilities/sleep';
 import { readCustomSystemInstruction } from '../utilities/systemInstruction';
 import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/types';
 import { getUserId } from '../utilities/uniqueId';
+import { detectDefaultShell } from './default-shell';
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
 import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, PlanResponse, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
-
-const defaultShell = import('default-shell').then(m => m.default);
 
 export enum CompletionStopReason {
 	/**
@@ -1073,7 +1072,7 @@ export class SideCarClient {
 		const openFiles = vscode.window.visibleTextEditors.map((textDocument) => {
 			return textDocument.document.uri.fsPath;
 		});
-		const currentShell = await defaultShell;
+		const currentShell = detectDefaultShell();
 		if (shouldUseUnstableToolAgent()) {
 			baseUrl.pathname = '/api/agentic/agent_tool_use';
 		} else {
@@ -1163,7 +1162,7 @@ export class SideCarClient {
 		const openFiles = vscode.window.visibleTextEditors.map((textDocument) => {
 			return textDocument.document.uri.fsPath;
 		});
-		const currentShell = await defaultShell;
+		const currentShell = detectDefaultShell();
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		baseUrl.pathname = '/api/agentic/agent_session_edit_agentic';
 		const url = baseUrl.toString();
@@ -1216,7 +1215,7 @@ export class SideCarClient {
 		const openFiles = vscode.window.visibleTextEditors.map((textDocument) => {
 			return textDocument.document.uri.fsPath;
 		});
-		const currentShell = await defaultShell;
+		const currentShell = detectDefaultShell();
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		baseUrl.pathname = '/api/agentic/agent_session_plan_iterate';
 		const url = baseUrl.toString();
@@ -1271,7 +1270,7 @@ export class SideCarClient {
 		const openFiles = vscode.window.visibleTextEditors.map((textDocument) => {
 			return textDocument.document.uri.fsPath;
 		});
-		const currentShell = await defaultShell;
+		const currentShell = detectDefaultShell();
 		baseUrl.pathname = '/api/agentic/agent_session_edit_anchored';
 		const url = baseUrl.toString();
 		const body = {
@@ -1387,7 +1386,7 @@ export class SideCarClient {
 		const openFiles = vscode.window.visibleTextEditors.map((textDocument) => {
 			return textDocument.document.uri.fsPath;
 		});
-		const currentShell = await defaultShell;
+		const currentShell = detectDefaultShell();
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		baseUrl.pathname = '/api/agentic/agent_session_chat';
 		const url = baseUrl.toString();
