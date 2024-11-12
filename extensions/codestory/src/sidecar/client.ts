@@ -1065,7 +1065,7 @@ export class SideCarClient {
 		workosAccessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
-		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
+		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), workosAccessToken);
 		const allFiles = vscode.workspace.textDocuments.map((textDocument) => {
 			return textDocument.uri.fsPath;
 		});
@@ -1128,7 +1128,7 @@ export class SideCarClient {
 			exchange_id: exchangeId,
 			editor_url: editorUrl,
 			access_token: accessToken,
-			model_configuration: await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration()),
+			model_configuration: await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), accessToken),
 		};
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
@@ -1216,7 +1216,7 @@ export class SideCarClient {
 			return textDocument.document.uri.fsPath;
 		});
 		const currentShell = detectDefaultShell();
-		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
+		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), workosAccessToken);
 		baseUrl.pathname = '/api/agentic/agent_session_plan_iterate';
 		const url = baseUrl.toString();
 		const body = {
@@ -1263,7 +1263,7 @@ export class SideCarClient {
 		workosAccessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
-		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
+		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), workosAccessToken);
 		const allFiles = vscode.workspace.textDocuments.map((textDocument) => {
 			return textDocument.uri.fsPath;
 		});
@@ -1387,7 +1387,7 @@ export class SideCarClient {
 			return textDocument.document.uri.fsPath;
 		});
 		const currentShell = detectDefaultShell();
-		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
+		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), workosAccessToken);
 		baseUrl.pathname = '/api/agentic/agent_session_chat';
 		const url = baseUrl.toString();
 		const body = {
