@@ -4,12 +4,13 @@
  *--------------------------------------------------------------------------------------------*/
 import * as path from 'path';
 import * as vscode from 'vscode';
+import defaultShell from 'default-shell';
 import { sidecarTypeDefinitionsWithNode } from '../completions/helpers/vscodeApi';
 import { LoggingService } from '../completions/logger';
 import { StreamCompletionResponse, StreamCompletionResponseUpdates } from '../completions/providers/fetch-and-process-completions';
 import { CompletionRequest, CompletionResponse } from '../inlineCompletion/sidecarCompletion';
 import { SelectionDataForExplain } from '../utilities/getSelectionContext';
-import { sidecarNotIndexRepository } from '../utilities/sidecarUrl';
+import { shouldUseUnstableToolAgent, sidecarNotIndexRepository } from '../utilities/sidecarUrl';
 import { sleep } from '../utilities/sleep';
 import { readCustomSystemInstruction } from '../utilities/systemInstruction';
 import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/types';
@@ -1066,7 +1067,18 @@ export class SideCarClient {
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
-		baseUrl.pathname = '/api/agentic/agent_session_plan';
+		const allFiles = vscode.workspace.textDocuments.map((textDocument) => {
+			return textDocument.uri.fsPath;
+		});
+		const openFiles = vscode.window.visibleTextEditors.map((textDocument) => {
+			return textDocument.document.uri.fsPath;
+		});
+		const currentShell = defaultShell;
+		if (shouldUseUnstableToolAgent()) {
+			baseUrl.pathname = '/api/agentic/agent_tool_use';
+		} else {
+			baseUrl.pathname = '/api/agentic/agent_session_plan';
+		}
 		const url = baseUrl.toString();
 		const body = {
 			session_id: sessionId,
@@ -1081,6 +1093,9 @@ export class SideCarClient {
 			codebase_search: codebaseSearch,
 			access_token: workosAccessToken,
 			model_configuration: sideCarModelConfiguration,
+			all_files: allFiles,
+			open_files: openFiles,
+			shell: currentShell,
 		};
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
@@ -1142,6 +1157,13 @@ export class SideCarClient {
 		codebaseSearch: boolean,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
+		const allFiles = vscode.workspace.textDocuments.map((textDocument) => {
+			return textDocument.uri.fsPath;
+		});
+		const openFiles = vscode.window.visibleTextEditors.map((textDocument) => {
+			return textDocument.document.uri.fsPath;
+		});
+		const currentShell = defaultShell;
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		baseUrl.pathname = '/api/agentic/agent_session_edit_agentic';
 		const url = baseUrl.toString();
@@ -1157,6 +1179,9 @@ export class SideCarClient {
 			project_labels: projectLabels,
 			codebase_search: codebaseSearch,
 			model_configuration: sideCarModelConfiguration,
+			all_files: allFiles,
+			open_files: openFiles,
+			shell: currentShell,
 		};
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
@@ -1185,6 +1210,13 @@ export class SideCarClient {
 		workosAccessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
+		const allFiles = vscode.workspace.textDocuments.map((textDocument) => {
+			return textDocument.uri.fsPath;
+		});
+		const openFiles = vscode.window.visibleTextEditors.map((textDocument) => {
+			return textDocument.document.uri.fsPath;
+		});
+		const currentShell = defaultShell;
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		baseUrl.pathname = '/api/agentic/agent_session_plan_iterate';
 		const url = baseUrl.toString();
@@ -1201,6 +1233,9 @@ export class SideCarClient {
 			codebase_search: false,
 			access_token: workosAccessToken,
 			model_configuration: sideCarModelConfiguration,
+			all_files: allFiles,
+			open_files: openFiles,
+			shell: currentShell,
 		};
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
@@ -1230,6 +1265,13 @@ export class SideCarClient {
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
+		const allFiles = vscode.workspace.textDocuments.map((textDocument) => {
+			return textDocument.uri.fsPath;
+		});
+		const openFiles = vscode.window.visibleTextEditors.map((textDocument) => {
+			return textDocument.document.uri.fsPath;
+		});
+		const currentShell = defaultShell;
 		baseUrl.pathname = '/api/agentic/agent_session_edit_anchored';
 		const url = baseUrl.toString();
 		const body = {
@@ -1245,6 +1287,9 @@ export class SideCarClient {
 			codebase_search: false,
 			access_token: workosAccessToken,
 			model_configuration: sideCarModelConfiguration,
+			all_files: allFiles,
+			open_files: openFiles,
+			shell: currentShell,
 		};
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
@@ -1336,6 +1381,13 @@ export class SideCarClient {
 		workosAccessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
+		const allFiles = vscode.workspace.textDocuments.map((textDocument) => {
+			return textDocument.uri.fsPath;
+		});
+		const openFiles = vscode.window.visibleTextEditors.map((textDocument) => {
+			return textDocument.document.uri.fsPath;
+		});
+		const currentShell = defaultShell;
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		baseUrl.pathname = '/api/agentic/agent_session_chat';
 		const url = baseUrl.toString();
@@ -1352,6 +1404,9 @@ export class SideCarClient {
 			codebase_search: false,
 			access_token: workosAccessToken,
 			model_configuration: sideCarModelConfiguration,
+			all_files: allFiles,
+			open_files: openFiles,
+			shell: currentShell,
 		};
 
 		// consider using headers
