@@ -156,7 +156,7 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 						this.logService.error('ChatListItemRenderer#renderChatContentDiff: error replacing part', err);
 					}
 				} else {
-					templateData.renderedParts?.push(newPart);
+					templateData.value.appendChild(newPart.domNode);
 				}
 			} else if (alreadyRenderedPart) {
 				alreadyRenderedPart.domNode.remove();
@@ -165,9 +165,8 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 	}
 
 	private getNextProgressiveRenderContent(element: IAideAgentPlanStepViewModel): IChatRendererContent[] {
-		// const renderableResponse = annotateSpecialMarkdownContent(element.response.value);
-		// return renderableResponse;
-		return [];
+		const renderableResponse = annotateSpecialMarkdownContent(element.value);
+		return renderableResponse;
 	}
 
 	private diff(renderedParts: ReadonlyArray<IAideAgentPlanContentPart>, contentToRender: ReadonlyArray<IChatRendererContent>, element: IAideAgentPlanStepViewModel): ReadonlyArray<IChatRendererContent | null> {
