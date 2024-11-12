@@ -2,14 +2,16 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
+
 import * as path from 'path';
 import * as vscode from 'vscode';
-import defaultShell from 'default-shell';
 import { sidecarTypeDefinitionsWithNode } from '../completions/helpers/vscodeApi';
 import { LoggingService } from '../completions/logger';
 import { StreamCompletionResponse, StreamCompletionResponseUpdates } from '../completions/providers/fetch-and-process-completions';
 import { CompletionRequest, CompletionResponse } from '../inlineCompletion/sidecarCompletion';
+import { CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, SidecarContextEvent, UserContext } from '../server/types';
 import { SelectionDataForExplain } from '../utilities/getSelectionContext';
+import { AidePlanTimer } from '../utilities/planTimer';
 import { shouldUseUnstableToolAgent, sidecarNotIndexRepository } from '../utilities/sidecarUrl';
 import { sleep } from '../utilities/sleep';
 import { readCustomSystemInstruction } from '../utilities/systemInstruction';
@@ -17,10 +19,8 @@ import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/ty
 import { getUserId } from '../utilities/uniqueId';
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
 import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, PlanResponse, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
-import { CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, SidecarContextEvent, UserContext } from '../server/types';
-// import { GENERATE_PLAN } from '../completions/providers/generatePlan';
-// import { AideProbeProvider } from '../completions/providers/probeProvider';
-import { AidePlanTimer } from '../utilities/planTimer';
+
+const defaultShell = import('default-shell').then(m => m.default);
 
 export enum CompletionStopReason {
 	/**
@@ -1073,7 +1073,7 @@ export class SideCarClient {
 		const openFiles = vscode.window.visibleTextEditors.map((textDocument) => {
 			return textDocument.document.uri.fsPath;
 		});
-		const currentShell = defaultShell;
+		const currentShell = await defaultShell;
 		if (shouldUseUnstableToolAgent()) {
 			baseUrl.pathname = '/api/agentic/agent_tool_use';
 		} else {
@@ -1163,7 +1163,7 @@ export class SideCarClient {
 		const openFiles = vscode.window.visibleTextEditors.map((textDocument) => {
 			return textDocument.document.uri.fsPath;
 		});
-		const currentShell = defaultShell;
+		const currentShell = await defaultShell;
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		baseUrl.pathname = '/api/agentic/agent_session_edit_agentic';
 		const url = baseUrl.toString();
@@ -1216,7 +1216,7 @@ export class SideCarClient {
 		const openFiles = vscode.window.visibleTextEditors.map((textDocument) => {
 			return textDocument.document.uri.fsPath;
 		});
-		const currentShell = defaultShell;
+		const currentShell = await defaultShell;
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		baseUrl.pathname = '/api/agentic/agent_session_plan_iterate';
 		const url = baseUrl.toString();
@@ -1271,7 +1271,7 @@ export class SideCarClient {
 		const openFiles = vscode.window.visibleTextEditors.map((textDocument) => {
 			return textDocument.document.uri.fsPath;
 		});
-		const currentShell = defaultShell;
+		const currentShell = await defaultShell;
 		baseUrl.pathname = '/api/agentic/agent_session_edit_anchored';
 		const url = baseUrl.toString();
 		const body = {
@@ -1387,7 +1387,7 @@ export class SideCarClient {
 		const openFiles = vscode.window.visibleTextEditors.map((textDocument) => {
 			return textDocument.document.uri.fsPath;
 		});
-		const currentShell = defaultShell;
+		const currentShell = await defaultShell;
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		baseUrl.pathname = '/api/agentic/agent_session_chat';
 		const url = baseUrl.toString();
