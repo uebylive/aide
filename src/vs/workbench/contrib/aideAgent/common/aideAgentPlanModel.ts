@@ -27,6 +27,7 @@ export interface IAideAgentPlanStepModel {
 }
 
 export interface IAideAgentPlanModel {
+	readonly onDidDispose: Event<void>;
 	readonly onDidChange: Event<IAideAgentPlanChangeEvent>;
 	readonly sessionId: string;
 	getSteps(): IAideAgentPlanStepModel[];
@@ -85,6 +86,9 @@ export class AideAgentPlanStepModel extends Disposable implements IAideAgentPlan
 }
 
 export class AideAgentPlanModel extends Disposable implements IAideAgentPlanModel {
+	private readonly _onDidDispose = this._register(new Emitter<void>());
+	readonly onDidDispose = this._onDidDispose.event;
+
 	private readonly _onDidChange = this._register(new Emitter<IAideAgentPlanChangeEvent>());
 	readonly onDidChange = this._onDidChange.event;
 
@@ -109,5 +113,11 @@ export class AideAgentPlanModel extends Disposable implements IAideAgentPlanMode
 			this._steps.push(step);
 			this._onDidChange.fire({ kind: 'addPlanStep', step });
 		}
+	}
+
+	override dispose(): void {
+		this._onDidDispose.fire();
+
+		super.dispose();
 	}
 }

@@ -77,11 +77,15 @@ export class AideAgentPlanWidget extends Disposable {
 
 	setModel(model: IAideAgentPlanModel): void {
 		this.viewModel = this.instantiationService.createInstance(AideAgentPlanViewModel, model);
-		this.viewModelDisposables.add(Event.accumulate(this.viewModel.onDidChange, 0)(events => {
+		this.viewModelDisposables.add(Event.accumulate(this.viewModel.onDidChange, 0)(() => {
 			if (!this.viewModel) {
 				return;
 			}
 
+			this.onDidChangeItems();
+		}));
+		this.viewModelDisposables.add(this.viewModel.onDidDisposeModel(() => {
+			this.viewModel = undefined;
 			this.onDidChangeItems();
 		}));
 
@@ -100,7 +104,18 @@ export class AideAgentPlanWidget extends Disposable {
 				};
 			});
 
-			this.tree.setChildren(null, treeItems);
+			this.tree.setChildren(null, treeItems, {
+				diffIdentityProvider: {
+					getId: (element) => element.dataId,
+				}
+			});
 		}
+	}
+
+	layout(height: number, width: number): void {
+		width = Math.min(width, 600);
+
+		this.tree.layout(height, width);
+		this.tree.getHTMLElement().style.height = `${height}px`;
 	}
 }

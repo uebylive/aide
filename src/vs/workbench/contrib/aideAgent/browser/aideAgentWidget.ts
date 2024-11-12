@@ -38,6 +38,7 @@ import { ChatAccessibilityProvider } from './aideAgentAccessibilityProvider.js';
 import { ChatInputPart } from './aideAgentInputPart.js';
 import { ChatListDelegate, ChatListItemRenderer, IChatRendererDelegate } from './aideAgentListRenderer.js';
 import { ChatEditorOptions } from './aideAgentOptions.js';
+import { invokePlanView } from './aideAgentPlan.js';
 import './media/aideAgent.css';
 
 const $ = dom.$;
@@ -725,9 +726,14 @@ export class ChatWidget extends Disposable implements IChatWidget {
 				c.setInputState(viewState.inputState?.[c.id]);
 			}
 		});
-		this.viewModelDisposables.add(model.onDidChange((e) => {
+		this.viewModelDisposables.add(model.onDidChange(async (e) => {
 			if (e.kind === 'setAgent') {
 				this._onDidChangeAgent.fire({ agent: e.agent, slashCommand: e.command });
+			} else if (e.kind === 'startPlan') {
+				const planWidget = await invokePlanView(this.viewsService);
+				if (planWidget) {
+					planWidget.setModel(e.plan);
+				}
 			}
 		}));
 

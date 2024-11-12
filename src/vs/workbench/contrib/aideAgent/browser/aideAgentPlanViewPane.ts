@@ -3,7 +3,6 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { DisposableStore } from '../../../../base/common/lifecycle.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IContextMenuService } from '../../../../platform/contextview/browser/contextView.js';
@@ -18,11 +17,11 @@ import { IViewPaneOptions, ViewPane } from '../../../browser/parts/views/viewPan
 import { IViewDescriptorService } from '../../../common/views.js';
 import { AideAgentPlanWidget } from './aideAgentPlanWidget.js';
 
-export const AIDE_AGENT_PLAN_VIEW_PANE_ID = 'workbench.panel.aideAgentPlan';
 export class AideAgentPlanViewPane extends ViewPane {
 	private _widget!: AideAgentPlanWidget;
-
-	private readonly modelDisposables = this._register(new DisposableStore());
+	get widget() {
+		return this._widget;
+	}
 
 	constructor(
 		options: IViewPaneOptions,
@@ -48,11 +47,10 @@ export class AideAgentPlanViewPane extends ViewPane {
 			AideAgentPlanWidget,
 		));
 		this._widget.render(parent);
-		this.updateModel();
 	}
 
-	private updateModel(): void {
-		this.modelDisposables.clear();
-		this._widget.setModel(model);
+	protected override layoutBody(height: number, width: number): void {
+		super.layoutBody(height, width);
+		this._widget.layout(height, width);
 	}
 }

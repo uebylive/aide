@@ -22,11 +22,12 @@ import { isProposedApiEnabled } from '../../../services/extensions/common/extens
 import * as extensionsRegistry from '../../../services/extensions/common/extensionsRegistry.js';
 import { showExtensionsWithIdsCommandId } from '../../extensions/browser/extensionsActions.js';
 import { IExtensionsWorkbenchService } from '../../extensions/common/extensions.js';
-import { ChatAgentLocation, IChatAgentData, IAideAgentAgentService } from '../common/aideAgentAgents.js';
+import { ChatAgentLocation, IAideAgentAgentService, IChatAgentData } from '../common/aideAgentAgents.js';
 import { CONTEXT_CHAT_EXTENSION_INVALID, CONTEXT_CHAT_PANEL_PARTICIPANT_REGISTERED } from '../common/aideAgentContextKeys.js';
 import { IRawChatParticipantContribution } from '../common/aideAgentParticipantContribTypes.js';
 import { CHAT_VIEW_ID } from './aideAgent.js';
-import { AIDE_AGENT_PLAN_VIEW_PANE_ID, AideAgentPlanViewPane } from './aideAgentPlanViewPane.js';
+import { AIDE_AGENT_PLAN_VIEW_PANE_ID } from './aideAgentPlan.js';
+import { AideAgentPlanViewPane } from './aideAgentPlanViewPane.js';
 import { CHAT_SIDEBAR_PANEL_ID, ChatViewPane } from './aideAgentViewPane.js';
 
 const chatParticipantExtensionPoint = extensionsRegistry.ExtensionsRegistry.registerExtensionPoint<IRawChatParticipantContribution[]>({

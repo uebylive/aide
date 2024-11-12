@@ -738,7 +738,8 @@ export type IChatChangeEvent =
 	| IChatAddResponseEvent
 	| IChatSetAgentEvent
 	| IChatMoveEvent
-	| IChatCodeEditEvent;
+	| IChatCodeEditEvent
+	| IChatStartPlanEvent;
 
 export interface IChatAddRequestEvent {
 	kind: 'addRequest';
@@ -793,6 +794,11 @@ export interface IChatSetAgentEvent {
 
 export interface IChatInitEvent {
 	kind: 'initialize';
+}
+
+export interface IChatStartPlanEvent {
+	kind: 'startPlan';
+	plan: IAideAgentPlanModel;
 }
 
 export enum ChatModelInitState {
@@ -1158,6 +1164,7 @@ export class ChatModel extends Disposable implements IChatModel {
 	private applyPlanStep(progress: IAideAgentPlanStep) {
 		if (!this._plan) {
 			this._plan = this.instantiationService.createInstance(AideAgentPlanModel, this.sessionId);
+			this._onDidChange.fire({ kind: 'startPlan', plan: this._plan });
 		}
 
 		this._plan.updateSteps(progress);

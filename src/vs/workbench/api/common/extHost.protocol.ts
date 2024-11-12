@@ -1442,7 +1442,7 @@ export type IAideAgentContentProgressDto =
 	| Dto<Exclude<IAideAgentProgressResponseContent, IChatTask>>
 	| IChatTaskDto;
 
-export type IAideAgentAgentHistoryEntryDto = Exclude<IChatAgentHistoryEntryDto, 'response'> & {
+export type IAideAgentAgentHistoryEntryDto = Omit<IChatAgentHistoryEntryDto, 'response'> & {
 	response: ReadonlyArray<IAideAgentContentProgressDto>;
 };
 

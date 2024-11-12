@@ -16,6 +16,7 @@ export interface IAideAgentPlanAddStepEvent {
 
 export interface IAideAgentPlanStepViewModel {
 	readonly id: string;
+	readonly dataId: string;
 	readonly isComplete: boolean;
 	readonly value: ReadonlyArray<IAideAgentPlanProgressContent>;
 	currentRenderedHeight: number | undefined;
@@ -28,6 +29,8 @@ export interface IAideAgentPlanViewModel {
 }
 
 export class AideAgentPlanStepViewModel extends Disposable implements IAideAgentPlanStepViewModel {
+	private _modelChangeCount = 0;
+
 	currentRenderedHeight: number | undefined;
 
 	private readonly _onDidChange = this._register(new Emitter<void>());
@@ -39,12 +42,19 @@ export class AideAgentPlanStepViewModel extends Disposable implements IAideAgent
 		super();
 
 		this._register(_model.onDidChange(() => {
+			// new data -> new id, new content to render
+			this._modelChangeCount++;
+
 			this._onDidChange.fire();
 		}));
 	}
 
 	get id(): string {
 		return this._model.index.toString();
+	}
+
+	get dataId(): string {
+		return this.id + `_${this._modelChangeCount}`;
 	}
 
 	get value(): ReadonlyArray<IAideAgentPlanProgressContent> {
@@ -57,6 +67,9 @@ export class AideAgentPlanStepViewModel extends Disposable implements IAideAgent
 }
 
 export class AideAgentPlanViewModel extends Disposable implements IAideAgentPlanViewModel {
+	private readonly _onDidDisposeModel = this._register(new Emitter<void>());
+	readonly onDidDisposeModel = this._onDidDisposeModel.event;
+
 	private readonly _onDidChange = this._register(new Emitter<IAideAgentPlanViewModelChangeEvent>());
 	readonly onDidChange = this._onDidChange.event;
 
@@ -77,6 +90,7 @@ export class AideAgentPlanViewModel extends Disposable implements IAideAgentPlan
 			this.onAddPlanStep(step);
 		});
 
+		this._register(_model.onDidDispose(() => this._onDidDisposeModel.fire()));
 		this._register(_model.onDidChange(e => {
 			if (e.kind === 'addPlanStep') {
 				this.onAddPlanStep(e.step);
