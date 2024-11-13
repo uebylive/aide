@@ -111,7 +111,60 @@ type FrameworkEvent = {
 	SearchIteration: IterativeSearchEvent;
 	AgenticTopLevelThinking: string;
 	AgenticSymbolLevelThinking: StepListItem;
+	ToolUseDetected: ToolUseDetectedEvent;
 };
+
+interface ToolUseDetectedEvent {
+	tool_use_partial_input: ToolInputPartial;
+	thinking: string;
+};
+
+type ToolInputPartial = {
+	CodeEditing: CodeEditingPartialRequest;
+	ListFiles: ListFilesInput;
+	SearchFileContentWithRegex: SearchFileContentInputPartial;
+	OpenFile: OpenFileRequestPartial;
+	LSPDiagnostics: WorkspaceDiagnosticsPartial;
+	TerminalCommand: TerminalInputPartial;
+	AskFollowupQuestions: AskFollowupQuestionsRequest;
+	AttemptCompletion: AttemptCompletionClientRequest;
+};
+
+interface CodeEditingPartialRequest {
+	fs_file_path: string;
+	instruction: string;
+}
+
+interface ListFilesInput {
+	directory_path: string;
+	recursive: boolean;
+}
+
+interface OpenFileRequestPartial {
+	fs_file_path: string;
+}
+
+interface WorkspaceDiagnosticsPartial { }
+
+interface TerminalInputPartial {
+	command: string;
+}
+
+interface AskFollowupQuestionsRequest {
+	question: string;
+}
+
+interface AttemptCompletionClientRequest {
+	result: string;
+	command: string | null;
+}
+
+
+interface SearchFileContentInputPartial {
+	directory_path: string;
+	regex_pattern: string;
+	file_pattern: string | null;
+}
 
 type ExchangeMessageEvent = {
 	FinishedExchange: FinishedExchangeEvent;

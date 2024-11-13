@@ -545,6 +545,11 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					// 	symbolName: ref.symbol_name,
 					// 	reason: ref.reason,
 					// });
+				} else if (event.event.FrameworkEvent.ToolUseDetected) {
+					const toolUseDetectedEvent = event.event.FrameworkEvent.ToolUseDetected;
+					// just send this over as markdown right now for checking if things are working
+					responseStream.stream.markdown(`${toolUseDetectedEvent.thinking}\n${JSON.stringify(toolUseDetectedEvent.tool_use_partial_input)}`);
+
 				} else if (event.event.FrameworkEvent.ReferencesUsed) {
 					const references = event.event.FrameworkEvent.ReferencesUsed.variables;
 					references.forEach((reference) => {
