@@ -30,6 +30,7 @@ You'll need the following tools:
   - **Linux**
     * On Debian-based Linux: `sudo apt-get install build-essential g++ libx11-dev libxkbfile-dev libsecret-1-dev libkrb5-dev python-is-python3`
     * On Red Hat-based Linux: `sudo yum groupinstall "Development Tools" && sudo yum install libX11-devel.x86_64 libxkbfile-devel.x86_64 libsecret-devel krb5-devel # or .i686`.
+      * Specifically for Fedora: `sudo dnf group install -y development-tools && sudo dnf install -y libX11-devel libxkbfile-devel libsecret-devel krb5-devel`
     * Others:
       * `make`
       * [pkg-config](https://www.freedesktop.org/wiki/Software/pkg-config/)
