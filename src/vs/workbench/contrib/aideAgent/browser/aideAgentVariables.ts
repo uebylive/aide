@@ -19,7 +19,7 @@ import { IEditorService } from '../../../services/editor/common/editorService.js
 import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { IPinnedContextService } from '../../pinnedContext/common/pinnedContext.js';
 import { ChatAgentLocation } from '../common/aideAgentAgents.js';
-import { AgentScope, IChatModel, IChatRequestVariableData, IChatRequestVariableEntry } from '../common/aideAgentModel.js';
+import { AgentMode, AgentScope, IChatModel, IChatRequestVariableData, IChatRequestVariableEntry } from '../common/aideAgentModel.js';
 import { ChatRequestDynamicVariablePart, ChatRequestToolPart, ChatRequestVariablePart, IParsedChatRequest } from '../common/aideAgentParserTypes.js';
 import { IChatContentReference, IChatSendRequestOptions } from '../common/aideAgentService.js';
 import { IAideAgentVariablesService, IChatRequestVariableValue, IChatVariableData, IChatVariableResolver, IChatVariableResolverProgress, IDynamicVariable } from '../common/aideAgentVariables.js';
@@ -106,52 +106,37 @@ export class ChatVariablesService implements IAideAgentVariablesService {
 
 		await Promise.allSettled(jobs);
 
-		// Always attach the active editor
-		const activeEditor = this.editorService.activeTextEditorControl;
-		if (isCodeEditor(activeEditor)) {
-			const model = activeEditor.getModel();
-			if (model) {
-				const selection = activeEditor.getSelection();
-				let range: IRange;
-				if (selection && !selection.isEmpty()) {
-					range = {
-						startLineNumber: selection.startLineNumber,
-						startColumn: selection.startColumn,
-						endLineNumber: selection.endLineNumber,
-						endColumn: selection.endColumn,
-					};
-				} else {
-					range = model.getFullModelRange();
+		// Attach pinned context, if the scope is set to 'Pinned Context'
+		if (options?.agentMode === AgentMode.Edit) {
+			if (options.agentScope === AgentScope.Selection) {
+				const activeEditor = this.editorService.activeTextEditorControl;
+				if (isCodeEditor(activeEditor)) {
+					const model = activeEditor.getModel();
+					if (model) {
+						const selection = activeEditor.getSelection();
+						let range: IRange;
+						if (selection && !selection.isEmpty()) {
+							range = {
+								startLineNumber: selection.startLineNumber - 1,
+								startColumn: selection.startColumn - 1,
+								endLineNumber: selection.endLineNumber - 1,
+								endColumn: selection.endColumn - 1,
+							};
+						} else {
+							range = model.getFullModelRange();
+						}
+
+						resolvedAttachedContext.push({
+							id: 'vscode.file',
+							name: basename(model.uri.fsPath),
+							value: { uri: model.uri, range },
+						});
+					}
 				}
-
-				resolvedAttachedContext.push({
-					id: 'vscode.editor.selection',
-					name: basename(model.uri.fsPath),
-					value: { uri: model.uri, range },
-				});
-			}
-		}
-
-		// Always attach pinned context
-		const pinnedContexts = this.pinnedContextService.getPinnedContexts();
-		pinnedContexts.forEach(context => {
-			const model = this.modelService.getModel(context);
-			if (model) {
-				const range = model.getFullModelRange();
-				resolvedAttachedContext.push({
-					id: 'vscode.file.pinnedContext',
-					name: basename(model.uri.fsPath),
-					value: { uri: model.uri, range }
-				});
-			}
-		});
-
-		if (options?.agentScope === AgentScope.Codebase) {
-			const openEditors = this.editorService.editors;
-			openEditors.forEach(editor => {
-				const resource = editor.resource;
-				if (resource) {
-					const model = this.modelService.getModel(resource);
+			} else if (options.agentScope === AgentScope.PinnedContext) {
+				const pinnedContexts = this.pinnedContextService.getPinnedContexts();
+				pinnedContexts.forEach(context => {
+					const model = this.modelService.getModel(context);
 					if (model) {
 						const range = model.getFullModelRange();
 						resolvedAttachedContext.push({
@@ -160,8 +145,24 @@ export class ChatVariablesService implements IAideAgentVariablesService {
 							value: { uri: model.uri, range }
 						});
 					}
-				}
-			});
+				});
+			} else if (options.agentScope === AgentScope.Codebase) {
+				const openEditors = this.editorService.editors;
+				openEditors.forEach(editor => {
+					const resource = editor.resource;
+					if (resource) {
+						const model = this.modelService.getModel(resource);
+						if (model) {
+							const range = model.getFullModelRange();
+							resolvedAttachedContext.push({
+								id: 'vscode.file',
+								name: basename(model.uri.fsPath),
+								value: { uri: model.uri, range }
+							});
+						}
+					}
+				});
+			}
 		}
 
 		// Make array not sparse

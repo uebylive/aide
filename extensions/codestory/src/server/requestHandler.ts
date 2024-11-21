@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 import * as http from 'http';
-import { SidecarApplyEditsRequest, LSPDiagnostics, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, LSPQuickFixInvocationRequest, SidecarQuickFixRequest, SidecarSymbolSearchRequest, SidecarInlayHintsRequest, SidecarGetOutlineNodesRequest, SidecarOutlineNodesWithContentRequest, EditedCodeStreamingRequest, SidecarRecentEditsRetrieverRequest, SidecarRecentEditsRetrieverResponse, SidecarCreateFileRequest, LSPFileDiagnostics, SidecarGetPreviousWordRangeRequest, SidecarDiagnosticsResponse, SidecarCreateNewExchangeRequest, SidecarUndoPlanStep, SidecarExecuteTerminalCommandRequest } from './types';
+import { SidecarApplyEditsRequest, LSPDiagnostics, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, LSPQuickFixInvocationRequest, SidecarQuickFixRequest, SidecarSymbolSearchRequest, SidecarInlayHintsRequest, SidecarGetOutlineNodesRequest, SidecarOutlineNodesWithContentRequest, EditedCodeStreamingRequest, SidecarRecentEditsRetrieverRequest, SidecarRecentEditsRetrieverResponse, SidecarCreateFileRequest, LSPFileDiagnostics, SidecarGetPreviousWordRangeRequest, SidecarDiagnosticsResponse, SidecarCreateNewExchangeRequest, SidecarUndoPlanStep } from './types';
 import { Position, Range } from 'vscode';
 import { getDiagnosticsFromEditor, getEnrichedDiagnostics, getFileDiagnosticsFromEditor, getFullWorkspaceDiagnostics, getHoverInformation } from './diagnostics';
 import { openFileEditor } from './openFile';
@@ -18,8 +18,6 @@ import { getOutlineNodes, getOutlineNodesFromContent } from './outlineNodes';
 import { createFileResponse } from './createFile';
 import { getPreviousWordAtPosition } from './previousWordCommand';
 import { goToTypeDefinition } from './goToTypeDefinition';
-import { getRipGrepPath } from '../utilities/ripGrep';
-import { executeTerminalCommand } from '../terminal/TerminalManager';
 
 // Helper function to read the request body
 function readRequestBody(req: http.IncomingMessage): Promise<string> {
@@ -248,18 +246,6 @@ export function handleRequest(
 				const response = await undoToCheckpoint(request);
 				res.writeHead(200, { 'Content-Type': 'application/json' });
 				res.end(JSON.stringify(response));
-			} else if (req.method === 'POST' && req.url === '/rip_grep_path') {
-				const ripGrepPath = await getRipGrepPath();
-				res.writeHead(200, { 'Content-Type': 'application/json' });
-				res.end(JSON.stringify({
-					'rip_grep_path': ripGrepPath,
-				}));
-			} else if (req.method === 'POST' && req.url === '/execute_terminal_command') {
-				const body = await readRequestBody(req);
-				const request: SidecarExecuteTerminalCommandRequest = JSON.parse(body);
-				const response = await executeTerminalCommand(request.command, process.cwd());
-				res.writeHead(200, { 'Content-Type': 'application/json' });
-				res.end(JSON.stringify({ output: response }));
 			} else {
 				// console.log('HC request');
 				res.writeHead(200, { 'Content-Type': 'application/json' });

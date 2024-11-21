@@ -26,7 +26,6 @@ import { CodeMapperService, IAideAgentCodeMapperService } from '../common/aideAg
 import '../common/aideAgentColors.js';
 import { IAideAgentEditingService } from '../common/aideAgentEditingService.js';
 import { chatVariableLeader } from '../common/aideAgentParserTypes.js';
-import { IAideAgentPlanService } from '../common/aideAgentPlanService.js';
 import { IAideAgentService } from '../common/aideAgentService.js';
 import { ChatService } from '../common/aideAgentServiceImpl.js';
 import { ChatSlashCommandService, IAideAgentSlashCommandService } from '../common/aideAgentSlashCommands.js';
@@ -37,19 +36,16 @@ import { IAideAgentLMStatsService, LanguageModelStatsService } from '../common/l
 import { IAideAgentLMToolsService, LanguageModelToolsService } from '../common/languageModelToolsService.js';
 import { LanguageModelToolsExtensionPointHandler } from '../common/tools/languageModelToolsContribution.js';
 import { ChatAccessibilityHelp } from './actions/aideAgentAccessibilityHelp.js';
-import { registerAgentActions } from './actions/aideAgentActions.js';
-import { registerChatActions } from './actions/aideAgentChatActions.js';
+import { registerChatActions } from './actions/aideAgentActions.js';
 import { ACTION_ID_NEW_CHAT, registerNewChatActions } from './actions/aideAgentClearActions.js';
 import { registerChatCodeBlockActions, registerChatCodeCompareBlockActions } from './actions/aideAgentCodeblockActions.js';
 import { registerCodeEditActions } from './actions/aideAgentCodeEditActions.js';
 import { registerChatContextActions } from './actions/aideAgentContextActions.js';
 import { registerChatCopyActions } from './actions/aideAgentCopyActions.js';
 import { registerChatDeveloperActions } from './actions/aideAgentDeveloperActions.js';
-import { registerChatEditsActions } from './actions/aideAgentEditsActions.js';
-import { SubmitChatRequestAction, registerChatExecuteActions } from './actions/aideAgentExecuteActions.js';
+import { registerChatExecuteActions, SubmitChatAction } from './actions/aideAgentExecuteActions.js';
 import { registerChatFileTreeActions } from './actions/aideAgentFileTreeActions.js';
 import { registerAideAgentFloatingWidgetActions } from './actions/aideAgentFloatingWidgetActions.js';
-import { registerChatPlanStepActions } from './actions/aideAgentPlanStepsActions.js';
 import { registerChatTitleActions } from './actions/aideAgentTitleActions.js';
 import { IAideAgentAccessibilityService, IAideAgentCodeBlockContextProviderService, IAideAgentWidgetService } from './aideAgent.js';
 import { AideAgentAccessibilityService } from './aideAgentAccessibilityService.js';
@@ -61,8 +57,6 @@ import { AideAgentFloatingWidgetService, IAideAgentFloatingWidgetService } from 
 import { ChatGettingStartedContribution } from './aideAgentGettingStarted.js';
 import { agentSlashCommandToMarkdown, agentToMarkdown } from './aideAgentMarkdownDecorationsRenderer.js';
 import { ChatCompatibilityNotifier, ChatExtensionPointHandler } from './aideAgentParticipantContributions.js';
-import { registerPlanReviewViewAndViewContainer } from './aideAgentPlanReviewContributions.js';
-import { AideAgentPlanService } from './aideAgentPlanService.js';
 import { ChatResponseAccessibleView } from './aideAgentResponseAccessibleView.js';
 import { ChatVariablesService } from './aideAgentVariables.js';
 import { ChatWidgetService } from './aideAgentWidget.js';
@@ -230,7 +224,7 @@ class ChatSlashStaticSlashCommandsContribution extends Disposable {
 
 					return (agentLine + '\n' + commandText).trim();
 				}))).join('\n');
-			progress.report({ content: new MarkdownString(agentText, { isTrusted: { enabledCommands: [SubmitChatRequestAction.ID] } }), kind: 'markdownContent' });
+			progress.report({ content: new MarkdownString(agentText, { isTrusted: { enabledCommands: [SubmitChatAction.ID] } }), kind: 'markdownContent' });
 
 			// Report variables
 			if (defaultAgent?.metadata.helpTextVariablesPrefix) {
@@ -278,9 +272,6 @@ registerChatCopyActions();
 registerChatCodeBlockActions();
 registerChatCodeCompareBlockActions();
 registerChatFileTreeActions();
-registerChatPlanStepActions();
-registerAgentActions();
-registerChatEditsActions();
 registerChatTitleActions();
 registerChatExecuteActions();
 registerNewChatActions();
@@ -288,8 +279,6 @@ registerChatContextActions();
 registerChatDeveloperActions();
 registerAideAgentFloatingWidgetActions();
 registerCodeEditActions();
-registerPlanReviewViewAndViewContainer();
-// registerPlanReviewActions();
 
 registerSingleton(IAideAgentService, ChatService, InstantiationType.Delayed);
 registerSingleton(IAideAgentWidgetService, ChatWidgetService, InstantiationType.Delayed);
@@ -307,4 +296,3 @@ registerSingleton(IAideAgentCodeMapperService, CodeMapperService, InstantiationT
 registerSingleton(IAideAgentEditingService, ChatEditingService, InstantiationType.Delayed);
 registerSingleton(IAideAgentFloatingWidgetService, AideAgentFloatingWidgetService, InstantiationType.Delayed);
 registerSingleton(IAideAgentCodeEditingService, AideAgentCodeEditingService, InstantiationType.Delayed);
-registerSingleton(IAideAgentPlanService, AideAgentPlanService, InstantiationType.Delayed);

@@ -12,7 +12,7 @@ import { Position } from '../../../../editor/common/core/position.js';
 import { Range } from '../../../../editor/common/core/range.js';
 import { IDocumentDiff } from '../../../../editor/common/diff/documentDiffProvider.js';
 import { DetailedLineRangeMapping, RangeMapping } from '../../../../editor/common/diff/rangeMapping.js';
-import { IIdentifiedSingleEditOperation, IModelDeltaDecoration, ITextModel, IValidEditOperation, TrackedRangeStickiness } from '../../../../editor/common/model.js';
+import { IIdentifiedSingleEditOperation, ITextModel, IValidEditOperation, TrackedRangeStickiness } from '../../../../editor/common/model.js';
 import { ModelDecorationOptions } from '../../../../editor/common/model/textModel.js';
 import { IEditorWorkerService } from '../../../../editor/common/services/editorWorker.js';
 import { IModelContentChangedEvent } from '../../../../editor/common/textModelEvents.js';
@@ -30,7 +30,7 @@ export type HunkDisplayData = {
 	remove(): void;
 };
 
-export class RawHunk {
+class RawHunk {
 	constructor(
 		readonly original: LineRange,
 		readonly modified: LineRange,
@@ -50,14 +50,6 @@ type RawHunkData = {
 	editState: IChatTextEditGroupState;
 };
 
-export interface IAideAgentEdits {
-	readonly targetUri: string;
-	readonly textModelN: ITextModel;
-	textModel0: ITextModel;
-	hunkData: HunkData;
-	textModelNDecorations?: IModelDeltaDecoration[];
-}
-
 export interface HunkInformation {
 	/**
 	 * The first element [0] is the whole modified range and subsequent elements are word-level changes
@@ -75,12 +67,12 @@ export interface HunkInformation {
 
 export class HunkData {
 
-	static readonly _HUNK_TRACKED_RANGE = ModelDecorationOptions.register({
+	private static readonly _HUNK_TRACKED_RANGE = ModelDecorationOptions.register({
 		description: 'aide-agent-hunk-tracked-range',
 		stickiness: TrackedRangeStickiness.AlwaysGrowsWhenTypingAtEdges
 	});
 
-	static readonly _HUNK_THRESHOLD = 8;
+	private static readonly _HUNK_THRESHOLD = 0;
 
 	private readonly _store = new DisposableStore();
 	private readonly _data = new Map<RawHunk, RawHunkData>();
@@ -381,8 +373,8 @@ export class HunkData {
 
 function lineRangeAsRange(lineRange: LineRange, model: ITextModel): Range {
 	return lineRange.isEmpty
-		? new Range(lineRange.startLineNumber, 1, lineRange.startLineNumber, Number.MAX_SAFE_INTEGER)
-		: new Range(lineRange.startLineNumber, 1, lineRange.endLineNumberExclusive - 1, Number.MAX_SAFE_INTEGER);
+		? new Range(lineRange.startLineNumber, 1, lineRange.startLineNumber, model.getLineLength(lineRange.startLineNumber))
+		: new Range(lineRange.startLineNumber, 1, lineRange.endLineNumberExclusive - 1, model.getLineLength(lineRange.endLineNumberExclusive - 1));
 }
 
 export function calculateChanges(edits: HunkInformation[]) {

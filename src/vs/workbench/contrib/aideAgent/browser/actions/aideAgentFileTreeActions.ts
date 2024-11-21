@@ -8,7 +8,7 @@ import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions
 import { localize2 } from '../../../../../nls.js';
 import { Action2, registerAction2 } from '../../../../../platform/actions/common/actions.js';
 import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
-import { CHAT_CATEGORY } from './aideAgentChatActions.js';
+import { CHAT_CATEGORY } from './aideAgentActions.js';
 import { IAideAgentWidgetService } from '../aideAgent.js';
 import { CONTEXT_IN_CHAT_SESSION, CONTEXT_CHAT_ENABLED } from '../../common/aideAgentContextKeys.js';
 import { IChatResponseViewModel, isResponseVM } from '../../common/aideAgentViewModel.js';

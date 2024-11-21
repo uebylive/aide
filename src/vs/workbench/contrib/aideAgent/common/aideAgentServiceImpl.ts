@@ -344,35 +344,22 @@ export class ChatService extends Disposable implements IAideAgentService {
 		this.saveState();
 	}
 
-	startSessionWithId(location: ChatAgentLocation, token: CancellationToken, sessionId: string, isPassthrough: boolean = false): ChatModel {
-		const model = this.instantiationService.createInstance(ChatModel, undefined, location, isPassthrough, sessionId);
-		this._sessionModels.set(model.sessionId, model);
-		this.initializeSession(model, token);
-		return model;
-	}
-
 	startSession(location: ChatAgentLocation, token: CancellationToken, isPassthrough: boolean = false): ChatModel {
 		this.trace('startSession');
 		return this._startSession(undefined, location, isPassthrough, token);
 	}
 
 	private _startSession(someSessionHistory: IExportableChatData | ISerializableChatData | undefined, location: ChatAgentLocation, isPassthrough: boolean, token: CancellationToken): ChatModel {
-		const model = this.instantiationService.createInstance(ChatModel, someSessionHistory, location, isPassthrough, null);
+		const model = this.instantiationService.createInstance(ChatModel, someSessionHistory, location, isPassthrough);
 		this._sessionModels.set(model.sessionId, model);
 		this.initializeSession(model, token);
 		return model;
 	}
 
 	private progressCallback(model: ChatModel, response: ChatResponseModel | undefined, progress: IChatProgress, token: CancellationToken): void {
-		// TODO(skcd): There is a race condition over here, we have the cancellation token which we set to cancelled and stop processing requests
-		// for the exchange at the moment but there are terminating events which get sent on cancellation, we have to understand a better way
-		// to notify the system that the exchange has terminated, what we have now works but breaks since we need to send additional cleanup
-		// actions when the cancellation is triggered
-		// The guarantee we can establish is that the external system will make sure that we terminate the model over here correctly instead of relying
-		// on cancellation token over here as a proxy to stop reacting to events
-		// if (token.isCancellationRequested) {
-		// 	return;
-		// }
+		if (token.isCancellationRequested) {
+			return;
+		}
 
 		if (progress.kind === 'endResponse' && response) {
 			model.completeResponse(response);
@@ -483,48 +470,6 @@ export class ChatService extends Disposable implements IAideAgentService {
 		await this._sendRequestAsync(model, model.sessionId, request.message, attempt, enableCommandDetection, defaultAgent, location, resendOptions).responseCompletePromise;
 	}
 	*/
-
-	pushProgress(sessionId: string, progress: IChatProgress): void {
-		const model = this._sessionModels.get(sessionId);
-		model?.accepResponseProgressMutable(progress);
-		// I have to do either of the 2 things over here.. which makes this very non-trivial
-		// - somehow make the model accept forcefully a request to a particular exchangeId
-		// - the model here is readonly since we have a progress callback which should be used
-		// to solve it
-		// - the breaking paradigm here is that we are getting write access to something which is
-		// inherently readonly at this layer and talks in terms of interfaces
-	}
-
-	async sendIterationRequest(sessionId: string, exchangeId: string, iterationQuery: string, options?: IChatSendRequestOptions): Promise<void> {
-		const model = this._sessionModels.get(sessionId);
-		if (!model) {
-			throw new Error(`Unknown session: ${sessionId}`);
-		}
-
-		await model.waitForInitialization();
-		const location = options?.location ?? model.initialLocation;
-
-		const parsedRequest = this.parseChatRequest(sessionId, iterationQuery, location, options);
-
-		const cancellationToken = new CancellationTokenSource();
-		const token = cancellationToken.token;
-
-		// Variables may have changed if the agent and slash command changed, so resolve them again even if we already had a chatRequest
-		const variableData = await this.chatVariablesService.resolveVariables(
-			parsedRequest,
-			undefined,
-			model,
-			// TODO(@ghostwriternr): Do we still need this? The lifecycle of the request object is unclear, and the cancellation token too.
-			(part) => this.progressCallback(model, undefined, part, token),
-			options,
-			token
-		);
-		const promptTextResult = getPromptText(parsedRequest);
-		const updatedVariableData = updateRanges(variableData, promptTextResult.diff); // TODO bit of a hack
-		// we have all the information we need over here to send it over to the
-		// extension layer
-		model.handleUserIterationRequest(sessionId, exchangeId, iterationQuery, updatedVariableData);
-	}
 
 	async sendRequest(sessionId: string, request: string, options?: IChatSendRequestOptions): Promise<IChatSendRequestData | undefined> {
 		this.trace('sendRequest', `sessionId: ${sessionId}, message: ${request.substring(0, 20)}${request.length > 20 ? '[...]' : ''}}`);
@@ -896,15 +841,5 @@ export class ChatService extends Disposable implements IAideAgentService {
 
 		this.storageService.store(globalChatKey, JSON.stringify(existingRaw), StorageScope.PROFILE, StorageTarget.MACHINE);
 		this.trace('transferChatSession', `Transferred session ${model.sessionId} to workspace ${toWorkspace.toString()}`);
-	}
-
-	handleUserActionForSession(sessionId: string, exchangeId: string, stepIndex: number | undefined, agentId: string | undefined, accepted: boolean): void {
-		const model = Iterable.find(this._sessionModels.values(), model => model.sessionId === sessionId);
-		model?.handleUserActionForSession(sessionId, exchangeId, stepIndex, agentId, accepted);
-	}
-
-	async handleUserActionUndoSession(sessionId: string, exchangeId: string): Promise<void> {
-		const model = Iterable.find(this._sessionModels.values(), model => model.sessionId === sessionId);
-		await model?.handleUserActionUndoSession(sessionId, exchangeId);
 	}
 }

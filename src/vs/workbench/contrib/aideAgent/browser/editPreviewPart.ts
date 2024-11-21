@@ -31,7 +31,7 @@ import { MenuPreventer } from '../../codeEditor/browser/menuPreventer.js';
 import { SelectionClipboardContributionID } from '../../codeEditor/browser/selectionClipboard.js';
 import { getSimpleEditorOptions } from '../../codeEditor/browser/simpleEditorOptions.js';
 import { isResponseVM } from '../common/aideAgentViewModel.js';
-import { IBaseRenderDelegate } from './aideAgentListRenderer.js';
+import { IChatRendererDelegate } from './aideAgentListRenderer.js';
 import { ChatEditorOptions } from './aideAgentOptions.js';
 
 const $ = dom.$;
@@ -68,7 +68,7 @@ export class EditPreviewBlockPart extends Disposable {
 
 	constructor(
 		private readonly options: ChatEditorOptions,
-		delegate: IBaseRenderDelegate,
+		delegate: IChatRendererDelegate,
 		overflowWidgetsDomNode: HTMLElement | undefined,
 		@IInstantiationService instantiationService: IInstantiationService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,

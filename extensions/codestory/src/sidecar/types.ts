@@ -580,7 +580,7 @@ export type IdentifierNodeType = {
 // 		}
 // 	]
 // }
-export async function getSideCarModelConfiguration(modelSelection: ModelSelection, workosAccessToken: string | undefined = undefined) {
+export async function getSideCarModelConfiguration(modelSelection: ModelSelection) {
 	const slowModel = modelSelection.slowModel;
 	const fastModel = modelSelection.fastModel;
 	const models = modelSelection.models;
@@ -597,7 +597,7 @@ export async function getSideCarModelConfiguration(modelSelection: ModelSelectio
 	const providers = modelSelection.providers;
 	const finalProviders = [];
 	for (const [key, value] of Object.entries(providers)) {
-		const providerConfigSideCar = getProviderConfiguration(key, value, workosAccessToken);
+		const providerConfigSideCar = getProviderConfiguration(key, value);
 		if (providerConfigSideCar !== null) {
 			finalProviders.push(providerConfigSideCar);
 		}
@@ -611,7 +611,7 @@ export async function getSideCarModelConfiguration(modelSelection: ModelSelectio
 }
 
 // The various types are present in aiModels.ts
-function getProviderConfiguration(type: string, value: ModelProviderConfiguration, workosAccessToken: string | undefined) {
+function getProviderConfiguration(type: string, value: ModelProviderConfiguration) {
 	if (type === 'openai-default') {
 		return {
 			'OpenAI': {
@@ -652,12 +652,7 @@ function getProviderConfiguration(type: string, value: ModelProviderConfiguratio
 		};
 	}
 	if (type === 'codestory') {
-		// if its codestory then we also want to provider the access token over here
-		return {
-			'CodeStory': {
-				access_token: workosAccessToken
-			}
-		};
+		return 'CodeStory';
 	}
 	if (type === 'anthropic') {
 		return {

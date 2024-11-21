@@ -51,6 +51,7 @@ import { setProgressAcccessibilitySignalScheduler } from '../../base/browser/ui/
 import { AccessibleViewRegistry } from '../../platform/accessibility/browser/accessibleViewRegistry.js';
 import { NotificationAccessibleView } from './parts/notifications/notificationAccessibleView.js';
 import { isESM } from '../../base/common/amd.js';
+import { ISVGSpriteService } from './svgSprite.js';
 
 export interface IWorkbenchOptions {
 
@@ -161,7 +162,7 @@ export class Workbench extends Layout {
 				const hoverService = accessor.get(IHoverService);
 				const dialogService = accessor.get(IDialogService);
 				const notificationService = accessor.get(INotificationService) as NotificationService;
-				// const svgSpriteService = accessor.get(ISVGSpriteService);
+				const svgSpriteService = accessor.get(ISVGSpriteService);
 
 				// Default Hover Delegate must be registered before creating any workbench/layout components
 				// as these possibly will use the default hover delegate
@@ -185,7 +186,7 @@ export class Workbench extends Layout {
 				this.renderWorkbench(instantiationService, notificationService, storageService, configurationService);
 
 				// Setup SVG Sprites
-				// this.setupSVGSprites(svgSpriteService);
+				this.setupSVGSprites(svgSpriteService);
 
 				// Workbench Layout
 				this.createWorkbenchLayout();
@@ -333,17 +334,17 @@ export class Workbench extends Layout {
 		}
 	}
 
-	// private async setupSVGSprites(svgSpriteService: ISVGSpriteService) {
-	// 	const spriteSheets = await Promise.allSettled([
-	// 		svgSpriteService.addSpritesheet('vs/workbench/browser/media/heroicons.svg', 'heroicons'),
-	// 		svgSpriteService.addSpritesheet('vs/workbench/browser/media/special-icons.svg', 'special')
-	// 	]);
-	// 	spriteSheets.forEach(result => {
-	// 		if (result.status === 'fulfilled' && result.value) {
-	// 			this.mainContainer.prepend(result.value);
-	// 		}
-	// 	});
-	// }
+	private async setupSVGSprites(svgSpriteService: ISVGSpriteService) {
+		const spriteSheets = await Promise.allSettled([
+			svgSpriteService.addSpritesheet('vs/workbench/browser/media/heroicons.svg', 'heroicons'),
+			svgSpriteService.addSpritesheet('vs/workbench/browser/media/special-icons.svg', 'special')
+		]);
+		spriteSheets.forEach(result => {
+			if (result.status === 'fulfilled' && result.value) {
+				this.mainContainer.prepend(result.value);
+			}
+		});
+	}
 
 	private renderWorkbench(instantiationService: IInstantiationService, notificationService: NotificationService, storageService: IStorageService, configurationService: IConfigurationService): void {
 

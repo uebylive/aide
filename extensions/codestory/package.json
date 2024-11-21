@@ -26,8 +26,7 @@
     "interactive",
     "mappedEditsProvider",
     "modelSelection",
-    "terminalSelection",
-    "textSearchProviderNew"
+    "terminalSelection"
   ],
   "files": [
     "src/llm/embeddings/models/**/*",
@@ -174,11 +173,6 @@
           "type": "boolean",
           "default": false,
           "description": "Should use deep reasoning before making edits"
-        },
-        "aide.specialToolAgentUseAtYourOwnRisk": {
-          "type": "boolean",
-          "default": false,
-          "description": "Tool use agent, use it at your own risk this is not ready for production yet"
         }
       }
     }

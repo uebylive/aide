@@ -39,7 +39,7 @@ import { IHoverService } from '../../../../platform/hover/browser/hover.js';
 import { ICompositeTitleLabel } from '../compositePart.js';
 
 export class AuxiliaryBarPart extends AbstractPaneCompositePart {
-	//override allowDroppingViews = false;
+	override allowDroppingViews = false;
 
 	static readonly activePanelSettingsKey = 'workbench.auxiliarybar.activepanelid';
 	static readonly pinnedPanelsKey = 'workbench.auxiliarybar.pinnedPanels';

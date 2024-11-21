@@ -2,24 +2,24 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-
 import * as path from 'path';
 import * as vscode from 'vscode';
 import { sidecarTypeDefinitionsWithNode } from '../completions/helpers/vscodeApi';
 import { LoggingService } from '../completions/logger';
 import { StreamCompletionResponse, StreamCompletionResponseUpdates } from '../completions/providers/fetch-and-process-completions';
 import { CompletionRequest, CompletionResponse } from '../inlineCompletion/sidecarCompletion';
-import { CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, SidecarContextEvent, UserContext } from '../server/types';
 import { SelectionDataForExplain } from '../utilities/getSelectionContext';
-import { AidePlanTimer } from '../utilities/planTimer';
-import { shouldUseUnstableToolAgent, sidecarNotIndexRepository } from '../utilities/sidecarUrl';
+import { sidecarNotIndexRepository } from '../utilities/sidecarUrl';
 import { sleep } from '../utilities/sleep';
 import { readCustomSystemInstruction } from '../utilities/systemInstruction';
 import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/types';
 import { getUserId } from '../utilities/uniqueId';
-import { detectDefaultShell } from './default-shell';
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
 import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, PlanResponse, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
+import { CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, SidecarContextEvent, UserContext } from '../server/types';
+// import { GENERATE_PLAN } from '../completions/providers/generatePlan';
+// import { AideProbeProvider } from '../completions/providers/probeProvider';
+import { AidePlanTimer } from '../utilities/planTimer';
 
 export enum CompletionStopReason {
 	/**
@@ -1065,19 +1065,7 @@ export class SideCarClient {
 		workosAccessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
-		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), workosAccessToken);
-		const allFiles = vscode.workspace.textDocuments.map((textDocument) => {
-			return textDocument.uri.fsPath;
-		});
-		const openFiles = vscode.window.visibleTextEditors.map((textDocument) => {
-			return textDocument.document.uri.fsPath;
-		});
-		const currentShell = detectDefaultShell();
-		if (shouldUseUnstableToolAgent()) {
-			baseUrl.pathname = '/api/agentic/agent_tool_use';
-		} else {
-			baseUrl.pathname = '/api/agentic/agent_session_plan';
-		}
+		baseUrl.pathname = '/api/agentic/agent_session_plan';
 		const url = baseUrl.toString();
 		const body = {
 			session_id: sessionId,
@@ -1091,10 +1079,6 @@ export class SideCarClient {
 			project_labels: projectLabels,
 			codebase_search: codebaseSearch,
 			access_token: workosAccessToken,
-			model_configuration: sideCarModelConfiguration,
-			all_files: allFiles,
-			open_files: openFiles,
-			shell: currentShell,
 		};
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
@@ -1128,7 +1112,6 @@ export class SideCarClient {
 			exchange_id: exchangeId,
 			editor_url: editorUrl,
 			access_token: accessToken,
-			model_configuration: await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), accessToken),
 		};
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
@@ -1156,13 +1139,6 @@ export class SideCarClient {
 		codebaseSearch: boolean,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
-		const allFiles = vscode.workspace.textDocuments.map((textDocument) => {
-			return textDocument.uri.fsPath;
-		});
-		const openFiles = vscode.window.visibleTextEditors.map((textDocument) => {
-			return textDocument.document.uri.fsPath;
-		});
-		const currentShell = detectDefaultShell();
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		baseUrl.pathname = '/api/agentic/agent_session_edit_agentic';
 		const url = baseUrl.toString();
@@ -1178,9 +1154,6 @@ export class SideCarClient {
 			project_labels: projectLabels,
 			codebase_search: codebaseSearch,
 			model_configuration: sideCarModelConfiguration,
-			all_files: allFiles,
-			open_files: openFiles,
-			shell: currentShell,
 		};
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
@@ -1209,14 +1182,7 @@ export class SideCarClient {
 		workosAccessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
-		const allFiles = vscode.workspace.textDocuments.map((textDocument) => {
-			return textDocument.uri.fsPath;
-		});
-		const openFiles = vscode.window.visibleTextEditors.map((textDocument) => {
-			return textDocument.document.uri.fsPath;
-		});
-		const currentShell = detectDefaultShell();
-		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), workosAccessToken);
+		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		baseUrl.pathname = '/api/agentic/agent_session_plan_iterate';
 		const url = baseUrl.toString();
 		const body = {
@@ -1232,9 +1198,6 @@ export class SideCarClient {
 			codebase_search: false,
 			access_token: workosAccessToken,
 			model_configuration: sideCarModelConfiguration,
-			all_files: allFiles,
-			open_files: openFiles,
-			shell: currentShell,
 		};
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
@@ -1263,14 +1226,7 @@ export class SideCarClient {
 		workosAccessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
-		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), workosAccessToken);
-		const allFiles = vscode.workspace.textDocuments.map((textDocument) => {
-			return textDocument.uri.fsPath;
-		});
-		const openFiles = vscode.window.visibleTextEditors.map((textDocument) => {
-			return textDocument.document.uri.fsPath;
-		});
-		const currentShell = detectDefaultShell();
+		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		baseUrl.pathname = '/api/agentic/agent_session_edit_anchored';
 		const url = baseUrl.toString();
 		const body = {
@@ -1286,9 +1242,6 @@ export class SideCarClient {
 			codebase_search: false,
 			access_token: workosAccessToken,
 			model_configuration: sideCarModelConfiguration,
-			all_files: allFiles,
-			open_files: openFiles,
-			shell: currentShell,
 		};
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
@@ -1380,14 +1333,7 @@ export class SideCarClient {
 		workosAccessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
-		const allFiles = vscode.workspace.textDocuments.map((textDocument) => {
-			return textDocument.uri.fsPath;
-		});
-		const openFiles = vscode.window.visibleTextEditors.map((textDocument) => {
-			return textDocument.document.uri.fsPath;
-		});
-		const currentShell = detectDefaultShell();
-		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), workosAccessToken);
+		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
 		baseUrl.pathname = '/api/agentic/agent_session_chat';
 		const url = baseUrl.toString();
 		const body = {
@@ -1403,9 +1349,6 @@ export class SideCarClient {
 			codebase_search: false,
 			access_token: workosAccessToken,
 			model_configuration: sideCarModelConfiguration,
-			all_files: allFiles,
-			open_files: openFiles,
-			shell: currentShell,
 		};
 
 		// consider using headers
@@ -1628,20 +1571,20 @@ export async function convertVSCodeVariableToSidecarHackingForPlan(
 	for (const variable of variables) {
 		// vscode.editor.selection is a special id which is also present in the editor
 		// this help us understand that this is a selection and not a file reference
-		if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile' || variable.id === 'vscode.editor.selection' || variable.id === 'vscode.file.pinnedContext') {
+		if (variable.id === 'vscode.file' || variable.id === 'vscode.editor.selection' || variable.id === 'vscode.file.pinnedContext') {
 			const v = variable as vscode.AideAgentFileReference;
 			const value = v.value;
 			const attachedFile = await resolveFile(value.uri);
 			let range = value.range;
 			let type: SidecarVariableType = 'File';
-			if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile' || variable.id === 'vscode.file.pinnedContext') {
+			if (variable.id === 'vscode.file' || variable.id === 'vscode.file.pinnedContext') {
 				type = 'File';
 			} else if (variable.id === 'vscode.editor.selection') {
 				type = 'Selection';
 			}
 			// we do this shoe-horning over here to make sure that we do not perform
 			// extensive reads or creation of the text models on the editor layer
-			if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile') {
+			if (variable.id === 'vscode.file') {
 				const textModel = await vscode.workspace.openTextDocument(v.value.uri);
 				// get the full range over here somehow
 				const lastLine = textModel.lineCount;
@@ -1908,7 +1851,7 @@ async function newConvertVSCodeVariableToSidecar(
 	for (const variable of variables) {
 		// vscode.editor.selection is a special id which is also present in the editor
 		// this help us understand that this is a selection and not a file reference
-		if (variable.id === 'vscode.file' || variable.id === 'vscode.editor.selection' || variable.id === 'vscode.file.rangeNotSetProperlyFullFile') {
+		if (variable.id === 'vscode.file' || variable.id === 'vscode.editor.selection') {
 			const v = variable as vscode.AideAgentFileReference;
 			const value = v.value;
 			const attachedFile = await resolveFile(value.uri);
@@ -1919,14 +1862,14 @@ async function newConvertVSCodeVariableToSidecar(
 			} else if (variable.id === 'vscode.editor.selection') {
 				type = 'Selection';
 			}
-			if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile') {
+			if (variable.id === 'vscode.file') {
 				type = 'File';
 			} else if (variable.id === 'vscode.editor.selection') {
 				type = 'Selection';
 			}
 			// we do this shoe-horning over here to make sure that we do not perform
 			// extensive reads or creation of the text models on the editor layer
-			if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile') {
+			if (variable.id === 'vscode.file') {
 				const textModel = await vscode.workspace.openTextDocument(v.value.uri);
 				// get the full range over here somehow
 				const lastLine = textModel.lineCount;

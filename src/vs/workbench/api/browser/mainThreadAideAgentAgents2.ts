@@ -74,9 +74,8 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadAideA
 
 	private readonly _agents = this._register(new DisposableMap<number, AgentData>());
 	private readonly _agentCompletionProviders = this._register(new DisposableMap<number, IDisposable>());
-	// keeps a store of all the cancellation tokens over here
-	private readonly _cancellationTokenMap: Map<string, CancellationToken> = new Map();
 	private readonly _agentIdsToCompletionProviders = this._register(new DisposableMap<string, IDisposable>);
+	private readonly _cancellationTokenMap: Map<string, CancellationToken> = new Map();
 
 	private readonly _chatParticipantDetectionProviders = this._register(new DisposableMap<number, IDisposable>());
 
@@ -150,12 +149,6 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadAideA
 			initSession: (sessionId) => {
 				return this._proxy.$initSession(handle, sessionId);
 			},
-			handleUserFeedbackSession: (sessionId: string, exchangeId: string, stepIndex: number | undefined, accepted: boolean) => {
-				return this._proxy.$handleUserFeedbackSession(handle, sessionId, exchangeId, stepIndex, accepted);
-			},
-			handleSessionUndo: (sessionId: string, exchangeId: string) => {
-				return this._proxy.$handleSessionUndo(handle, sessionId, exchangeId);
-			},
 			invoke: async (request, token) => {
 				return await this._proxy.$invokeAgent(handle, request, { history: [] }, token) ?? {};
 			},
@@ -174,10 +167,7 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadAideA
 			},
 			provideSampleQuestions: (location: ChatAgentLocation, token: CancellationToken) => {
 				return this._proxy.$provideSampleQuestions(handle, location, token);
-			},
-			handleUserIterationRequest: (sessionId: string, exchangeId: string, iterationQuery: string, references) => {
-				return this._proxy.$handleUserIterationRequest(handle, sessionId, exchangeId, iterationQuery, references);
-			},
+			}
 		};
 
 		let disposable: IDisposable;

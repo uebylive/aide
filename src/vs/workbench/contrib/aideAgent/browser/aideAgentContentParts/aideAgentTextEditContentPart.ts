@@ -25,7 +25,7 @@ import { createDecorator, IInstantiationService } from '../../../../../platform/
 import { IChatListItemRendererOptions } from '../aideAgent.js';
 import { IDisposableReference, ResourcePool } from './aideAgentCollections.js';
 import { IChatContentPart, IChatContentPartRenderContext } from './aideAgentContentParts.js';
-import { IBaseRenderDelegate } from '../aideAgentListRenderer.js';
+import { IChatRendererDelegate } from '../aideAgentListRenderer.js';
 import { ChatEditorOptions } from '../aideAgentOptions.js';
 import { CodeCompareBlockPart, ICodeCompareBlockData, ICodeCompareBlockDiffData } from '../codeBlockPart.js';
 import { IChatProgressRenderableResponseContent, IChatTextEditGroup } from '../../common/aideAgentModel.js';
@@ -145,7 +145,7 @@ export class DiffEditorPool extends Disposable {
 
 	constructor(
 		options: ChatEditorOptions,
-		delegate: IBaseRenderDelegate,
+		delegate: IChatRendererDelegate,
 		overflowWidgetsDomNode: HTMLElement | undefined,
 		@IInstantiationService instantiationService: IInstantiationService,
 	) {

@@ -20,7 +20,7 @@ import { ISymbolQuickPickItem } from '../../../search/browser/symbolsQuickAccess
 import { ChatAgentLocation } from '../../common/aideAgentAgents.js';
 import { IAideAgentVariablesService } from '../../common/aideAgentVariables.js';
 import { IAideAgentWidgetService, IChatWidget } from '../aideAgent.js';
-import { CHAT_CATEGORY } from './aideAgentChatActions.js';
+import { CHAT_CATEGORY } from './aideAgentActions.js';
 
 export function registerChatContextActions() {
 	registerAction2(AttachFileAction);

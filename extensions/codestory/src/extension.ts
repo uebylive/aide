@@ -19,13 +19,12 @@ import { copySettings } from './utilities/copySettings';
 import { getRelevantFiles, shouldTrackFile } from './utilities/openTabs';
 import { checkReadonlyFSMode } from './utilities/readonlyFS';
 import { reportIndexingPercentage } from './utilities/reportIndexingUpdate';
-import { startSidecarBinary, killSidecarProcess } from './utilities/setupSidecarBinary';
+import { startSidecarBinary } from './utilities/setupSidecarBinary';
 import { readCustomSystemInstruction } from './utilities/systemInstruction';
 import { getUniqueId } from './utilities/uniqueId';
 import { ProjectContext } from './utilities/workspaceContext';
 import { CSEventHandler } from './csEvents/csEventHandler';
 import { RecentEditsRetriever } from './server/editedFiles';
-import { getRipGrepPath } from './utilities/ripGrep';
 // import { GENERATE_PLAN } from './completions/providers/generatePlan';
 // import { OPEN_FILES_VARIABLE } from './completions/providers/openFiles';
 
@@ -83,9 +82,6 @@ export async function activate(context: vscode.ExtensionContext) {
 		rootPath,
 	);
 
-	const ripGrepPath = await getRipGrepPath();
-	console.log('RipGrep location:', ripGrepPath);
-
 	// We also get some context about the workspace we are in and what we are
 	// upto
 	const projectContext = new ProjectContext();
@@ -128,6 +124,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		sidecarClient.updateModelConfiguration(config);
 		// console.log('Model configuration updated:' + JSON.stringify(config));
 	});
+	// await sidecarClient.indexRepositoryIfNotInvoked(currentRepo);
 	// Show the indexing percentage on startup
 	await reportIndexingPercentage(sidecarClient, currentRepo);
 
@@ -277,8 +274,4 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// shouldn't all listeners have this?
 	context.subscriptions.push(diagnosticsListener);
-}
-
-export async function deactivate() {
-	await killSidecarProcess();
 }

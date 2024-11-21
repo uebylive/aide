@@ -28,7 +28,7 @@ import { ChatAgentLocation, IAideAgentAgentService } from '../common/aideAgentAg
 import { ChatModelInitState, IChatModel } from '../common/aideAgentModel.js';
 import { CHAT_PROVIDER_ID } from '../common/aideAgentParticipantContribTypes.js';
 import { IAideAgentService } from '../common/aideAgentService.js';
-import { IChatViewTitleActionContext } from './actions/aideAgentChatActions.js';
+import { IChatViewTitleActionContext } from './actions/aideAgentActions.js';
 import { ChatWidget, IChatViewState } from './aideAgentWidget.js';
 
 interface IViewPaneState extends IChatViewState {
