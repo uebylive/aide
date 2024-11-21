@@ -524,22 +524,6 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 		}
 
 		this._editingSession?.complete();
-		this.updateContent({
-			'kind': 'command',
-			command: {
-				id: 'aideAgent.acceptAll',
-				title: localize('acceptEdits', "Accept all"),
-				arguments: [this.id]
-			}
-		});
-		this.updateContent({
-			'kind': 'command',
-			command: {
-				id: 'aideAgent.rejectAll',
-				title: localize('rejectEdits', "Reject all"),
-				arguments: [this.id]
-			}
-		});
 
 		this._isComplete = true;
 		this._onDidChange.fire();
