@@ -46,6 +46,9 @@ export class AideAgentPlanViewPane extends ViewPane {
 		this._widget = this._register(scopedInstantiationService.createInstance(
 			AideAgentPlanWidget,
 		));
+		this._register(this.onDidChangeBodyVisibility(visible => {
+			this._widget.setVisible(visible);
+		}));
 		this._widget.render(parent);
 	}
 

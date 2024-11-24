@@ -62,6 +62,10 @@ export class AideAgentPlanWidget extends Disposable {
 		this.container = dom.append(parent, $('.interactive-session'));
 		this.listContainer = dom.append(this.container, $('.interactive-list'));
 		this.createList(this.listContainer);
+
+		if (this.viewModel) {
+			this.onDidChangeItems();
+		}
 	}
 
 	setVisible(visible: boolean): void {
@@ -124,16 +128,14 @@ export class AideAgentPlanWidget extends Disposable {
 				return;
 			}
 
-			if (this.tree && this._visible) {
-				this.onDidChangeItems();
-			}
+			this.onDidChangeItems();
 		}));
 		this.viewModelDisposables.add(this.viewModel.onDidDisposeModel(() => {
 			this.viewModel = undefined;
 			this.onDidChangeItems();
 		}));
 
-		if (this.tree && this._visible) {
+		if (this.tree) {
 			this.onDidChangeItems();
 		}
 	}
