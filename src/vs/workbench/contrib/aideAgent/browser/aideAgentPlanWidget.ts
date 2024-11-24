@@ -3,8 +3,10 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import * as dom from '../../../../base/browser/dom.js';
 import { ITreeElement } from '../../../../base/browser/ui/tree/tree.js';
-import { Event } from '../../../../base/common/event.js';
+import { disposableTimeout } from '../../../../base/common/async.js';
+import { Emitter, Event } from '../../../../base/common/event.js';
 import { Disposable, DisposableStore } from '../../../../base/common/lifecycle.js';
 import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
@@ -15,9 +17,18 @@ import { AideAgentPlanViewModel, IAideAgentPlanStepViewModel } from '../common/a
 import { AideAgentPlanAccessibilityProvider } from './aideAgentPlanAccessibilityProvider.js';
 import { AideAgentPlanListDelegate, AideAgentPlanListRenderer } from './aideAgentPlanListRenderer.js';
 
+const $ = dom.$;
+
 export class AideAgentPlanWidget extends Disposable {
+	private _onDidHide = this._register(new Emitter<void>());
+	readonly onDidHide = this._onDidHide.event;
+
 	private tree!: WorkbenchObjectTree<IAideAgentPlanStepViewModel>;
 	private renderer!: AideAgentPlanListRenderer;
+
+	private listContainer!: HTMLElement;
+	private container!: HTMLElement;
+	private visibleChangeCount = 0;
 
 	private readonly viewModelDisposables = this._register(new DisposableStore());
 	private _viewModel: AideAgentPlanViewModel | undefined;
@@ -38,6 +49,8 @@ export class AideAgentPlanWidget extends Disposable {
 		return this._viewModel;
 	}
 
+	private _visible = false;
+
 	constructor(
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
@@ -46,7 +59,28 @@ export class AideAgentPlanWidget extends Disposable {
 	}
 
 	render(parent: HTMLElement): void {
-		this.createList(parent);
+		this.container = dom.append(parent, $('.interactive-session'));
+		this.listContainer = dom.append(this.container, $('.interactive-list'));
+		this.createList(this.listContainer);
+	}
+
+	setVisible(visible: boolean): void {
+		const wasVisible = this._visible;
+		this._visible = visible;
+		this.visibleChangeCount++;
+		this.renderer.setVisible(visible);
+
+		if (visible) {
+			this._register(disposableTimeout(() => {
+				// Progressive rendering paused while hidden, so start it up again.
+				// Do it after a timeout because the container is not visible yet (it should be but offsetHeight returns 0 here)
+				if (this._visible) {
+					this.onDidChangeItems();
+				}
+			}, 0));
+		} else if (wasVisible) {
+			this._onDidHide.fire();
+		}
 	}
 
 	private createList(listContainer: HTMLElement): void {
@@ -77,33 +111,35 @@ export class AideAgentPlanWidget extends Disposable {
 		this._register(this.renderer.onDidChangeItemHeight((e) => {
 			this.tree.updateElementHeight(e.element, e.height);
 		}));
-
-		if (this.viewModel) {
-			this.onDidChangeItems();
-		}
 	}
 
 	setModel(model: IAideAgentPlanModel): void {
+		if (!this.container) {
+			throw new Error('Call render() before setModel()');
+		}
+
 		this.viewModel = this.instantiationService.createInstance(AideAgentPlanViewModel, model);
 		this.viewModelDisposables.add(Event.accumulate(this.viewModel.onDidChange, 0)(() => {
 			if (!this.viewModel) {
 				return;
 			}
 
-			this.onDidChangeItems();
+			if (this.tree && this._visible) {
+				this.onDidChangeItems();
+			}
 		}));
 		this.viewModelDisposables.add(this.viewModel.onDidDisposeModel(() => {
 			this.viewModel = undefined;
 			this.onDidChangeItems();
 		}));
 
-		if (this.tree) {
+		if (this.tree && this._visible) {
 			this.onDidChangeItems();
 		}
 	}
 
 	private onDidChangeItems(): void {
-		if (this.tree) {
+		if (this.tree && this._visible) {
 			const treeItems = (this.viewModel?.getItems() ?? [])
 				.map((step): ITreeElement<IAideAgentPlanStepViewModel> => {
 					return {
@@ -115,7 +151,9 @@ export class AideAgentPlanWidget extends Disposable {
 
 			this.tree.setChildren(null, treeItems, {
 				diffIdentityProvider: {
-					getId: (element) => element.dataId,
+					getId: (element) => {
+						return element.id + `_${this.visibleChangeCount}`;
+					}
 				}
 			});
 		}

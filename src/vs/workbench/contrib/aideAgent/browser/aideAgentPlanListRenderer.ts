@@ -45,6 +45,9 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 	protected readonly _onDidChangeItemHeight = this._register(new Emitter<IItemHeightChangeParams>());
 	readonly onDidChangeItemHeight: Event<IItemHeightChangeParams> = this._onDidChangeItemHeight.event;
 
+	private _isVisible = true;
+	private _onDidChangeVisibility = this._register(new Emitter<boolean>());
+
 	constructor(
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@ILogService private readonly logService: ILogService,
@@ -56,6 +59,11 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 
 	get templateId(): string {
 		return AideAgentPlanListRenderer.ID;
+	}
+
+	setVisible(visible: boolean): void {
+		this._isVisible = visible;
+		this._onDidChangeVisibility.fire(visible);
 	}
 
 	renderTemplate(container: HTMLElement): IAideAgentPlanListItemTemplate {
@@ -113,6 +121,10 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 	}
 
 	private doNextProgressiveRender(element: IAideAgentPlanStepViewModel, templateData: IAideAgentPlanListItemTemplate): boolean {
+		if (!this._isVisible) {
+			return true;
+		}
+
 		const contentForThisTurn = this.getNextProgressiveRenderContent(element);
 		const partsToRender = this.diff(templateData.renderedParts ?? [], contentForThisTurn, element);
 
