@@ -154,7 +154,7 @@ export class AideAgentPlanWidget extends Disposable {
 			this.tree.setChildren(null, treeItems, {
 				diffIdentityProvider: {
 					getId: (element) => {
-						return element.id + `_${this.visibleChangeCount}`;
+						return element.dataId + `_${this.visibleChangeCount}`;
 					}
 				}
 			});

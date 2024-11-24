@@ -76,11 +76,25 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 		return { elementDisposables, rowContainer, templateDisposables, value };
 	}
 
-	renderElement(node: ITreeNode<IAideAgentPlanStepViewModel, FuzzyScore>, index: number, templateData: IAideAgentPlanListItemTemplate, height: number | undefined): void {
+	renderElement(node: ITreeNode<IAideAgentPlanStepViewModel, FuzzyScore>, index: number, templateData: IAideAgentPlanListItemTemplate): void {
 		const element = node.element;
+		templateData.currentElement = element;
 
 		if (!element.isComplete) {
-			this.doNextProgressiveRender(element, templateData);
+			const timer = templateData.elementDisposables.add(new dom.WindowIntervalTimer());
+			const runProgressiveRender = (initial?: boolean) => {
+				try {
+					if (this.doNextProgressiveRender(element, templateData, !!initial)) {
+						timer.cancel();
+					}
+				} catch (err) {
+					// Kill the timer if anything went wrong, avoid getting stuck in a nasty rendering loop.
+					timer.cancel();
+					this.logService.error(err);
+				}
+			};
+			timer.cancelAndSet(runProgressiveRender, 50, dom.getWindow(templateData.rowContainer));
+			runProgressiveRender(true);
 		} else {
 			this.basicRenderElement(element, index, templateData);
 		}
@@ -107,20 +121,37 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 			}
 		});
 
+		if (templateData.renderedParts) {
+			dispose(templateData.renderedParts);
+		}
+		templateData.renderedParts = parts;
+
 		const newHeight = templateData.rowContainer.offsetHeight;
-		element.currentRenderedHeight = newHeight;
-		const disposable = templateData.elementDisposables.add(dom.scheduleAtNextAnimationFrame(dom.getWindow(templateData.value), () => {
-			// Have to recompute the height here because codeblock rendering is currently async and it may have changed.
-			// If it becomes properly sync, then this could be removed.
-			element.currentRenderedHeight = templateData.rowContainer.offsetHeight;
-			disposable.dispose();
-			this._onDidChangeItemHeight.fire({ element, height: element.currentRenderedHeight });
-		}));
+		const fireEvent = !element.currentRenderedHeight || element.currentRenderedHeight !== newHeight;
+		if (fireEvent) {
+			const disposable = templateData.elementDisposables.add(dom.scheduleAtNextAnimationFrame(dom.getWindow(templateData.value), () => {
+				// Have to recompute the height here because codeblock rendering is currently async and it may have changed.
+				// If it becomes properly sync, then this could be removed.
+				element.currentRenderedHeight = templateData.rowContainer.offsetHeight;
+				disposable.dispose();
+				this._onDidChangeItemHeight.fire({ element, height: element.currentRenderedHeight });
+			}));
+		}
 
 		return true;
 	}
 
-	private doNextProgressiveRender(element: IAideAgentPlanStepViewModel, templateData: IAideAgentPlanListItemTemplate): boolean {
+	private updateItemHeight(templateData: IAideAgentPlanListItemTemplate): void {
+		if (!templateData.currentElement) {
+			return;
+		}
+
+		const newHeight = templateData.rowContainer.offsetHeight;
+		templateData.currentElement.currentRenderedHeight = newHeight;
+		this._onDidChangeItemHeight.fire({ element: templateData.currentElement, height: newHeight });
+	}
+
+	private doNextProgressiveRender(element: IAideAgentPlanStepViewModel, templateData: IAideAgentPlanListItemTemplate, isInRenderElement?: boolean): boolean {
 		if (!this._isVisible) {
 			return true;
 		}
@@ -133,13 +164,17 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 
 		const height = templateData.rowContainer.offsetHeight;
 		element.currentRenderedHeight = height;
-		this._onDidChangeItemHeight.fire({ element, height });
+		if (!isInRenderElement) {
+			this._onDidChangeItemHeight.fire({ element, height: templateData.rowContainer.offsetHeight });
+		}
 
+		// Always return true to indicate rendering is complete
 		return true;
 	}
 
 	private renderContentDiff(partsToRender: ReadonlyArray<IChatRendererContent | null>, contentForThisTurn: ReadonlyArray<IChatRendererContent>, element: IAideAgentPlanStepViewModel, templateData: IAideAgentPlanListItemTemplate): void {
 		const renderedParts = templateData.renderedParts ?? [];
+		templateData.renderedParts = renderedParts;
 		partsToRender.forEach((partToRender, index) => {
 			if (!partToRender) {
 				// null=no change
@@ -163,13 +198,16 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 				// Maybe the part can't be rendered in this context, but this shouldn't really happen
 				if (alreadyRenderedPart) {
 					try {
+						// This method can throw HierarchyRequestError
 						alreadyRenderedPart.domNode.replaceWith(newPart.domNode);
 					} catch (err) {
-						this.logService.error('ChatListItemRenderer#renderChatContentDiff: error replacing part', err);
+						this.logService.error('AideAgentPlanListItemRenderer#renderChatContentDiff: error replacing part', err);
 					}
 				} else {
 					templateData.value.appendChild(newPart.domNode);
 				}
+
+				renderedParts[index] = newPart;
 			} else if (alreadyRenderedPart) {
 				alreadyRenderedPart.domNode.remove();
 			}
@@ -190,6 +228,7 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 			if (!renderedPart || !renderedPart.hasSameContent(content, contentToRender.slice(i + 1), element)) {
 				diff.push(content);
 			} else {
+				// null -> no change
 				diff.push(null);
 			}
 		}
@@ -198,8 +237,8 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 	}
 
 	private renderPlanContentPart(content: IChatRendererContent, templateData: IAideAgentPlanListItemTemplate, context: IAideAgentPlanContentPartRenderContext): IAideAgentPlanContentPart | undefined {
-		if (content.kind === 'markdownContent') {
-			return this.renderMarkdown(content.content, templateData, context);
+		if (content.kind === 'planStep') {
+			return this.renderMarkdown(content.description, templateData, context);
 		}
 
 		return undefined;
@@ -208,7 +247,12 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 	private renderMarkdown(markdown: IMarkdownString, templateData: IAideAgentPlanListItemTemplate, context: IAideAgentPlanContentPartRenderContext): IAideAgentPlanContentPart {
 		const element = context.element;
 		const fillInIncompleteTokens = !element.isComplete;
-		return this.instantiationService.createInstance(AideAgentPlanMarkdownContentPart, markdown, context, fillInIncompleteTokens, this.renderer);
+		const markdownPart = this.instantiationService.createInstance(AideAgentPlanMarkdownContentPart, markdown, context, fillInIncompleteTokens, this.renderer);
+		markdownPart.addDisposable(markdownPart.onDidChangeHeight(() => {
+			this.updateItemHeight(templateData);
+		}));
+
+		return markdownPart;
 	}
 
 	disposeElement(element: ITreeNode<IAideAgentPlanStepViewModel, FuzzyScore>, index: number, templateData: IAideAgentPlanListItemTemplate, height: number | undefined): void {
@@ -216,14 +260,14 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 			try {
 				dispose(coalesce(templateData.renderedParts));
 				templateData.renderedParts = undefined;
-				dom.clearNode(templateData.rowContainer);
+				dom.clearNode(templateData.value);
 			} catch (err) {
 				throw err;
 			}
 		}
 
 		templateData.currentElement = undefined;
-		templateData.elementDisposables.dispose();
+		templateData.elementDisposables.clear();
 	}
 
 	disposeTemplate(templateData: IAideAgentPlanListItemTemplate): void {

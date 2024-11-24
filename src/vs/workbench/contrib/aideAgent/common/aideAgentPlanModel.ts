@@ -74,11 +74,12 @@ export class AideAgentPlanStepModel extends Disposable implements IAideAgentPlan
 	constructor(initialValue: IAideAgentPlanStep) {
 		super();
 
+		this.id = 'step_' + AideAgentPlanStepModel.nextId++;
+
 		this._index = initialValue.index;
 		this._title = initialValue.title;
 		this._description = initialValue.description;
-
-		this.id = 'step_' + AideAgentPlanStepModel.nextId++;
+		this._parts.push(initialValue);
 	}
 
 	updateStep(progress: IAideAgentPlanStep): void {
