@@ -122,6 +122,10 @@ export class AideAgentPlanWidget extends Disposable {
 			throw new Error('Call render() before setModel()');
 		}
 
+		if (model.sessionId === this.viewModel?.sessionId) {
+			return;
+		}
+
 		this.viewModel = this.instantiationService.createInstance(AideAgentPlanViewModel, model);
 		this.viewModelDisposables.add(Event.accumulate(this.viewModel.onDidChange, 0)(() => {
 			if (!this.viewModel) {

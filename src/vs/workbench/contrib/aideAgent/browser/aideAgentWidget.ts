@@ -732,8 +732,8 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			} else if (e.kind === 'startPlan') {
 				const planWidget = await invokePlanView(this.viewsService);
 				if (planWidget) {
-					planWidget.setVisible(true);
 					planWidget.setModel(e.plan);
+					planWidget.setVisible(true);
 				}
 			}
 		}));

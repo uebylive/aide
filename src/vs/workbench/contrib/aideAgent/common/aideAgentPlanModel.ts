@@ -86,7 +86,12 @@ export class AideAgentPlanStepModel extends Disposable implements IAideAgentPlan
 		if (this._index !== progress.index) {
 			throw new Error('Index mismatch');
 		}
-		this._description = appendMarkdownString(this._description, progress.description);
+
+		if (!progress.descriptionDelta) {
+			return;
+		}
+
+		this._description = appendMarkdownString(this._description, progress.descriptionDelta);
 
 		this._parts.push(progress);
 		this._onDidChange.fire();

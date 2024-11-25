@@ -23,8 +23,9 @@ export interface IAideAgentPlanStepViewModel {
 }
 
 export interface IAideAgentPlanViewModel {
-	readonly onDidChange: Event<IAideAgentPlanViewModelChangeEvent>;
 	readonly model: IAideAgentPlanModel;
+	readonly sessionId: string;
+	readonly onDidChange: Event<IAideAgentPlanViewModelChangeEvent>;
 	getItems(): IAideAgentPlanStepViewModel[];
 }
 
@@ -77,6 +78,10 @@ export class AideAgentPlanViewModel extends Disposable implements IAideAgentPlan
 
 	get model(): IAideAgentPlanModel {
 		return this._model;
+	}
+
+	get sessionId() {
+		return this._model.sessionId;
 	}
 
 	constructor(
