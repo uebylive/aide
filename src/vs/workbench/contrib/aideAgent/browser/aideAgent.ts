@@ -20,6 +20,7 @@ import { IParsedChatRequest } from '../common/aideAgentParserTypes.js';
 import { CHAT_PROVIDER_ID } from '../common/aideAgentParticipantContribTypes.js';
 import { IChatRequestViewModel, IChatResponseViewModel, IChatViewModel, IChatWelcomeMessageViewModel } from '../common/aideAgentViewModel.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
+import { IAideAgentPlanStepViewModel } from '../common/aideAgentPlanViewModel.js';
 
 export const IAideAgentWidgetService = createDecorator<IAideAgentWidgetService>('aideAgentWidgetService');
 
@@ -50,7 +51,7 @@ export interface IAideAgentAccessibilityService {
 export interface IChatCodeBlockInfo {
 	readonly ownerMarkdownPartId: string;
 	readonly codeBlockIndex: number;
-	readonly element: ChatTreeItem;
+	readonly element: ChatTreeItem | IAideAgentPlanStepViewModel;
 	readonly uri: URI | undefined;
 	codemapperUri: URI | undefined;
 	readonly isStreaming: boolean;

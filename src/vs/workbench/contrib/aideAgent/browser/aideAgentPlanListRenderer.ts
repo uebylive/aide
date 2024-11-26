@@ -10,14 +10,20 @@ import { coalesce } from '../../../../base/common/arrays.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
 import { FuzzyScore } from '../../../../base/common/filters.js';
 import { IMarkdownString } from '../../../../base/common/htmlContent.js';
-import { Disposable, DisposableStore, dispose, IDisposable } from '../../../../base/common/lifecycle.js';
+import { Disposable, DisposableStore, dispose, IDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
+import { ResourceMap } from '../../../../base/common/map.js';
 import { MarkdownRenderer } from '../../../../editor/browser/widget/markdownRenderer/browser/markdownRenderer.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { IAideAgentPlanStepViewModel } from '../common/aideAgentPlanViewModel.js';
 import { IChatRendererContent } from '../common/aideAgentViewModel.js';
 import { annotateSpecialMarkdownContent } from '../common/annotations.js';
+import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
+import { IChatCodeBlockInfo } from './aideAgent.js';
+import { EditorPool } from './aideAgentContentParts/aideAgentMarkdownContentPart.js';
+import { IChatRendererDelegate } from './aideAgentListRenderer.js';
 import { ChatMarkdownRenderer } from './aideAgentMarkdownRenderer.js';
+import { ChatEditorOptions } from './aideAgentOptions.js';
 import { IAideAgentPlanContentPart, IAideAgentPlanContentPartRenderContext } from './aideAgentPlanContentParts/aideAgentPlanContentParts.js';
 import { AideAgentPlanMarkdownContentPart } from './aideAgentPlanContentParts/aideAgentPlanMarkdownContentPart.js';
 
@@ -40,21 +46,32 @@ interface IItemHeightChangeParams {
 export class AideAgentPlanListRenderer extends Disposable implements ITreeRenderer<IAideAgentPlanStepViewModel, FuzzyScore, IAideAgentPlanListItemTemplate> {
 	static readonly ID = 'aideAgentPlanListItem';
 
+	private readonly codeBlocksByResponseId = new Map<string, IChatCodeBlockInfo[]>();
+	private readonly codeBlocksByEditorUri = new ResourceMap<IChatCodeBlockInfo>();
+
 	private readonly renderer: MarkdownRenderer;
 
 	protected readonly _onDidChangeItemHeight = this._register(new Emitter<IItemHeightChangeParams>());
 	readonly onDidChangeItemHeight: Event<IItemHeightChangeParams> = this._onDidChangeItemHeight.event;
 
+	private readonly _editorPool: EditorPool;
+
+	private _currentLayoutWidth: number = 0;
 	private _isVisible = true;
 	private _onDidChangeVisibility = this._register(new Emitter<boolean>());
 
 	constructor(
+		editorOptions: ChatEditorOptions,
+		private readonly delegate: IChatRendererDelegate,
+		private readonly codeBlockModelCollection: CodeBlockModelCollection,
+		overflowWidgetsDomNode: HTMLElement | undefined,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@ILogService private readonly logService: ILogService,
 	) {
 		super();
 
 		this.renderer = this._register(this.instantiationService.createInstance(ChatMarkdownRenderer, undefined));
+		this._editorPool = this._register(this.instantiationService.createInstance(EditorPool, editorOptions, delegate, overflowWidgetsDomNode));
 	}
 
 	get templateId(): string {
@@ -66,9 +83,16 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 		this._onDidChangeVisibility.fire(visible);
 	}
 
+	layout(width: number): void {
+		this._currentLayoutWidth = width;
+		for (const editor of this._editorPool.inUse()) {
+			editor.layout(this._currentLayoutWidth);
+		}
+	}
+
 	renderTemplate(container: HTMLElement): IAideAgentPlanListItemTemplate {
 		const templateDisposables = new DisposableStore();
-		const rowContainer = dom.append(container, $('.aideagent-plan-item-container'));
+		const rowContainer = dom.append(container, $('.aideagent-item-container'));
 
 		const value = dom.append(rowContainer, $('.value'));
 		const elementDisposables = new DisposableStore();
@@ -80,7 +104,7 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 		const element = node.element;
 		templateData.currentElement = element;
 
-		if (!element.isComplete) {
+		if (index === this.delegate.getListLength() - 1 && !element.isComplete) {
 			const timer = templateData.elementDisposables.add(new dom.WindowIntervalTimer());
 			const runProgressiveRender = (initial?: boolean) => {
 				try {
@@ -247,10 +271,43 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 	private renderMarkdown(markdown: IMarkdownString, templateData: IAideAgentPlanListItemTemplate, context: IAideAgentPlanContentPartRenderContext): IAideAgentPlanContentPart {
 		const element = context.element;
 		const fillInIncompleteTokens = !element.isComplete;
-		const markdownPart = this.instantiationService.createInstance(AideAgentPlanMarkdownContentPart, markdown, context, fillInIncompleteTokens, this.renderer);
+		const codeBlockStartIndex = context.preceedingContentParts.reduce((acc, part) => acc + (part instanceof AideAgentPlanMarkdownContentPart ? part.codeblocks.length : 0), 0);
+		const markdownPart = this.instantiationService.createInstance(AideAgentPlanMarkdownContentPart, markdown, context, this._editorPool, fillInIncompleteTokens, codeBlockStartIndex, this.renderer, this._currentLayoutWidth, this.codeBlockModelCollection);
+		const markdownPartId = markdownPart.id;
 		markdownPart.addDisposable(markdownPart.onDidChangeHeight(() => {
+			markdownPart.layout(this._currentLayoutWidth);
 			this.updateItemHeight(templateData);
 		}));
+
+		// Code blocks
+		const codeBlocksByResponseId = this.codeBlocksByResponseId.get(element.id) ?? [];
+		this.codeBlocksByResponseId.set(element.id, codeBlocksByResponseId);
+		markdownPart.addDisposable(toDisposable(() => {
+			const codeBlocksByResponseId = this.codeBlocksByResponseId.get(element.id);
+			if (codeBlocksByResponseId) {
+				// Only delete if this is my code block
+				markdownPart.codeblocks.forEach((info, i) => {
+					const codeblock = codeBlocksByResponseId[codeBlockStartIndex + i];
+					if (codeblock?.ownerMarkdownPartId === markdownPartId) {
+						delete codeBlocksByResponseId[codeBlockStartIndex + i];
+					}
+				});
+			}
+		}));
+
+		markdownPart.codeblocks.forEach((info, i) => {
+			codeBlocksByResponseId[codeBlockStartIndex + i] = info;
+			if (info.uri) {
+				const uri = info.uri;
+				this.codeBlocksByEditorUri.set(uri, info);
+				markdownPart.addDisposable(toDisposable(() => {
+					const codeblock = this.codeBlocksByEditorUri.get(uri);
+					if (codeblock?.ownerMarkdownPartId === markdownPartId) {
+						this.codeBlocksByEditorUri.delete(uri);
+					}
+				}));
+			}
+		});
 
 		return markdownPart;
 	}

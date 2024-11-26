@@ -11,8 +11,9 @@ import { Range } from '../../../../editor/common/core/range.js';
 import { ILanguageService } from '../../../../editor/common/languages/language.js';
 import { EndOfLinePreference } from '../../../../editor/common/model.js';
 import { IResolvedTextEditorModel, ITextModelService } from '../../../../editor/common/services/resolverService.js';
-import { extractCodeblockUrisFromText, extractVulnerabilitiesFromText, IMarkdownVulnerability } from './annotations.js';
+import { IAideAgentPlanStepViewModel } from './aideAgentPlanViewModel.js';
 import { IChatRequestViewModel, IChatResponseViewModel, isResponseVM } from './aideAgentViewModel.js';
+import { extractCodeblockUrisFromText, extractVulnerabilitiesFromText, IMarkdownVulnerability } from './annotations.js';
 
 
 export class CodeBlockModelCollection extends Disposable {
@@ -42,7 +43,7 @@ export class CodeBlockModelCollection extends Disposable {
 		this.clear();
 	}
 
-	get(sessionId: string, chat: IChatRequestViewModel | IChatResponseViewModel, codeBlockIndex: number): { model: Promise<IResolvedTextEditorModel>; readonly vulns: readonly IMarkdownVulnerability[]; readonly codemapperUri?: URI } | undefined {
+	get(sessionId: string, chat: IChatRequestViewModel | IChatResponseViewModel | IAideAgentPlanStepViewModel, codeBlockIndex: number): { model: Promise<IResolvedTextEditorModel>; readonly vulns: readonly IMarkdownVulnerability[]; readonly codemapperUri?: URI } | undefined {
 		const uri = this.getUri(sessionId, chat, codeBlockIndex);
 		const entry = this._models.get(uri);
 		if (!entry) {
@@ -51,7 +52,7 @@ export class CodeBlockModelCollection extends Disposable {
 		return { model: entry.model.then(ref => ref.object), vulns: entry.vulns, codemapperUri: entry.codemapperUri };
 	}
 
-	getOrCreate(sessionId: string, chat: IChatRequestViewModel | IChatResponseViewModel, codeBlockIndex: number): { model: Promise<IResolvedTextEditorModel>; readonly vulns: readonly IMarkdownVulnerability[]; readonly codemapperUri?: URI } {
+	getOrCreate(sessionId: string, chat: IChatRequestViewModel | IChatResponseViewModel | IAideAgentPlanStepViewModel, codeBlockIndex: number): { model: Promise<IResolvedTextEditorModel>; readonly vulns: readonly IMarkdownVulnerability[]; readonly codemapperUri?: URI } {
 		const existing = this.get(sessionId, chat, codeBlockIndex);
 		if (existing) {
 			return existing;
@@ -87,7 +88,7 @@ export class CodeBlockModelCollection extends Disposable {
 		this._models.clear();
 	}
 
-	updateSync(sessionId: string, chat: IChatRequestViewModel | IChatResponseViewModel, codeBlockIndex: number, content: { text: string; languageId?: string }) {
+	updateSync(sessionId: string, chat: IChatRequestViewModel | IChatResponseViewModel | IAideAgentPlanStepViewModel, codeBlockIndex: number, content: { text: string; languageId?: string }) {
 		const entry = this.getOrCreate(sessionId, chat, codeBlockIndex);
 
 		const extractedVulns = extractVulnerabilitiesFromText(content.text);
@@ -102,7 +103,7 @@ export class CodeBlockModelCollection extends Disposable {
 		return this.get(sessionId, chat, codeBlockIndex) ?? entry;
 	}
 
-	async update(sessionId: string, chat: IChatRequestViewModel | IChatResponseViewModel, codeBlockIndex: number, content: { text: string; languageId?: string }) {
+	async update(sessionId: string, chat: IChatRequestViewModel | IChatResponseViewModel | IAideAgentPlanStepViewModel, codeBlockIndex: number, content: { text: string; languageId?: string }) {
 		const entry = this.getOrCreate(sessionId, chat, codeBlockIndex);
 
 		const extractedVulns = extractVulnerabilitiesFromText(content.text);
@@ -141,7 +142,7 @@ export class CodeBlockModelCollection extends Disposable {
 		return entry;
 	}
 
-	private setCodemapperUri(sessionId: string, chat: IChatRequestViewModel | IChatResponseViewModel, codeBlockIndex: number, codemapperUri: URI) {
+	private setCodemapperUri(sessionId: string, chat: IChatRequestViewModel | IChatResponseViewModel | IAideAgentPlanStepViewModel, codeBlockIndex: number, codemapperUri: URI) {
 		const uri = this.getUri(sessionId, chat, codeBlockIndex);
 		const entry = this._models.get(uri);
 		if (entry) {
@@ -149,7 +150,7 @@ export class CodeBlockModelCollection extends Disposable {
 		}
 	}
 
-	private setVulns(sessionId: string, chat: IChatRequestViewModel | IChatResponseViewModel, codeBlockIndex: number, vulnerabilities: IMarkdownVulnerability[]) {
+	private setVulns(sessionId: string, chat: IChatRequestViewModel | IChatResponseViewModel | IAideAgentPlanStepViewModel, codeBlockIndex: number, vulnerabilities: IMarkdownVulnerability[]) {
 		const uri = this.getUri(sessionId, chat, codeBlockIndex);
 		const entry = this._models.get(uri);
 		if (entry) {
@@ -157,7 +158,7 @@ export class CodeBlockModelCollection extends Disposable {
 		}
 	}
 
-	private getUri(sessionId: string, chat: IChatRequestViewModel | IChatResponseViewModel, index: number): URI {
+	private getUri(sessionId: string, chat: IChatRequestViewModel | IChatResponseViewModel | IAideAgentPlanStepViewModel, index: number): URI {
 		const metadata = this.getUriMetaData(chat);
 		return URI.from({
 			scheme: Schemas.vscodeAideAgentCodeBlock,
@@ -167,7 +168,7 @@ export class CodeBlockModelCollection extends Disposable {
 		});
 	}
 
-	private getUriMetaData(chat: IChatRequestViewModel | IChatResponseViewModel) {
+	private getUriMetaData(chat: IChatRequestViewModel | IChatResponseViewModel | IAideAgentPlanStepViewModel) {
 		if (!isResponseVM(chat)) {
 			return undefined;
 		}

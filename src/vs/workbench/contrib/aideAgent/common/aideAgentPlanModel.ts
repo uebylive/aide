@@ -20,6 +20,7 @@ export interface IAideAgentPlanAddStepEvent {
 export interface IAideAgentPlanStepModel {
 	readonly onDidChange: Event<void>;
 	readonly id: string;
+	readonly sessionId: string;
 	description: IMarkdownString;
 	progress: ReadonlyArray<IAideAgentPlanProgressContent>;
 	isComplete: boolean;
@@ -56,7 +57,10 @@ export class AideAgentPlanStepModel extends Disposable implements IAideAgentPlan
 		return this._isComplete;
 	}
 
-	constructor(initialValue: IAideAgentPlanStep) {
+	constructor(
+		readonly sessionId: string,
+		initialValue: IAideAgentPlanStep
+	) {
 		super();
 
 		this.id = 'step_' + AideAgentPlanStepModel.nextId++;
@@ -106,7 +110,7 @@ export class AideAgentPlanModel extends Disposable implements IAideAgentPlanMode
 		if (this._steps[progress.index]) {
 			this._steps[progress.index].updateStep(progress);
 		} else {
-			const step = this._instantiationService.createInstance(AideAgentPlanStepModel, progress);
+			const step = this._instantiationService.createInstance(AideAgentPlanStepModel, this.sessionId, progress);
 			this._steps.push(step);
 			this._onDidChange.fire({ kind: 'addPlanStep', step });
 		}

@@ -12,19 +12,40 @@ import { IContextKeyService } from '../../../../platform/contextkey/common/conte
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ServiceCollection } from '../../../../platform/instantiation/common/serviceCollection.js';
 import { WorkbenchObjectTree } from '../../../../platform/list/browser/listService.js';
+import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { IAideAgentPlanModel } from '../common/aideAgentPlanModel.js';
 import { AideAgentPlanViewModel, IAideAgentPlanStepViewModel } from '../common/aideAgentPlanViewModel.js';
+import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
+import { IChatRendererDelegate } from './aideAgentListRenderer.js';
+import { ChatEditorOptions } from './aideAgentOptions.js';
 import { AideAgentPlanAccessibilityProvider } from './aideAgentPlanAccessibilityProvider.js';
 import { AideAgentPlanListDelegate, AideAgentPlanListRenderer } from './aideAgentPlanListRenderer.js';
+import { IChatWidgetStyles } from './aideAgentWidget.js';
 
 const $ = dom.$;
 
+function revealLastElement(list: WorkbenchObjectTree<any>) {
+	list.scrollTop = list.scrollHeight - list.renderHeight;
+}
+
 export class AideAgentPlanWidget extends Disposable {
+	private _onDidFocus = this._register(new Emitter<void>());
+	readonly onDidFocus = this._onDidFocus.event;
+
+	private _onDidScroll = this._register(new Emitter<void>());
+	readonly onDidScroll = this._onDidScroll.event;
+
 	private _onDidHide = this._register(new Emitter<void>());
 	readonly onDidHide = this._onDidHide.event;
 
+	private readonly _onDidChangeContentHeight = new Emitter<void>();
+	readonly onDidChangeContentHeight: Event<void> = this._onDidChangeContentHeight.event;
+
 	private tree!: WorkbenchObjectTree<IAideAgentPlanStepViewModel>;
 	private renderer!: AideAgentPlanListRenderer;
+	private readonly _codeBlockModelCollection: CodeBlockModelCollection;
+
+	private editorOptions!: ChatEditorOptions;
 
 	private listContainer!: HTMLElement;
 	private container!: HTMLElement;
@@ -50,18 +71,28 @@ export class AideAgentPlanWidget extends Disposable {
 	}
 
 	private _visible = false;
+	private previousTreeScrollHeight: number = 0;
 
 	constructor(
+		private readonly styles: IChatWidgetStyles,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IThemeService private readonly themeService: IThemeService,
 	) {
 		super();
+
+		this._codeBlockModelCollection = this._register(instantiationService.createInstance(CodeBlockModelCollection));
 	}
 
 	render(parent: HTMLElement): void {
+		this.editorOptions = this._register(this.instantiationService.createInstance(ChatEditorOptions, undefined, this.styles.listForeground, this.styles.inputEditorBackground, this.styles.resultEditorBackground));
+
 		this.container = dom.append(parent, $('.interactive-session'));
 		this.listContainer = dom.append(this.container, $('.interactive-list'));
 		this.createList(this.listContainer);
+
+		this._register(this.editorOptions.onDidChange(() => this.onDidStyleChange()));
+		this.onDidStyleChange();
 
 		if (this.viewModel) {
 			this.onDidChangeItems();
@@ -90,9 +121,22 @@ export class AideAgentPlanWidget extends Disposable {
 	private createList(listContainer: HTMLElement): void {
 		const scopedInstantiationService = this._register(this._register(this.instantiationService.createChild(new ServiceCollection([IContextKeyService, this.contextKeyService]))));
 		const delegate = scopedInstantiationService.createInstance(AideAgentPlanListDelegate);
+		const rendererDelegate: IChatRendererDelegate = {
+			getListLength: () => this.tree.getNode(null).visibleChildrenCount,
+			onDidScroll: this.onDidScroll,
+		};
+
+		// Create a dom element to hold UI from editor widgets embedded in chat messages
+		const overflowWidgetsContainer = document.createElement('div');
+		overflowWidgetsContainer.classList.add('chat-overflow-widget-container', 'monaco-editor');
+		listContainer.append(overflowWidgetsContainer);
 
 		this.renderer = this._register(scopedInstantiationService.createInstance(
 			AideAgentPlanListRenderer,
+			this.editorOptions,
+			rendererDelegate,
+			this._codeBlockModelCollection,
+			overflowWidgetsContainer,
 		));
 
 		this.tree = this._register(<WorkbenchObjectTree<IAideAgentPlanStepViewModel>>scopedInstantiationService.createInstance(
@@ -112,9 +156,41 @@ export class AideAgentPlanWidget extends Disposable {
 			}
 		));
 
+		this._register(this.tree.onDidChangeContentHeight(() => {
+			this.onDidChangeTreeContentHeight();
+		}));
 		this._register(this.renderer.onDidChangeItemHeight((e) => {
 			this.tree.updateElementHeight(e.element, e.height);
 		}));
+		this._register(this.tree.onDidFocus(() => {
+			this._onDidFocus.fire();
+		}));
+		this._register(this.tree.onDidScroll(() => {
+			this._onDidScroll.fire();
+		}));
+	}
+
+	private onDidChangeTreeContentHeight(): void {
+		if (this.tree.scrollHeight !== this.previousTreeScrollHeight) {
+			// Due to rounding, the scrollTop + renderHeight will not exactly match the scrollHeight.
+			// Consider the tree to be scrolled all the way down if it is within 2px of the bottom.
+			const lastElementWasVisible = this.tree.scrollTop + this.tree.renderHeight >= this.previousTreeScrollHeight - 2;
+			if (lastElementWasVisible) {
+				dom.scheduleAtNextAnimationFrame(dom.getWindow(this.listContainer), () => {
+					// Can't set scrollTop during this event listener, the list might overwrite the change
+					revealLastElement(this.tree);
+				}, 0);
+			}
+		}
+
+		this.previousTreeScrollHeight = this.tree.scrollHeight;
+		this._onDidChangeContentHeight.fire();
+	}
+
+	private onDidStyleChange(): void {
+		this.container.style.setProperty('--vscode-interactive-result-editor-background-color', this.editorOptions.configuration.resultEditor.backgroundColor?.toString() ?? '');
+		this.container.style.setProperty('--vscode-interactive-session-foreground', this.editorOptions.configuration.foreground?.toString() ?? '');
+		this.container.style.setProperty('--vscode-chat-list-background', this.themeService.getColorTheme().getColor(this.styles.listBackground)?.toString() ?? '');
 	}
 
 	setModel(model: IAideAgentPlanModel): void {
@@ -126,7 +202,9 @@ export class AideAgentPlanWidget extends Disposable {
 			return;
 		}
 
-		this.viewModel = this.instantiationService.createInstance(AideAgentPlanViewModel, model);
+		this._codeBlockModelCollection.clear();
+
+		this.viewModel = this.instantiationService.createInstance(AideAgentPlanViewModel, model, this._codeBlockModelCollection);
 		this.viewModelDisposables.add(Event.accumulate(this.viewModel.onDidChange, 0)(() => {
 			if (!this.viewModel) {
 				return;

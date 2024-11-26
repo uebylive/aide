@@ -5,9 +5,16 @@
 
 import { Emitter, Event } from '../../../../base/common/event.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
+import * as marked from '../../../../base/common/marked/marked.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { IAideAgentPlanModel, IAideAgentPlanStepModel } from './aideAgentPlanModel.js';
 import { IAideAgentPlanProgressContent } from './aideAgentService.js';
+import { annotateVulnerabilitiesInText } from './annotations.js';
+import { CodeBlockModelCollection } from './codeBlockModelCollection.js';
+
+export function isAideAgentPlanStepVM(item: any): item is IAideAgentPlanStepViewModel {
+	return !!item && typeof item === 'object' && 'value' in item;
+}
 
 export type IAideAgentPlanViewModelChangeEvent = IAideAgentPlanAddStepEvent | null;
 export interface IAideAgentPlanAddStepEvent {
@@ -16,6 +23,7 @@ export interface IAideAgentPlanAddStepEvent {
 
 export interface IAideAgentPlanStepViewModel {
 	readonly id: string;
+	readonly sessionId: string;
 	readonly dataId: string;
 	readonly isComplete: boolean;
 	readonly value: ReadonlyArray<IAideAgentPlanProgressContent>;
@@ -54,6 +62,10 @@ export class AideAgentPlanStepViewModel extends Disposable implements IAideAgent
 		return this._model.id;
 	}
 
+	get sessionId(): string {
+		return this._model.sessionId;
+	}
+
 	get dataId(): string {
 		return this._model.id + `_${this._modelChangeCount}`;
 	}
@@ -86,6 +98,7 @@ export class AideAgentPlanViewModel extends Disposable implements IAideAgentPlan
 
 	constructor(
 		private readonly _model: IAideAgentPlanModel,
+		public readonly codeBlockModelCollection: CodeBlockModelCollection,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 	) {
 		super();
@@ -110,13 +123,30 @@ export class AideAgentPlanViewModel extends Disposable implements IAideAgentPlan
 	private onAddPlanStep(step: IAideAgentPlanStepModel) {
 		const stepModel = this.instantiationService.createInstance(AideAgentPlanStepViewModel, step);
 		this._register(stepModel.onDidChange(() => {
+			if (stepModel.isComplete) {
+				this.updateCodeBlockTextModels(stepModel);
+			}
 			this._onDidChange.fire(null);
 		}));
 		this._items.push(stepModel);
+		this.updateCodeBlockTextModels(stepModel);
 	}
 
 	override dispose(): void {
 		super.dispose();
 		this._items.forEach(item => item.dispose());
+	}
+
+	updateCodeBlockTextModels(model: IAideAgentPlanStepViewModel) {
+		const content = annotateVulnerabilitiesInText(model.value).map(x => x.content.value).join('');
+
+		let codeBlockIndex = 0;
+		marked.walkTokens(marked.lexer(content), token => {
+			if (token.type === 'code') {
+				const lang = token.lang || '';
+				const text = token.text;
+				this.codeBlockModelCollection.update(this._model.sessionId, model, codeBlockIndex++, { text, languageId: lang });
+			}
+		});
 	}
 }
