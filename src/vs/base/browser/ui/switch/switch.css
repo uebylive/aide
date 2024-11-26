@@ -1,0 +1,41 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.monaco-switch {
+	position: relative;
+	width: 44px;
+	height: 20px;
+	border: 1px solid var(--vscode-checkbox-border);
+	border-radius: 10px;
+	cursor: pointer;
+	transition: background-color 0.1s ease-out;
+	box-sizing: border-box;
+}
+
+.monaco-switch.checked {
+	background-color: var(--vscode-inputOption-activeBackground);
+	border-color: var(--vscode-inputOption-activeBorder);
+}
+
+.monaco-switch .switch-inner {
+	position: absolute;
+	top: 1px;
+	width: 16px;
+	height: 16px;
+	left: 1px;
+	background-color: var(--vscode-checkbox-background);
+	border-radius: 50%;
+	transition: transform 0.1s ease-out;
+}
+
+.monaco-switch.checked .switch-inner {
+	transform: translateX(24px);
+	background-color: var(--vscode-inputOption-activeForeground);
+}
+
+.monaco-switch.disabled {
+	opacity: 0.5;
+	cursor: default;
+}
