@@ -727,7 +727,7 @@ function getModelProviderConfiguration(providerConfiguration: ProviderSpecificCo
 	if (providerConfiguration.type === 'geminipro') {
 		return 'GeminiPro';
 	}
-	if (providerConfiguration.type === 'openrouter') {
+	if (providerConfiguration.type === 'open-router') {
 		return 'OpenRouter';
 	}
 	return null;
