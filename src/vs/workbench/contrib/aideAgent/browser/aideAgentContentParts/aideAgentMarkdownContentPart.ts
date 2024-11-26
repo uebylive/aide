@@ -416,7 +416,7 @@ export class EditPreviewEditorPool extends Disposable {
 	}
 }
 
-export class CollapsedCodeBlock extends Disposable {
+class CollapsedCodeBlock extends Disposable {
 	public readonly element: HTMLElement;
 
 	private _uri: URI | undefined;

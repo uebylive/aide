@@ -19,8 +19,8 @@ import { IAideAgentPlanStepViewModel } from '../common/aideAgentPlanViewModel.js
 import { IChatRendererContent } from '../common/aideAgentViewModel.js';
 import { annotateSpecialMarkdownContent } from '../common/annotations.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
-import { IChatCodeBlockInfo, IEditPreviewCodeBlockInfo } from './aideAgent.js';
-import { EditorPool, EditPreviewEditorPool } from './aideAgentContentParts/aideAgentMarkdownContentPart.js';
+import { IChatCodeBlockInfo } from './aideAgent.js';
+import { EditorPool } from './aideAgentContentParts/aideAgentMarkdownContentPart.js';
 import { IChatRendererDelegate } from './aideAgentListRenderer.js';
 import { ChatMarkdownRenderer } from './aideAgentMarkdownRenderer.js';
 import { ChatEditorOptions } from './aideAgentOptions.js';
@@ -48,7 +48,6 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 
 	private readonly codeBlocksByResponseId = new Map<string, IChatCodeBlockInfo[]>();
 	private readonly codeBlocksByEditorUri = new ResourceMap<IChatCodeBlockInfo>();
-	private readonly editPreviewBlocksByResponseId = new Map<string, IEditPreviewCodeBlockInfo[]>();
 
 	private readonly renderer: MarkdownRenderer;
 
@@ -56,7 +55,6 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 	readonly onDidChangeItemHeight: Event<IItemHeightChangeParams> = this._onDidChangeItemHeight.event;
 
 	private readonly _editorPool: EditorPool;
-	private readonly _editPreviewEditorPool: EditPreviewEditorPool;
 
 	private _currentLayoutWidth: number = 0;
 	private _isVisible = true;
@@ -74,7 +72,6 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 
 		this.renderer = this._register(this.instantiationService.createInstance(ChatMarkdownRenderer, undefined));
 		this._editorPool = this._register(this.instantiationService.createInstance(EditorPool, editorOptions, delegate, overflowWidgetsDomNode));
-		this._editPreviewEditorPool = this._register(this.instantiationService.createInstance(EditPreviewEditorPool, editorOptions, delegate, overflowWidgetsDomNode));
 	}
 
 	get templateId(): string {
@@ -90,9 +87,6 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 		this._currentLayoutWidth = width;
 		for (const editor of this._editorPool.inUse()) {
 			editor.layout(this._currentLayoutWidth);
-		}
-		for (const editPreviewEditor of this._editPreviewEditorPool.inUse()) {
-			editPreviewEditor.layout(this._currentLayoutWidth);
 		}
 	}
 
@@ -278,7 +272,7 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 		const element = context.element;
 		const fillInIncompleteTokens = !element.isComplete;
 		const codeBlockStartIndex = context.preceedingContentParts.reduce((acc, part) => acc + (part instanceof AideAgentPlanMarkdownContentPart ? part.codeblocks.length : 0), 0);
-		const markdownPart = this.instantiationService.createInstance(AideAgentPlanMarkdownContentPart, markdown, context, this._editorPool, this._editPreviewEditorPool, fillInIncompleteTokens, codeBlockStartIndex, this.renderer, this._currentLayoutWidth, this.codeBlockModelCollection);
+		const markdownPart = this.instantiationService.createInstance(AideAgentPlanMarkdownContentPart, markdown, context, this._editorPool, fillInIncompleteTokens, codeBlockStartIndex, this.renderer, this._currentLayoutWidth, this.codeBlockModelCollection);
 		const markdownPartId = markdownPart.id;
 		markdownPart.addDisposable(markdownPart.onDidChangeHeight(() => {
 			markdownPart.layout(this._currentLayoutWidth);
@@ -313,25 +307,6 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 					}
 				}));
 			}
-		});
-
-		// Edit previews
-		const editPreviewBlocksByResponseId = this.editPreviewBlocksByResponseId.get(element.id) ?? [];
-		this.editPreviewBlocksByResponseId.set(element.id, editPreviewBlocksByResponseId);
-		markdownPart.addDisposable(toDisposable(() => {
-			const editPreviewBlocksByResponseId = this.editPreviewBlocksByResponseId.get(element.id);
-			if (editPreviewBlocksByResponseId) {
-				markdownPart.editPreviewBlocks.forEach((info, i) => {
-					const editPreviewBlock = editPreviewBlocksByResponseId[codeBlockStartIndex + i];
-					if (editPreviewBlock?.ownerMarkdownPartId === markdownPartId) {
-						delete editPreviewBlocksByResponseId[codeBlockStartIndex + i];
-					}
-				});
-			}
-		}));
-
-		markdownPart.editPreviewBlocks.forEach((info, i) => {
-			editPreviewBlocksByResponseId[codeBlockStartIndex + i] = info;
 		});
 
 		return markdownPart;

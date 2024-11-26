@@ -61,7 +61,7 @@ export interface IChatCodeBlockInfo {
 
 export interface IEditPreviewCodeBlockInfo {
 	readonly ownerMarkdownPartId: string;
-	readonly element: ChatTreeItem | IAideAgentPlanStepViewModel;
+	readonly element: ChatTreeItem;
 }
 
 export interface IChatFileTreeInfo {
