@@ -117,6 +117,7 @@ export class AideAgentPlanModel extends Disposable implements IAideAgentPlanMode
 	}
 
 	override dispose(): void {
+		this._steps.forEach(s => s.dispose());
 		this._onDidDispose.fire();
 
 		super.dispose();

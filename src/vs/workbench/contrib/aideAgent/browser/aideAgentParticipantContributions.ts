@@ -23,7 +23,7 @@ import * as extensionsRegistry from '../../../services/extensions/common/extensi
 import { showExtensionsWithIdsCommandId } from '../../extensions/browser/extensionsActions.js';
 import { IExtensionsWorkbenchService } from '../../extensions/common/extensions.js';
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgentData } from '../common/aideAgentAgents.js';
-import { CONTEXT_CHAT_EXTENSION_INVALID, CONTEXT_CHAT_PANEL_PARTICIPANT_REGISTERED } from '../common/aideAgentContextKeys.js';
+import { CONTEXT_CHAT_IS_PLAN_VISIBLE, CONTEXT_CHAT_EXTENSION_INVALID, CONTEXT_CHAT_PANEL_PARTICIPANT_REGISTERED } from '../common/aideAgentContextKeys.js';
 import { IRawChatParticipantContribution } from '../common/aideAgentParticipantContribTypes.js';
 import { CHAT_VIEW_ID } from './aideAgent.js';
 import { AIDE_AGENT_PLAN_VIEW_PANE_ID } from './aideAgentPlan.js';
@@ -182,7 +182,7 @@ const planViewContainer: ViewContainer = Registry.as<IViewContainersRegistry>(Vi
 	icon: Codicon.mapVertical,
 	ctorDescriptor: new SyncDescriptor(ViewPaneContainer, [planViewContainerId, { mergeViewWithContainerWhenSingleView: true }]),
 	storageId: planViewContainerId,
-	hideIfEmpty: false,
+	hideIfEmpty: true,
 	order: 5,
 }, ViewContainerLocation.Sidebar, { isDefault: true });
 
@@ -332,6 +332,9 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 			containerTitle: planViewContainer.title.value,
 			singleViewPaneContainerTitle: planViewContainer.title.value,
 			name: { value: name, original: name },
+			canMoveView: false,
+			canToggleVisibility: true,
+			when: CONTEXT_CHAT_IS_PLAN_VISIBLE,
 			ctorDescriptor: new SyncDescriptor(AideAgentPlanViewPane),
 		}];
 		Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry).registerViews(viewDescriptor, planViewContainer);

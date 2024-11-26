@@ -20,10 +20,12 @@ import { IRange } from '../../../../editor/common/core/range.js';
 import { IWorkspaceFileEdit, IWorkspaceTextEdit, TextEdit, WorkspaceEdit } from '../../../../editor/common/languages.js';
 import { IModelDeltaDecoration, ITextModel } from '../../../../editor/common/model.js';
 import { localize } from '../../../../nls.js';
+import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgentData, IChatAgentResult, reviveSerializedAgent } from './aideAgentAgents.js';
 import { IAideAgentCodeEditingService, IAideAgentCodeEditingSession } from './aideAgentCodeEditingService.js';
+import { CONTEXT_CHAT_IS_PLAN_VISIBLE } from './aideAgentContextKeys.js';
 import { HunkData } from './aideAgentEditingSession.js';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from './aideAgentParserTypes.js';
 import { AideAgentPlanModel, IAideAgentPlanModel } from './aideAgentPlanModel.js';
@@ -904,14 +906,22 @@ export class ChatModel extends Disposable implements IChatModel {
 	}
 
 	private _plan: AideAgentPlanModel | undefined;
+	private isPlanVisible: IContextKey<boolean>;
+
 	get plan(): AideAgentPlanModel | undefined {
 		return this._plan;
+	}
+
+	set plan(plan: AideAgentPlanModel | undefined) {
+		this._plan = plan;
+		this.isPlanVisible.set(!!plan);
 	}
 
 	constructor(
 		private readonly initialData: ISerializableChatData | IExportableChatData | undefined,
 		private readonly _initialLocation: ChatAgentLocation,
 		readonly isPassthrough: boolean,
+		@IContextKeyService contextKeyService: IContextKeyService,
 		@ILogService private readonly logService: ILogService,
 		@IAideAgentAgentService private readonly chatAgentService: IAideAgentAgentService,
 		@IAideAgentCodeEditingService private readonly aideAgentCodeEditingService: IAideAgentCodeEditingService,
@@ -928,6 +938,8 @@ export class ChatModel extends Disposable implements IChatModel {
 
 		this._initialRequesterAvatarIconUri = initialData?.requesterAvatarIconUri && URI.revive(initialData.requesterAvatarIconUri);
 		this._initialResponderAvatarIconUri = isUriComponents(initialData?.responderAvatarIconUri) ? URI.revive(initialData.responderAvatarIconUri) : initialData?.responderAvatarIconUri;
+
+		this.isPlanVisible = CONTEXT_CHAT_IS_PLAN_VISIBLE.bindTo(contextKeyService);
 	}
 
 	private _deserialize(obj: IExportableChatData): ChatRequestModel[] {
@@ -1146,12 +1158,12 @@ export class ChatModel extends Disposable implements IChatModel {
 	}
 
 	private applyPlanStep(progress: IAideAgentPlanStep) {
-		if (!this._plan) {
-			this._plan = this.instantiationService.createInstance(AideAgentPlanModel, this.sessionId);
-			this._onDidChange.fire({ kind: 'startPlan', plan: this._plan });
+		if (!this.plan) {
+			this.plan = this.instantiationService.createInstance(AideAgentPlanModel, this.sessionId);
+			this._onDidChange.fire({ kind: 'startPlan', plan: this.plan });
 		}
 
-		this._plan.updateSteps(progress);
+		this.plan.updateSteps(progress);
 	}
 
 	/* TODO(@ghostwriternr): This method was used to remove/resend requests. We can add it back in if we need it.
@@ -1272,6 +1284,10 @@ export class ChatModel extends Disposable implements IChatModel {
 
 	override dispose() {
 		this._exchanges.forEach(r => r instanceof ChatResponseModel ? r.dispose() : undefined);
+
+		this.plan?.dispose();
+		this.plan = undefined;
+
 		this._onDidDispose.fire();
 
 		super.dispose();
