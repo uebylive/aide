@@ -730,20 +730,14 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					});
 					*/
 					responseStream?.stream.step({
-						description: '',
 						index: event.event.PlanEvent.PlanStepTitleAdded.index,
-						isLast: false,
-						title: event.event.PlanEvent.PlanStepTitleAdded.title,
-						descriptionDelta: null,
+						description: new vscode.MarkdownString(`### ${event.event.PlanEvent.PlanStepTitleAdded.title}`),
 					});
 				}
 				if (event.event.PlanEvent.PlanStepDescriptionUpdate) {
 					responseStream?.stream.step({
-						description: event.event.PlanEvent.PlanStepDescriptionUpdate.description_up_until_now,
 						index: event.event.PlanEvent.PlanStepDescriptionUpdate.index,
-						isLast: false,
-						title: '',
-						descriptionDelta: `\n${event.event.PlanEvent.PlanStepDescriptionUpdate.delta}`,
+						description: `\n${event.event.PlanEvent.PlanStepDescriptionUpdate.delta}`,
 					});
 				}
 			} else if (event.event.ExchangeEvent) {

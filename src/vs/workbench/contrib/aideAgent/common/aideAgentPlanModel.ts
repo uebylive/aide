@@ -20,8 +20,6 @@ export interface IAideAgentPlanAddStepEvent {
 export interface IAideAgentPlanStepModel {
 	readonly onDidChange: Event<void>;
 	readonly id: string;
-	readonly index: number;
-	readonly title: string;
 	description: IMarkdownString;
 	progress: ReadonlyArray<IAideAgentPlanProgressContent>;
 	isComplete: boolean;
@@ -41,27 +39,14 @@ export class AideAgentPlanStepModel extends Disposable implements IAideAgentPlan
 	private static nextId = 0;
 
 	public readonly id: string;
-
-	private _index: number;
-	get index(): number {
-		return this._index;
-	}
-
-	private _title: string;
-	get title(): string {
-		return this._title;
-	}
+	private readonly _index: number;
 
 	private _description: IMarkdownString;
 	get description(): IMarkdownString {
 		return this._description;
 	}
 
-	set description(value: IMarkdownString) {
-		this._description = value;
-	}
-
-	private _parts: IAideAgentPlanProgressContent[] = [];
+	private _parts: IAideAgentPlanProgressContent[];
 	get progress(): IAideAgentPlanProgressContent[] {
 		return this._parts;
 	}
@@ -77,9 +62,8 @@ export class AideAgentPlanStepModel extends Disposable implements IAideAgentPlan
 		this.id = 'step_' + AideAgentPlanStepModel.nextId++;
 
 		this._index = initialValue.index;
-		this._title = initialValue.title;
 		this._description = initialValue.description;
-		this._parts.push(initialValue);
+		this._parts = [initialValue];
 	}
 
 	updateStep(progress: IAideAgentPlanStep): void {
@@ -87,11 +71,11 @@ export class AideAgentPlanStepModel extends Disposable implements IAideAgentPlan
 			throw new Error('Index mismatch');
 		}
 
-		if (!progress.descriptionDelta) {
+		if (!progress.description) {
 			return;
 		}
 
-		this._description = appendMarkdownString(this._description, progress.descriptionDelta);
+		this._description = appendMarkdownString(this._description, progress.description);
 
 		this._parts.push(progress);
 		this._onDidChange.fire();

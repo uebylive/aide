@@ -4710,17 +4710,11 @@ export class ChatResponseCodeEditPart {
 
 export class AideAgentResponsePlanPart {
 	index: number;
-	title: string;
 	description: string | vscode.MarkdownString;
-	descriptionDelta: string | vscode.MarkdownString | null;
-	isLast: boolean;
 
 	constructor(step: vscode.AideAgentPlanStepPart) {
 		this.index = step.index;
 		this.description = step.description;
-		this.descriptionDelta = step.descriptionDelta;
-		this.isLast = step.isLast;
-		this.title = step.title;
 	}
 }
 //#endregion

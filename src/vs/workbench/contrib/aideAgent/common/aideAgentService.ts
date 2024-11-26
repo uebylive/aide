@@ -198,10 +198,7 @@ export interface IChatConfirmation {
 
 export interface IAideAgentPlanStep {
 	index: number;
-	title: string;
 	description: IMarkdownString;
-	descriptionDelta: IMarkdownString | null;
-	isLast: boolean;
 	kind: 'planStep';
 }
 

@@ -2925,10 +2925,7 @@ export namespace AideAgentResponsePlanPart {
 		return {
 			kind: 'planStep',
 			index: part.index,
-			title: part.title,
 			description: MarkdownString.from(part.description),
-			descriptionDelta: part.descriptionDelta ? MarkdownString.from(part.descriptionDelta) : null,
-			isLast: part.isLast,
 		};
 	}
 }

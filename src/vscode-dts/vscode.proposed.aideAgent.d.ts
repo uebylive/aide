@@ -58,21 +58,9 @@ declare module 'vscode' {
 		 */
 		readonly index: number;
 		/**
-		 * The title of the step in the plan
-		 */
-		readonly title: string;
-		/*
-		 * Description of the edits
-		 */
-		readonly description: string | MarkdownString;
-		/**
 		 * Progressive update on the description over here
 		 */
-		readonly descriptionDelta: string | MarkdownString | null;
-		/**
-		 * Whether it's the last step in the plan
-		 */
-		readonly isLast: boolean;
+		readonly description: string | MarkdownString;
 	}
 
 	export type AideAgentResponsePart = ExtendedChatResponsePart | ChatResponseCodeEditPart;
