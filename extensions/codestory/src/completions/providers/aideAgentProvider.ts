@@ -407,8 +407,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		}
 
 		const session = await vscode.csAuthentication.getSession();
-
-		// Nullish coalescing more appropriate here
 		const email = session?.account.email ?? '';
 
 		// accessToken required for sidecar requests (through codestory provider)
@@ -420,6 +418,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			event: 'processEvent',
 			properties: {
 				platform: os.platform(),
+				product: 'aide',
 				email,
 				query: event.prompt,
 				mode: event.mode,

@@ -32,6 +32,9 @@ import { getRipGrepPath } from './utilities/ripGrep';
 export let SIDECAR_CLIENT: SideCarClient | null = null;
 
 export async function activate(context: vscode.ExtensionContext) {
+	const session = await vscode.csAuthentication.getSession();
+	const email = session?.account.email ?? '';
+
 	// Project root here
 	const uniqueUserId = getUniqueId();
 	logger.info(`[CodeStory]: ${uniqueUserId} Activating extension with storage: ${context.globalStorageUri}`);
@@ -40,6 +43,8 @@ export async function activate(context: vscode.ExtensionContext) {
 		event: 'extension_activated',
 		properties: {
 			platform: os.platform(),
+			product: 'aide',
+			email,
 		},
 	});
 
@@ -95,6 +100,8 @@ export async function activate(context: vscode.ExtensionContext) {
 		distinctId: await getUniqueId(),
 		event: 'activated_lsp',
 		properties: {
+			product: 'aide',
+			email,
 			repoName,
 			repoHash,
 		}
