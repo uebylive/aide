@@ -51,12 +51,8 @@ export const SIDECAR_VERSION = 'f76b2c07e462dea1c1e8492805847be911caed1013ea9b23
 
 async function checkCorrectVersionRunning(url: string): Promise<boolean> {
 	try {
-		// console.log('Version check starting');
 		const response = await fetch(`${url}/api/version`);
-		// console.log('Version check done' + response);
 		const version = await response.json();
-		// console.log('version content');
-		// console.log(version);
 		return version.version_hash === SIDECAR_VERSION;
 	} catch (e) {
 		return false;
@@ -83,14 +79,10 @@ export async function runCommand(cmd: string): Promise<[string, string | undefin
 
 async function checkServerRunning(serverUrl: string): Promise<boolean> {
 	try {
-		// console.log('Health check starting');
 		const response = await fetch(`${serverUrl}/api/health`);
 		if (response.status === 200) {
-			// console.log('Sidecar server already running');
-			// console.log('Health check done');
 			return true;
 		} else {
-			// console.log('Health check done');
 			return false;
 		}
 	} catch (e) {
@@ -116,7 +108,7 @@ async function killProcessOnPort(port: number): Promise<void> {
 				return;
 			}
 		} else {
-			// console.log(`No process running on port ${port}`);
+			console.warn(`No process running on port ${port}`);
 		}
 	} else {
 		// Find the process ID using lsof (this command is for macOS/Linux)
@@ -136,7 +128,7 @@ async function killProcessOnPort(port: number): Promise<void> {
 				return;
 			}
 		} else {
-			// console.log(`No process running on port ${port}`);
+			console.warn(`No process running on port ${port}`);
 		}
 	}
 }
@@ -144,12 +136,11 @@ async function killProcessOnPort(port: number): Promise<void> {
 async function checkOrKillRunningServer(serverUrl: string): Promise<boolean> {
 	const serverRunning = await checkServerRunning(serverUrl);
 	if (serverRunning) {
-		// console.log('Killing previous sidecar server');
 		try {
 			await killSidecarProcess();
 		} catch (e: any) {
 			if (!e.message.includes('Process doesn\'t exist')) {
-				// console.log('Failed to kill old server:', e);
+				console.warn('Failed to kill old server:', e);
 			}
 		}
 	}
@@ -169,18 +160,14 @@ export async function startSidecarBinaryWithLocal(
 	// check here if the binary is downloaded locally and if thats the case
 	// try to run it from there
 	const sidecarBinPath = path.join(installLocation, 'extensions', 'codestory', 'sidecar_bin');
-	// console.log('startSidecarBinaryWithLocation', sidecarBinPath);
 	if (fs.existsSync(sidecarBinPath)) {
 		const sidecarBinPathExists = fs.existsSync(path.join(sidecarBinPath, 'sidecar'));
 		if (sidecarBinPathExists) {
 			try {
-				// console.log('Starting sidecar binary locally', sidecarBinPath, serverUrl);
 				const sidecarValue = await runSideCarBinary(sidecarBinPath, serverUrl);
-				// console.log('Sidecar binary exists locally, running it', sidecarValue);
 				return sidecarValue;
 			} catch (e) {
 				return false;
-				// console.log('Failed to run sidecar binary locally', e);
 			}
 		}
 	}
@@ -197,8 +184,6 @@ export async function startSidecarBinary(
 	// extension_path: /Users/skcd/.vscode-oss-dev/User/globalStorage/codestory-ghost.codestoryai/sidecar_bin
 	// installation location: /Users/skcd/Downloads/Aide.app/Contents/Resources/app/extensions/codestory/sidecar_bin
 	// we have to figure out how to copy them together
-	// console.log('starting sidecar binary');
-	// console.log('installLocation', installLocation);
 	const selfStart = await startSidecarBinaryWithLocal(installLocation);
 	if (selfStart) {
 		return 'http://127.0.0.1:42424';
@@ -210,21 +195,16 @@ export async function startSidecarBinary(
 		return serverUrl;
 	}
 	if (serverUrl !== 'http://127.0.0.1:42424') {
-		// console.log('Sidecar server is being run manually, skipping start');
 		return 'http://127.0.0.1:42424';
 	}
 
 	// Check if we are running the correct version, or else we download a new version
 	if (await checkCorrectVersionRunning(serverUrl)) {
-		// console.log('Correct version of Sidecar binary is running');
 		return 'http://127.0.0.1:42424';
 	}
 
 	// First let's kill the running version
-	// console.log('Killing running Sidecar binary');
 	await checkOrKillRunningServer(serverUrl);
-
-	// console.log('Starting Sidecar binary right now');
 
 	// Download the server executable
 	const bucket = 'sidecar-bin';
@@ -245,7 +225,6 @@ export async function startSidecarBinary(
 	);
 
 	// First, check if the server is already downloaded
-	// console.log('Downloading the sidecar binary...');
 	await window.withProgress(
 		{
 			location: ProgressLocation.SourceControl,
@@ -257,19 +236,15 @@ export async function startSidecarBinary(
 			try {
 				await downloadFromGCPBucket(bucket, fileName, zipDestination);
 			} catch (e) {
-				// console.log('Failed to download from GCP bucket, trying using URL: ', e);
 				await downloadUsingURL(bucket, fileName, zipDestination);
 			}
 		}
 	);
 
-	// console.log(`Downloaded sidecar zip at ${zipDestination}`);
 	// Now we need to unzip the folder in the location and also run a few commands
 	// for the dylib files and the binary
 	// -o is important here because we want to override the downloaded binary
 	// if it has been already downloaded
-	// console.log(zipDestination);
-	// console.log(sidecarDestination);
 	// hopefully this works as we want it to
 	unzipSidecarZipFolder(zipDestination, sidecarDestination);
 	// now delete the zip file
@@ -310,7 +285,6 @@ async function runSideCarBinary(sidecarDestination: string, serverUrl: string) {
 	}
 
 	// Run the executable
-	// console.log('Starting sidecar binary');
 	let attempts = 0;
 	// increasing max attempts to 100
 	const maxAttempts = 100;
@@ -319,7 +293,6 @@ async function runSideCarBinary(sidecarDestination: string, serverUrl: string) {
 	const spawnChild = async () => {
 		const retry = () => {
 			attempts++;
-			// console.log(`Error caught (likely EBUSY). Retrying attempt ${attempts}...`);
 			setTimeout(spawnChild, delay);
 		};
 		try {
@@ -336,8 +309,6 @@ async function runSideCarBinary(sidecarDestination: string, serverUrl: string) {
 			} else {
 				sidecarBinary = path.join(sidecarDestination, 'target', 'release', 'webserver');
 			}
-			// console.log('what are the args');
-			// console.log(args, sidecarBinary);
 			const child = spawn(sidecarBinary, settings);
 
 			// Either unref to avoid zombie process, or listen to events because you can
@@ -376,18 +347,15 @@ async function runSideCarBinary(sidecarDestination: string, serverUrl: string) {
 		let hcAttempts = 0;
 		while (hcAttempts < maxAttempts) {
 			try {
-				// console.log('Health check main loop');
 				const url = `${serverUrl}/api/health`;
 				const response = await fetch(url);
 				if (response.status === 200) {
-					// allow-any-unicode-next-line
-					// console.log('HC finished! We are green 🛳️');
 					return true;
 				} else {
-					// console.log(`HC failed, trying again. Attempt ${hcAttempts + 1}`);
+					console.log(`HC failed, trying again. Attempt ${hcAttempts + 1}`);
 				}
 			} catch (e: any) {
-				// console.log(`HC failed, trying again. Attempt ${hcAttempts + 1}`, e);
+				console.log(`HC failed, trying again. Attempt ${hcAttempts + 1}`, e);
 			}
 			hcAttempts++;
 			await new Promise(resolve => setTimeout(resolve, delay));
@@ -395,11 +363,9 @@ async function runSideCarBinary(sidecarDestination: string, serverUrl: string) {
 		return false;
 	};
 
-	// console.log('we are returning from HC check');
 	const hcGreen = await waitForGreenHC();
-	// console.log('HC value: ', hcGreen);
 	if (!hcGreen) {
-		// console.log('Failed to start sidecar');
+		console.error('Failed to start sidecar');
 		return false;
 	}
 	return true;

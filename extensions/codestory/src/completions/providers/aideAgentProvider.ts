@@ -40,7 +40,6 @@ class AideResponseStreamCollection {
 
 	addResponseStream(responseStreamIdentifier: ResponseStreamIdentifier, responseStream: vscode.AideAgentEventSenderResponse) {
 		this.extensionContext.subscriptions.push(responseStream.token.onCancellationRequested(() => {
-			console.log('responseStream::token_cancelled');
 			// over here we get the stream of events from the cancellation
 			// we need to send it over on the stream as usual so we can work on it
 			// we can send empty access token here since we are not making llm calls
@@ -135,7 +134,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			// can still grab it by listenting to port 0
 			this.requestHandler?.listen(port);
 			const editorUrl = `http://localhost:${port}`;
-			console.log('editorUrl', editorUrl);
 			this.editorUrl = editorUrl;
 		});
 
@@ -208,7 +206,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		// well understood but we should have an explicit way to do that
 		const response = await this.aideAgent.initResponse(sessionId);
 		if (response !== undefined) {
-			console.log('newExchangeCreated', sessionId, response.exchangeId);
 			this.responseStreamCollection.addResponseStream({
 				sessionId,
 				exchangeId: response.exchangeId,
@@ -229,7 +226,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			sessionId: request.session_id,
 		});
 
-		console.log('provideEditsStreamed');
 		// This is our uniqueEditId which we are using to tag the edits and make
 		// sure that we can roll-back if required on the undo-stack
 		let uniqueEditId = request.exchange_id;
@@ -300,7 +296,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			editsManager.streamProcessor.cleanup();
 
 			await vscode.workspace.save(vscode.Uri.file(editStreamEvent.fs_file_path)); // save files upon stream completion
-			console.log('provideEditsStreamed::finished', editStreamEvent.fs_file_path);
 			// delete this from our map
 			this.editsMap.delete(editStreamEvent.edit_request_id);
 			// incrementing the counter over here
@@ -337,7 +332,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			};
 		}
 		if (!this.openResponseStream) {
-			console.log('returning early over here');
 			return {
 				fs_file_path: request.fs_file_path,
 				success: true,
@@ -363,7 +357,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	handleSessionUndo(sessionId: string, exchangeId: string): void {
 		// TODO(skcd): Handle this properly that we are doing an undo over here
 		this.sidecarClient.handleSessionUndo(sessionId, exchangeId, this.editorUrl!);
-		console.log('handleSessionUndo', sessionId, exchangeId);
 	}
 
 	/**
@@ -504,6 +497,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			if ('done' in event) {
 				continue;
 			}
+
 			const sessionId = event.request_id;
 			const exchangeId = event.exchange_id;
 			const responseStream = this.responseStreamCollection.getResponseStream({
@@ -577,15 +571,12 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					}
 					// response.followups(followups);
 				} else if (event.event.FrameworkEvent.SearchIteration) {
-					// console.log(event.event.FrameworkEvent.SearchIteration);
 				} else if (event.event.FrameworkEvent.AgenticTopLevelThinking) {
 					// TODO(skcd): The agent thinking event is over here, not streamed
 					// but it can get the job done
-					console.log(event.event.FrameworkEvent.AgenticTopLevelThinking);
 				} else if (event.event.FrameworkEvent.AgenticSymbolLevelThinking) {
 					// TODO(skcd): The agent symbol level thinking is here, not streamed
 					// but we can hook into it for information and context
-					console.log(event.event.FrameworkEvent.AgenticSymbolLevelThinking);
 				}
 			} else if (event.event.SymbolEvent) {
 				const symbolEvent = event.event.SymbolEvent.event;
@@ -700,12 +691,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				const sessionId = event.request_id;
 				const exchangeId = event.exchange_id;
 				const responseStream = this.responseStreamCollection.getResponseStream({ sessionId, exchangeId });
-				if (responseStream === undefined) {
-					console.log('responseStreamNotFound::ChatEvent', exchangeId, sessionId);
-				}
 
 				const { delta } = event.event.ChatEvent;
-
 				if (delta !== null) {
 					responseStream?.stream.markdown(delta);
 				}
@@ -739,9 +726,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					sessionId,
 					exchangeId,
 				});
-				if (responseStream === undefined) {
-					console.log('resonseStreamNotFound::ExchangeEvent::ExchangeEvent::exchangeId::sessionId', exchangeId, sessionId);
-				}
+
 				if (event.event.ExchangeEvent.PlansExchangeState) {
 					const editsState = event.event.ExchangeEvent.PlansExchangeState.edits_state;
 					if (editsState === 'Loading') {
@@ -750,6 +735,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						responseStream?.stream.stage({ message: 'Cancelled' });
 					} else if (editsState === 'MarkedComplete') {
 						responseStream?.stream.stage({ message: 'Complete' });
+						responseStream?.stream.close();
+						return;
 					} else if (editsState === 'Accepted') {
 						responseStream?.stream.stage({ message: 'Accepted' });
 					}
@@ -757,7 +744,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				}
 				if (event.event.ExchangeEvent.EditsExchangeState) {
 					const editsState = event.event.ExchangeEvent.EditsExchangeState.edits_state;
-					const files = event.event.ExchangeEvent.EditsExchangeState.files.map((file) => vscode.Uri.file(file));
+					// const files = event.event.ExchangeEvent.EditsExchangeState.files.map((file) => vscode.Uri.file(file));
 					if (editsState === 'Loading') {
 						responseStream?.stream.stage({ message: 'Editing' });
 					} else if (editsState === 'Cancelled') {
