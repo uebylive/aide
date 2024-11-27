@@ -720,15 +720,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				if (event.event.PlanEvent.PlanStepTitleAdded) {
 					// we still want to send the planInfo over here (we should check
 					// why the rendering is so slow for this... weird reason)
-					/*
-					responseStream?.stream.planInfo({
-						exchangeId,
-						sessionId,
-						isStale: false,
-						state: 'Started',
-						description: event.event.PlanEvent.PlanStepTitleAdded.title,
-					});
-					*/
+					responseStream?.stream.stage({ message: 'Planning' });
 					responseStream?.stream.step({
 						index: event.event.PlanEvent.PlanStepTitleAdded.index,
 						description: new vscode.MarkdownString(`### ${event.event.PlanEvent.PlanStepTitleAdded.title}`),
@@ -752,104 +744,38 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				}
 				if (event.event.ExchangeEvent.PlansExchangeState) {
 					const editsState = event.event.ExchangeEvent.PlansExchangeState.edits_state;
-					/*
 					if (editsState === 'Loading') {
-						responseStream?.stream.planInfo({
-							exchangeId,
-							sessionId,
-							isStale: false,
-							state: 'Started',
-						});
+						responseStream?.stream.stage({ message: 'Planning' });
 					} else if (editsState === 'Cancelled') {
-						responseStream?.stream.planInfo({
-							exchangeId,
-							sessionId,
-							isStale: false,
-							state: 'Cancelled',
-						});
+						responseStream?.stream.stage({ message: 'Cancelled' });
 					} else if (editsState === 'MarkedComplete') {
-						responseStream?.stream.planInfo({
-							exchangeId,
-							sessionId,
-							isStale: false,
-							state: 'Complete',
-						});
+						responseStream?.stream.stage({ message: 'Complete' });
 					} else if (editsState === 'Accepted') {
-						responseStream?.stream.planInfo({
-							exchangeId,
-							sessionId,
-							isStale: false,
-							state: 'Accepted',
-						});
+						responseStream?.stream.stage({ message: 'Accepted' });
 					}
-					*/
 					continue;
 				}
 				if (event.event.ExchangeEvent.EditsExchangeState) {
 					const editsState = event.event.ExchangeEvent.EditsExchangeState.edits_state;
 					const files = event.event.ExchangeEvent.EditsExchangeState.files.map((file) => vscode.Uri.file(file));
-					/*
 					if (editsState === 'Loading') {
-						responseStream?.stream.editsInfo({
-							exchangeId,
-							sessionId,
-							files,
-							isStale: false,
-							state: 'loading',
-						});
+						responseStream?.stream.stage({ message: 'Editing' });
 					} else if (editsState === 'Cancelled') {
-						responseStream?.stream.editsInfo({
-							exchangeId,
-							sessionId,
-							files,
-							isStale: false,
-							state: 'cancelled',
-						});
+						responseStream?.stream.stage({ message: 'Cancelled' });
 					} else if (editsState === 'MarkedComplete') {
-						responseStream?.stream.editsInfo({
-							exchangeId,
-							sessionId,
-							files,
-							isStale: false,
-							state: 'markedComplete',
-						});
+						responseStream?.stream.stage({ message: 'Complete' });
 					}
-					*/
 					continue;
 				}
 				if (event.event.ExchangeEvent.ExecutionState) {
-					/*
 					const executionState = event.event.ExchangeEvent.ExecutionState;
 					if (executionState === 'Inference') {
-						responseStream?.stream.streamingState({
-							exchangeId,
-							sessionId,
-							files: [],
-							isError: false,
-							state: 'loading',
-							loadingLabel: 'reasoning',
-						});
+						responseStream?.stream.stage({ message: 'Reasoning' });
 					} else if (executionState === 'InReview') {
-						responseStream?.stream.streamingState({
-							exchangeId,
-							sessionId,
-							files: [],
-							isError: false,
-							state: 'waitingFeedback',
-							loadingLabel: 'generating',
-						});
+						responseStream?.stream.stage({ message: 'Review' });
 					} else if (executionState === 'Cancelled') {
-						responseStream?.stream.streamingState({
-							exchangeId,
-							sessionId,
-							files: [],
-							isError: false,
-							state: 'cancelled',
-							loadingLabel: 'generating',
-							message: 'Cancelled',
-						});
+						responseStream?.stream.stage({ message: 'Cancelled' });
 					}
-					*/
 					continue;
 				}
 				if (event.event.ExchangeEvent.RegeneratePlan) {
@@ -864,16 +790,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				}
 				if (event.event.ExchangeEvent.FinishedExchange) {
 					// Update our streaming state that we are finished
-					/*
-					responseStream?.stream.streamingState({
-						exchangeId,
-						sessionId,
-						files: [],
-						isError: false,
-						state: 'finished',
-						message: 'Finished',
-					});
-					*/
+					responseStream?.stream.stage({ message: 'Finished' });
 					if (responseStream) {
 						responseStream.stream.close();
 					}

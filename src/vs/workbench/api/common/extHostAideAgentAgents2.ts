@@ -134,9 +134,16 @@ class AideAgentResponseStream {
 					return this;
 				},
 				step(value) {
-					throwIfDone(this.anchor);
+					throwIfDone(this.step);
 					const part = new extHostTypes.AideAgentResponsePlanPart(value);
 					const dto = typeConvert.AideAgentResponsePlanPart.from(part);
+					_report(dto);
+					return this;
+				},
+				stage(value) {
+					throwIfDone(this.stage);
+					const part = new extHostTypes.AideAgentProgressStagePart(value);
+					const dto = typeConvert.AideAgentProgressStagePart.from(part);
 					_report(dto);
 					return this;
 				},

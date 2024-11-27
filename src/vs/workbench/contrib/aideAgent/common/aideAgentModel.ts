@@ -331,6 +331,8 @@ export class Response extends Disposable implements IResponse {
 				return `${part.title}\n${part.message}`;
 			} else if (part.kind === 'planStep') {
 				return part.description.value;
+			} else if (part.kind === 'stage') {
+				return '';
 			} else {
 				return part.content.value;
 			}
@@ -1132,7 +1134,8 @@ export class ChatModel extends Disposable implements IChatModel {
 			progress.kind === 'textEdit' ||
 			progress.kind === 'warning' ||
 			progress.kind === 'progressTask' ||
-			progress.kind === 'confirmation'
+			progress.kind === 'confirmation' ||
+			progress.kind === 'stage'
 		) {
 			response.updateContent(progress, quiet);
 		} else if (progress.kind === 'usedContext' || progress.kind === 'reference') {

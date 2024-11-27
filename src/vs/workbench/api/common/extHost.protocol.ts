@@ -53,7 +53,7 @@ import { WorkspaceTrustRequestOptions } from '../../../platform/workspace/common
 import { SaveReason } from '../../common/editor.js';
 import { IRevealOptions, ITreeItem, IViewBadge } from '../../common/views.js';
 import { IChatProgressResponseContent as IAideAgentProgressResponseContent } from '../../contrib/aideAgent/common/aideAgentModel.js';
-import { IAideAgentPlanStep, IChatCodeEdit, IChatEndResponse } from '../../contrib/aideAgent/common/aideAgentService.js';
+import { IAideAgentPlanStep, IAideAgentProgressStage, IChatCodeEdit, IChatEndResponse } from '../../contrib/aideAgent/common/aideAgentService.js';
 import { CallHierarchyItem } from '../../contrib/callHierarchy/common/callHierarchy.js';
 import { ChatAgentLocation, IChatAgentMetadata, IChatAgentRequest, IChatAgentResult } from '../../contrib/chat/common/chatAgents.js';
 import { ICodeMapperRequest, ICodeMapperResult } from '../../contrib/chat/common/chatCodeMapperService.js';
@@ -1435,8 +1435,7 @@ export type IChatCodeEditDto = Pick<IChatCodeEdit, 'kind'> & { edits: IWorkspace
 export type IAideAgentProgressDto =
 	| IChatProgressDto
 	| IChatCodeEditDto
-	| Dto<IAideAgentPlanStep>
-	| Dto<IChatEndResponse>;
+	| Dto<IAideAgentPlanStep | IAideAgentProgressStage | IChatEndResponse>;
 
 export type IAideAgentContentProgressDto =
 	| Dto<Exclude<IAideAgentProgressResponseContent, IChatTask>>

@@ -4717,6 +4717,14 @@ export class AideAgentResponsePlanPart {
 		this.description = step.description;
 	}
 }
+
+export class AideAgentProgressStagePart {
+	message: string;
+
+	constructor(stage: vscode.AideAgentProgressStagePart) {
+		this.message = stage.message;
+	}
+}
 //#endregion
 
 //#region ai

@@ -8,7 +8,7 @@ import { URI } from '../../../../base/common/uri.js';
 import { IRange } from '../../../../editor/common/core/range.js';
 import { IWorkspaceSymbol } from '../../search/common/search.js';
 import { IChatProgressRenderableResponseContent, IChatProgressResponseContent, appendMarkdownString, canMergeMarkdownStrings } from './aideAgentModel.js';
-import { IAideAgentPlanProgressContent, IChatAgentVulnerabilityDetails, IChatMarkdownContent } from './aideAgentService.js';
+import { IAideAgentPlanStep, IChatAgentVulnerabilityDetails, IChatMarkdownContent } from './aideAgentService.js';
 
 export const contentRefUrl = 'http://_vscodecontentref_'; // must be lowercase for URI
 
@@ -69,7 +69,7 @@ export function annotateSpecialMarkdownContent(response: ReadonlyArray<IChatProg
 			}
 		} else if (item.kind === 'planStep' && previousItem?.kind === 'planStep' && canMergeMarkdownStrings(previousItem.description, item.description)) {
 			const merged = appendMarkdownString(previousItem.description, item.description);
-			const oldResult = result[result.length - 1] as IAideAgentPlanProgressContent;
+			const oldResult = result[result.length - 1] as IAideAgentPlanStep;
 			result[result.length - 1] = { ...oldResult, description: merged, kind: 'planStep' };
 		} else {
 			result.push(item);

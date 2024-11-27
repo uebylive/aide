@@ -63,12 +63,17 @@ declare module 'vscode' {
 		readonly description: string | MarkdownString;
 	}
 
+	export interface AideAgentProgressStagePart {
+		readonly message: string;
+	}
+
 	export type AideAgentResponsePart = ExtendedChatResponsePart | ChatResponseCodeEditPart;
 
 	export interface AideAgentResponseStream extends ChatResponseStream {
 		codeEdit(edits: WorkspaceEdit): void;
 		push(part: AideAgentResponsePart): void;
 		step(step: AideAgentPlanStepPart): void;
+		stage(stage: AideAgentProgressStagePart): void;
 		close(): void;
 	}
 

@@ -202,7 +202,12 @@ export interface IAideAgentPlanStep {
 	kind: 'planStep';
 }
 
-export type IAideAgentPlanProgressContent = IAideAgentPlanStep;
+export interface IAideAgentProgressStage {
+	message: string;
+	kind: 'stage';
+}
+
+export type IAideAgentPlanProgressContent = IAideAgentPlanStep | IAideAgentProgressStage;
 
 export interface IChatEndResponse {
 	kind: 'endResponse';
@@ -228,6 +233,7 @@ export type IChatProgress =
 	| IChatResponseCodeblockUriPart
 	| IChatConfirmation
 	| IAideAgentPlanStep
+	| IAideAgentPlanProgressContent
 	| IChatEndResponse;
 
 export interface IChatFollowup {

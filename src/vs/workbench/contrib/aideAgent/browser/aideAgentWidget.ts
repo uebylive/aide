@@ -35,6 +35,7 @@ import { ChatViewModel, IChatResponseViewModel, isRequestVM, isResponseVM, isWel
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
 import { ChatTreeItem, IAideAgentAccessibilityService, IAideAgentWidgetService, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions, IChatWidget, IChatWidgetViewContext, IChatWidgetViewOptions, showChatView } from './aideAgent.js';
 import { ChatAccessibilityProvider } from './aideAgentAccessibilityProvider.js';
+import { AideAgentEditPreviewWidget } from './aideAgentEditPreviewWidget.js';
 import { ChatInputPart } from './aideAgentInputPart.js';
 import { ChatListDelegate, ChatListItemRenderer, IChatRendererDelegate } from './aideAgentListRenderer.js';
 import { ChatEditorOptions } from './aideAgentOptions.js';
@@ -135,6 +136,9 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 	private listContainer!: HTMLElement;
 	private container!: HTMLElement;
+
+	private editPreviewContainer!: HTMLElement;
+	private editPreviewWidget: AideAgentEditPreviewWidget | undefined;
 
 	private bodyDimension: dom.Dimension | undefined;
 	private visibleChangeCount = 0;
@@ -337,12 +341,15 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		if (renderInputOnTop) {
 			this.createInput(this.container, { renderFollowups, renderStyle });
 			this.listContainer = dom.append(this.container, $(`.interactive-list`));
+			this.editPreviewContainer = dom.append(this.container, $(`.edit-preview`));
 		} else {
 			this.listContainer = dom.append(this.container, $(`.interactive-list`));
+			this.editPreviewContainer = dom.append(this.container, $(`.edit-preview`));
 			this.createInput(this.container, { renderFollowups, renderStyle });
 		}
 
 		this.createList(this.listContainer, { ...this.viewOptions.rendererOptions, renderStyle });
+		this.createEditPreviewWidget(this.editPreviewContainer);
 
 		this._register(this.editorOptions.onDidChange(() => this.onDidStyleChange()));
 		this.onDidStyleChange();
@@ -403,8 +410,9 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	}
 
 	private onDidChangeItems(skipDynamicLayout?: boolean) {
+		const vmItems = this.viewModel?.getItems() ?? [];
 		if (this.tree && this._visible) {
-			const treeItems = (this.viewModel?.getItems() ?? [])
+			const treeItems = vmItems
 				.map((item): ITreeElement<ChatTreeItem> => {
 					return {
 						element: item,
@@ -446,6 +454,17 @@ export class ChatWidget extends Disposable implements IChatWidget {
 				this.renderFollowups(lastItem.sampleQuestions);
 			} else {
 				this.renderFollowups(undefined);
+			}
+		}
+
+		if (this.editPreviewWidget) {
+			const lastProgressStage = vmItems
+				.filter(i => isResponseVM(i))
+				.flatMap(i => i.response.value)
+				.filter(i => i.kind === 'stage')
+				.pop();
+			if (lastProgressStage) {
+				this.editPreviewWidget.updateProgress(lastProgressStage.message);
 			}
 		}
 	}
@@ -562,6 +581,10 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this._register(this.tree.onDidScroll(() => {
 			this._onDidScroll.fire();
 		}));
+	}
+
+	private createEditPreviewWidget(container: HTMLElement): void {
+		this.editPreviewWidget = this._register(this.instantiationService.createInstance(AideAgentEditPreviewWidget, container));
 	}
 
 	private onContextMenu(e: ITreeContextMenuEvent<ChatTreeItem | null>): void {
@@ -929,8 +952,9 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this.inputPart.layout(height, width);
 		const inputPartHeight = this.inputPart.inputPartHeight;
 		const lastElementVisible = this.tree.scrollTop + this.tree.renderHeight >= this.tree.scrollHeight;
+		const editPreviewWidgetHeight = this.editPreviewContainer.offsetHeight;
 
-		const listHeight = height - inputPartHeight;
+		const listHeight = height - inputPartHeight - editPreviewWidgetHeight;
 
 		this.tree.layout(listHeight, width);
 		this.tree.getHTMLElement().style.height = `${listHeight}px`;
@@ -939,7 +963,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			revealLastElement(this.tree);
 		}
 
-		this.listContainer.style.height = `${height - inputPartHeight}px`;
+		this.listContainer.style.height = `${listHeight}px`;
 
 		this._onDidChangeHeight.fire(height);
 	}
