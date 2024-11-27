@@ -90,46 +90,51 @@ async function checkServerRunning(serverUrl: string): Promise<boolean> {
 	}
 }
 
-async function killProcessOnPort(port: number): Promise<void> {
+function killProcessOnPort(port: number) {
 	if (os.platform() === 'win32') {
 		// Find the process ID using netstat (this command is for Windows)
-		const { stdout, stderr } = await promisify(exec)(`netstat -ano | findstr :${port}`);
-		if (stderr) {
-			console.error(`exec error: ${stderr}`);
-			return;
-		}
-		const pid = stdout.split(/\s+/).slice(-2, -1)[0];
-
-		if (pid) {
-			// Kill the process
-			const { stderr } = await promisify(exec)(`taskkill /PID ${pid} /F`);
-			if (stderr) {
-				console.error(`Error killing process: ${stderr}`);
+		exec(`netstat -ano | findstr :${port}`, (error, stdout) => {
+			if (error) {
+				console.error(`exec error: ${error}`);
 				return;
 			}
-		} else {
-			console.warn(`No process running on port ${port}`);
-		}
+
+			const pid = stdout.split(/\s+/).slice(-2, -1)[0];
+
+			if (pid) {
+				// Kill the process
+				exec(`taskkill /PID ${pid} /F`, (killError) => {
+					if (killError) {
+						console.error(`Error killing process: ${killError}`);
+						return;
+					}
+				});
+			} else {
+				console.warn(`No process running on port ${port}`);
+			}
+		});
 	} else {
 		// Find the process ID using lsof (this command is for macOS/Linux)
-		const { stdout, stderr } = await promisify(exec)(`lsof -i :${port} | grep LISTEN | awk '{print $2}'`);
-
-		if (stderr) {
-			console.error(`exec error: ${stderr}`);
-		}
-
-		const pid = stdout.trim();
-
-		if (pid) {
-			// Kill the process
-			const { stderr } = await promisify(execFile)('kill', ['-2', `${pid}`]);
-			if (stderr) {
-				console.error(`Error killing process: ${stderr}`);
+		exec(`lsof -i :${port} | grep LISTEN | awk '{print $2}'`, (error, stdout) => {
+			if (error) {
+				console.error(`exec error: ${error}`);
 				return;
 			}
-		} else {
-			console.warn(`No process running on port ${port}`);
-		}
+
+			const pid = stdout.trim();
+
+			if (pid) {
+				// Kill the process
+				execFile('kill', ['-2', `${pid}`], (killError) => {
+					if (killError) {
+						console.error(`Error killing process: ${killError}`);
+						return;
+					}
+				});
+			} else {
+				console.warn(`No process running on port ${port}`);
+			}
+		});
 	}
 }
 
@@ -137,7 +142,7 @@ async function checkOrKillRunningServer(serverUrl: string): Promise<boolean> {
 	const serverRunning = await checkServerRunning(serverUrl);
 	if (serverRunning) {
 		try {
-			await killSidecarProcess();
+			killProcessOnPort(42424);
 		} catch (e: any) {
 			if (!e.message.includes('Process doesn\'t exist')) {
 				console.warn('Failed to kill old server:', e);
@@ -252,10 +257,6 @@ export async function startSidecarBinary(
 	// Get name of the corresponding executable for platform
 	await runSideCarBinary(sidecarDestination, serverUrl);
 	return 'http://127.0.0.1:42424';
-}
-
-export function killSidecarProcess(): Promise<void> {
-	return killProcessOnPort(42424);
 }
 
 async function runSideCarBinary(sidecarDestination: string, serverUrl: string) {
