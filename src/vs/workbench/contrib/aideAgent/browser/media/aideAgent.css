@@ -23,7 +23,7 @@
 }
 
 .aideagent-item-container {
-	padding: 6px 16px;
+	padding: 8px 16px;
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
@@ -48,7 +48,7 @@
 .aideagent-item-container .header .user {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	/* gap: 8px; */
 
 	/*
 	Rendering the avatar icon as round makes it a little larger than the .user container.
@@ -72,6 +72,7 @@
 	font-size: 12px;
 	color: var(--vscode-descriptionForeground);
 	overflow: hidden;
+	padding-left: 8px;
 }
 
 .aideagent-item-container .detail-container .detail .agentOrSlashCommandDetected A {
@@ -177,7 +178,7 @@
 	background-color: var(--vscode-chat-list-background);
 }
 
-.aideagent-item-container.interactive-request .header .monaco-toolbar {
+.aideagent-item-container.aideagent-request .header .monaco-toolbar {
 	/* Take the partially-transparent background color override for request rows */
 	background-color: inherit;
 }
@@ -245,13 +246,15 @@
 	overflow: hidden;
 }
 
-.interactive-request {
+/*
+.aideagent-request {
 	border-bottom: 1px solid var(--vscode-chat-requestBorder);
 	border-top: 1px solid var(--vscode-chat-requestBorder);
 }
+*/
 
-.hc-black .interactive-request,
-.hc-light .interactive-request {
+.hc-black .aideagent-request,
+.hc-light .aideagent-request {
 	border-left: 3px solid var(--vscode-chat-requestBorder);
 	border-right: 3px solid var(--vscode-chat-requestBorder);
 }
@@ -738,7 +741,7 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	flex-wrap: wrap;
 }
 
-.interactive-session .aideagent-item-container.interactive-request .aideagent-attached-context {
+.interactive-session .aideagent-item-container.aideagent-request .aideagent-attached-context {
 	margin-top: -8px;
 }
 
@@ -750,7 +753,7 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	max-width: 100%;
 }
 
-.interactive-session .aideagent-item-container.interactive-request .aideagent-attached-context .aideagent-attached-context-attachment {
+.interactive-session .aideagent-item-container.aideagent-request .aideagent-attached-context .aideagent-attached-context-attachment {
 	padding-right: 6px;
 }
 

@@ -17,7 +17,6 @@ import { FuzzyScore } from '../../../../base/common/filters.js';
 import { IMarkdownString, MarkdownString } from '../../../../base/common/htmlContent.js';
 import { Disposable, DisposableStore, IDisposable, dispose, toDisposable } from '../../../../base/common/lifecycle.js';
 import { ResourceMap } from '../../../../base/common/map.js';
-import { FileAccess } from '../../../../base/common/network.js';
 import { autorun } from '../../../../base/common/observable.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import { URI } from '../../../../base/common/uri.js';
@@ -33,16 +32,14 @@ import { IContextMenuService } from '../../../../platform/contextview/browser/co
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ServiceCollection } from '../../../../platform/instantiation/common/serviceCollection.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
-import { ColorScheme } from '../../../../platform/theme/common/theme.js';
-import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { IWorkbenchIssueService } from '../../issue/common/issue.js';
-import { annotateSpecialMarkdownContent } from '../common/annotations.js';
-import { ChatAgentLocation, IChatAgentMetadata } from '../common/aideAgentAgents.js';
+import { ChatAgentLocation } from '../common/aideAgentAgents.js';
 import { CONTEXT_CHAT_RESPONSE_SUPPORT_ISSUE_REPORTING, CONTEXT_REQUEST, CONTEXT_RESPONSE, CONTEXT_RESPONSE_DETECTED_AGENT_COMMAND, CONTEXT_RESPONSE_ERROR, CONTEXT_RESPONSE_FILTERED, CONTEXT_RESPONSE_VOTE } from '../common/aideAgentContextKeys.js';
 import { IChatRequestVariableEntry, IChatTextEditGroup } from '../common/aideAgentModel.js';
 import { chatSubcommandLeader } from '../common/aideAgentParserTypes.js';
 import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IChatConfirmation, IChatContentReference, IChatFollowup, IChatTask, IChatTreeData } from '../common/aideAgentService.js';
 import { IChatCodeCitations, IChatReferences, IChatRendererContent, IChatRequestViewModel, IChatResponseViewModel, IChatWelcomeMessageViewModel, isRequestVM, isResponseVM, isWelcomeVM } from '../common/aideAgentViewModel.js';
+import { annotateSpecialMarkdownContent } from '../common/annotations.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
 import { MarkUnhelpfulActionId } from './actions/aideAgentTitleActions.js';
 import { ChatTreeItem, GeneratingPhrase, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions, IEditPreviewCodeBlockInfo } from './aideAgent.js';
@@ -51,7 +48,7 @@ import { ChatCodeCitationContentPart } from './aideAgentContentParts/aideAgentCo
 import { ChatCommandButtonContentPart } from './aideAgentContentParts/aideAgentCommandContentPart.js';
 import { ChatConfirmationContentPart } from './aideAgentContentParts/aideAgentConfirmationContentPart.js';
 import { IChatContentPart, IChatContentPartRenderContext } from './aideAgentContentParts/aideAgentContentParts.js';
-import { ChatMarkdownContentPart, EditorPool, EditPreviewEditorPool } from './aideAgentContentParts/aideAgentMarkdownContentPart.js';
+import { ChatMarkdownContentPart, EditPreviewEditorPool, EditorPool } from './aideAgentContentParts/aideAgentMarkdownContentPart.js';
 import { ChatProgressContentPart } from './aideAgentContentParts/aideAgentProgressContentPart.js';
 import { ChatCollapsibleListContentPart, CollapsibleListPool } from './aideAgentContentParts/aideAgentReferencesContentPart.js';
 import { ChatTaskContentPart } from './aideAgentContentParts/aideAgentTaskContentPart.js';
@@ -139,7 +136,6 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		@IConfigurationService configService: IConfigurationService,
 		@ILogService private readonly logService: ILogService,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
-		@IThemeService private readonly themeService: IThemeService,
 	) {
 		super();
 
@@ -311,14 +307,16 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		const isFiltered = !!(isResponseVM(element) && element.errorDetails?.responseIsFiltered);
 		CONTEXT_RESPONSE_FILTERED.bindTo(templateData.contextKeyService).set(isFiltered);
 
-		templateData.rowContainer.classList.toggle('interactive-request', isRequestVM(element));
+		templateData.rowContainer.classList.toggle('aideagent-request', isRequestVM(element));
 		templateData.rowContainer.classList.toggle('interactive-response', isResponseVM(element));
 		templateData.rowContainer.classList.toggle('interactive-welcome', isWelcomeVM(element));
 		templateData.rowContainer.classList.toggle('show-detail-progress', isResponseVM(element) && !element.isComplete && !element.progressMessages.length);
 		templateData.username.textContent = element.username;
+		/*
 		if (!this.rendererOptions.noHeader) {
 			this.renderAvatar(element, templateData);
 		}
+		*/
 
 		dom.clearNode(templateData.detail);
 		if (isResponseVM(element)) {
@@ -395,6 +393,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 		}
 	}
 
+	/*
 	private renderAvatar(element: ChatTreeItem, templateData: IChatListItemTemplate): void {
 		const icon = isResponseVM(element) ?
 			this.getAgentIcon(element.agent?.metadata) :
@@ -420,6 +419,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			return Codicon.copilot;
 		}
 	}
+	*/
 
 	private basicRenderElement(element: ChatTreeItem, index: number, templateData: IChatListItemTemplate) {
 		let value: IChatRendererContent[] = [];
