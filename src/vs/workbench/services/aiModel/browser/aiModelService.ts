@@ -65,7 +65,7 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 			const provider = modelSelection.providers[key as keyof typeof modelSelection.providers] as ProviderConfig;
 			if ((provider.name === 'Azure OpenAI' || provider.name === 'OpenAI Compatible' || provider.name === 'GeminiPro') && (provider.apiBase.length > 0 && provider.apiKey.length > 0)) {
 				acc[key] = provider;
-			} else if ((provider.name === 'OpenAI' || provider.name === 'Together AI' || provider.name === 'OpenAI Compatible' || provider.name === 'Anthropic' || provider.name === 'Firework AI' || provider.name === 'Open Router') && (provider.apiKey?.length ?? 0) > 0) {
+			} else if ((provider.name === 'OpenAI' || provider.name === 'Together AI' || provider.name === 'OpenAI Compatible' || provider.name === 'Anthropic' || provider.name === 'Fireworks AI' || provider.name === 'Open Router') && (provider.apiKey?.length ?? 0) > 0) {
 				acc[key] = provider;
 			} else if (provider.name === 'CodeStory' || provider.name === 'Ollama') {
 				acc[key] = provider;
@@ -381,7 +381,7 @@ class ModelSelectionJsonSchema {
 						'type': 'object',
 						'properties': {
 							'name': {
-								'enum': ['Firework AI'],
+								'enum': ['Fireworks AI'],
 								'description': nls.localize('modelSelection.json.fireworkaiProvider.name', 'Name of the provider')
 							},
 							'apiKey': {
