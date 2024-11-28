@@ -321,17 +321,21 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 		'codestory': {
 			name: 'CodeStory'
 		},
+		'anthropic': {
+			name: 'Anthropic',
+			apiKey: '',
+		},
 		'openai-default': {
 			name: 'OpenAI',
 			apiKey: '',
 		},
-		'azure-openai': {
-			name: 'Azure OpenAI',
+		'geminipro': {
+			name: 'GeminiPro',
 			apiBase: '',
 			apiKey: '',
 		},
-		'togetherai': {
-			name: 'Together AI',
+		'open-router': {
+			name: 'Open Router',
 			apiKey: '',
 		},
 		'openai-compatible': {
@@ -342,21 +346,17 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 		'ollama': {
 			name: 'Ollama'
 		},
-		'anthropic': {
-			name: 'Anthropic',
+		'azure-openai': {
+			name: 'Azure OpenAI',
+			apiBase: '',
+			apiKey: '',
+		},
+		'togetherai': {
+			name: 'Together AI',
 			apiKey: '',
 		},
 		'fireworkai': {
 			name: 'Fireworks AI',
-			apiKey: '',
-		},
-		'geminipro': {
-			name: 'GeminiPro',
-			apiBase: '',
-			apiKey: '',
-		},
-		'open-router': {
-			name: 'Open Router',
 			apiKey: '',
 		},
 	}

@@ -5,6 +5,7 @@
 
 import * as DOM from '../../../../base/browser/dom.js';
 import { ActionBar } from '../../../../base/browser/ui/actionbar/actionbar.js';
+import { Button } from '../../../../base/browser/ui/button/button.js';
 import { HighlightedLabel } from '../../../../base/browser/ui/highlightedlabel/highlightedLabel.js';
 import { ISelectOptionItem, SelectBox } from '../../../../base/browser/ui/selectBox/selectBox.js';
 import { ITableRenderer, ITableVirtualDelegate } from '../../../../base/browser/ui/table/table.js';
@@ -19,7 +20,7 @@ import { IInstantiationService } from '../../../../platform/instantiation/common
 import { WorkbenchTable } from '../../../../platform/list/browser/listService.js';
 import { IStorageService } from '../../../../platform/storage/common/storage.js';
 import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
-import { defaultSelectBoxStyles } from '../../../../platform/theme/browser/defaultStyles.js';
+import { defaultButtonStyles, defaultSelectBoxStyles } from '../../../../platform/theme/browser/defaultStyles.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { EditorPane } from '../../../browser/parts/editor/editorPane.js';
 import { IEditorOpenContext } from '../../../common/editor.js';
@@ -51,8 +52,10 @@ export class ModelSelectionEditor extends EditorPane {
 
 	private modelConfigurationOverlayContainer!: HTMLElement;
 	private editModelConfigurationWidget!: EditModelConfigurationWidget;
+	private newModelButtonContainer!: HTMLElement;
 	private providerConfigurationOverlayContainer!: HTMLElement;
 	private editProviderConfigurationWidget!: EditProviderConfigurationWidget;
+	private newProviderButtonContainer!: HTMLElement;
 
 	private modelTableEntries: IModelItemEntry[] = [];
 	private providerTableEntries: IProviderItemEntry[] = [];
@@ -141,7 +144,10 @@ export class ModelSelectionEditor extends EditorPane {
 	}
 
 	private createModelsTable(parent: HTMLElement): void {
-		DOM.append(parent, $('h2', { class: 'table-header' }, 'Models'));
+		const modelsHeader = DOM.append(parent, $('div.models-header'));
+		DOM.append(modelsHeader, $('h2', { class: 'table-header' }, 'Models'));
+		const subtitle = DOM.append(modelsHeader, $('span'));
+		subtitle.textContent = 'Configure the provider to be used by your model of choice';
 		this.modelsTableContainer = DOM.append(parent, $('div', { class: 'table-container' }));
 		this.modelsTable = this._register(this.instantiationService.createInstance(WorkbenchTable,
 			'ModelSelectionEditor',
@@ -196,6 +202,13 @@ export class ModelSelectionEditor extends EditorPane {
 			}
 		)) as WorkbenchTable<IModelItemEntry>;
 
+		const newModelButtonContainer = this.newModelButtonContainer = DOM.append(parent, $('div.new-model-button-container'));
+		const newModelButton = this._register(this.instantiationService.createInstance(Button, newModelButtonContainer, { ...defaultButtonStyles, secondary: true }));
+		newModelButton.label = localize('newModel', "New Model");
+		this._register(newModelButton.onDidClick(() => {
+			// TODO
+		}));
+
 		this._register(this.modelsTable.onMouseOver(e => {
 			if (e.element?.modelItem.provider) {
 				const providerItemIndex = this.modelSelectionEditorModel?.providerItems
@@ -224,7 +237,11 @@ export class ModelSelectionEditor extends EditorPane {
 	}
 
 	private createProvidersTable(parent: HTMLElement): void {
-		this.providersTableTitle = DOM.append(parent, $('h2', { class: 'table-header' }, 'Providers'));
+		const providersHeader = DOM.append(parent, $('div.models-header'));
+		this.providersTableTitle = DOM.append(providersHeader, $('h2', { class: 'table-header' }, 'Providers'));
+		const subtitle = DOM.append(providersHeader, $('span'));
+		subtitle.textContent = 'Configure custom API keys for your provider of choice';
+
 		this.providersTableContainer = DOM.append(parent, $('div', { class: 'table-container' }));
 		this.providersTable = this._register(this.instantiationService.createInstance(WorkbenchTable,
 			'ModelSelectionEditor',
@@ -270,6 +287,13 @@ export class ModelSelectionEditor extends EditorPane {
 				transformOptimization: false,
 			}
 		)) as WorkbenchTable<IProviderItemEntry>;
+
+		const newProviderButtonContainer = this.newProviderButtonContainer = DOM.append(parent, $('div.new-provider-button-container'));
+		const newProviderButton = this._register(this.instantiationService.createInstance(Button, newProviderButtonContainer, { ...defaultButtonStyles, secondary: true }));
+		newProviderButton.label = localize('newProvider', "New Provider");
+		this._register(newProviderButton.onDidClick(() => {
+			// TODO
+		}));
 
 		this._register(this.providersTable.onDidOpen((e) => {
 			if (e.browserEvent?.defaultPrevented) {
@@ -325,6 +349,7 @@ export class ModelSelectionEditor extends EditorPane {
 			return;
 		}
 
+
 		// I have no idea how I came up with these numbers and I won't be able to explain it to you (or myself).
 		const marginHeight = 44;
 		const paddingTop = 36;
@@ -332,12 +357,14 @@ export class ModelSelectionEditor extends EditorPane {
 		const spacing = 24;
 
 		const tableContainerHeight = (this.dimension.height - marginHeight - DOM.getDomNodePagePosition(this.headerContainer).height - paddingTop - paddingBottom - spacing) / 2;
-		this.modelsTable.layout(tableContainerHeight);
-		this.modelsTableContainer.style.height = `${tableContainerHeight}px`;
+		const newModelButtonContainerHeight = this.newModelButtonContainer.offsetHeight;
+		this.modelsTable.layout(tableContainerHeight - newModelButtonContainerHeight);
+		this.modelsTableContainer.style.height = `${tableContainerHeight - newModelButtonContainerHeight}px`;
 
 		this.providersTableTitle.style.marginTop = `${spacing}px`;
-		this.providersTable.layout(tableContainerHeight);
-		this.providersTableContainer.style.height = `${tableContainerHeight}px`;
+		const newProviderButtonContainerHeight = this.newProviderButtonContainer.offsetHeight;
+		this.providersTable.layout(tableContainerHeight - newProviderButtonContainerHeight);
+		this.providersTableContainer.style.height = `${tableContainerHeight - newProviderButtonContainerHeight}px`;
 	}
 
 	// Note: This is indeed the model name and not key. For some reason, SelectBox does not support setting a value.
@@ -812,6 +839,9 @@ class ProviderConfigColumnRenderer implements ITableRenderer<IProviderItemEntry,
 			const emptyConfigMessage = this.getEmptyConfigurationMessage(providerItem.type);
 			const className = emptyConfigMessage.complete ? 'provider-config-complete' : 'provider-config-incomplete';
 			DOM.append(configItem, $(`span.${className}`, undefined, emptyConfigMessage.message));
+			if (providerItem.type === 'codestory') {
+				configItem.classList.add('special');
+			}
 		}
 	}
 
@@ -824,8 +854,10 @@ class ProviderConfigColumnRenderer implements ITableRenderer<IProviderItemEntry,
 	private getEmptyConfigurationMessage(providerType: ProviderType): { message: string; complete: boolean } {
 		if (providerType === 'azure-openai' || providerType === 'openai-default' || providerType === 'togetherai' || providerType === 'openai-compatible' || providerType === 'anthropic' || providerType === 'fireworkai' || providerType === 'geminipro' || providerType === 'open-router') {
 			return { message: 'Configuration incomplete', complete: false };
-		} else if (providerType === 'codestory' || providerType === 'ollama') {
+		} else if (providerType === 'ollama') {
 			return { message: 'No configuration required', complete: true };
+		} else if (providerType === 'codestory') {
+			return { message: 'Pre-packaged with Aide', complete: true };
 		}
 		return { message: 'No configuration options', complete: true };
 	}

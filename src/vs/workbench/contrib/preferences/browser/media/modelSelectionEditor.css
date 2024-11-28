@@ -53,8 +53,21 @@
 	padding-top: 36px;
 }
 
+.model-selection-editor > .model-selection-body .models-header {
+	display: flex;
+	align-items: baseline;
+	gap: 12px;
+    margin-bottom: 8px;
+}
+
+.model-selection-editor > .model-selection-body .models-header span {
+	font-size: 14px;
+	color: var(--vscode-disabledForeground);
+}
+
 .model-selection-editor > .model-selection-body .table-header {
 	margin-block-start: 0px;
+	margin-bottom: 0;
 }
 
 .model-selection-editor > .model-selection-body .table-container {
@@ -289,6 +302,10 @@
 
 .model-selection-editor > .model-selection-body > .table-container .monaco-table-td .provider-config-value.incomplete {
 	color: var(--vscode-editorWarning-foreground);
+}
+
+.model-selection-editor > .model-selection-body > .table-container .monaco-table-td .provider-config-item.special {
+	font-weight: bold;
 }
 
 .model-selection-editor > .model-selection-body > .table-container .monaco-table-td .provider-config-complete {
