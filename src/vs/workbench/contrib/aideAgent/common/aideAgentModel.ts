@@ -18,7 +18,6 @@ import { generateUuid } from '../../../../base/common/uuid.js';
 import { IOffsetRange, OffsetRange } from '../../../../editor/common/core/offsetRange.js';
 import { IRange } from '../../../../editor/common/core/range.js';
 import { IWorkspaceFileEdit, IWorkspaceTextEdit, TextEdit, WorkspaceEdit } from '../../../../editor/common/languages.js';
-import { IModelDeltaDecoration, ITextModel } from '../../../../editor/common/model.js';
 import { localize } from '../../../../nls.js';
 import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
@@ -26,7 +25,6 @@ import { ILogService } from '../../../../platform/log/common/log.js';
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgentData, IChatAgentResult, reviveSerializedAgent } from './aideAgentAgents.js';
 import { IAideAgentCodeEditingService, IAideAgentCodeEditingSession } from './aideAgentCodeEditingService.js';
 import { CONTEXT_CHAT_IS_PLAN_VISIBLE } from './aideAgentContextKeys.js';
-import { HunkData } from './aideAgentEditingSession.js';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from './aideAgentParserTypes.js';
 import { AideAgentPlanModel, IAideAgentPlanModel } from './aideAgentPlanModel.js';
 import { ChatAgentVoteDirection, ChatAgentVoteDownReason, IAideAgentPlanProgressContent, IAideAgentPlanStep, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCodeEdit, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatLocationData, IChatMarkdownContent, IChatProgress, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatResponseProgressFileTreeData, IChatTask, IChatTextEdit, IChatTreeData, IChatUsedContext, IChatWarningMessage, isIUsedContext } from './aideAgentService.js';
@@ -111,14 +109,6 @@ export interface IResponse {
 	readonly value: ReadonlyArray<IChatProgressResponseContent>;
 	toMarkdown(): string;
 	toString(): string;
-}
-
-export interface IAideAgentEdits {
-	readonly targetUri: string;
-	readonly textModelN: ITextModel;
-	textModel0: ITextModel;
-	hunkData: HunkData;
-	textModelNDecorations?: IModelDeltaDecoration[];
 }
 
 export interface IChatResponseModel {

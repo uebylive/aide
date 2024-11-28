@@ -21,7 +21,6 @@ import { EditorExtensions, IEditorFactoryRegistry } from '../../../common/editor
 import { IEditorResolverService, RegisteredEditorPriority } from '../../../services/editor/common/editorResolverService.js';
 import { LifecyclePhase } from '../../../services/lifecycle/common/lifecycle.js';
 import { ChatAgentLocation, ChatAgentNameService, ChatAgentService, IAideAgentAgentNameService, IAideAgentAgentService } from '../common/aideAgentAgents.js';
-import { IAideAgentCodeEditingService } from '../common/aideAgentCodeEditingService.js';
 import { CodeMapperService, IAideAgentCodeMapperService } from '../common/aideAgentCodeMapperService.js';
 import '../common/aideAgentColors.js';
 import { chatVariableLeader } from '../common/aideAgentParserTypes.js';
@@ -48,7 +47,6 @@ import { registerAideAgentFloatingWidgetActions } from './actions/aideAgentFloat
 import { registerChatTitleActions } from './actions/aideAgentTitleActions.js';
 import { IAideAgentAccessibilityService, IAideAgentCodeBlockContextProviderService, IAideAgentWidgetService } from './aideAgent.js';
 import { AideAgentAccessibilityService } from './aideAgentAccessibilityService.js';
-import { AideAgentCodeEditingService } from './aideAgentCodeEditingService.js';
 import { ChatEditor, IChatEditorOptions } from './aideAgentEditor.js';
 import { ChatEditorInput, ChatEditorInputSerializer } from './aideAgentEditorInput.js';
 import { AideAgentFloatingWidgetService, IAideAgentFloatingWidgetService } from './aideAgentFloatingWidgetService.js';
@@ -292,4 +290,3 @@ registerSingleton(IAideAgentLMToolsService, LanguageModelToolsService, Instantia
 registerSingleton(IAideAgentCodeBlockContextProviderService, AideAgentCodeBlockContextProviderService, InstantiationType.Delayed);
 registerSingleton(IAideAgentCodeMapperService, CodeMapperService, InstantiationType.Delayed);
 registerSingleton(IAideAgentFloatingWidgetService, AideAgentFloatingWidgetService, InstantiationType.Delayed);
-registerSingleton(IAideAgentCodeEditingService, AideAgentCodeEditingService, InstantiationType.Delayed);
