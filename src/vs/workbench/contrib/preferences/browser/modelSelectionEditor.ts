@@ -563,6 +563,7 @@ interface IModelProviderColumnTemplateData {
 	modelProviderColumn: HTMLElement;
 	providerLabelContainer: HTMLElement;
 	providerLabel: HighlightedLabel;
+	providerModelId: HTMLElement;
 }
 
 class ModelProvidersColumnRenderer implements ITableRenderer<IModelItemEntry, IModelProviderColumnTemplateData> {
@@ -574,7 +575,8 @@ class ModelProvidersColumnRenderer implements ITableRenderer<IModelItemEntry, IM
 		const modelProviderColumn = DOM.append(container, $('.model-provider'));
 		const providerLabelContainer = DOM.append(modelProviderColumn, $('.model-provider-label'));
 		const providerLabel = new HighlightedLabel(providerLabelContainer);
-		return { modelProviderColumn, providerLabelContainer, providerLabel };
+		const providerModelId = DOM.append(container, $('span'));
+		return { modelProviderColumn, providerLabelContainer, providerLabel, providerModelId };
 	}
 
 	renderElement(modelItemEntry: IModelItemEntry, index: number, templateData: IModelProviderColumnTemplateData): void {
@@ -584,6 +586,9 @@ class ModelProvidersColumnRenderer implements ITableRenderer<IModelItemEntry, IM
 		if (modelItem.provider) {
 			templateData.providerLabelContainer.classList.remove('hide');
 			templateData.providerLabel.set(modelItem.provider.name, []);
+			if ('modelId' in modelItem.providerConfig && modelItem.providerConfig.modelId) {
+				templateData.providerModelId.innerText = modelItem.providerConfig.modelId;
+			}
 		} else {
 			templateData.providerLabelContainer.classList.add('hide');
 			templateData.providerLabel.set(undefined);
@@ -620,7 +625,7 @@ class ModelConfigurationColumnRenderer implements ITableRenderer<IModelItemEntry
 				const configItem = DOM.append(templateData.modelConfigurationContainer, $('.provider-config-item'));
 				if (key === 'providerConfig') {
 					Object.keys(modelItem.providerConfig)
-						.filter(providerConfigKey => providerConfigKey !== 'type' && (modelItem.providerConfig.type !== 'azure-openai' || providerConfigKey !== 'deploymentID'))
+						.filter(providerConfigKey => providerConfigKey !== 'type' && providerConfigKey !== 'modelId' && (modelItem.providerConfig.type !== 'azure-openai' || providerConfigKey !== 'deploymentID'))
 						.forEach(providerConfigKey => {
 							const providerConfigValue = modelItem.providerConfig[providerConfigKey as keyof ModelProviderConfig];
 							DOM.append(configItem, $('span.provider-config-key', undefined, `${humanReadableModelConfigKey[providerConfigKey]}: `));
