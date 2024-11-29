@@ -7,24 +7,21 @@ import * as DOM from '../../../../base/browser/dom.js';
 import { ActionBar } from '../../../../base/browser/ui/actionbar/actionbar.js';
 import { Button } from '../../../../base/browser/ui/button/button.js';
 import { HighlightedLabel } from '../../../../base/browser/ui/highlightedlabel/highlightedLabel.js';
-import { ISelectOptionItem, SelectBox } from '../../../../base/browser/ui/selectBox/selectBox.js';
 import { ITableRenderer, ITableVirtualDelegate } from '../../../../base/browser/ui/table/table.js';
 import { IAction } from '../../../../base/common/actions.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import { localize } from '../../../../nls.js';
 import { IAIModelSelectionService, ModelProviderConfig, ProviderType, humanReadableModelConfigKey, humanReadableProviderConfigKey, isDefaultProviderConfig, providerTypeValues } from '../../../../platform/aiModel/common/aiModels.js';
-import { IContextViewService } from '../../../../platform/contextview/browser/contextView.js';
 import { IEditorOptions } from '../../../../platform/editor/common/editor.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { WorkbenchTable } from '../../../../platform/list/browser/listService.js';
 import { IStorageService } from '../../../../platform/storage/common/storage.js';
 import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
-import { defaultButtonStyles, defaultSelectBoxStyles } from '../../../../platform/theme/browser/defaultStyles.js';
+import { defaultButtonStyles } from '../../../../platform/theme/browser/defaultStyles.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { EditorPane } from '../../../browser/parts/editor/editorPane.js';
 import { IEditorOpenContext } from '../../../common/editor.js';
-import { IModelSelectionEditingService } from '../../../services/aiModel/common/aiModelEditing.js';
 import { IEditorGroup } from '../../../services/editor/common/editorGroupsService.js';
 import { ModelSelectionEditorInput } from '../../../services/preferences/browser/modelSelectionEditorInput.js';
 import { ModelSelectionEditorModel } from '../../../services/preferences/browser/modelSelectionEditorModel.js';
@@ -40,13 +37,10 @@ export class ModelSelectionEditor extends EditorPane {
 
 	private modelSelectionEditorModel: ModelSelectionEditorModel | null = null;
 
-	private headerContainer!: HTMLElement;
 	private modelsTableContainer!: HTMLElement;
 	private providersTableTitle!: HTMLElement;
 	private providersTableContainer!: HTMLElement;
 
-	private fastModelSelect!: SelectBox;
-	private slowModelSelect!: SelectBox;
 	private modelsTable!: WorkbenchTable<IModelItemEntry>;
 	private providersTable!: WorkbenchTable<IProviderItemEntry>;
 
@@ -68,9 +62,7 @@ export class ModelSelectionEditor extends EditorPane {
 		@IThemeService themeService: IThemeService,
 		@IStorageService storageService: IStorageService,
 		@IAIModelSelectionService private readonly aiModelSelectionService: IAIModelSelectionService,
-		@IModelSelectionEditingService private readonly modelSelectionEditingService: IModelSelectionEditingService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@IContextViewService private readonly contextViewService: IContextViewService,
 	) {
 		super(ModelSelectionEditor.ID, group, telemetryService, themeService, storageService);
 
@@ -83,7 +75,6 @@ export class ModelSelectionEditor extends EditorPane {
 		const modelSelectionEditorElement = DOM.append(parent, $('div', { class: 'model-selection-editor' }));
 
 		this.createOverlayContainers(modelSelectionEditorElement);
-		this.crateHeader(modelSelectionEditorElement);
 		this.createBody(modelSelectionEditorElement);
 	}
 
@@ -117,26 +108,6 @@ export class ModelSelectionEditor extends EditorPane {
 		}
 	}
 
-	private crateHeader(parent: HTMLElement): void {
-		this.headerContainer = DOM.append(parent, $('.model-selection-header'));
-
-		const fastModelContainer = DOM.append(this.headerContainer, $('.model-select-dropdown'));
-		DOM.append(fastModelContainer, $('span', undefined, 'Copilot Model'));
-		this.fastModelSelect = new SelectBox(<ISelectOptionItem[]>[], 0, this.contextViewService, defaultSelectBoxStyles, { ariaLabel: localize('fastModel', 'Copilot model'), useCustomDrawn: true });
-		this.fastModelSelect.render(fastModelContainer);
-		this._register(this.fastModelSelect.onDidSelect((e) => {
-			this.setFastModel(e.selected);
-		}));
-
-		const slowModelContainer = DOM.append(this.headerContainer, $('.model-select-dropdown'));
-		DOM.append(slowModelContainer, $('span', undefined, 'Chat Model'));
-		this.slowModelSelect = new SelectBox(<ISelectOptionItem[]>[], 0, this.contextViewService, defaultSelectBoxStyles, { ariaLabel: localize('slowModel', 'Chat Model'), useCustomDrawn: true });
-		this.slowModelSelect.render(slowModelContainer);
-		this._register(this.slowModelSelect.onDidSelect((e) => {
-			this.setSlowModel(e.selected);
-		}));
-	}
-
 	private createBody(parent: HTMLElement): void {
 		const bodyContainer = DOM.append(parent, $('div', { class: 'model-selection-body' }));
 		this.createModelsTable(bodyContainer);
@@ -161,7 +132,7 @@ export class ModelSelectionEditor extends EditorPane {
 					minimumWidth: 40,
 					maximumWidth: 40,
 					templateId: ModelActionsColumnRenderer.TEMPLATE_ID,
-					project(row: IModelItemEntry): IModelItemEntry { return row; },
+					project(row: IModelItemEntry): IModelItemEntry { return row; }
 				},
 				{
 					label: localize('name', "Name"),
@@ -171,25 +142,25 @@ export class ModelSelectionEditor extends EditorPane {
 					project(row: IModelItemEntry): IModelItemEntry { return row; }
 				},
 				{
-					label: localize('configuration', "Configuration"),
+					label: localize('provider', "Provider"),
 					tooltip: '',
-					weight: 0.5,
-					templateId: ModelConfigurationColumnRenderer.TEMPLATE_ID,
+					weight: 0.4,
+					templateId: ModelProvidersColumnRenderer.TEMPLATE_ID,
 					project(row: IModelItemEntry): IModelItemEntry { return row; }
 				},
 				{
-					label: localize('provider', "Provider"),
+					label: localize('configuration', "Configuration"),
 					tooltip: '',
-					weight: 0.2,
-					templateId: ModelProvidersColumnRenderer.TEMPLATE_ID,
+					weight: 0.3,
+					templateId: ModelConfigurationColumnRenderer.TEMPLATE_ID,
 					project(row: IModelItemEntry): IModelItemEntry { return row; }
 				}
 			],
 			[
 				this.instantiationService.createInstance(ModelActionsColumnRenderer, this),
 				this.instantiationService.createInstance(ModelsColumnRenderer),
-				this.instantiationService.createInstance(ModelConfigurationColumnRenderer),
-				this.instantiationService.createInstance(ModelProvidersColumnRenderer)
+				this.instantiationService.createInstance(ModelProvidersColumnRenderer),
+				this.instantiationService.createInstance(ModelConfigurationColumnRenderer)
 			],
 			{
 				identityProvider: { getId: (e: IModelItemEntry) => e.modelItem.key },
@@ -206,7 +177,7 @@ export class ModelSelectionEditor extends EditorPane {
 		const newModelButton = this._register(this.instantiationService.createInstance(Button, newModelButtonContainer, { ...defaultButtonStyles, secondary: true }));
 		newModelButton.label = localize('newModel', "New Model");
 		this._register(newModelButton.onDidClick(() => {
-			// TODO
+			this.addModel();
 		}));
 
 		this._register(this.modelsTable.onMouseOver(e => {
@@ -288,12 +259,7 @@ export class ModelSelectionEditor extends EditorPane {
 			}
 		)) as WorkbenchTable<IProviderItemEntry>;
 
-		const newProviderButtonContainer = this.newProviderButtonContainer = DOM.append(parent, $('div.new-provider-button-container'));
-		const newProviderButton = this._register(this.instantiationService.createInstance(Button, newProviderButtonContainer, { ...defaultButtonStyles, secondary: true }));
-		newProviderButton.label = localize('newProvider', "New Provider");
-		this._register(newProviderButton.onDidClick(() => {
-			// TODO
-		}));
+		this.newProviderButtonContainer = DOM.append(parent, $('div.new-provider-button-container'));
 
 		this._register(this.providersTable.onDidOpen((e) => {
 			if (e.browserEvent?.defaultPrevented) {
@@ -323,13 +289,6 @@ export class ModelSelectionEditor extends EditorPane {
 	private renderModels(): void {
 		if (this.modelSelectionEditorModel) {
 			const modelItems = this.modelSelectionEditorModel.modelItems;
-
-			const validModelItems = modelItems.filter(model => isModelItemConfigComplete(model.modelItem));
-			this.fastModelSelect.setOptions(validModelItems.map(items => ({ text: items.modelItem.name }) as ISelectOptionItem));
-			this.fastModelSelect.select(validModelItems.findIndex(items => items.modelItem.key === this.modelSelectionEditorModel?.fastModel.modelItem.key));
-			this.slowModelSelect.setOptions(validModelItems.map(tems => ({ text: tems.modelItem.name }) as ISelectOptionItem));
-			this.slowModelSelect.select(validModelItems.findIndex(items => items.modelItem.key === this.modelSelectionEditorModel?.slowModel.modelItem.key));
-
 			this.modelTableEntries = modelItems;
 			this.modelsTable.splice(0, this.modelsTable.length, this.modelTableEntries);
 		}
@@ -349,14 +308,13 @@ export class ModelSelectionEditor extends EditorPane {
 			return;
 		}
 
-
 		// I have no idea how I came up with these numbers and I won't be able to explain it to you (or myself).
 		const marginHeight = 44;
 		const paddingTop = 36;
 		const paddingBottom = 64;
 		const spacing = 24;
 
-		const tableContainerHeight = (this.dimension.height - marginHeight - DOM.getDomNodePagePosition(this.headerContainer).height - paddingTop - paddingBottom - spacing) / 2;
+		const tableContainerHeight = (this.dimension.height - marginHeight - paddingTop - paddingBottom - spacing) / 2;
 		const newModelButtonContainerHeight = this.newModelButtonContainer.offsetHeight;
 		this.modelsTable.layout(tableContainerHeight - newModelButtonContainerHeight);
 		this.modelsTableContainer.style.height = `${tableContainerHeight - newModelButtonContainerHeight}px`;
@@ -365,24 +323,6 @@ export class ModelSelectionEditor extends EditorPane {
 		const newProviderButtonContainerHeight = this.newProviderButtonContainer.offsetHeight;
 		this.providersTable.layout(tableContainerHeight - newProviderButtonContainerHeight);
 		this.providersTableContainer.style.height = `${tableContainerHeight - newProviderButtonContainerHeight}px`;
-	}
-
-	// Note: This is indeed the model name and not key. For some reason, SelectBox does not support setting a value.
-	private async setSlowModel(modelName: string): Promise<void> {
-		const modelKey = this.modelSelectionEditorModel?.modelItems.find(model => model.modelItem.name === modelName)?.modelItem.key;
-		if (!modelKey) {
-			return;
-		}
-		await this.modelSelectionEditingService.editModelSelection('slowModel', modelKey);
-	}
-
-	// Note: This is indeed the model name and not key. For some reason, SelectBox does not support setting a value.
-	private async setFastModel(modelName: string): Promise<void> {
-		const modelKey = this.modelSelectionEditorModel?.modelItems.find(model => model.modelItem.name === modelName)?.modelItem.key;
-		if (!modelKey) {
-			return;
-		}
-		await this.modelSelectionEditingService.editModelSelection('fastModel', modelKey);
 	}
 
 	override async setInput(input: ModelSelectionEditorInput, options: IEditorOptions | undefined, context: IEditorOpenContext, token: CancellationToken): Promise<void> {
@@ -412,6 +352,19 @@ export class ModelSelectionEditor extends EditorPane {
 	get activeProviderEntry(): IProviderItemEntry | null {
 		const focusedElement = this.providersTable.getFocusedElements()[0];
 		return focusedElement ? <IProviderItemEntry>focusedElement : null;
+	}
+
+	private async addModel(): Promise<void> {
+		this.showOverlayContainer('model');
+		try {
+			await this.editModelConfigurationWidget.add(
+				this.modelSelectionEditorModel?.providerItems.map(item => item.providerItem) ?? []
+			);
+		} catch (error) {
+			console.error(error);
+		} finally {
+			this.hideOverlayContainer('model');
+		}
 	}
 
 	async editModel(modelItemEntry: IModelItemEntry): Promise<void> {

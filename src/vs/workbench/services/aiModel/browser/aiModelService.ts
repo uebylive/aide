@@ -63,7 +63,7 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 			const key = untypedKey as ProviderType;
 			const acc = untypedAcc as { [key: string]: ProviderConfig };
 			const provider = modelSelection.providers[key as keyof typeof modelSelection.providers] as ProviderConfig;
-			if ((provider.name === 'Azure OpenAI' || provider.name === 'OpenAI Compatible' || provider.name === 'GeminiPro') && (provider.apiBase.length > 0 && provider.apiKey.length > 0)) {
+			if ((provider.name === 'Azure OpenAI' || provider.name === 'OpenAI Compatible' || provider.name === 'Gemini') && (provider.apiBase.length > 0 && provider.apiKey.length > 0)) {
 				acc[key] = provider;
 			} else if ((provider.name === 'OpenAI' || provider.name === 'Together AI' || provider.name === 'OpenAI Compatible' || provider.name === 'Anthropic' || provider.name === 'Fireworks AI' || provider.name === 'Open Router') && (provider.apiKey?.length ?? 0) > 0) {
 				acc[key] = provider;

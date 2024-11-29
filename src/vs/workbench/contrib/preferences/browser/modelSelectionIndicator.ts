@@ -46,6 +46,7 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 		const category = { value: nls.localize('modelSelection.category', "Model Selection"), original: 'Model Selection' };
 
 		const that = this;
+		/*
 		registerAction2(class extends Action2 {
 			constructor() {
 				super({
@@ -61,13 +62,14 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 			}
 			run = () => that.showModelSwitcher();
 		});
+		*/
 
 		registerAction2(class extends Action2 {
 			constructor() {
 				super({
 					id: ModelSelectionIndicator.SWITCH_SLOW_MODEL_COMMAND_ID,
 					category,
-					title: nls.localize2('modelSelection.switch.slow', "Switch Slow Model"),
+					title: nls.localize2('modelSelection.switch.slow', "Switch Model"),
 					f1: true,
 					keybinding: {
 						weight: KeybindingWeight.WorkbenchContrib,
@@ -112,6 +114,7 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 		}
 	}
 
+	/*
 	private showModelSwitcher(): void {
 		const quickPick = this.quickInputService.createQuickPick();
 		quickPick.placeholder = nls.localize('modelSelectionPicker.placeholder', "Select model type");
@@ -145,6 +148,7 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 
 		quickPick.show();
 	}
+	*/
 
 	private async showModelPicker(type: 'fastModel' | 'slowModel'): Promise<void> {
 		const computeItems = async (): Promise<QuickPickItem[]> => {

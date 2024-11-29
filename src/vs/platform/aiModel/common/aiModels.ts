@@ -99,7 +99,7 @@ export interface OpenRouterAIProviderConfig {
 }
 
 export interface GeminiProProviderConfig {
-	readonly name: 'GeminiPro';
+	readonly name: 'Gemini';
 	readonly apiKey: string;
 	readonly apiBase: string;
 }
@@ -330,7 +330,7 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			apiKey: '',
 		},
 		'geminipro': {
-			name: 'GeminiPro',
+			name: 'Gemini',
 			apiBase: '',
 			apiKey: '',
 		},
@@ -396,11 +396,11 @@ export const isDefaultProviderConfig = (key: ProviderType, config: ProviderConfi
 	const defaultConfig = defaultModelSelectionSettings.providers[key as keyof IModelProviders] as ProviderConfig;
 	return defaultConfig
 		&& defaultConfig.name === config.name
-		&& (defaultConfig.name === 'OpenAI' || defaultConfig.name === 'Together AI' || defaultConfig.name === 'Azure OpenAI' || defaultConfig.name === 'OpenAI Compatible' || defaultConfig.name === 'Anthropic' || defaultConfig.name === 'Fireworks AI' || defaultConfig.name === 'GeminiPro' || defaultConfig.name === 'Open Router'
+		&& (defaultConfig.name === 'OpenAI' || defaultConfig.name === 'Together AI' || defaultConfig.name === 'Azure OpenAI' || defaultConfig.name === 'OpenAI Compatible' || defaultConfig.name === 'Anthropic' || defaultConfig.name === 'Fireworks AI' || defaultConfig.name === 'Gemini' || defaultConfig.name === 'Open Router'
 			? (defaultConfig).apiKey === (config as ProviderConfigsWithAPIKey).apiKey
 			: true
 		)
-		&& (defaultConfig.name === 'Azure OpenAI' || defaultConfig.name === 'OpenAI Compatible' || defaultConfig.name === 'GeminiPro'
+		&& (defaultConfig.name === 'Azure OpenAI' || defaultConfig.name === 'OpenAI Compatible' || defaultConfig.name === 'Gemini'
 			? defaultConfig.apiBase === (config as BaseOpenAICompatibleProviderConfig).apiBase
 			: true
 		);
@@ -408,11 +408,11 @@ export const isDefaultProviderConfig = (key: ProviderType, config: ProviderConfi
 
 export const areProviderConfigsEqual = (a: ProviderConfig, b: ProviderConfig) => {
 	return a.name === b.name
-		&& (a.name === 'OpenAI' || a.name === 'Together AI' || a.name === 'Azure OpenAI' || a.name === 'OpenAI Compatible' || a.name === 'Anthropic' || a.name === 'Fireworks AI' || a.name === 'GeminiPro' || a.name === 'Open Router'
+		&& (a.name === 'OpenAI' || a.name === 'Together AI' || a.name === 'Azure OpenAI' || a.name === 'OpenAI Compatible' || a.name === 'Anthropic' || a.name === 'Fireworks AI' || a.name === 'Gemini' || a.name === 'Open Router'
 			? (a as ProviderConfigsWithAPIKey).apiKey === (b as ProviderConfigsWithAPIKey).apiKey
 			: true
 		)
-		&& (a.name === 'Azure OpenAI' || a.name === 'OpenAI Compatible' || a.name === 'GeminiPro'
+		&& (a.name === 'Azure OpenAI' || a.name === 'OpenAI Compatible' || a.name === 'Gemini'
 			? (a as BaseOpenAICompatibleProviderConfig).apiBase === (b as BaseOpenAICompatibleProviderConfig).apiBase
 			: true
 		);

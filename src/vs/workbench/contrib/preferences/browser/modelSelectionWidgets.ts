@@ -15,7 +15,7 @@ import { Emitter } from '../../../../base/common/event.js';
 import { KeyCode } from '../../../../base/common/keyCodes.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import * as nls from '../../../../nls.js';
-import { ModelProviderConfig, areLanguageModelItemsEqual, areProviderConfigsEqual, humanReadableProviderConfigKey, providersSupportingModel } from '../../../../platform/aiModel/common/aiModels.js';
+import { ModelProviderConfig, ProviderConfig, areLanguageModelItemsEqual, areProviderConfigsEqual, humanReadableProviderConfigKey, providersSupportingModel } from '../../../../platform/aiModel/common/aiModels.js';
 import { IContextViewService } from '../../../../platform/contextview/browser/contextView.js';
 import { defaultButtonStyles, defaultInputBoxStyles, defaultSelectBoxStyles } from '../../../../platform/theme/browser/defaultStyles.js';
 import { asCssVariable, editorWidgetForeground, widgetShadow } from '../../../../platform/theme/common/colorRegistry.js';
@@ -34,24 +34,24 @@ export const editModelWidgetCloseIcon = registerIcon('edit-model-widget-close-ic
 
 export class EditModelConfigurationWidget extends Widget {
 	private static readonly WIDTH = 480;
-	private static readonly HEIGHT = 300;
+	private static readonly HEIGHT = 310;
 
 	private _domNode: FastDomNode<HTMLElement>;
-	private _contentContainer: HTMLElement;
+	private _contentContainer!: HTMLElement;
 
 	private _isVisible: boolean = false;
 	private initialModelItemEntry: IModelItemEntry | null = null;
 	private modelItemEntry: IModelItemEntry | null = null;
 
-	private readonly title: HTMLElement;
-	private readonly modelName: HTMLElement;
-	private readonly fieldsContainer: HTMLElement;
-	private readonly providerValue: SelectBox;
-	private readonly contextLengthValue: InputBox;
-	private readonly temperatureValueLabel: HTMLElement;
-	private readonly temperatureValue: InputBox;
-	private readonly cancelButton: Button;
-	private readonly saveButton: Button;
+	private title!: InputBox;
+	private modelName!: InputBox;
+	private fieldsContainer!: HTMLElement;
+	private providerValue!: SelectBox;
+	private contextLengthValue!: InputBox;
+	private temperatureValueLabel!: HTMLElement;
+	private temperatureValue!: InputBox;
+	private cancelButton!: Button;
+	private saveButton!: Button;
 
 	private fieldItems: HTMLElement[] = [];
 	private _onHide = this._register(new Emitter<void>());
@@ -77,10 +77,25 @@ export class EditModelConfigurationWidget extends Widget {
 			}
 		});
 
+		this.render();
+		this.updateStyles();
+		this._register(this._themeService.onDidColorThemeChange(() => {
+			this.updateStyles();
+		}));
+
+		if (parent) {
+			dom.append(parent, this._domNode.domNode);
+		}
+	}
+
+	private render() {
 		this._contentContainer = dom.append(this._domNode.domNode, dom.$('.edit-model-widget-content'));
 		const header = dom.append(this._contentContainer, dom.$('.edit-model-widget-header'));
 
-		this.title = dom.append(header, dom.$('.message'));
+		const titleContainer = dom.append(header, dom.$('.edit-model-widget-title-container'));
+		titleContainer.style.width = '100%';
+		this.title = this._register(new InputBox(titleContainer, this.contextViewService, { inputBoxStyles: { ...defaultInputBoxStyles, inputBackground: undefined, inputBorder: 'transparent' } }));
+		this.title.setPlaceHolder(nls.localize('editModelConfiguration.titlePlaceholder', "Enter an identifier of your choice for this model"));
 		const closeIcon = dom.append(header, dom.$(`.close-icon${ThemeIcon.asCSSSelector(editModelWidgetCloseIcon)}}`));
 		closeIcon.title = nls.localize('editModelConfiguration.close', "Close");
 		this._register(dom.addDisposableListener(closeIcon, dom.EventType.CLICK, () => this.hide()));
@@ -88,7 +103,10 @@ export class EditModelConfigurationWidget extends Widget {
 		const body = dom.append(this._contentContainer, dom.$('.edit-model-widget-body'));
 		const modelNameContainer = dom.append(body, dom.$('.edit-model-widget-model-name-container'));
 		dom.append(modelNameContainer, dom.$(`.model-icon${ThemeIcon.asCSSSelector(defaultModelIcon)}}`));
-		this.modelName = dom.append(modelNameContainer, dom.$('.edit-model-widget-model-name'));
+		this.modelName = this._register(new InputBox(modelNameContainer, this.contextViewService, { inputBoxStyles: { ...defaultInputBoxStyles, inputBackground: undefined, inputBorder: 'transparent' } }));
+		this.modelName.setPlaceHolder(nls.localize('editModelConfiguration.modelNamePlaceholder', "Enter a human-readable name for the model"));
+		this.modelName.element.style.width = '100%';
+		this.modelName.element.classList.add('edit-model-widget-model-name');
 
 		this.fieldsContainer = dom.append(body, dom.$('.edit-model-widget-grid'));
 
@@ -134,15 +152,6 @@ export class EditModelConfigurationWidget extends Widget {
 		this.saveButton.label = nls.localize('editModelConfiguration.save', "Save");
 		this.saveButton.enabled = false;
 		this._register(this.saveButton.onDidClick(async () => await this.save()));
-
-		this.updateStyles();
-		this._register(this._themeService.onDidColorThemeChange(() => {
-			this.updateStyles();
-		}));
-
-		if (parent) {
-			dom.append(parent, this._domNode.domNode);
-		}
 	}
 
 	private updateStyles(): void {
@@ -153,6 +162,41 @@ export class EditModelConfigurationWidget extends Widget {
 			? 'blur(20px) saturate(190%) contrast(70%) brightness(80%)' : 'blur(25px) saturate(190%) contrast(50%) brightness(130%)';
 	}
 
+	add(providerItems: IProviderItem[]): Promise<null> {
+		const defaultModelItemEntry: IModelItemEntry = {
+			modelItem: {
+				key: '',
+				name: '',
+				contextLength: 128000,
+				temperature: 0.2,
+				providerConfig: { type: 'open-router' },
+				provider: providerItems.find(providerItem => providerItem.name === 'Open Router')!
+			}
+		};
+
+		return Promises.withAsyncBody<null>(async (resolve) => {
+			if (!this._isVisible) {
+				this._isVisible = true;
+				this._domNode.setDisplay('block');
+				this.initialModelItemEntry = defaultModelItemEntry;
+				this.modelItemEntry = defaultModelItemEntry;
+
+				this.title.value = `${defaultModelItemEntry.modelItem.key}`;
+				this.modelName.value = defaultModelItemEntry.modelItem.name;
+
+				const validProviders = providerItems.filter(providerItem => providerItem.name !== 'CodeStory');
+				this.registerProviders(validProviders, 'Open Router');
+
+				this.renderProviderConfigFields(defaultModelItemEntry);
+				this.focus();
+			}
+			const disposable = this._onHide.event(() => {
+				disposable.dispose();
+				resolve(null);
+			});
+		});
+	}
+
 	edit(entry: IModelItemEntry, providerItems: IProviderItem[]): Promise<null> {
 		return Promises.withAsyncBody<null>(async (resolve) => {
 			if (!this._isVisible) {
@@ -161,31 +205,14 @@ export class EditModelConfigurationWidget extends Widget {
 				this.initialModelItemEntry = entry;
 				this.modelItemEntry = entry;
 
-				this.title.textContent = `Edit ${entry.modelItem.key}`;
-				this.modelName.textContent = entry.modelItem.name;
+				this.title.value = `${entry.modelItem.key}`;
+				this.modelName.value = entry.modelItem.name;
 
 				const supportedProviders = providersSupportingModel(entry.modelItem.key);
 				const validProviders = providerItems.filter(providerItem => supportedProviders.includes(providerItem.type));
-				this.providerValue.setOptions(validProviders.map(providerItem => ({ text: providerItem.name })));
-				this.providerValue.select(validProviders.findIndex(provider => provider.name === entry.modelItem.provider.name));
-				this._register(this.providerValue.onDidSelect((e) => {
-					const provider = validProviders[e.index];
-					this.updateModelItemEntry({
-						...this.modelItemEntry!,
-						modelItem: {
-							...this.modelItemEntry!.modelItem,
-							provider: provider,
-							providerConfig: {
-								type: provider.type,
-								...(provider.type === 'azure-openai' ? { deploymentID: '' } : {})
-							} as ModelProviderConfig
-						}
-					});
-					this.renderProviderConfigFields(this.modelItemEntry!);
-				}));
+				this.registerProviders(validProviders, entry.modelItem.provider.name);
 
 				this.renderProviderConfigFields(entry);
-
 				this.focus();
 			}
 			const disposable = this._onHide.event(() => {
@@ -193,6 +220,27 @@ export class EditModelConfigurationWidget extends Widget {
 				resolve(null);
 			});
 		});
+	}
+
+	private registerProviders(providers: IProviderItem[], defaultProviderName: ProviderConfig['name']): void {
+		this.providerValue.setOptions(providers.map(providerItem => ({ text: providerItem.name })));
+		this.providerValue.select(providers.findIndex(provider => provider.name === defaultProviderName));
+		this._register(this.providerValue.onDidSelect((e) => {
+			const provider = providers[e.index];
+			this.updateModelItemEntry({
+				...this.modelItemEntry!,
+				modelItem: {
+					...this.modelItemEntry!.modelItem,
+					provider: provider,
+					providerConfig: {
+						type: provider.type,
+						...(provider.type === 'azure-openai' ? { deploymentID: '' } : {})
+					} as ModelProviderConfig
+				}
+			});
+
+			this.renderProviderConfigFields(this.modelItemEntry!);
+		}));
 	}
 
 	private renderProviderConfigFields(entry: IModelItemEntry): void {
@@ -253,7 +301,6 @@ export class EditModelConfigurationWidget extends Widget {
 		for (let i = 6; i < gridItems.length; i++) {
 			this.fieldsContainer.insertBefore(gridItems[i], gridItems[2]);
 		}
-
 	}
 
 	private resetFieldItems(): void {
