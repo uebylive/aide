@@ -4,6 +4,8 @@
  *--------------------------------------------------------------------------------------------*/
 import * as os from 'os';
 import * as vscode from 'vscode';
+import * as path from 'path';
+import * as fs from 'fs';
 
 import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
 import { AideAgentSessionProvider } from './completions/providers/aideAgentProvider';
@@ -106,6 +108,22 @@ export async function activate(context: vscode.ExtensionContext) {
 			repoHash,
 		}
 	});
+
+	// test code to check if this is the correct path
+	try {
+		const sideCarBinDir = vscode.Uri.joinPath(
+			vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''),
+			'sidecar_bin', 'target', 'release').toString();
+
+		const sidecarBinPath = (os.platform() === 'win32')
+			? path.join(sideCarBinDir, 'webserver.exe')
+			: path.join(sideCarBinDir, 'webserver');
+
+		console.log(`path is ${sidecarBinPath}, and exists check returns ${fs.existsSync(sidecarBinPath)}`);
+	}
+	catch (e) {
+		console.log(e);
+	}
 
 	// Get model selection configuration
 	const modelConfiguration = await vscode.modelSelection.getConfiguration();
