@@ -37,10 +37,7 @@
 }
 
 .edit-model-widget-content .edit-model-widget-header .codicon,
-.edit-model-widget-content
-	.edit-model-widget-body
-	.edit-model-widget-model-name-container
-	.codicon {
+.edit-model-widget-content .edit-model-widget-body .edit-model-widget-model-name-container .codicon {
 	display: flex;
 	align-items: center;
 	width: 22px;
@@ -48,10 +45,7 @@
 }
 
 .edit-model-widget-content .edit-model-widget-header .codicon:before,
-.edit-model-widget-content
-	.edit-model-widget-body
-	.edit-model-widget-model-name-container
-	.codicon:before {
+.edit-model-widget-content .edit-model-widget-body .edit-model-widget-model-name-container .codicon:before {
 	font-size: 22px;
 }
 
@@ -64,9 +58,7 @@
 	padding: 6px 0;
 }
 
-.edit-model-widget-content
-	.edit-model-widget-body
-	.edit-model-widget-model-name-container {
+.edit-model-widget-content .edit-model-widget-body .edit-model-widget-model-name-container {
 	display: flex;
 	align-items: center;
 	padding: 6px 4px;
@@ -75,10 +67,7 @@
 	margin: 6px 0 24px 0;
 }
 
-.edit-model-widget-content
-	.edit-model-widget-body
-	.edit-model-widget-model-name
-	input.input {
+.edit-model-widget-content .edit-model-widget-body .edit-model-widget-model-name input.input {
 	font-size: 1.17em;
 	font-weight: bold;
 }
@@ -87,13 +76,10 @@
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	align-items: center;
-	gap: 16px;
+	gap: 16px 48px;
 }
 
-.edit-model-widget-content
-	.edit-model-widget-body
-	.edit-model-widget-grid
-	.subtitle {
+.edit-model-widget-content .edit-model-widget-body .edit-model-widget-grid .subtitle {
 	color: var(--vscode-disabledForeground);
 	font-size: 90%;
 	display: block;
@@ -120,9 +106,7 @@
 	width: 200px;
 }
 
-.edit-model-widget-grid
-	.monaco-inputbox
-	input[type="number"]::-webkit-inner-spin-button {
+.edit-model-widget-grid .monaco-inputbox input[type="number"]::-webkit-inner-spin-button {
 	/* Hide arrow button that shows in type=number fields */
 	-webkit-appearance: none !important;
 }
@@ -157,16 +141,14 @@
 }
 
 /* slider track */
-.edit-model-widget-temperature.monaco-inputbox
-	input[type="range"]::-webkit-slider-runnable-track {
+.edit-model-widget-temperature.monaco-inputbox input[type="range"]::-webkit-slider-runnable-track {
 	background-color: var(--vscode-commandCenter-border);
 	border-radius: 0.5rem;
 	height: 4px;
 }
 
 /* slider thumb */
-.edit-model-widget-temperature.monaco-inputbox
-	input[type="range"]::-webkit-slider-thumb {
+.edit-model-widget-temperature.monaco-inputbox input[type="range"]::-webkit-slider-thumb {
 	-webkit-appearance: none;
 	/* Override default look */
 	appearance: none;
@@ -178,8 +160,7 @@
 	width: 12px;
 }
 
-.edit-model-widget-temperature.monaco-inputbox
-	input[type="range"]:focus::-webkit-slider-thumb {
+.edit-model-widget-temperature.monaco-inputbox input[type="range"]:focus::-webkit-slider-thumb {
 	outline: 3px solid var(--vscode-focusBorder);
 	outline-offset: 0.125rem;
 }

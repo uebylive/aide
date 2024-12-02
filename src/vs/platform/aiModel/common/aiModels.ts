@@ -13,6 +13,14 @@ export const humanReadableModelConfigKey: Record<string, string> = {
 	'modelId': 'Model ID'
 };
 
+export const modelConfigKeyDescription: Record<string, string> = {
+	'provider': 'The provider you wish to use for this model',
+	'contextLength': 'Maximum context length supported by the model',
+	'temperature': 'The temperature setting for the model',
+	'deploymentID': 'Deployment ID specified by the provider',
+	'modelId': 'Unique identifier for the model as per provider\'s API'
+};
+
 export const humanReadableProviderConfigKey: Record<string, string> = {
 	'apiKey': 'API Key',
 	'apiBase': 'Base URL'

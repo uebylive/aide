@@ -95,6 +95,7 @@ export class ModelSelectionEditor extends EditorPane {
 	private showOverlayContainer(type: 'model' | 'provider') {
 		if (type === 'model') {
 			this.modelConfigurationOverlayContainer.style.display = 'block';
+			this.editModelConfigurationWidget.layout(this.dimension);
 		} else if (type === 'provider') {
 			this.providerConfigurationOverlayContainer.style.display = 'block';
 		}

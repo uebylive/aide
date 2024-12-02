@@ -16,7 +16,7 @@ import { KeyCode } from '../../../../base/common/keyCodes.js';
 import { equals } from '../../../../base/common/objects.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import * as nls from '../../../../nls.js';
-import { ModelProviderConfig, ProviderConfig, humanReadableProviderConfigKey } from '../../../../platform/aiModel/common/aiModels.js';
+import { ModelProviderConfig, ProviderConfig, humanReadableModelConfigKey, humanReadableProviderConfigKey, modelConfigKeyDescription } from '../../../../platform/aiModel/common/aiModels.js';
 import { IContextViewService } from '../../../../platform/contextview/browser/contextView.js';
 import { defaultButtonStyles, defaultInputBoxStyles, defaultSelectBoxStyles } from '../../../../platform/theme/browser/defaultStyles.js';
 import { asCssVariable, editorWidgetForeground, widgetShadow } from '../../../../platform/theme/common/colorRegistry.js';
@@ -34,9 +34,6 @@ export const invalidModelConfigIcon = registerIcon('invalid-model-config-icon', 
 export const editModelWidgetCloseIcon = registerIcon('edit-model-widget-close-icon', Codicon.close, nls.localize('edit-model-widget-close-icon', 'Icon for the close button in the edit model widget.'));
 
 export class EditModelConfigurationWidget extends Widget {
-	private static readonly WIDTH = 480;
-	private static readonly HEIGHT = 310;
-
 	private _domNode: FastDomNode<HTMLElement>;
 	private _contentContainer!: HTMLElement;
 
@@ -57,6 +54,8 @@ export class EditModelConfigurationWidget extends Widget {
 	private fieldItems: HTMLElement[] = [];
 	private _onHide = this._register(new Emitter<void>());
 
+	private parentDimension: dom.Dimension | null = null;
+
 	constructor(
 		parent: HTMLElement | null,
 		@IContextViewService private readonly contextViewService: IContextViewService,
@@ -68,8 +67,6 @@ export class EditModelConfigurationWidget extends Widget {
 		this._domNode = createFastDomNode(document.createElement('div'));
 		this._domNode.setDisplay('none');
 		this._domNode.setClassName('edit-model-widget');
-		this._domNode.setWidth(EditModelConfigurationWidget.WIDTH);
-		this._domNode.setHeight(EditModelConfigurationWidget.HEIGHT);
 		this.onkeydown(this._domNode.domNode, (e) => {
 			if (e.equals(KeyCode.Escape)) {
 				this.hide();
@@ -131,20 +128,20 @@ export class EditModelConfigurationWidget extends Widget {
 
 		const providerLabelContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-provider-label-container'));
 		dom.append(providerLabelContainer, dom.$('span', undefined, nls.localize('editModelConfiguration.provider', "Provider")));
-		dom.append(providerLabelContainer, dom.$('span.subtitle', undefined, nls.localize('editModelConfiguration.providerKey', "provider")));
+		dom.append(providerLabelContainer, dom.$('span.subtitle', undefined, modelConfigKeyDescription['provider']));
 		const providerSelectContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-provider-select-container'));
 		this.providerValue = new SelectBox(<ISelectOptionItem[]>[], 0, this.contextViewService, defaultSelectBoxStyles, { ariaLabel: nls.localize('editModelConfiguration.providerValue', "Provider"), useCustomDrawn: true });
 		this.providerValue.render(providerSelectContainer);
 
 		const contextLengthLabelContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-context-length-label-container'));
 		dom.append(contextLengthLabelContainer, dom.$('span', undefined, nls.localize('editModelConfiguration.contextLength', "Context length")));
-		dom.append(contextLengthLabelContainer, dom.$('span.subtitle', undefined, nls.localize('editModelConfiguration.contextLengthKey', "contextLength")));
+		dom.append(contextLengthLabelContainer, dom.$('span.subtitle', undefined, modelConfigKeyDescription['contextLength']));
 		this.contextLengthValue = this._register(new InputBox(this.fieldsContainer, this.contextViewService, { inputBoxStyles: defaultInputBoxStyles, type: 'number' }));
 		this.contextLengthValue.element.classList.add('edit-model-widget-context-length');
 
 		const temperatureLabelContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-temperature-label-container'));
 		dom.append(temperatureLabelContainer, dom.$('span', undefined, nls.localize('editModelConfiguration.temperature', "Temperature")));
-		dom.append(temperatureLabelContainer, dom.$('span.subtitle', undefined, nls.localize('editModelConfiguration.temperatureKey', "temperature")));
+		dom.append(temperatureLabelContainer, dom.$('span.subtitle', undefined, modelConfigKeyDescription['temperature']));
 		const temperatureValueContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-temperature-container'));
 		this.temperatureValueLabel = dom.append(temperatureValueContainer, dom.$('span'));
 		this.temperatureValueLabel.style.textAlign = 'right';
@@ -171,6 +168,8 @@ export class EditModelConfigurationWidget extends Widget {
 		this.saveButton.label = nls.localize('editModelConfiguration.save', "Save");
 		this.saveButton.enabled = false;
 		this._register(this.saveButton.onDidClick(async () => await this.save()));
+
+		this.layout();
 	}
 
 	private updateStyles(): void {
@@ -290,8 +289,8 @@ export class EditModelConfigurationWidget extends Widget {
 		Object.keys(entry.modelItem.providerConfig).filter(key => key !== 'type').forEach(key => {
 			const fieldLabelContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-field-label-container'));
 			this.fieldItems.push(fieldLabelContainer);
-			dom.append(fieldLabelContainer, dom.$('span', undefined, humanReadableProviderConfigKey[key] ?? key));
-			dom.append(fieldLabelContainer, dom.$('span.subtitle', undefined, key));
+			dom.append(fieldLabelContainer, dom.$('span', undefined, humanReadableModelConfigKey[key] ?? key));
+			dom.append(fieldLabelContainer, dom.$('span.subtitle', undefined, modelConfigKeyDescription[key] ?? key));
 			const fieldValueContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-field-value-container'));
 			this.fieldItems.push(fieldValueContainer);
 			const fieldValue = new InputBox(fieldValueContainer, this.contextViewService, { inputBoxStyles: defaultInputBoxStyles });
@@ -310,9 +309,6 @@ export class EditModelConfigurationWidget extends Widget {
 			}));
 		});
 
-		const newRows = Object.keys(entry.modelItem.providerConfig).filter(key => key !== 'type').length;
-		this._domNode.setHeight(EditModelConfigurationWidget.HEIGHT + newRows * 48);
-
 		// Move all items with index > 5 between the provider and context length fields
 		const gridItems = this.fieldsContainer.querySelectorAll('.edit-model-widget-grid > *');
 		for (let i = 6; i < gridItems.length; i++) {
@@ -328,11 +324,16 @@ export class EditModelConfigurationWidget extends Widget {
 		this.fieldItems = [];
 	}
 
-	layout(layout: dom.Dimension): void {
-		const top = Math.round((layout.height - EditModelConfigurationWidget.HEIGHT) / 3);
+	layout(dimensions?: dom.Dimension | null): void {
+		const parentDimensions = this.parentDimension = dimensions ?? this.parentDimension;
+		if (!parentDimensions) {
+			return;
+		}
+
+		const top = Math.round((parentDimensions.height - this._domNode.domNode.offsetHeight) / 3);
 		this._domNode.setTop(top);
 
-		const left = Math.round((layout.width - EditModelConfigurationWidget.WIDTH) / 2);
+		const left = Math.round((parentDimensions.width - this._domNode.domNode.offsetWidth) / 2);
 		this._domNode.setLeft(left);
 	}
 
