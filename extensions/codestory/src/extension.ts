@@ -26,6 +26,7 @@ import { ProjectContext } from './utilities/workspaceContext';
 import { CSEventHandler } from './csEvents/csEventHandler';
 import { RecentEditsRetriever } from './server/editedFiles';
 import { getRipGrepPath } from './utilities/ripGrep';
+import { getSideCarModelConfiguration } from './sidecar/types';
 // import { GENERATE_PLAN } from './completions/providers/generatePlan';
 // import { OPEN_FILES_VARIABLE } from './completions/providers/openFiles';
 
@@ -134,6 +135,12 @@ export async function activate(context: vscode.ExtensionContext) {
 	vscode.modelSelection.onDidChangeConfiguration((config) => {
 		sidecarClient.updateModelConfiguration(config);
 		// console.log('Model configuration updated:' + JSON.stringify(config));
+	});
+	vscode.modelSelection.registerModelConfigurationValidator({
+		provideModelConfigValidation(config) {
+			const sidecarModelConfig = getSideCarModelConfiguration(config);
+			return sidecarClient.validateModelConfiguration(sidecarModelConfig);
+		},
 	});
 	// Show the indexing percentage on startup
 	await reportIndexingPercentage(sidecarClient, currentRepo);

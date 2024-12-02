@@ -29,7 +29,7 @@ import { AgentCodeEditEvent, SymbolNavigationEvent } from '../../../editor/commo
 import { IModelChangedEvent } from '../../../editor/common/model/mirrorTextModel.js';
 import { IAccessibilityInformation } from '../../../platform/accessibility/common/accessibility.js';
 import { ILocalizedString } from '../../../platform/action/common/action.js';
-import { IModelSelectionSettings } from '../../../platform/aiModel/common/aiModels.js';
+import { IModelSelectionSettings, IModelSelectionValidationResponse } from '../../../platform/aiModel/common/aiModels.js';
 import { CSAuthenticationSession } from '../../../platform/codestoryAccount/common/csAccount.js';
 import { ConfigurationTarget, IConfigurationChange, IConfigurationData, IConfigurationOverrides } from '../../../platform/configuration/common/configuration.js';
 import { ConfigurationScope } from '../../../platform/configuration/common/configurationRegistry.js';
@@ -1813,6 +1813,7 @@ export interface ExtHostConfigurationShape {
 
 export interface ExtHostModelSelectionShape {
 	$acceptConfigurationChanged(data: IModelSelectionSettings): void;
+	$validateModelConfiguration(data: IModelSelectionSettings, token: CancellationToken): Promise<IModelSelectionValidationResponse>;
 }
 
 export interface ExtHostDiagnosticsShape {

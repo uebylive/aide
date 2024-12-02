@@ -20,6 +20,7 @@ export class MainThreadModelSelection extends Disposable implements MainThreadMo
 		super();
 		this._proxy = extHostContext.getProxy(ExtHostContext.ExtHostModelSelection);
 
+		this._register(this._modelSelectionService.registerModelConfigValidator(this._proxy.$validateModelConfiguration));
 		this._register(this._modelSelectionService.onDidChangeModelSelection(e => {
 			this._proxy.$acceptConfigurationChanged(e);
 		}));

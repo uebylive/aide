@@ -32,8 +32,18 @@ declare module 'vscode' {
 	export type LanguageModels = Record<string, LanguageModelConfiguration>;
 	export type ModelProviders = Record<string, ModelProviderConfiguration>;
 
+	export type ModelConfigValidationResponse = {
+		valid: boolean;
+		error?: string;
+	};
+
+	export interface ModelConfigurationValidatorProvider {
+		provideModelConfigValidation(config: ModelSelection, token: CancellationToken): Thenable<ModelConfigValidationResponse>;
+	}
+
 	export namespace modelSelection {
 		export function getConfiguration(): Thenable<ModelSelection>;
 		export const onDidChangeConfiguration: Event<ModelSelection>;
+		export function registerModelConfigurationValidator(validator: ModelConfigurationValidatorProvider): Disposable;
 	}
 }

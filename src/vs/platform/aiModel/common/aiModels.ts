@@ -3,7 +3,9 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { CancellationToken } from '../../../base/common/cancellation.js';
 import { Event } from '../../../base/common/event.js';
+import { IDisposable } from '../../../base/common/lifecycle.js';
 import { createDecorator } from '../../instantiation/common/instantiation.js';
 
 export const humanReadableModelConfigKey: Record<string, string> = {
@@ -119,6 +121,9 @@ export interface IAIModelSelectionService {
 	readonly _serviceBrand: undefined;
 
 	onDidChangeModelSelection: Event<IModelSelectionSettings>;
+
+	registerModelConfigValidator(validator: (data: IModelSelectionSettings, token: CancellationToken) => Promise<IModelSelectionValidationResponse>): IDisposable;
+	validateModelConfiguration(data: IModelSelectionSettings, token: CancellationToken): Promise<IModelSelectionValidationResponse>;
 
 	getDefaultModelSelectionContent(): string;
 	getModelSelectionSettings(): Promise<IModelSelectionSettings>;
@@ -242,3 +247,10 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 		},
 	}
 } as const;
+
+export interface IModelSelectionValidationResponse {
+	readonly valid: boolean;
+	readonly error?: string;
+}
+
+export type ModelConfigValidator = (data: IModelSelectionSettings, token: CancellationToken) => Promise<IModelSelectionValidationResponse>;
