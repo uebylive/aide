@@ -13,9 +13,10 @@ import { Promises } from '../../../../base/common/async.js';
 import { Codicon } from '../../../../base/common/codicons.js';
 import { Emitter } from '../../../../base/common/event.js';
 import { KeyCode } from '../../../../base/common/keyCodes.js';
+import { equals } from '../../../../base/common/objects.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import * as nls from '../../../../nls.js';
-import { ModelProviderConfig, ProviderConfig, areLanguageModelItemsEqual, areProviderConfigsEqual, humanReadableProviderConfigKey, providersSupportingModel } from '../../../../platform/aiModel/common/aiModels.js';
+import { ModelProviderConfig, ProviderConfig, humanReadableProviderConfigKey } from '../../../../platform/aiModel/common/aiModels.js';
 import { IContextViewService } from '../../../../platform/contextview/browser/contextView.js';
 import { defaultButtonStyles, defaultInputBoxStyles, defaultSelectBoxStyles } from '../../../../platform/theme/browser/defaultStyles.js';
 import { asCssVariable, editorWidgetForeground, widgetShadow } from '../../../../platform/theme/common/colorRegistry.js';
@@ -96,6 +97,15 @@ export class EditModelConfigurationWidget extends Widget {
 		titleContainer.style.width = '100%';
 		this.title = this._register(new InputBox(titleContainer, this.contextViewService, { inputBoxStyles: { ...defaultInputBoxStyles, inputBackground: undefined, inputBorder: 'transparent' } }));
 		this.title.setPlaceHolder(nls.localize('editModelConfiguration.titlePlaceholder', "Enter an identifier of your choice for this model"));
+		this._register(this.title.onDidChange((e) => {
+			this.updateModelItemEntry({
+				...this.modelItemEntry!,
+				modelItem: {
+					...this.modelItemEntry!.modelItem,
+					key: e
+				}
+			});
+		}));
 		const closeIcon = dom.append(header, dom.$(`.close-icon${ThemeIcon.asCSSSelector(editModelWidgetCloseIcon)}}`));
 		closeIcon.title = nls.localize('editModelConfiguration.close', "Close");
 		this._register(dom.addDisposableListener(closeIcon, dom.EventType.CLICK, () => this.hide()));
@@ -104,6 +114,15 @@ export class EditModelConfigurationWidget extends Widget {
 		const modelNameContainer = dom.append(body, dom.$('.edit-model-widget-model-name-container'));
 		dom.append(modelNameContainer, dom.$(`.model-icon${ThemeIcon.asCSSSelector(defaultModelIcon)}}`));
 		this.modelName = this._register(new InputBox(modelNameContainer, this.contextViewService, { inputBoxStyles: { ...defaultInputBoxStyles, inputBackground: undefined, inputBorder: 'transparent' } }));
+		this._register(this.modelName.onDidChange((e) => {
+			this.updateModelItemEntry({
+				...this.modelItemEntry!,
+				modelItem: {
+					...this.modelItemEntry!.modelItem,
+					name: e
+				}
+			});
+		}));
 		this.modelName.setPlaceHolder(nls.localize('editModelConfiguration.modelNamePlaceholder', "Enter a human-readable name for the model"));
 		this.modelName.element.style.width = '100%';
 		this.modelName.element.classList.add('edit-model-widget-model-name');
@@ -208,9 +227,7 @@ export class EditModelConfigurationWidget extends Widget {
 				this.title.value = `${entry.modelItem.key}`;
 				this.modelName.value = entry.modelItem.name;
 
-				const supportedProviders = providersSupportingModel(entry.modelItem.key);
-				const validProviders = providerItems.filter(providerItem => supportedProviders.includes(providerItem.type));
-				this.registerProviders(validProviders, entry.modelItem.provider.name);
+				this.registerProviders(providerItems, entry.modelItem.provider.name);
 
 				this.renderProviderConfigFields(entry);
 				this.focus();
@@ -324,7 +341,7 @@ export class EditModelConfigurationWidget extends Widget {
 		if (this.modelItemEntry) {
 			const initialModelItem = ModelSelectionEditorModel.getLanguageModelItem(this.initialModelItemEntry!);
 			const updatedModelItem = ModelSelectionEditorModel.getLanguageModelItem(this.modelItemEntry);
-			if (areLanguageModelItemsEqual(initialModelItem, updatedModelItem)) {
+			if (equals(initialModelItem, updatedModelItem)) {
 				this.saveButton.enabled = false;
 			} else {
 				this.saveButton.enabled = true;
@@ -347,7 +364,7 @@ export class EditModelConfigurationWidget extends Widget {
 		if (this.modelItemEntry) {
 			const initialModelItem = ModelSelectionEditorModel.getLanguageModelItem(this.initialModelItemEntry!);
 			const updatedModelItem = ModelSelectionEditorModel.getLanguageModelItem(this.modelItemEntry);
-			if (areLanguageModelItemsEqual(initialModelItem, updatedModelItem)) {
+			if (equals(initialModelItem, updatedModelItem)) {
 				return;
 			}
 
@@ -510,7 +527,7 @@ export class EditProviderConfigurationWidget extends Widget {
 		if (this.providerItemEntry) {
 			const initialProviderConfig = ModelSelectionEditorModel.getProviderConfig(this.initialProviderItemEntry!);
 			const updatedProviderConfig = ModelSelectionEditorModel.getProviderConfig(updatedProviderItemEntry as IProviderItemEntry);
-			if (areProviderConfigsEqual(initialProviderConfig, updatedProviderConfig)) {
+			if (equals(initialProviderConfig, updatedProviderConfig)) {
 				this.saveButton.enabled = false;
 			} else {
 				this.saveButton.enabled = true;
@@ -536,7 +553,7 @@ export class EditProviderConfigurationWidget extends Widget {
 		if (this.providerItemEntry) {
 			const initialProviderConfig = ModelSelectionEditorModel.getProviderConfig(this.initialProviderItemEntry!);
 			const updatedProviderConfig = ModelSelectionEditorModel.getProviderConfig(this.providerItemEntry as IProviderItemEntry);
-			if (areProviderConfigsEqual(initialProviderConfig, updatedProviderConfig)) {
+			if (equals(initialProviderConfig, updatedProviderConfig)) {
 				return;
 			}
 

@@ -18,7 +18,7 @@ import { IWorkbenchContribution } from '../../../common/contributions.js';
 import { IModelSelectionEditingService } from '../../../services/aiModel/common/aiModelEditing.js';
 import { getEditorModelItems } from '../../../services/preferences/browser/modelSelectionEditorModel.js';
 import { isModelItemConfigComplete } from '../../../services/preferences/common/preferences.js';
-import { IStatusbarEntry, IStatusbarEntryAccessor, StatusbarEntryKind } from '../../../services/statusbar/browser/statusbar.js';
+import { IStatusbarEntry, IStatusbarEntryAccessor, IStatusbarService, StatusbarAlignment, StatusbarEntryKind } from '../../../services/statusbar/browser/statusbar.js';
 import './media/modelSelectionIndicator.css';
 
 export class ModelSelectionIndicator extends Disposable implements IWorkbenchContribution {
@@ -30,7 +30,8 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 	constructor(
 		@IQuickInputService private readonly quickInputService: IQuickInputService,
 		@IAIModelSelectionService private readonly aiModelSelectionService: IAIModelSelectionService,
-		@IModelSelectionEditingService private readonly modelSelectionEditingService: IModelSelectionEditingService
+		@IModelSelectionEditingService private readonly modelSelectionEditingService: IModelSelectionEditingService,
+		@IStatusbarService private readonly statusbarService: IStatusbarService
 	) {
 		super();
 
@@ -67,7 +68,7 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 		registerAction2(class extends Action2 {
 			constructor() {
 				super({
-					id: ModelSelectionIndicator.SWITCH_SLOW_MODEL_COMMAND_ID,
+					id: ModelSelectionIndicator.SWITCH_MODEL_COMMAND_ID,
 					category,
 					title: nls.localize2('modelSelection.switch.slow', "Switch Model"),
 					f1: true,
@@ -87,9 +88,8 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 		let text = '';
 		let kind: StatusbarEntryKind = 'remote';
 		if (isModelItemConfigComplete(editorModelItems.fastModel) && isModelItemConfigComplete(editorModelItems.slowModel)) {
-			const fastModel = editorModelItems.fastModel.name;
 			const slowModel = editorModelItems.slowModel.name;
-			text = `$(debug-breakpoint-data-unverified) ${fastModel} / ${slowModel}`;
+			text = `$(debug-breakpoint-data-unverified) ${slowModel}`;
 		} else {
 			text = `$(error) Corrupt model configuration`;
 			kind = 'error';
@@ -109,8 +109,7 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 		if (this.modelSelectionStatusEntry) {
 			this.modelSelectionStatusEntry.update(properties);
 		} else {
-			// TODO(@ghostwriternr): Hide this from the status bar until we start using the model selection
-			// this.modelSelectionStatusEntry = this.statusbarService.addEntry(properties, 'status.aiModelSelection', StatusbarAlignment.RIGHT, -Number.MAX_VALUE);
+			this.modelSelectionStatusEntry = this.statusbarService.addEntry(properties, 'status.aiModelSelection', StatusbarAlignment.RIGHT, -Number.MAX_VALUE);
 		}
 	}
 
@@ -198,11 +197,13 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 
 		const disposables = new DisposableStore();
 		const quickPick = disposables.add(this.quickInputService.createQuickPick({ useSeparators: true }));
-		quickPick.placeholder = `Select ${type.replace('Model', '')} model`;
-		quickPick.title = `Select ${type.replace('Model', '')} model`;
+		// quickPick.placeholder = `Select ${type.replace('Model', '')} model`;
+		// quickPick.title = `Select ${type.replace('Model', '')} model`;
+		quickPick.placeholder = `Select model`;
+		quickPick.title = `Select model`;
 		quickPick.items = await computeItems();
-		quickPick.step = 2;
-		quickPick.totalSteps = 2;
+		// quickPick.step = 2;
+		// quickPick.totalSteps = 2;
 		quickPick.sortByLabel = false;
 		quickPick.canSelectMany = false;
 		disposables.add(quickPick.onDidAccept(async () => {

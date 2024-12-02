@@ -12,7 +12,7 @@ import * as objects from '../../../../base/common/objects.js';
 import { dirname } from '../../../../base/common/resources.js';
 import { Mutable } from '../../../../base/common/types.js';
 import * as nls from '../../../../nls.js';
-import { defaultModelSelectionSettings, IAIModelSelectionService, ILanguageModelItem, IModelProviders, IModelSelectionSettings, isModelSelectionSettings, ProviderConfig, ProviderType } from '../../../../platform/aiModel/common/aiModels.js';
+import { ApiKeyOnlyProviderConfig, apiKeyOnlyProviders, defaultModelSelectionSettings, IAIModelSelectionService, ILanguageModelItem, IModelProviders, IModelSelectionSettings, isModelSelectionSettings, noConfigurationProviders, openAICompatibleProvider, OpenAICompatibleProviderConfig, ProviderConfig, ProviderType } from '../../../../platform/aiModel/common/aiModels.js';
 import { FileOperation, IFileService } from '../../../../platform/files/common/files.js';
 import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
 import { Extensions, IJSONContributionRegistry } from '../../../../platform/jsonschemas/common/jsonContributionRegistry.js';
@@ -63,11 +63,11 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 			const key = untypedKey as ProviderType;
 			const acc = untypedAcc as { [key: string]: ProviderConfig };
 			const provider = modelSelection.providers[key as keyof typeof modelSelection.providers] as ProviderConfig;
-			if ((provider.name === 'Azure OpenAI' || provider.name === 'OpenAI Compatible' || provider.name === 'Gemini') && (provider.apiBase.length > 0 && provider.apiKey.length > 0)) {
+			if (openAICompatibleProvider.includes(key as typeof openAICompatibleProvider[number]) && (provider as OpenAICompatibleProviderConfig).apiBase.length > 0 && (provider as OpenAICompatibleProviderConfig).apiKey.length > 0) {
 				acc[key] = provider;
-			} else if ((provider.name === 'OpenAI' || provider.name === 'Together AI' || provider.name === 'OpenAI Compatible' || provider.name === 'Anthropic' || provider.name === 'Fireworks AI' || provider.name === 'Open Router') && (provider.apiKey?.length ?? 0) > 0) {
+			} else if (apiKeyOnlyProviders.includes(key as typeof apiKeyOnlyProviders[number]) && (provider as ApiKeyOnlyProviderConfig).apiKey.length > 0) {
 				acc[key] = provider;
-			} else if (provider.name === 'CodeStory' || provider.name === 'Ollama') {
+			} else if (noConfigurationProviders.includes(key as typeof noConfigurationProviders[number])) {
 				acc[key] = provider;
 			}
 			return acc as IModelProviders;
