@@ -237,6 +237,7 @@ export class MenuId {
 	static readonly AideAgentInput = new MenuId('AideAgentInput');
 	static readonly AideAgentInlineResourceAnchorContext = new MenuId('AideAgentInlineResourceAnchorContext');
 	static readonly AideAgentInlineSymbolAnchorContext = new MenuId('AideAgentInlineSymbolAnchorContext');
+	static readonly AideAgentEditPreviewWidget = new MenuId('AideAgentEditPreviewWidget');
 	static readonly AccessibleView = new MenuId('AccessibleView');
 	static readonly MultiDiffEditorFileToolbar = new MenuId('MultiDiffEditorFileToolbar');
 	static readonly DiffEditorHunkToolbar = new MenuId('DiffEditorHunkToolbar');

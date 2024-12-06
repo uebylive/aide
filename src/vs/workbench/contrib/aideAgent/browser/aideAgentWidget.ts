@@ -27,7 +27,7 @@ import { IThemeService } from '../../../../platform/theme/common/themeService.js
 import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgentData } from '../common/aideAgentAgents.js';
 import { CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_SESSION, CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER, CONTEXT_RESPONSE_FILTERED } from '../common/aideAgentContextKeys.js';
-import { AgentMode, AgentScope, ChatModelInitState, IChatModel, IChatRequestVariableEntry, IChatResponseModel } from '../common/aideAgentModel.js';
+import { AgentMode, AgentScope, ChatModelInitState, IChatModel, IChatProgressResponseContent, IChatRequestVariableEntry, IChatResponseModel } from '../common/aideAgentModel.js';
 import { ChatRequestAgentPart, IParsedChatRequest, formatChatQuestion } from '../common/aideAgentParserTypes.js';
 import { ChatRequestParser } from '../common/aideAgentRequestParser.js';
 import { IAideAgentService, IChatFollowup, IChatLocationData } from '../common/aideAgentService.js';
@@ -460,11 +460,12 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		if (this.editPreviewWidget) {
 			const lastProgressStage = vmItems
 				.filter(i => isResponseVM(i))
-				.flatMap(i => i.response.value)
-				.filter(i => i.kind === 'stage')
+				.flatMap(i => i.response.value.map(progress => ({ progress, exchangeId: i.id })))
+				.filter(i => i.progress.kind === 'stage')
 				.pop();
 			if (lastProgressStage) {
-				this.editPreviewWidget.updateProgress(lastProgressStage.message);
+				const entry = lastProgressStage?.progress as IChatProgressResponseContent & { kind: 'stage' };
+				this.editPreviewWidget.updateProgress(entry.message, lastProgressStage.exchangeId);
 			}
 		}
 	}

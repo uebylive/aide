@@ -23,6 +23,11 @@
 	transform: scale(0.9) translateY(calc(-100% + 10px));
 }
 
+.edit-preview > .aideagent-edit-preview > .header {
+	display: flex;
+	justify-content: space-between;
+}
+
 .edit-preview > .aideagent-edit-preview > .header > .title {
 	display: flex;
 	align-items: center;
