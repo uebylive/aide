@@ -47,7 +47,7 @@ export function getSidecarBinaryURL() {
 // if the version we are looking at is okay, or we need to download a new binary
 // for now, lets keep it as it is and figure out a way to update the hash on
 // important updates
-export const SIDECAR_VERSION = 'f76b2c07e462dea1c1e8492805847be911caed1013ea9b23d59223add4c7a267';
+export const SIDECAR_VERSION = 'ab0422cf1702c375184a7743de7e1e1f0ed527b69362a021ca25e40f91d0a660';
 
 async function checkCorrectVersionRunning(url: string): Promise<boolean> {
 	try {
@@ -185,6 +185,17 @@ export async function startSidecarBinary(
 	extensionBasePath: string,
 	installLocation: string,
 ): Promise<string> {
+	const sidecarServerUrl = 'http://127.0.0.1:42424';
+	// Check if we are running the correct version, or else we download a new version
+	if (!await checkCorrectVersionRunning(sidecarServerUrl)) {
+		console.log('correct version of sidecar is not running, killing the server');
+		await checkOrKillRunningServer(sidecarServerUrl);
+	}
+	// if the correct version is already running, then just return it
+	if (await checkCorrectVersionRunning(sidecarServerUrl)) {
+		return sidecarServerUrl;
+	}
+	console.log('starting sidecar binary locally');
 	// We want to check where the sidecar binary is stored
 	// extension_path: /Users/skcd/.vscode-oss-dev/User/globalStorage/codestory-ghost.codestoryai/sidecar_bin
 	// installation location: /Users/skcd/Downloads/Aide.app/Contents/Resources/app/extensions/codestory/sidecar_bin
@@ -198,9 +209,6 @@ export async function startSidecarBinary(
 	const shouldUseSelfRun = sidecarUseSelfRun();
 	if (shouldUseSelfRun) {
 		return serverUrl;
-	}
-	if (serverUrl !== 'http://127.0.0.1:42424') {
-		return 'http://127.0.0.1:42424';
 	}
 
 	// Check if we are running the correct version, or else we download a new version
