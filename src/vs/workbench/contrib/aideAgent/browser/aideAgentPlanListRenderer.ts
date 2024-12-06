@@ -84,7 +84,7 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 	}
 
 	layout(width: number): void {
-		this._currentLayoutWidth = width;
+		this._currentLayoutWidth = width - 40 /* padding */;
 		for (const editor of this._editorPool.inUse()) {
 			editor.layout(this._currentLayoutWidth);
 		}

@@ -295,6 +295,12 @@
 	margin: 16px 0;
 }
 
+#workbench\.panel\.aideAgentPlan .aideagent-item-container .value .rendered-markdown h1,
+#workbench\.panel\.aideAgentPlan .aideagent-item-container .value .rendered-markdown h2,
+#workbench\.panel\.aideAgentPlan .aideagent-item-container .value .rendered-markdown h3 {
+	margin: 0;
+}
+
 .aideagent-item-container.editing-session .value .rendered-markdown [data-code] {
 	margin: 8px 0 16px 0;
 }

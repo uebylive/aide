@@ -38,6 +38,9 @@ export class AideAgentPlanWidget extends Disposable {
 	private _onDidHide = this._register(new Emitter<void>());
 	readonly onDidHide = this._onDidHide.event;
 
+	private _onDidChangeHeight = this._register(new Emitter<number>());
+	readonly onDidChangeHeight = this._onDidChangeHeight.event;
+
 	private readonly _onDidChangeContentHeight = new Emitter<void>();
 	readonly onDidChangeContentHeight: Event<void> = this._onDidChangeContentHeight.event;
 
@@ -248,5 +251,9 @@ export class AideAgentPlanWidget extends Disposable {
 
 		this.tree.layout(height, width);
 		this.tree.getHTMLElement().style.height = `${height}px`;
+		this.renderer.layout(width);
+
+		this.listContainer.style.height = `${height}px`;
+		this._onDidChangeHeight.fire(height);
 	}
 }

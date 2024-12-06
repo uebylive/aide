@@ -145,7 +145,7 @@ export class AideAgentPlanMarkdownContentPart extends Disposable implements IAid
 	}
 
 	layout(width: number): void {
-		this.allRefs.forEach((ref, index) => {
+		this.allRefs.forEach((ref) => {
 			if (ref.object instanceof CodeBlockPart) {
 				ref.object.layout(width);
 			}
