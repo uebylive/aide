@@ -178,7 +178,7 @@ const viewContainer: ViewContainer = Registry.as<IViewContainersRegistry>(ViewEx
 const planViewContainerId = AIDE_AGENT_PLAN_VIEW_PANE_ID;
 const planViewContainer: ViewContainer = Registry.as<IViewContainersRegistry>(ViewExtensions.ViewContainersRegistry).registerViewContainer({
 	id: planViewContainerId,
-	title: localize2('aideAgent.planViewContainer.label', "Edits review"),
+	title: localize2('aideAgent.planViewContainer.label', "Step-wise plan"),
 	icon: Codicon.mapVertical,
 	ctorDescriptor: new SyncDescriptor(ViewPaneContainer, [planViewContainerId, { mergeViewWithContainerWhenSingleView: true }]),
 	storageId: planViewContainerId,
@@ -325,7 +325,7 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 	}
 
 	private registerDefaultPlanView(): IDisposable {
-		const name = 'Edits review';
+		const name = 'Step-wise plan';
 		const viewDescriptor: IViewDescriptor[] = [{
 			id: AIDE_AGENT_PLAN_VIEW_PANE_ID,
 			containerIcon: planViewContainer.icon,
