@@ -39,6 +39,7 @@ import { MenuEntryActionViewItem } from '../../../../platform/actions/browser/me
 import { HiddenItemStrategy, MenuWorkbenchToolBar } from '../../../../platform/actions/browser/toolbar.js';
 import { MenuId, MenuItemAction } from '../../../../platform/actions/common/actions.js';
 import { IAIModelSelectionService } from '../../../../platform/aiModel/common/aiModels.js';
+import { ICommandService } from '../../../../platform/commands/common/commands.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IContextMenuService } from '../../../../platform/contextview/browser/contextView.js';
@@ -54,6 +55,7 @@ import { ResourceLabels } from '../../../browser/labels.js';
 import { AccessibilityVerbositySettingId } from '../../accessibility/browser/accessibilityConfiguration.js';
 import { AccessibilityCommandId } from '../../accessibility/common/accessibilityCommands.js';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions, setupSimpleEditorSelectionStyling } from '../../codeEditor/browser/simpleEditorOptions.js';
+import { ModelSelectionIndicator } from '../../preferences/browser/modelSelectionIndicator.js';
 import { ChatAgentLocation } from '../common/aideAgentAgents.js';
 import { CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_MODE, CONTEXT_IN_CHAT_INPUT } from '../common/aideAgentContextKeys.js';
 import { AgentMode, AgentScope, IChatRequestVariableEntry } from '../common/aideAgentModel.js';
@@ -218,6 +220,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		@IAccessibilityService private readonly accessibilityService: IAccessibilityService,
 		@IAideAgentLMService private readonly languageModelsService: IAideAgentLMService,
 		@IAIModelSelectionService private readonly aiModelSelectionService: IAIModelSelectionService,
+		@ICommandService private readonly commandService: ICommandService,
 		@ILogService private readonly logService: ILogService,
 	) {
 		super();
@@ -483,6 +486,12 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		const toolbarsContainer = elements.inputToolbars;
 		this.statusMessageContainer = elements.statusMessageContainer;
 		const modelConfig = elements.modelConfig;
+		const modelConfigButton = this.instantiationService.createInstance(Button, modelConfig, {
+			buttonBackground: 'transparent',
+			buttonForeground: 'inherit',
+			buttonBorder: 'none',
+			supportIcons: true,
+		});
 		const statusMessage = elements.statusMessage;
 		this.initAttachedContext(this.attachedContextContainer);
 
@@ -637,9 +646,16 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		}
 
 		// Model selection
-		this.aiModelSelectionService.getValidatedModelSelectionSettings().then(validatedModelSelectionSettings => {
-			const model = validatedModelSelectionSettings.slowModel;
-			modelConfig.innerText = validatedModelSelectionSettings.models[model].name;
+		this.aiModelSelectionService.getValidatedModelSelectionSettings().then(settings => {
+			const model = settings.slowModel;
+			modelConfigButton.label = `$(${Codicon.chevronDown.id}) ${settings.models[model].name}`;
+		});
+		this._register(this.aiModelSelectionService.onDidChangeModelSelection((settings) => {
+			const model = settings.slowModel;
+			modelConfigButton.label = `$(${Codicon.chevronDown.id}) ${settings.models[model].name}`;
+		}));
+		modelConfigButton.onDidClick(() => {
+			this.commandService.executeCommand(ModelSelectionIndicator.SWITCH_SLOW_MODEL_COMMAND_ID);
 		});
 
 		// Sidecar status

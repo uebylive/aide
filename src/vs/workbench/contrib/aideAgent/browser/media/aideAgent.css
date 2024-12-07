@@ -544,6 +544,10 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	padding-top: 4px;
 }
 
+.interactive-session .interactive-input-status-message > .model-config > .monaco-button {
+	padding: 0;
+}
+
 .interactive-session .interactive-input-status-message .status-message {
 	display: flex;
 	align-items: center;
@@ -556,7 +560,7 @@ have to be updated for changes to the rules above, or to support more deeply nes
 }
 
 .interactive-session .interactive-input-status-message .status-message .codicon.codicon-circle-filled::before {
-	vertical-align: -25%;
+	vertical-align: -2px;
 }
 
 .interactive-session .chat-input-container.focused {
