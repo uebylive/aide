@@ -421,11 +421,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				mode: event.mode,
 			},
 		});
-		// New flow migration
-		if (event.mode === vscode.AideAgentMode.Chat || event.mode === vscode.AideAgentMode.Edit || event.mode === vscode.AideAgentMode.Plan) {
-			await this.streamResponse(event, event.sessionId, this.editorUrl, token);
-			return;
-		}
+
+		await this.streamResponse(event, event.sessionId, this.editorUrl, token);
 	}
 
 	/**
@@ -441,13 +438,12 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		if (event.mode === vscode.AideAgentMode.Chat) {
 			const responseStream = this.sidecarClient.agentSessionChat(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, workosAccessToken);
 			await this.reportAgentEventsToChat(true, responseStream);
-		}
-		// Now lets try to handle the edit event first
-		// there are 2 kinds of edit events:
-		// - anchored and agentic events
-		// if its anchored, then we have the sscope as selection
-		// if its selection scope then its agentic
-		if (event.mode === vscode.AideAgentMode.Edit) {
+		} else if (event.mode === vscode.AideAgentMode.Edit) {
+			// Now lets try to handle the edit event first
+			// there are 2 kinds of edit events:
+			// - anchored and agentic events
+			// if its anchored, then we have the sscope as selection
+			// if its selection scope then its agentic
 			if (event.scope === vscode.AideAgentScope.Selection) {
 				const responseStream = await this.sidecarClient.agentSessionAnchoredEdit(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, workosAccessToken);
 				await this.reportAgentEventsToChat(true, responseStream);
@@ -456,14 +452,12 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				const responseStream = await this.sidecarClient.agentSessionPlanStep(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, isWholeCodebase, workosAccessToken);
 				await this.reportAgentEventsToChat(true, responseStream);
 			}
-		}
-
-		// For plan generation we have 2 things which can happen:
-		// plan gets generated incrementally or in an instant depending on people using
-		// o1 or not
-		// once we have a step of the plan we should stream it along with the edits of the plan
-		// and keep doing that until we are done completely
-		if (event.mode === vscode.AideAgentMode.Plan) {
+		} else if (event.mode === vscode.AideAgentMode.Plan) {
+			// For plan generation we have 2 things which can happen:
+			// plan gets generated incrementally or in an instant depending on people using
+			// o1 or not
+			// once we have a step of the plan we should stream it along with the edits of the plan
+			// and keep doing that until we are done completely
 			const responseStream = await this.sidecarClient.agentSessionPlanStep(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, false, workosAccessToken);
 			await this.reportAgentEventsToChat(true, responseStream);
 		}
@@ -477,7 +471,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		editMode: boolean,
 		stream: AsyncIterableIterator<SideCarAgentEvent>,
 	): Promise<void> {
-		// const editsMap = new Map();
 		const asyncIterable = {
 			[Symbol.asyncIterator]: () => stream
 		};
@@ -728,7 +721,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						responseStream?.stream.stage({ message: 'Cancelled' });
 					} else if (editsState === 'MarkedComplete') {
 						responseStream?.stream.stage({ message: 'Complete' });
-						responseStream?.stream.close();
+						this.closeAndRemoveResponseStream(sessionId, exchangeId);
 						return;
 					} else if (editsState === 'Accepted') {
 						responseStream?.stream.stage({ message: 'Accepted' });
@@ -744,7 +737,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						responseStream?.stream.stage({ message: 'Cancelled' });
 					} else if (editsState === 'MarkedComplete') {
 						responseStream?.stream.stage({ message: 'Complete' });
-						responseStream?.stream.close();
+						this.closeAndRemoveResponseStream(sessionId, exchangeId);
 						return;
 					}
 					continue;
@@ -760,35 +753,23 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					}
 					continue;
 				}
-				if (event.event.ExchangeEvent.RegeneratePlan) {
-					// This event help us regenerate the plan and set details on the editor layer
-					/*
-					responseStream?.stream.regeneratePlan({
-						sessionId: event.event.ExchangeEvent.RegeneratePlan.session_id,
-						exchangeId: event.event.ExchangeEvent.RegeneratePlan.exchange_id,
-					});
-					*/
-					continue;
-				}
 				if (event.event.ExchangeEvent.FinishedExchange) {
 					// Update our streaming state that we are finished
 					responseStream?.stream.stage({ message: 'Finished' });
-					if (responseStream) {
-						responseStream.stream.close();
-					}
-					// remove the response stream from the collection
-					this.responseStreamCollection.removeResponseStream({
-						sessionId,
-						exchangeId,
-					});
+					this.closeAndRemoveResponseStream(sessionId, exchangeId);
 				}
 			}
 		}
+	}
+
+	private closeAndRemoveResponseStream(sessionId: string, exchangeId: string) {
+		const responseStreamIdentifier: ResponseStreamIdentifier = { sessionId, exchangeId };
+		const responseStream = this.responseStreamCollection.getResponseStream(responseStreamIdentifier);
+		responseStream?.stream.close();
+		this.responseStreamCollection.removeResponseStream(responseStreamIdentifier);
 	}
 
 	dispose() {
 		this.aideAgent.dispose();
 	}
 }
-
-
