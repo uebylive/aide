@@ -19,6 +19,7 @@ import { KeyCode } from '../../../../base/common/keyCodes.js';
 import { Disposable, DisposableStore } from '../../../../base/common/lifecycle.js';
 import { basename, dirname } from '../../../../base/common/path.js';
 import { isMacintosh } from '../../../../base/common/platform.js';
+import { ThemeIcon } from '../../../../base/common/themables.js';
 import { URI } from '../../../../base/common/uri.js';
 import { IEditorConstructionOptions } from '../../../../editor/browser/config/editorConfiguration.js';
 import { EditorExtensionsRegistry } from '../../../../editor/browser/editorExtensions.js';
@@ -37,6 +38,7 @@ import { ActionViewItemWithKb } from '../../../../platform/actionbarWithKeybindi
 import { MenuEntryActionViewItem } from '../../../../platform/actions/browser/menuEntryActionViewItem.js';
 import { HiddenItemStrategy, MenuWorkbenchToolBar } from '../../../../platform/actions/browser/toolbar.js';
 import { MenuId, MenuItemAction } from '../../../../platform/actions/common/actions.js';
+import { IAIModelSelectionService } from '../../../../platform/aiModel/common/aiModels.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IContextMenuService } from '../../../../platform/contextview/browser/contextView.js';
@@ -122,6 +124,8 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 
 	private attachedContextContainer!: HTMLElement;
 	private readonly attachedContextDisposables = this._register(new DisposableStore());
+
+	private statusMessageContainer!: HTMLElement;
 
 	private _inputPartHeight: number = 0;
 	get inputPartHeight() {
@@ -213,6 +217,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		@IKeybindingService private readonly keybindingService: IKeybindingService,
 		@IAccessibilityService private readonly accessibilityService: IAccessibilityService,
 		@IAideAgentLMService private readonly languageModelsService: IAideAgentLMService,
+		@IAIModelSelectionService private readonly aiModelSelectionService: IAIModelSelectionService,
 		@ILogService private readonly logService: ILogService,
 	) {
 		super();
@@ -446,6 +451,10 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 				]),
 				dom.h('.aideagent-attached-context@attachedContextContainer'),
 				dom.h('.interactive-input-followups@followupsContainer'),
+				dom.h('.interactive-input-status-message@statusMessageContainer', [
+					dom.h('.model-config@modelConfig'),
+					dom.h('.status-message@statusMessage'),
+				])
 			]);
 		} else {
 			elements = dom.h('.interactive-input-part', [
@@ -457,6 +466,10 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 						dom.h('.aideagent-input-toolbars@inputToolbars'),
 					]),
 				]),
+				dom.h('.interactive-input-status-message@statusMessageContainer', [
+					dom.h('.model-config@modelConfig'),
+					dom.h('.status-message@statusMessage'),
+				])
 			]);
 		}
 		this.container = elements.root;
@@ -468,6 +481,9 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		const editorContainer = elements.editorContainer;
 		this.attachedContextContainer = elements.attachedContextContainer;
 		const toolbarsContainer = elements.inputToolbars;
+		this.statusMessageContainer = elements.statusMessageContainer;
+		const modelConfig = elements.modelConfig;
+		const statusMessage = elements.statusMessage;
 		this.initAttachedContext(this.attachedContextContainer);
 
 		const inputScopedContextKeyService = this._register(this.contextKeyService.createScoped(inputContainer));
@@ -616,6 +632,24 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			toolbarSide.context = { widget } satisfies IChatExecuteActionContext;
 		}
 
+		if (this.options.preventChatEditToggle) {
+			this.statusMessageContainer.style.display = 'none';
+		}
+
+		// Model selection
+		this.aiModelSelectionService.getValidatedModelSelectionSettings().then(validatedModelSelectionSettings => {
+			const model = validatedModelSelectionSettings.slowModel;
+			modelConfig.innerText = validatedModelSelectionSettings.models[model].name;
+		});
+
+		// Sidecar status
+		const textSpan = dom.$('span');
+		textSpan.textContent = 'Sidecar connected';
+		const iconSpan = dom.$('span');
+		iconSpan.classList.add(...ThemeIcon.asClassNameArray(Codicon.circleFilled));
+		statusMessage.appendChild(textSpan);
+		statusMessage.appendChild(iconSpan);
+
 		let inputModel = this.modelService.getModel(this.inputUri);
 		if (!inputModel) {
 			inputModel = this.modelService.createModel('', null, this.inputUri, true);
@@ -734,7 +768,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 
 	get contentHeight(): number {
 		const data = this.getLayoutData();
-		return data.followupsHeight + data.inputPartEditorHeight + data.inputPartVerticalPadding + data.inputEditorBorder + data.attachmentsHeight + data.toolbarsHeight;
+		return data.followupsHeight + data.inputPartEditorHeight + data.inputPartVerticalPadding + data.inputEditorBorder + data.attachmentsHeight + data.toolbarsHeight + data.statusMessageHeight;
 	}
 
 	layout(height: number, width: number) {
@@ -748,12 +782,12 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		this.initAttachedContext(this.attachedContextContainer, true);
 
 		const data = this.getLayoutData();
-		const inputEditorHeight = Math.min(data.inputPartEditorHeight, height - data.followupsHeight - data.attachmentsHeight - data.inputPartVerticalPadding - data.toolbarsHeight);
+		const inputEditorHeight = Math.min(data.inputPartEditorHeight, height - data.followupsHeight - data.attachmentsHeight - data.inputPartVerticalPadding - data.toolbarsHeight - data.statusMessageHeight);
 
 		const followupsWidth = width - data.inputPartHorizontalPadding;
 		this.followupsContainer.style.width = `${followupsWidth}px`;
 
-		this._inputPartHeight = data.inputPartVerticalPadding + data.followupsHeight + inputEditorHeight + data.inputEditorBorder + data.attachmentsHeight + data.toolbarsHeight;
+		this._inputPartHeight = data.inputPartVerticalPadding + data.followupsHeight + inputEditorHeight + data.inputEditorBorder + data.attachmentsHeight + data.toolbarsHeight + data.statusMessageHeight;
 
 		const initialEditorScrollWidth = this._inputEditor.getScrollWidth();
 		const newEditorWidth = width - data.inputPartHorizontalPadding - data.editorBorder - data.inputPartHorizontalPaddingInside - data.toolbarsWidth - data.sideToolbarWidth;
@@ -788,6 +822,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			toolbarsWidth: this.options.renderStyle === 'compact' ? executeToolbarWidth + executeToolbarPadding + inputToolbarWidth + inputToolbarPadding : 0,
 			toolbarsHeight: this.options.renderStyle === 'compact' ? 0 : 22,
 			sideToolbarWidth: this.inputSideToolbarContainer ? dom.getTotalWidth(this.inputSideToolbarContainer) + 4 /*gap*/ : 0,
+			statusMessageHeight: this.statusMessageContainer ? this.statusMessageContainer.offsetHeight : 0
 		};
 	}
 

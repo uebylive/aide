@@ -535,6 +535,30 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	align-items: center;
 }
 
+.interactive-session .interactive-input-status-message {
+	font-size: 0.9em;
+	color: var(--vscode-disabledForeground);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding-top: 4px;
+}
+
+.interactive-session .interactive-input-status-message .status-message {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+
+.interactive-session .interactive-input-status-message .status-message .codicon.codicon-circle-filled {
+	color: var(--vscode-editorGutter-addedBackground);
+	font-size: 14px;
+}
+
+.interactive-session .interactive-input-status-message .status-message .codicon.codicon-circle-filled::before {
+	vertical-align: -25%;
+}
+
 .interactive-session .chat-input-container.focused {
 	border-color: var(--vscode-focusBorder);
 }
