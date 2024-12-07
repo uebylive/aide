@@ -447,6 +447,7 @@ export interface IAideAgentService {
 	cancelExchange(exchangeId: string): void;
 	cancelAllExchangesForSession(): void;
 
+	readonly lastExchangeId: string | undefined;
 	initiateResponse(sessionId: string): Promise<{ responseId: string; callback: (p: IChatProgress) => void; token: CancellationToken }>;
 
 	clearSession(sessionId: string): void;

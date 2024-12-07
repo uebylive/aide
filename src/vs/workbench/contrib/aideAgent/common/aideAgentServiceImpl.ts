@@ -69,6 +69,11 @@ export class ChatService extends Disposable implements IAideAgentService {
 	private readonly _pendingExchanges = this._register(new DisposableMap<string, CancellableExchange>());
 	private _persistedSessions: ISerializableChatsData;
 
+	private _lastExchangeId: string | undefined;
+	get lastExchangeId(): string | undefined {
+		return this._lastExchangeId;
+	}
+
 	/** Just for empty windows, need to enforce that a chat was deleted, even though other windows still have it */
 	private _deletedChatIds = new Set<string>();
 
@@ -743,6 +748,7 @@ export class ChatService extends Disposable implements IAideAgentService {
 		await model.waitForInitialization();
 
 		const response = model.addResponse();
+		this._lastExchangeId = response.id;
 		const cts = new CancellationTokenSource();
 		this._pendingExchanges.set(response.id, new CancellableExchange(cts));
 		this._register(cts.token.onCancellationRequested(() => {

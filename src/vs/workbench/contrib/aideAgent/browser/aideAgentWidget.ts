@@ -297,6 +297,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 		this._register(this.codeEditingService.onDidComplete(() => {
 			this.hideEditPreviewWidget();
+			this.inputPart.inputEditor.focus();
 		}));
 	}
 

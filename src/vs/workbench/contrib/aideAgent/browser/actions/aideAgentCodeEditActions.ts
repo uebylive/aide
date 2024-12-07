@@ -12,7 +12,8 @@ import { ServicesAccessor } from '../../../../../platform/instantiation/common/i
 import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { SAVE_FILES_COMMAND_ID } from '../../../files/browser/fileConstants.js';
 import { IAideAgentCodeEditingService } from '../../common/aideAgentCodeEditingService.js';
-import { CONTEXT_IN_CHAT_INPUT } from '../../common/aideAgentContextKeys.js';
+import { CONTEXT_CHAT_INPUT_HAS_FOCUS } from '../../common/aideAgentContextKeys.js';
+import { IAideAgentService } from '../../common/aideAgentService.js';
 import { isAideAgentEditPreviewContext } from '../aideAgentEditPreviewWidget.js';
 import { CHAT_CATEGORY } from './aideAgentActions.js';
 
@@ -28,7 +29,7 @@ export function registerCodeEditActions() {
 				category: CHAT_CATEGORY,
 				icon: Codicon.saveAll,
 				keybinding: {
-					when: CONTEXT_IN_CHAT_INPUT,
+					when: CONTEXT_CHAT_INPUT_HAS_FOCUS,
 					primary: KeyMod.CtrlCmd | KeyCode.KeyS,
 					weight: KeybindingWeight.WorkbenchContrib
 				},
@@ -57,7 +58,7 @@ export function registerCodeEditActions() {
 				category: CHAT_CATEGORY,
 				icon: Codicon.closeAll,
 				keybinding: {
-					when: CONTEXT_IN_CHAT_INPUT,
+					when: CONTEXT_CHAT_INPUT_HAS_FOCUS,
 					primary: KeyMod.CtrlCmd | KeyCode.Backspace,
 					weight: KeybindingWeight.WorkbenchContrib
 				},
@@ -70,13 +71,18 @@ export function registerCodeEditActions() {
 		}
 
 		run(accessor: ServicesAccessor, ...args: any[]) {
-			const context = args[0];
-			if (!isAideAgentEditPreviewContext(context)) {
+			const aideAgentService = accessor.get(IAideAgentService);
+			let exchangeId = aideAgentService.lastExchangeId;
+			if (!exchangeId) {
+				const context = args[0];
+				if (isAideAgentEditPreviewContext(context)) {
+					exchangeId = context.exchangeId;
+				}
 				return;
 			}
 
 			const aideAgentCodeEditingService = accessor.get(IAideAgentCodeEditingService);
-			const editingSession = aideAgentCodeEditingService.getOrStartCodeEditingSession(context.exchangeId);
+			const editingSession = aideAgentCodeEditingService.getOrStartCodeEditingSession(exchangeId);
 			editingSession.reject();
 		}
 	});
@@ -92,9 +98,9 @@ export function registerCodeEditActions() {
 				category: CHAT_CATEGORY,
 				icon: Codicon.checkAll,
 				keybinding: {
-					when: CONTEXT_IN_CHAT_INPUT,
+					when: CONTEXT_CHAT_INPUT_HAS_FOCUS,
 					primary: KeyMod.CtrlCmd | KeyCode.Enter,
-					weight: KeybindingWeight.WorkbenchContrib
+					weight: KeybindingWeight.WorkbenchContrib,
 				},
 				menu: {
 					id: MenuId.AideAgentEditPreviewWidget,
@@ -105,13 +111,18 @@ export function registerCodeEditActions() {
 		}
 
 		run(accessor: ServicesAccessor, ...args: any[]) {
-			const context = args[0];
-			if (!isAideAgentEditPreviewContext(context)) {
+			const aideAgentService = accessor.get(IAideAgentService);
+			let exchangeId = aideAgentService.lastExchangeId;
+			if (!exchangeId) {
+				const context = args[0];
+				if (isAideAgentEditPreviewContext(context)) {
+					exchangeId = context.exchangeId;
+				}
 				return;
 			}
 
 			const aideAgentCodeEditingService = accessor.get(IAideAgentCodeEditingService);
-			const editingSession = aideAgentCodeEditingService.getOrStartCodeEditingSession(context.exchangeId);
+			const editingSession = aideAgentCodeEditingService.getOrStartCodeEditingSession(exchangeId);
 			editingSession.accept();
 		}
 	});

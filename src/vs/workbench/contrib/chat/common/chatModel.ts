@@ -687,8 +687,7 @@ export type IChatChangeEvent =
 	| IChatAddRequestEvent | IChatChangedRequestEvent | IChatRemoveRequestEvent
 	| IChatAddResponseEvent
 	| IChatSetAgentEvent
-	| IChatMoveEvent
-	;
+	| IChatMoveEvent;
 
 export interface IChatAddRequestEvent {
 	kind: 'addRequest';

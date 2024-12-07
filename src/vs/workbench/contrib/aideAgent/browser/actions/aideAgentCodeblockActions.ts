@@ -17,8 +17,7 @@ import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contex
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { IEditorService } from '../../../../services/editor/common/editorService.js';
-import { accessibleViewInCodeBlock } from '../../../accessibility/browser/accessibilityConfiguration.js';
-import { CONTEXT_CHAT_EDIT_APPLIED, CONTEXT_CHAT_ENABLED, CONTEXT_IN_CHAT_INPUT, CONTEXT_IN_CHAT_SESSION } from '../../common/aideAgentContextKeys.js';
+import { CONTEXT_CHAT_EDIT_APPLIED, CONTEXT_CHAT_ENABLED, CONTEXT_IN_CHAT_SESSION } from '../../common/aideAgentContextKeys.js';
 import { ChatCopyKind, IAideAgentService } from '../../common/aideAgentService.js';
 import { IChatResponseViewModel, isResponseVM } from '../../common/aideAgentViewModel.js';
 import { IAideAgentCodeBlockContextProviderService, IAideAgentWidgetService } from '../aideAgent.js';
@@ -194,13 +193,7 @@ export function registerChatCodeBlockActions() {
 					group: 'navigation',
 					when: CONTEXT_IN_CHAT_SESSION,
 					order: 20
-				},
-				keybinding: {
-					when: ContextKeyExpr.or(ContextKeyExpr.and(CONTEXT_IN_CHAT_SESSION, CONTEXT_IN_CHAT_INPUT.negate()), accessibleViewInCodeBlock),
-					primary: KeyMod.CtrlCmd | KeyCode.Enter,
-					mac: { primary: KeyMod.WinCtrl | KeyCode.Enter },
-					weight: KeybindingWeight.ExternalExtension + 1
-				},
+				}
 			});
 		}
 
