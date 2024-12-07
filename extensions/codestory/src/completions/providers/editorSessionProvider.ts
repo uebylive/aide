@@ -7,7 +7,6 @@ import * as vscode from 'vscode';
 import { RepoRef, SideCarClient } from '../../sidecar/client';
 import { InEditorRequest, InLineAgentContextSelection } from '../../sidecar/types';
 import { parseDiagnosticsInformation, reportFromStreamToEditorSessionProgress } from './reportEditorSessionAnswerStream';
-import { shouldUseExactMatching } from '../../utilities/uniqueId';
 
 export enum IndentStyle {
 	Tabs = 'tabs',
@@ -222,7 +221,7 @@ export async function provideInteractiveEditorResponse(
 				character: session.wholeRange.end.character,
 				byteOffset: endOffset,
 			},
-			shouldUseExactMatching: shouldUseExactMatching(),
+			shouldUseExactMatching: true,
 		},
 		textDocumentWeb: {
 			text,

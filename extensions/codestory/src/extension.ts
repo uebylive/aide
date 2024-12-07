@@ -2,34 +2,29 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
+
 import * as os from 'os';
 import * as vscode from 'vscode';
-import * as path from 'path';
-import * as fs from 'fs';
-
 import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
 import { AideAgentSessionProvider } from './completions/providers/aideAgentProvider';
+import { CSEventHandler } from './csEvents/csEventHandler';
 import { getGitCurrentHash, getGitRepoName } from './git/helper';
 import { aideCommands } from './inlineCompletion/commands';
 import { startupStatusBar } from './inlineCompletion/statusBar';
 import logger from './logger';
 import postHogClient from './posthog/client';
 import { AideQuickFix } from './quickActions/fix';
+import { RecentEditsRetriever } from './server/editedFiles';
 import { RepoRef, RepoRefBackend, SideCarClient } from './sidecar/client';
 import { loadOrSaveToStorage } from './storage/types';
 import { copySettings } from './utilities/copySettings';
 import { getRelevantFiles, shouldTrackFile } from './utilities/openTabs';
 import { checkReadonlyFSMode } from './utilities/readonlyFS';
-import { reportIndexingPercentage } from './utilities/reportIndexingUpdate';
 import { startSidecarBinary } from './utilities/setupSidecarBinary';
-import { readCustomSystemInstruction } from './utilities/systemInstruction';
 import { getUniqueId } from './utilities/uniqueId';
 import { ProjectContext } from './utilities/workspaceContext';
-import { CSEventHandler } from './csEvents/csEventHandler';
-import { RecentEditsRetriever } from './server/editedFiles';
-import { getRipGrepPath } from './utilities/ripGrep';
-// import { GENERATE_PLAN } from './completions/providers/generatePlan';
-// import { OPEN_FILES_VARIABLE } from './completions/providers/openFiles';
+import { killProcessOnPort } from './utilities/killPort';
+import { sidecarURL } from './utilities/sidecarUrl';
 
 export let SIDECAR_CLIENT: SideCarClient | null = null;
 
@@ -75,26 +70,12 @@ export async function activate(context: vscode.ExtensionContext) {
 		vscode.window.showErrorMessage('Move Aide to the Applications folder using Finder. More instructions here: [link](https://docs.codestory.ai/troubleshooting#macos-readonlyfs-warning)');
 		return;
 	}
-	const agentSystemInstruction = readCustomSystemInstruction();
-	if (agentSystemInstruction === null) {
-		console.log(
-			'Aide can help you better if you give it custom instructions by going to your settings and setting it in aide.systemInstruction (search for this string in User Settings) and reload vscode for this to take effect by doing Cmd+Shift+P: Developer: Reload Window'
-		);
-	}
 
 	// Now we get all the required information and log it
-	const repoName = await getGitRepoName(
-		rootPath,
-	);
-	const repoHash = await getGitCurrentHash(
-		rootPath,
-	);
+	const repoName = await getGitRepoName(rootPath);
+	const repoHash = await getGitCurrentHash(rootPath);
 
-	const ripGrepPath = await getRipGrepPath();
-	console.log('RipGrep location:', ripGrepPath);
-
-	// We also get some context about the workspace we are in and what we are
-	// upto
+	// We also get some context about the workspace we are in and what we are upto
 	const projectContext = new ProjectContext();
 	await projectContext.collectContext();
 
@@ -109,29 +90,12 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
-	// test code to check if this is the correct path
-	try {
-		const sideCarBinDir = vscode.Uri.joinPath(
-			vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''),
-			'sidecar_bin', 'target', 'release').toString();
-
-		const sidecarBinPath = (os.platform() === 'win32')
-			? path.join(sideCarBinDir, 'webserver.exe')
-			: path.join(sideCarBinDir, 'webserver');
-
-		console.log(`path is ${sidecarBinPath}, and exists check returns ${fs.existsSync(sidecarBinPath)}`);
-	}
-	catch (e) {
-		console.log(e);
-	}
+	// Setup the sidecar client here
+	await startSidecarBinary(context.globalStorageUri.fsPath);
 
 	// Get model selection configuration
 	const modelConfiguration = await vscode.modelSelection.getConfiguration();
-	// Setup the sidecar client here
-	const sidecarUrl = await startSidecarBinary(context.globalStorageUri.fsPath, vscode.env.appRoot);
-	// allow-any-unicode-next-line
-	// window.showInformationMessage(`Sidecar binary 🦀 started at ${sidecarUrl}`);
-	const sidecarClient = new SideCarClient(sidecarUrl, modelConfiguration);
+	const sidecarClient = new SideCarClient(modelConfiguration);
 	SIDECAR_CLIENT = sidecarClient;
 
 	// we want to send the open tabs here to the sidecar
@@ -151,10 +115,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	// setup the callback for the model configuration
 	vscode.modelSelection.onDidChangeConfiguration((config) => {
 		sidecarClient.updateModelConfiguration(config);
-		// console.log('Model configuration updated:' + JSON.stringify(config));
 	});
-	// Show the indexing percentage on startup
-	await reportIndexingPercentage(sidecarClient, currentRepo);
 
 	// register the inline code completion provider
 	await createInlineCompletionItemProvider(
@@ -175,29 +136,29 @@ export async function activate(context: vscode.ExtensionContext) {
 	logger.info(codeStoryStorage);
 	logger.info(rootPath);
 
-
+	/*
 	// Register the semantic search command here
-	// zi: removing as deprecated
-	// vscode.commands.registerCommand('codestory.semanticSearch', async (prompt: string): Promise<CodeSymbolInformationEmbeddings[]> => {
-	// 	logger.info('[semanticSearch][extension] We are executing semantic search :' + prompt);
-	// 	postHogClient?.capture({
-	// 		distinctId: await getUniqueId(),
-	// 		event: 'search',
-	// 		properties: {
-	// 			prompt,
-	// 			repoName,
-	// 			repoHash,
-	// 		},
-	// 	});
-	// 	// We should be using the searchIndexCollection instead here, but for now
-	// 	// embedding search is fine
-	// 	// Here we will ping the semantic client instead so we can get the results
-	// 	const results = await sidecarClient.getSemanticSearchResult(
-	// 		prompt,
-	// 		currentRepo,
-	// 	);
-	// 	return results;
-	// });
+	vscode.commands.registerCommand('codestory.semanticSearch', async (prompt: string): Promise<CodeSymbolInformationEmbeddings[]> => {
+		logger.info('[semanticSearch][extension] We are executing semantic search :' + prompt);
+		postHogClient?.capture({
+			distinctId: await getUniqueId(),
+			event: 'search',
+			properties: {
+				prompt,
+				repoName,
+				repoHash,
+			},
+		});
+		// We should be using the searchIndexCollection instead here, but for now
+		// embedding search is fine
+		// Here we will ping the semantic client instead so we can get the results
+		const results = await sidecarClient.getSemanticSearchResult(
+			prompt,
+			currentRepo,
+		);
+		return results;
+	});
+	*/
 
 	// Register the quick action providers
 	const aideQuickFix = new AideQuickFix();
@@ -218,20 +179,6 @@ export async function activate(context: vscode.ExtensionContext) {
 	);
 	const editorUrl = agentSessionProvider.editorUrl;
 	context.subscriptions.push(agentSessionProvider);
-
-	/*
-	const probeProvider = new AideProbeProvider(sidecarClient, rootPath, recentEditsRetriever);
-	const editorUrl = probeProvider.editorUrl();
-	context.subscriptions.push(probeProvider);
-	*/
-
-	// Register feedback commands
-	context.subscriptions.push(
-		vscode.commands.registerCommand('codestory.feedback', async () => {
-			// Redirect to Discord server link
-			await vscode.commands.executeCommand('vscode.open', 'https://discord.gg/FdKXRDGVuz');
-		})
-	);
 
 	// When the selection changes in the editor we should trigger an event
 	vscode.window.onDidChangeTextEditorSelection(async (event) => {
@@ -302,4 +249,12 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// shouldn't all listeners have this?
 	context.subscriptions.push(diagnosticsListener);
+
+	context.subscriptions.push({
+		dispose() {
+			const sidecarUrl = sidecarURL();
+			const port = parseInt(sidecarUrl.split(':')[2]);
+			killProcessOnPort(port);
+		},
+	});
 }
