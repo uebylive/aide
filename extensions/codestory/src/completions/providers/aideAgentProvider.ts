@@ -527,10 +527,10 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				} else if (event.event.FrameworkEvent.LongContextSearchFinished) {
 					// response.longContextSearch(true);
 				} else if (event.event.FrameworkEvent.OpenFile) {
-					// const filePath = event.event.FrameworkEvent.OpenFile.fs_file_path;
-					// if (filePath) {
-					// 	response.reference(vscode.Uri.file(filePath));
-					// }
+					const filePath = event.event.FrameworkEvent.OpenFile.fs_file_path;
+					if (filePath) {
+						responseStream.stream.reference(vscode.Uri.file(filePath));
+					}
 				} else if (event.event.FrameworkEvent.CodeIterationFinished) {
 					// response.codeIterationFinished({ edits: iterationEdits });
 				} else if (event.event.FrameworkEvent.ReferenceFound) {
@@ -621,13 +621,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					// even with the search and replace blocks we do want to show it
 					// to the user
 					if (editEvent.ThinkingForEdit.delta) {
-						/*
-						responseStream.stream.thinkingForEdit({
-							exchangeId,
-							sessionId,
-							thinkingDelta: editEvent.ThinkingForEdit.delta
-						});
-						*/
+						responseStream.stream.markdown(editEvent.ThinkingForEdit.delta);
 					}
 					if (editEvent.RangeSelectionForEdit) {
 						// response.breakdown({

@@ -158,6 +158,10 @@
 	border-bottom: solid 1px var(--vscode-chat-requestBorder);
 }
 
+.interactive-result-code-block.compare .interactive-result-header .monaco-icon-label::before {
+	height: unset !important;
+}
+
 .interactive-result-code-block.compare.no-diff .interactive-result-header,
 .interactive-result-code-block.compare.no-diff .interactive-result-editor {
 	display: none;
