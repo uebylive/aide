@@ -754,8 +754,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					continue;
 				}
 				if (event.event.ExchangeEvent.FinishedExchange) {
-					// Update our streaming state that we are finished
-					responseStream?.stream.stage({ message: 'Finished' });
 					this.closeAndRemoveResponseStream(sessionId, exchangeId);
 				}
 			}

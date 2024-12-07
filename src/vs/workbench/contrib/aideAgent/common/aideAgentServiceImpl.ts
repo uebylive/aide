@@ -578,6 +578,7 @@ export class ChatService extends Disposable implements IAideAgentService {
 					const prepareChatAgentRequest = async (agent: IChatAgentData, command?: IChatAgentCommand, enableCommandDetection?: boolean, chatRequest?: ChatRequestModel, isParticipantDetected?: boolean): Promise<IChatAgentRequest> => {
 						const initVariableData: IChatRequestVariableData = { variables: [] };
 						request = chatRequest ?? model.addRequest(parsedRequest, initVariableData, attempt, agent, command, options?.confirmation, options?.locationData, options?.attachedContext);
+						this._lastExchangeId = request.id;
 
 						// Variables may have changed if the agent and slash command changed, so resolve them again even if we already had a chatRequest
 						const variableData = await this.chatVariablesService.resolveVariables(
