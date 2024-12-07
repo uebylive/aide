@@ -3,99 +3,93 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Emitter, Event } from '../../../common/event.js';
-import { KeyCode } from '../../../common/keyCodes.js';
-import { $, addDisposableListener, EventType } from '../../dom.js';
-import { IKeyboardEvent, StandardKeyboardEvent } from '../../keyboardEvent.js';
-import { IHoverDelegate } from '../hover/hoverDelegate.js';
 import { Widget } from '../widget.js';
+import { Emitter, Event } from '../../../common/event.js';
+import { $, addDisposableListener, EventType } from '../../dom.js';
 import './switch.css';
 
 export interface ISwitchOpts {
-	readonly title: string;
-	readonly isChecked: boolean;
-	readonly notFocusable?: boolean;
-	readonly hoverDelegate?: IHoverDelegate;
+	readonly options: string[];
+	readonly value: string;
+	readonly enabled?: boolean;
 }
 
 export class Switch extends Widget {
-	private readonly _onChange = this._register(new Emitter<boolean>());
-	readonly onChange: Event<boolean> = this._onChange.event;
-
-	private readonly _onKeyDown = this._register(new Emitter<IKeyboardEvent>());
-	readonly onKeyDown: Event<IKeyboardEvent> = this._onKeyDown.event;
+	private readonly _onDidChange = this._register(new Emitter<string>());
+	readonly onDidChange: Event<string> = this._onDidChange.event;
 
 	private readonly _opts: ISwitchOpts;
 	readonly domNode: HTMLElement;
-	private _checked: boolean;
-	private _enabled: boolean = true;
+	private _value: string;
+	private _enabled: boolean;
 
 	constructor(opts: ISwitchOpts) {
 		super();
 
 		this._opts = opts;
-		this._checked = this._opts.isChecked;
+		this._value = this._opts.value;
+		this._enabled = this._opts.enabled ?? true;
 
+		// Create main container
 		this.domNode = $('.monaco-switch');
-		if (this._checked) {
-			this.domNode.classList.add('checked');
+		if (!this._enabled) {
+			this.domNode.setAttribute('aria-disabled', 'true');
 		}
 
-		// Create inner circle
-		this.domNode.appendChild($('.switch-inner'));
+		// Create options
+		this._opts.options.forEach((option, index) => {
+			const button = $('button.switch-option');
+			button.textContent = option;
+			button.setAttribute('role', 'radio');
+			button.setAttribute('aria-checked', String(option === this._value));
 
-		if (!this._opts.notFocusable) {
-			this.domNode.tabIndex = 0;
+			this._register(addDisposableListener(button, EventType.CLICK, () => {
+				if (this._enabled) {
+					this.value = option;
+					this._onDidChange.fire(option);
+				}
+			}));
+
+			this.domNode.appendChild(button);
+
+			// Add separator if not last option
+			if (index < this._opts.options.length - 1) {
+				const separator = $('span.switch-separator');
+				separator.textContent = '/';
+				this.domNode.appendChild(separator);
+			}
+		});
+
+		this.updateOptionStates();
+	}
+
+	private updateOptionStates(): void {
+		const buttons = this.domNode.querySelectorAll('button.switch-option');
+		buttons.forEach(button => {
+			const isSelected = button.textContent === this._value;
+			button.classList.toggle('selected', isSelected);
+			button.setAttribute('aria-checked', String(isSelected));
+		});
+	}
+
+	get value(): string {
+		return this._value;
+	}
+
+	set value(newValue: string) {
+		if (this._value !== newValue && this._opts.options.includes(newValue)) {
+			this._value = newValue;
+			this.updateOptionStates();
 		}
-		this.domNode.setAttribute('role', 'switch');
-		this.domNode.setAttribute('aria-checked', String(this._checked));
-		this.domNode.setAttribute('aria-label', this._opts.title);
-
-		this._register(addDisposableListener(this.domNode, EventType.CLICK, (e) => {
-			if (this._enabled) {
-				this.checked = !this._checked;
-				this._onChange.fire(false);
-				e.preventDefault();
-			}
-		}));
-
-		this._register(addDisposableListener(this.domNode, EventType.KEY_DOWN, (e) => {
-			const event = new StandardKeyboardEvent(e);
-			if (event.keyCode === KeyCode.Space || event.keyCode === KeyCode.Enter) {
-				this.checked = !this._checked;
-				this._onChange.fire(true);
-				e.preventDefault();
-			} else {
-				this._onKeyDown.fire(event);
-			}
-		}));
-	}
-
-	get checked(): boolean {
-		return this._checked;
-	}
-
-	set checked(newIsChecked: boolean) {
-		this._checked = newIsChecked;
-		this.domNode.classList.toggle('checked', this._checked);
-		this.domNode.setAttribute('aria-checked', String(this._checked));
-	}
-
-	focus(): void {
-		this.domNode.focus();
 	}
 
 	enable(): void {
 		this._enabled = true;
-		this.domNode.classList.remove('disabled');
-		if (!this._opts.notFocusable) {
-			this.domNode.tabIndex = 0;
-		}
+		this.domNode.removeAttribute('aria-disabled');
 	}
 
 	disable(): void {
 		this._enabled = false;
-		this.domNode.classList.add('disabled');
-		this.domNode.tabIndex = -1;
+		this.domNode.setAttribute('aria-disabled', 'true');
 	}
 }

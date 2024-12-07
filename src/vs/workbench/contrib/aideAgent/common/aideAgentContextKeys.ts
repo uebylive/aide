@@ -24,7 +24,7 @@ export const CONTEXT_CHAT_INPUT_HAS_TEXT = new RawContextKey<boolean>('aideAgent
 export const CONTEXT_CHAT_INPUT_HAS_FOCUS = new RawContextKey<boolean>('aideAgentInputHasFocus', false, { type: 'boolean', description: localize('interactiveInputHasFocus', "True when the chat input has focus.") });
 export const CONTEXT_IN_CHAT_INPUT = new RawContextKey<boolean>('inAideAgentInput', false, { type: 'boolean', description: localize('inInteractiveInput', "True when focus is in the chat input, false otherwise.") });
 export const CONTEXT_IN_CHAT_SESSION = new RawContextKey<boolean>('inAideAgent', false, { type: 'boolean', description: localize('inChat', "True when focus is in the chat widget, false otherwise.") });
-export const CONTEXT_CHAT_INPUT_PLANNING_ENABLED = new RawContextKey<boolean>('aideAgentInputPlanningEnabled', true, { type: 'boolean', description: localize('chatInputPlanningEnabled', "True when planning is enabled.") });
+export const CONTEXT_CHAT_MODE = new RawContextKey<string>('aideAgentMode', 'Plan', { type: 'string', description: localize('chatMode', "The current chat mode.") });
 export const CONTEXT_CHAT_IS_PLAN_VISIBLE = new RawContextKey<boolean>('aideAgentIsPlanVisible', false, { type: 'boolean', description: localize('chatIsPlanVisible', "True when the plan is visible.") });
 
 export const CONTEXT_CHAT_ENABLED = new RawContextKey<boolean>('aideAgentIsEnabled', false, { type: 'boolean', description: localize('chatIsEnabled', "True when chat is enabled because a default chat participant is activated with an implementation.") });

@@ -330,6 +330,10 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		return this.inputPart.contentHeight + this.tree.contentHeight;
 	}
 
+	get mode(): AgentMode {
+		return this.inputPart.mode;
+	}
+
 	render(parent: HTMLElement): void {
 		const viewId = 'viewId' in this.viewContext ? this.viewContext.viewId : undefined;
 		this.editorOptions = this._register(this.instantiationService.createInstance(ChatEditorOptions, viewId, this.styles.listForeground, this.styles.inputEditorBackground, this.styles.resultEditorBackground));
@@ -899,16 +903,31 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	}
 
 	transferQueryState(mode: AgentMode, scope: AgentScope): void {
-		this.inputPart.currentAgentMode = mode;
+		this.inputPart.setMode(mode);
 		this.inputPart.currentAgentScope = scope;
 	}
 
-	get planningEnabled(): boolean {
-		return this.inputPart.planningEnabled;
+	togglePlanning(): void {
+		switch (this.inputPart.mode) {
+			case AgentMode.Plan:
+				this.inputPart.setMode(AgentMode.Edit, true);
+				break;
+			case AgentMode.Edit:
+				this.inputPart.setMode(AgentMode.Plan, true);
+				break;
+		}
 	}
 
-	togglePlanning(): void {
-		this.inputPart.planningEnabled = !this.inputPart.planningEnabled;
+	toggleEditMode(): void {
+		switch (this.inputPart.mode) {
+			case AgentMode.Edit:
+			case AgentMode.Plan:
+				this.inputPart.setMode(AgentMode.Chat);
+				break;
+			case AgentMode.Chat:
+				this.inputPart.setMode(AgentMode.Edit);
+				break;
+		}
 	}
 
 	setContext(overwrite: boolean, ...contentReferences: IChatRequestVariableEntry[]) {

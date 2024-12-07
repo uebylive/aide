@@ -10,6 +10,7 @@ import { StandardKeyboardEvent } from '../../../../base/browser/keyboardEvent.js
 import * as aria from '../../../../base/browser/ui/aria/aria.js';
 import { Button } from '../../../../base/browser/ui/button/button.js';
 import { renderLabelWithIcons } from '../../../../base/browser/ui/iconLabel/iconLabels.js';
+import { Switch } from '../../../../base/browser/ui/switch/switch.js';
 import { IAction } from '../../../../base/common/actions.js';
 import { Codicon } from '../../../../base/common/codicons.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
@@ -52,13 +53,13 @@ import { AccessibilityVerbositySettingId } from '../../accessibility/browser/acc
 import { AccessibilityCommandId } from '../../accessibility/common/accessibilityCommands.js';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions, setupSimpleEditorSelectionStyling } from '../../codeEditor/browser/simpleEditorOptions.js';
 import { ChatAgentLocation } from '../common/aideAgentAgents.js';
-import { CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_INPUT_PLANNING_ENABLED, CONTEXT_IN_CHAT_INPUT } from '../common/aideAgentContextKeys.js';
+import { CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_MODE, CONTEXT_IN_CHAT_INPUT } from '../common/aideAgentContextKeys.js';
 import { AgentMode, AgentScope, IChatRequestVariableEntry } from '../common/aideAgentModel.js';
 import { IChatFollowup } from '../common/aideAgentService.js';
 import { IChatResponseViewModel } from '../common/aideAgentViewModel.js';
 import { IAideAgentWidgetHistoryService, IChatHistoryEntry } from '../common/aideAgentWidgetHistoryService.js';
 import { IAideAgentLMService } from '../common/languageModels.js';
-import { AgentScopePickerActionId, CancelAction, IChatExecuteActionContext, SubmitChatAction, SubmitEditAction } from './actions/aideAgentExecuteActions.js';
+import { AgentScopePickerActionId, CancelAction, ExecuteChatAction, IChatExecuteActionContext } from './actions/aideAgentExecuteActions.js';
 import { IChatWidget } from './aideAgent.js';
 import { ChatFollowups } from './aideAgentFollowups.js';
 
@@ -130,6 +131,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	private _inputEditorElement!: HTMLElement;
 
 	private executeToolbar!: MenuWorkbenchToolBar;
+	private modeSwitch!: Switch;
 	private inputActionsToolbar!: MenuWorkbenchToolBar;
 
 	get inputEditor() {
@@ -152,15 +154,32 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		return metadataId;
 	}
 
-	private _onDidChangeCurrentAgentMode = this._register(new Emitter<string>());
-	private _currentAgentMode: AgentMode = AgentMode.Chat;
-	get currentAgentMode() {
-		return this._currentAgentMode;
+	private _agentMode: IContextKey<string>;
+	private _lastPlanningEnabled: boolean;
+	get mode() {
+		return AgentMode[this._agentMode.get() as keyof typeof AgentMode] ?? AgentMode.Plan;
 	}
 
-	set currentAgentMode(mode: AgentMode) {
-		this._currentAgentMode = mode;
-		this._onDidChangeCurrentAgentMode.fire(mode);
+	setMode(mode: AgentMode, planningToggle: boolean = false) {
+		switch (mode) {
+			case AgentMode.Plan:
+				this._agentMode.set(AgentMode.Plan);
+				this._lastPlanningEnabled = true;
+				break;
+			case AgentMode.Edit:
+				if (planningToggle) {
+					this._agentMode.set(AgentMode.Edit);
+					this._lastPlanningEnabled = false;
+				} else {
+					this._agentMode.set(this._lastPlanningEnabled ? AgentMode.Plan : AgentMode.Edit);
+				}
+				this.modeSwitch.value = AgentMode.Edit;
+				break;
+			case AgentMode.Chat:
+				this._agentMode.set(AgentMode.Chat);
+				this.modeSwitch.value = AgentMode.Chat;
+				break;
+		}
 	}
 
 	private _onDidChangeCurrentAgentScope = this._register(new Emitter<string>());
@@ -172,15 +191,6 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	set currentAgentScope(scope: AgentScope) {
 		this._currentAgentScope = scope;
 		this._onDidChangeCurrentAgentScope.fire(scope);
-	}
-
-	private _planningEnabled: IContextKey<boolean>;
-	get planningEnabled() {
-		return this._planningEnabled.get() ?? true;
-	}
-
-	set planningEnabled(enabled: boolean) {
-		this._planningEnabled.set(enabled);
 	}
 
 	private cachedDimensions: dom.Dimension | undefined;
@@ -211,7 +221,8 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		this.inputEditorHasText = CONTEXT_CHAT_INPUT_HAS_TEXT.bindTo(contextKeyService);
 		this.chatCursorAtTop = CONTEXT_CHAT_INPUT_CURSOR_AT_TOP.bindTo(contextKeyService);
 		this.inputEditorHasFocus = CONTEXT_CHAT_INPUT_HAS_FOCUS.bindTo(contextKeyService);
-		this._planningEnabled = CONTEXT_CHAT_INPUT_PLANNING_ENABLED.bindTo(contextKeyService);
+		this._agentMode = CONTEXT_CHAT_MODE.bindTo(contextKeyService);
+		this._lastPlanningEnabled = this.mode === AgentMode.Plan;
 
 		this.history = this.loadHistory();
 		this._register(this.historyService.onDidClearHistory(() => this.history = new HistoryNavigator2([{ text: '' }], 50, historyKeyFn)));
@@ -556,6 +567,13 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 				this.layout(this.cachedDimensions.height, this.cachedDimensions.width);
 			}
 		}));
+
+		this.modeSwitch = this._register(this.instantiationService.createInstance(Switch, { options: ['Chat', 'Edit'], value: 'Edit' }));
+		dom.append(toolbarsContainer, this.modeSwitch.domNode);
+		this._register(this.modeSwitch.onDidChange((mode) => {
+			this._agentMode.set(mode === 'Edit' ? AgentMode.Edit : AgentMode.Chat);
+		}));
+
 		this.executeToolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, toolbarsContainer, this.options.menus.executeToolbar, {
 			telemetrySource: this.options.menus.telemetrySource,
 			menuOptions: {
@@ -563,7 +581,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			},
 			hiddenItemStrategy: HiddenItemStrategy.Ignore, // keep it lean when hiding items and avoid a "..." overflow menu
 			actionViewItemProvider: (action, options) => {
-				if ((action.id === SubmitChatAction.ID || SubmitEditAction.ID || action.id === CancelAction.ID) && action instanceof MenuItemAction) {
+				if ((action.id === ExecuteChatAction.ID || action.id === CancelAction.ID) && action instanceof MenuItemAction) {
 					return this.instantiationService.createInstance(ActionViewItemWithKb, action);
 				}
 
