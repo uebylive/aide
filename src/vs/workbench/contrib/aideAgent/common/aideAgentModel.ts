@@ -25,7 +25,7 @@ import { IInstantiationService } from '../../../../platform/instantiation/common
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgentData, IChatAgentResult, reviveSerializedAgent } from './aideAgentAgents.js';
 import { IAideAgentCodeEditingService, IAideAgentCodeEditingSession } from './aideAgentCodeEditingService.js';
-import { CONTEXT_CHAT_IS_PLAN_VISIBLE } from './aideAgentContextKeys.js';
+import { CONTEXT_CHAT_IS_PLAN_VISIBLE, CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE } from './aideAgentContextKeys.js';
 import { HunkData } from './aideAgentEditingSession.js';
 import { ChatRequestTextPart, IParsedChatRequest, reviveParsedChatRequest } from './aideAgentParserTypes.js';
 import { AideAgentPlanModel, IAideAgentPlanModel } from './aideAgentPlanModel.js';
@@ -913,6 +913,7 @@ export class ChatModel extends Disposable implements IChatModel {
 
 	private _plan: AideAgentPlanModel | undefined;
 	private isPlanVisible: IContextKey<boolean>;
+	private lastExchangeComplete: IContextKey<boolean>;
 
 	get plan(): AideAgentPlanModel | undefined {
 		return this._plan;
@@ -946,6 +947,7 @@ export class ChatModel extends Disposable implements IChatModel {
 		this._initialResponderAvatarIconUri = isUriComponents(initialData?.responderAvatarIconUri) ? URI.revive(initialData.responderAvatarIconUri) : initialData?.responderAvatarIconUri;
 
 		this.isPlanVisible = CONTEXT_CHAT_IS_PLAN_VISIBLE.bindTo(contextKeyService);
+		this.lastExchangeComplete = CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE.bindTo(contextKeyService);
 
 		this._register(this.aideAgentCodeEditingService.onDidComplete(() => {
 			// TODO(@ghostwriternr): Hmm, as per the original design, a plan could span multiple exchanges.
@@ -1093,6 +1095,7 @@ export class ChatModel extends Disposable implements IChatModel {
 
 		this._exchanges.push(request, response);
 		this._lastMessageDate = Date.now();
+		this.lastExchangeComplete.set(false);
 		this._onDidChange.fire({ kind: 'addRequest', request });
 		return request;
 	}
@@ -1169,6 +1172,8 @@ export class ChatModel extends Disposable implements IChatModel {
 		} else {
 			this.logService.error(`Couldn't handle progress: ${JSON.stringify(progress)}`);
 		}
+
+		this.lastExchangeComplete.set(false);
 	}
 
 	private applyPlanStep(progress: IAideAgentPlanStep) {
@@ -1215,6 +1220,7 @@ export class ChatModel extends Disposable implements IChatModel {
 		}
 
 		response.complete();
+		this.lastExchangeComplete.set(true);
 	}
 
 	/* TODO(@ghostwriternr): Honestly, don't care about followups at the moment.

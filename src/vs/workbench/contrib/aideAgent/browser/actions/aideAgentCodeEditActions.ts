@@ -8,11 +8,12 @@ import { KeyCode, KeyMod } from '../../../../../base/common/keyCodes.js';
 import { localize2 } from '../../../../../nls.js';
 import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
 import { ICommandService } from '../../../../../platform/commands/common/commands.js';
+import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
 import { ServicesAccessor } from '../../../../../platform/instantiation/common/instantiation.js';
 import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { SAVE_FILES_COMMAND_ID } from '../../../files/browser/fileConstants.js';
 import { IAideAgentCodeEditingService } from '../../common/aideAgentCodeEditingService.js';
-import { CONTEXT_CHAT_INPUT_HAS_FOCUS } from '../../common/aideAgentContextKeys.js';
+import { CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE } from '../../common/aideAgentContextKeys.js';
 import { IAideAgentService } from '../../common/aideAgentService.js';
 import { isAideAgentEditPreviewContext } from '../aideAgentEditPreviewWidget.js';
 import { CHAT_CATEGORY } from './aideAgentActions.js';
@@ -28,15 +29,17 @@ export function registerCodeEditActions() {
 				f1: false,
 				category: CHAT_CATEGORY,
 				icon: Codicon.saveAll,
+				precondition: CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE,
 				keybinding: {
-					when: CONTEXT_CHAT_INPUT_HAS_FOCUS,
+					when: ContextKeyExpr.and(CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE, CONTEXT_CHAT_INPUT_HAS_FOCUS),
 					primary: KeyMod.CtrlCmd | KeyCode.KeyS,
 					weight: KeybindingWeight.WorkbenchContrib
 				},
 				menu: {
 					id: MenuId.AideAgentEditPreviewWidget,
 					group: 'navigation',
-					order: 0
+					order: 0,
+					when: CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE
 				}
 			});
 		}
@@ -57,15 +60,17 @@ export function registerCodeEditActions() {
 				f1: false,
 				category: CHAT_CATEGORY,
 				icon: Codicon.closeAll,
+				precondition: CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE,
 				keybinding: {
-					when: CONTEXT_CHAT_INPUT_HAS_FOCUS,
+					when: ContextKeyExpr.and(CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE, CONTEXT_CHAT_INPUT_HAS_FOCUS),
 					primary: KeyMod.CtrlCmd | KeyCode.Backspace,
 					weight: KeybindingWeight.WorkbenchContrib
 				},
 				menu: {
 					id: MenuId.AideAgentEditPreviewWidget,
 					group: 'navigation',
-					order: 1
+					order: 1,
+					when: CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE
 				}
 			});
 		}
@@ -97,15 +102,17 @@ export function registerCodeEditActions() {
 				f1: false,
 				category: CHAT_CATEGORY,
 				icon: Codicon.checkAll,
+				precondition: CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE,
 				keybinding: {
-					when: CONTEXT_CHAT_INPUT_HAS_FOCUS,
+					when: ContextKeyExpr.and(CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE, CONTEXT_CHAT_INPUT_HAS_FOCUS),
 					primary: KeyMod.CtrlCmd | KeyCode.Enter,
 					weight: KeybindingWeight.WorkbenchContrib,
 				},
 				menu: {
 					id: MenuId.AideAgentEditPreviewWidget,
 					group: 'navigation',
-					order: 2
+					order: 2,
+					when: CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE
 				}
 			});
 		}
