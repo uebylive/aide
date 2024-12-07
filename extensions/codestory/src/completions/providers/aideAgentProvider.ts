@@ -536,10 +536,9 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					// 	reason: ref.reason,
 					// });
 				} else if (event.event.FrameworkEvent.ToolUseDetected) {
-					const toolUseDetectedEvent = event.event.FrameworkEvent.ToolUseDetected;
+					// const toolUseDetectedEvent = event.event.FrameworkEvent.ToolUseDetected;
 					// just send this over as markdown right now for checking if things are working
-					responseStream.stream.markdown(`${toolUseDetectedEvent.thinking}\n${JSON.stringify(toolUseDetectedEvent.tool_use_partial_input)}`);
-
+					// responseStream.stream.markdown(`${toolUseDetectedEvent.thinking}\n${JSON.stringify(toolUseDetectedEvent.tool_use_partial_input)}`);
 				} else if (event.event.FrameworkEvent.ReferencesUsed) {
 					const references = event.event.FrameworkEvent.ReferencesUsed.variables;
 					references.forEach((reference) => {
@@ -610,9 +609,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					// UX handle for code correction tool usage - consider using
 					if (editEvent.CodeCorrectionTool) { }
 
-					// TODO(skcd): We have to show this properly over here since
-					// even with the search and replace blocks we do want to show it
-					// to the user
 					if (editEvent.ThinkingForEdit.delta) {
 						responseStream.stream.markdown(editEvent.ThinkingForEdit.delta);
 					}
@@ -623,9 +619,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						// 		name: symbol_identifier.symbol_name,
 						// 	}
 						// });
-					} else if (editEvent.EditCodeStreaming) {
-						// scraped out over here, we do not need to react to this
-						// event anymore
 					}
 				} else if (symbolEventSubStep.Probe) {
 					if (!symbol_identifier.fs_file_path) {
