@@ -77,7 +77,7 @@ class TogglePlanningAction extends Action2 {
 	constructor() {
 		super({
 			id: TogglePlanningAction.ID,
-			title: localize2('interactive.togglePlanning.label', "Toggle deep reasoning"),
+			title: localize2('interactive.togglePlanning.label', "Toggle step-by-step reasoning"),
 			f1: false,
 			category: CHAT_CATEGORY,
 			icon: Codicon.compass,
@@ -104,7 +104,7 @@ function registerPlanningToggleMenu() {
 		when: ContextKeyExpr.notEquals(CONTEXT_CHAT_MODE.key, 'Chat'),
 		command: {
 			id: TogglePlanningAction.ID,
-			title: localize2('interactive.togglePlanning.label', "Toggle deep reasoning"),
+			title: localize2('interactive.togglePlanning.label', "Toggle step-by-step reasoning"),
 			icon: Codicon.compass,
 			toggled: { condition: ContextKeyExpr.equals(CONTEXT_CHAT_MODE.key, 'Plan'), icon: Codicon.compassActive }
 		},
