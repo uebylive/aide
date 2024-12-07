@@ -111,7 +111,7 @@ function registerPlanningToggleMenu() {
 	});
 }
 
-class ToggleEditModeAction extends Action2 {
+export class ToggleEditModeAction extends Action2 {
 	static readonly ID = 'workbench.action.aideAgent.toggleEditMode';
 
 	constructor() {

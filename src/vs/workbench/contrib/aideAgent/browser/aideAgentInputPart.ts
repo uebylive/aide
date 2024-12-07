@@ -59,7 +59,7 @@ import { IChatFollowup } from '../common/aideAgentService.js';
 import { IChatResponseViewModel } from '../common/aideAgentViewModel.js';
 import { IAideAgentWidgetHistoryService, IChatHistoryEntry } from '../common/aideAgentWidgetHistoryService.js';
 import { IAideAgentLMService } from '../common/languageModels.js';
-import { AgentScopePickerActionId, CancelAction, ExecuteChatAction, IChatExecuteActionContext } from './actions/aideAgentExecuteActions.js';
+import { AgentScopePickerActionId, CancelAction, ExecuteChatAction, IChatExecuteActionContext, ToggleEditModeAction } from './actions/aideAgentExecuteActions.js';
 import { IChatWidget } from './aideAgent.js';
 import { ChatFollowups } from './aideAgentFollowups.js';
 
@@ -569,7 +569,12 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			}
 		}));
 
-		this.modeSwitch = this._register(this.instantiationService.createInstance(Switch, { options: ['Chat', 'Edit'], value: 'Edit' }));
+		const keybinding = this.keybindingService.lookupKeybinding(ToggleEditModeAction.ID);
+		this.modeSwitch = this._register(this.instantiationService.createInstance(Switch, {
+			description: `Edit mode directly applies changes to your code${keybinding ? ` (${keybinding.getLabel()})` : ''}`,
+			options: ['Chat', 'Edit'],
+			value: 'Edit',
+		}));
 		dom.append(toolbarsContainer, this.modeSwitch.domNode);
 		if (this.options.preventChatEditToggle) {
 			this.modeSwitch.disable();

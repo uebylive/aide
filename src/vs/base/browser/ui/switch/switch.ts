@@ -3,15 +3,20 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { Widget } from '../widget.js';
 import { Emitter, Event } from '../../../common/event.js';
 import { $, addDisposableListener, EventType } from '../../dom.js';
+import { IHoverDelegate } from '../hover/hoverDelegate.js';
+import { getBaseLayerHoverDelegate } from '../hover/hoverDelegate2.js';
+import { getDefaultHoverDelegate } from '../hover/hoverDelegateFactory.js';
+import { Widget } from '../widget.js';
 import './switch.css';
 
 export interface ISwitchOpts {
 	readonly options: string[];
 	readonly value: string;
 	readonly enabled?: boolean;
+	readonly description?: string;
+	readonly hoverDelegate?: IHoverDelegate;
 }
 
 export class Switch extends Widget {
@@ -35,6 +40,13 @@ export class Switch extends Widget {
 		if (!this._enabled) {
 			this.domNode.setAttribute('aria-disabled', 'true');
 		}
+
+		// Setup hover if description is provided
+		this._register(getBaseLayerHoverDelegate().setupManagedHover(
+			opts.hoverDelegate ?? getDefaultHoverDelegate('mouse'),
+			this.domNode,
+			this._opts.description ?? ''
+		));
 
 		// Create options
 		this._opts.options.forEach((option, index) => {
