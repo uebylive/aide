@@ -87,8 +87,10 @@ export function registerCodeEditActions() {
 			}
 
 			const aideAgentCodeEditingService = accessor.get(IAideAgentCodeEditingService);
-			const editingSession = aideAgentCodeEditingService.getOrStartCodeEditingSession(exchangeId);
-			editingSession.reject();
+			const editingSession = aideAgentCodeEditingService.getExistingCodeEditingSession(exchangeId);
+			if (editingSession) {
+				editingSession.reject();
+			}
 		}
 	});
 
@@ -129,8 +131,10 @@ export function registerCodeEditActions() {
 			}
 
 			const aideAgentCodeEditingService = accessor.get(IAideAgentCodeEditingService);
-			const editingSession = aideAgentCodeEditingService.getOrStartCodeEditingSession(exchangeId);
-			editingSession.accept();
+			const editingSession = aideAgentCodeEditingService.getExistingCodeEditingSession(exchangeId);
+			if (editingSession) {
+				editingSession.accept();
+			}
 		}
 	});
 }

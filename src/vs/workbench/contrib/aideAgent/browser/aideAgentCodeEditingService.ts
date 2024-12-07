@@ -314,4 +314,8 @@ export class AideAgentCodeEditingService extends Disposable implements IAideAgen
 		this._sessions.set(exchangeId, session);
 		return session;
 	}
+
+	getExistingCodeEditingSession(exchangeId: string): IAideAgentCodeEditingSession | undefined {
+		return this._sessions.get(exchangeId);
+	}
 }

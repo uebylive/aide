@@ -35,4 +35,5 @@ export interface IAideAgentCodeEditingService {
 
 	onDidComplete: Event<void>;
 	getOrStartCodeEditingSession(exchangeId: string): IAideAgentCodeEditingSession;
+	getExistingCodeEditingSession(exchangeId: string): IAideAgentCodeEditingSession | undefined;
 }

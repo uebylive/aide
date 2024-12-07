@@ -1087,6 +1087,8 @@ export class ChatModel extends Disposable implements IChatModel {
 	}
 
 	addRequest(message: IParsedChatRequest, variableData: IChatRequestVariableData, attempt: number, chatAgent?: IChatAgentData, slashCommand?: IChatAgentCommand, confirmation?: string, locationData?: IChatLocationData, attachments?: IChatRequestVariableEntry[]): ChatRequestModel {
+		this.autoAcceptLastExchange();
+
 		const request = new ChatRequestModel(this, message, variableData, attempt, confirmation, locationData, attachments);
 		const response = new ChatResponseModel(
 			this.aideAgentCodeEditingService,
@@ -1098,6 +1100,17 @@ export class ChatModel extends Disposable implements IChatModel {
 		this.lastExchangeComplete.set(false);
 		this._onDidChange.fire({ kind: 'addRequest', request });
 		return request;
+	}
+
+	// TODO(@ghostwriternr): This might break if we do proactive agent?
+	private autoAcceptLastExchange() {
+		const lastExchangeId = this.lastExchange?.id;
+		if (lastExchangeId) {
+			const editingSession = this.aideAgentCodeEditingService.getExistingCodeEditingSession(lastExchangeId);
+			if (editingSession) {
+				editingSession.accept();
+			}
+		}
 	}
 
 	addResponse(): ChatResponseModel {
