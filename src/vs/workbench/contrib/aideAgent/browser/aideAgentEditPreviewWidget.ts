@@ -5,6 +5,7 @@
 
 import { h } from '../../../../base/browser/dom.js';
 import { Codicon } from '../../../../base/common/codicons.js';
+import { Emitter } from '../../../../base/common/event.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import { MenuWorkbenchToolBar } from '../../../../platform/actions/browser/toolbar.js';
@@ -37,6 +38,20 @@ export class AideAgentEditPreviewWidget extends Disposable {
 		]
 	);
 
+	private readonly _onDidChangeHeight = this._register(new Emitter<void>());
+	public readonly onDidChangeHeight = this._onDidChangeHeight.event;
+
+	private _visible = false;
+	get visible() {
+		return this._visible;
+	}
+
+	set visible(value: boolean) {
+		this._visible = value;
+		this._elements.root.classList.toggle('hidden', !value);
+		this._onDidChangeHeight.fire();
+	}
+
 	private isProgressing = false;
 	private toolbar!: MenuWorkbenchToolBar;
 
@@ -46,6 +61,7 @@ export class AideAgentEditPreviewWidget extends Disposable {
 	) {
 		super();
 
+		this.visible = false;
 		parent.appendChild(this._elements.root);
 		this.render();
 	}
@@ -55,7 +71,7 @@ export class AideAgentEditPreviewWidget extends Disposable {
 		iconElement.classList.add(...defaultIconClasses);
 
 		const titleElement = this._elements.titleText;
-		titleElement.textContent = 'Applying edits';
+		titleElement.textContent = '';
 
 		const toolbarContainer = this._elements.toolbar;
 		this.toolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, toolbarContainer, MenuId.AideAgentEditPreviewWidget, {
@@ -66,6 +82,7 @@ export class AideAgentEditPreviewWidget extends Disposable {
 	}
 
 	updateProgress(message: string, exchangeId: string) {
+		this.visible = true;
 		if (message === 'Complete') {
 			this._elements.icon.classList.remove(...progressIconClasses);
 			this._elements.icon.classList.add(...defaultIconClasses);

@@ -496,7 +496,11 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 	}
 
 	async applyCodeEdit(codeEdit: IChatCodeEdit) {
-		this._editingSession = this._aideAgentCodeEditingService.getOrStartCodeEditingSession(this.id);
+		this._editingSession = this._register(this._aideAgentCodeEditingService.getOrStartCodeEditingSession(this.id));
+		this._register(this._editingSession.onDidDispose(() => {
+			this._editingSession = undefined;
+		}));
+
 		for (const edit of codeEdit.edits.edits) {
 			if (isWorkspaceTextEdit(edit)) {
 				this._editingSession.apply(edit);
@@ -942,6 +946,13 @@ export class ChatModel extends Disposable implements IChatModel {
 		this._initialResponderAvatarIconUri = isUriComponents(initialData?.responderAvatarIconUri) ? URI.revive(initialData.responderAvatarIconUri) : initialData?.responderAvatarIconUri;
 
 		this.isPlanVisible = CONTEXT_CHAT_IS_PLAN_VISIBLE.bindTo(contextKeyService);
+
+		this._register(this.aideAgentCodeEditingService.onDidComplete(() => {
+			// TODO(@ghostwriternr): Hmm, as per the original design, a plan could span multiple exchanges.
+			// But because we want to reset the plan for new exchanges, we are currently resetting the plan here.
+			// We should clean this up at some point.
+			this.plan = undefined;
+		}));
 	}
 
 	private _deserialize(obj: IExportableChatData): ChatRequestModel[] {

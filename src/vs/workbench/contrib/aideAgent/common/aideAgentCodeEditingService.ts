@@ -33,5 +33,6 @@ export const IAideAgentCodeEditingService = createDecorator<IAideAgentCodeEditin
 export interface IAideAgentCodeEditingService {
 	_serviceBrand: undefined;
 
+	onDidComplete: Event<void>;
 	getOrStartCodeEditingSession(exchangeId: string): IAideAgentCodeEditingSession;
 }

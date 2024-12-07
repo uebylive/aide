@@ -744,6 +744,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						responseStream?.stream.stage({ message: 'Cancelled' });
 					} else if (editsState === 'MarkedComplete') {
 						responseStream?.stream.stage({ message: 'Complete' });
+						responseStream?.stream.close();
+						return;
 					}
 					continue;
 				}

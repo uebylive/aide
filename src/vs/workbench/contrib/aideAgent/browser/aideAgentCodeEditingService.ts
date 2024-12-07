@@ -55,6 +55,9 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 	private readonly _onDidDispose = this._register(new Emitter<void>());
 	readonly onDidDispose = this._onDidDispose.event;
 
+	private readonly _onDidComplete = this._register(new Emitter<void>());
+	readonly onDidComplete = this._onDidComplete.event;
+
 	private activeEditor: ICodeEditor | undefined;
 
 	private readonly _hunkDisplayData = new Map<HunkInformation, HunkDisplayData>();
@@ -267,6 +270,7 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 
 	accept(): void {
 		this.removeDecorations(true);
+		this._onDidComplete.fire();
 	}
 
 	reject(): void {
@@ -275,6 +279,7 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 		}
 
 		this.removeDecorations(false);
+		this._onDidComplete.fire();
 	}
 
 	stop(): Promise<void> {
@@ -284,6 +289,9 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 
 export class AideAgentCodeEditingService extends Disposable implements IAideAgentCodeEditingService {
 	_serviceBrand: undefined;
+
+	private readonly _onDidComplete = this._register(new Emitter<void>());
+	readonly onDidComplete = this._onDidComplete.event;
 
 	private _sessions = new DisposableMap<string, IAideAgentCodeEditingSession>();
 
@@ -299,6 +307,10 @@ export class AideAgentCodeEditingService extends Disposable implements IAideAgen
 		}
 
 		const session = this.instantiationService.createInstance(AideAgentCodeEditingSession, exchangeId);
+		this._register(session.onDidComplete(() => {
+			this._onDidComplete.fire();
+		}));
+
 		this._sessions.set(exchangeId, session);
 		return session;
 	}

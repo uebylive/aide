@@ -26,6 +26,7 @@ import { ILogService } from '../../../../platform/log/common/log.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgentData } from '../common/aideAgentAgents.js';
+import { IAideAgentCodeEditingService } from '../common/aideAgentCodeEditingService.js';
 import { CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_SESSION, CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER, CONTEXT_RESPONSE_FILTERED } from '../common/aideAgentContextKeys.js';
 import { AgentMode, AgentScope, ChatModelInitState, IChatModel, IChatProgressResponseContent, IChatRequestVariableEntry, IChatResponseModel } from '../common/aideAgentModel.js';
 import { ChatRequestAgentPart, IParsedChatRequest, formatChatQuestion } from '../common/aideAgentParserTypes.js';
@@ -206,6 +207,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		@IAideAgentService private readonly chatService: IAideAgentService,
 		@IAideAgentAgentService private readonly chatAgentService: IAideAgentAgentService,
 		@IAideAgentWidgetService chatWidgetService: IAideAgentWidgetService,
+		@IAideAgentCodeEditingService private readonly codeEditingService: IAideAgentCodeEditingService,
 		@IContextMenuService private readonly contextMenuService: IContextMenuService,
 		@IAideAgentAccessibilityService private readonly chatAccessibilityService: IAideAgentAccessibilityService,
 		@ILogService private readonly logService: ILogService,
@@ -288,6 +290,20 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			}
 			return null;
 		}));
+
+		this._register(this.chatService.onDidDisposeSession(() => {
+			this.hideEditPreviewWidget();
+		}));
+
+		this._register(this.codeEditingService.onDidComplete(() => {
+			this.hideEditPreviewWidget();
+		}));
+	}
+
+	private hideEditPreviewWidget() {
+		if (this.editPreviewWidget) {
+			this.editPreviewWidget.visible = false;
+		}
 	}
 
 	private _lastSelectedAgent: IChatAgentData | undefined;
@@ -590,6 +606,11 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 	private createEditPreviewWidget(container: HTMLElement): void {
 		this.editPreviewWidget = this._register(this.instantiationService.createInstance(AideAgentEditPreviewWidget, container));
+		this._register(this.editPreviewWidget.onDidChangeHeight(() => {
+			if (this.bodyDimension) {
+				this.layout(this.bodyDimension.height, this.bodyDimension.width);
+			}
+		}));
 	}
 
 	private onContextMenu(e: ITreeContextMenuEvent<ChatTreeItem | null>): void {

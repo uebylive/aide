@@ -15,11 +15,11 @@
 	background-color: var(--vscode-input-background);
 	border: 1px solid var(--vscode-input-border, transparent);
 	border-radius: 4px;
-	transition: opacity 0.2s ease, transform 0.2s ease;
+	transition: transform 0.2s ease;
 }
 
 .edit-preview > .aideagent-edit-preview.hidden {
-	opacity: 0;
+	display: none;
 	transform: scale(0.9) translateY(calc(-100% + 10px));
 }
 
