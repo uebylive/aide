@@ -37,7 +37,7 @@ export class ExecuteChatAction extends Action2 {
 			f1: false,
 			category: CHAT_CATEGORY,
 			icon: Codicon.send,
-			precondition: ContextKeyExpr.and(CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate(), CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET.negate()),
+			precondition: ContextKeyExpr.and(CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate()),
 			keybinding: {
 				when: CONTEXT_IN_CHAT_INPUT,
 				primary: KeyCode.Enter,
@@ -52,7 +52,7 @@ export class ExecuteChatAction extends Action2 {
 				{
 					id: MenuId.AideAgentExecute,
 					order: 2,
-					when: ContextKeyExpr.and(CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET.negate(), CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate()),
+					when: CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate(),
 					group: 'navigation',
 				},
 			]
@@ -120,7 +120,7 @@ class ToggleEditModeAction extends Action2 {
 			title: localize2('interactive.toggleEditMode.label', "Toggle edit mode"),
 			f1: false,
 			category: CHAT_CATEGORY,
-			precondition: CONTEXT_IN_CHAT_INPUT,
+			precondition: ContextKeyExpr.and(CONTEXT_IN_CHAT_INPUT, CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET.negate()),
 			keybinding: {
 				when: CONTEXT_IN_CHAT_INPUT,
 				primary: KeyMod.CtrlCmd | KeyCode.Period,

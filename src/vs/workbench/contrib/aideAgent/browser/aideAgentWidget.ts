@@ -370,7 +370,9 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		}
 
 		this.createList(this.listContainer, { ...this.viewOptions.rendererOptions, renderStyle });
-		this.createEditPreviewWidget(this.editPreviewContainer);
+		if (!('isPassthrough' in this.viewContext) || !this.viewContext.isPassthrough) {
+			this.createEditPreviewWidget(this.editPreviewContainer);
+		}
 
 		this._register(this.editorOptions.onDidChange(() => this.onDidStyleChange()));
 		this.onDidStyleChange();
@@ -656,6 +658,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 				renderStyle: options?.renderStyle === 'minimal' ? 'compact' : options?.renderStyle,
 				menus: { executeToolbar: MenuId.AideAgentExecute, ...this.viewOptions.menus },
 				editorOverflowWidgetsDomNode: this.viewOptions.editorOverflowWidgetsDomNode,
+				preventChatEditToggle: 'isPassthrough' in this.viewContext && this.viewContext.isPassthrough
 			},
 			() => this.collectInputState()
 		));
@@ -865,8 +868,9 @@ export class ChatWidget extends Disposable implements IChatWidget {
 					return;
 				}
 
-				widget.transferQueryState(AgentMode.Edit, this.inputPart.currentAgentScope);
-				widget.acceptInput(AgentMode.Edit, editorValue);
+				const mode = this.inputPart.mode;
+				widget.transferQueryState(mode, this.inputPart.currentAgentScope);
+				widget.acceptInput(mode, editorValue);
 				widget.focusInput();
 				this._onDidAcceptInput.fire();
 				return;

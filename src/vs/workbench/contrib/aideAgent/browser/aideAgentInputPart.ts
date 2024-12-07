@@ -76,6 +76,7 @@ interface IChatInputPartOptions {
 		telemetrySource?: string;
 	};
 	editorOverflowWidgetsDomNode?: HTMLElement;
+	preventChatEditToggle?: boolean;
 }
 
 export class ChatInputPart extends Disposable implements IHistoryNavigationWidget {
@@ -570,6 +571,10 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 
 		this.modeSwitch = this._register(this.instantiationService.createInstance(Switch, { options: ['Chat', 'Edit'], value: 'Edit' }));
 		dom.append(toolbarsContainer, this.modeSwitch.domNode);
+		if (this.options.preventChatEditToggle) {
+			this.modeSwitch.disable();
+			this.modeSwitch.domNode.style.display = 'none';
+		}
 		this._register(this.modeSwitch.onDidChange((mode) => {
 			this._agentMode.set(mode === 'Edit' ? AgentMode.Edit : AgentMode.Chat);
 		}));
