@@ -285,6 +285,19 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 	stop(): Promise<void> {
 		throw new Error('Method not implemented.');
 	}
+
+	override dispose(): void {
+		this._hunkDisplayData.forEach(data => data.remove());
+		this._hunkDisplayData.clear();
+		for (const edit of this._codeEdits.values()) {
+			edit.hunkData.dispose();
+		}
+		this._codeEdits.clear();
+		this._workingSet.clear();
+
+		this._onDidDispose.fire();
+		super.dispose();
+	}
 }
 
 export class AideAgentCodeEditingService extends Disposable implements IAideAgentCodeEditingService {
@@ -308,6 +321,7 @@ export class AideAgentCodeEditingService extends Disposable implements IAideAgen
 
 		const session = this.instantiationService.createInstance(AideAgentCodeEditingSession, exchangeId);
 		this._register(session.onDidComplete(() => {
+			session.dispose();
 			this._onDidComplete.fire();
 		}));
 
