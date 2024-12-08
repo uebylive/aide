@@ -249,12 +249,10 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// shouldn't all listeners have this?
 	context.subscriptions.push(diagnosticsListener);
+}
 
-	context.subscriptions.push({
-		dispose() {
-			const sidecarUrl = sidecarURL();
-			const port = parseInt(sidecarUrl.split(':')[2]);
-			killProcessOnPort(port);
-		},
-	});
+export async function deactivate() {
+	const sidecarUrl = sidecarURL();
+	const port = parseInt(sidecarUrl.split(':').at(-1) ?? '42424');
+	await killProcessOnPort(port);
 }
