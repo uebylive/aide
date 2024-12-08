@@ -8,6 +8,7 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { promisify } from 'util';
+import * as vscode from 'vscode';
 import { downloadSidecarZip } from './gcpBucket';
 import { sidecarURL, sidecarUseSelfRun } from './sidecarUrl';
 import { unzip } from './unzip';
@@ -41,6 +42,13 @@ async function retryHealthCheck(maxAttempts: number = 15, intervalMs: number = 1
 }
 
 export async function startSidecarBinary(extensionBasePath: string) {
+	const hc = await healthCheck();
+	if (hc) {
+		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Connected);
+	} else {
+		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
+	}
+
 	const shouldUseSelfRun = sidecarUseSelfRun();
 	if (shouldUseSelfRun) {
 		return;
@@ -52,14 +60,17 @@ export async function startSidecarBinary(extensionBasePath: string) {
 
 	if (!fs.existsSync(webserverPath)) {
 		console.log('Downloading sidecar binary');
+		vscode.sidecar.setDownloadStatus({ downloading: true, update: false });
 		await downloadSidecarZip(zipDestination);
 		console.log('Unzipping sidecar binary');
 		unzip(zipDestination, extractedDestination);
 		console.log('Deleting zip file');
 		fs.unlinkSync(zipDestination);
+		vscode.sidecar.setDownloadStatus({ downloading: false, update: false });
 	}
 
 	console.log('Running sidecar binary');
+	vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Starting);
 	await runSideCarBinary(webserverPath);
 }
 
@@ -104,5 +115,6 @@ async function runSideCarBinary(webserverPath: string) {
 		throw new Error('Sidecar binary failed to start after multiple attempts');
 	}
 
+	vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Connected);
 	console.log('Sidecar binary started successfully');
 }

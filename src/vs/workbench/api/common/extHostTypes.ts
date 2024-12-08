@@ -4725,6 +4725,13 @@ export class AideAgentProgressStagePart {
 		this.message = stage.message;
 	}
 }
+
+export enum SidecarRunningStatus {
+	Unavailable = 0,
+	Starting = 1,
+	Restarting = 2,
+	Connected = 3
+}
 //#endregion
 
 //#region ai

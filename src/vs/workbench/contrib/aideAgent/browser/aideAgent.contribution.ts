@@ -33,6 +33,7 @@ import { ChatWidgetHistoryService, IAideAgentWidgetHistoryService } from '../com
 import { IAideAgentLMService, LanguageModelsService } from '../common/languageModels.js';
 import { IAideAgentLMStatsService, LanguageModelStatsService } from '../common/languageModelStats.js';
 import { IAideAgentLMToolsService, LanguageModelToolsService } from '../common/languageModelToolsService.js';
+import { ISidecarService, SidecarService } from '../common/sidecarService.js';
 import { LanguageModelToolsExtensionPointHandler } from '../common/tools/languageModelToolsContribution.js';
 import { ChatAccessibilityHelp } from './actions/aideAgentAccessibilityHelp.js';
 import { registerChatActions } from './actions/aideAgentActions.js';
@@ -293,3 +294,4 @@ registerSingleton(IAideAgentCodeBlockContextProviderService, AideAgentCodeBlockC
 registerSingleton(IAideAgentCodeMapperService, CodeMapperService, InstantiationType.Delayed);
 registerSingleton(IAideAgentFloatingWidgetService, AideAgentFloatingWidgetService, InstantiationType.Delayed);
 registerSingleton(IAideAgentCodeEditingService, AideAgentCodeEditingService, InstantiationType.Delayed);
+registerSingleton(ISidecarService, SidecarService, InstantiationType.Delayed);

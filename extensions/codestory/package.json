@@ -26,6 +26,7 @@
     "interactive",
     "mappedEditsProvider",
     "modelSelection",
+    "sidecar",
     "terminalSelection",
     "textSearchProviderNew"
   ],

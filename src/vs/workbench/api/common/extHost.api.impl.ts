@@ -29,6 +29,10 @@ import { IExtHostAuthentication } from './extHostAuthentication.js';
 import { ExtHostBulkEdits } from './extHostBulkEdits.js';
 import { ExtHostChatAgents2 } from './extHostChatAgents2.js';
 import { ExtHostChatVariables } from './extHostChatVariables.js';
+import { ExtHostModelSelection } from './extHostModelSelection.js';
+import { ExtHostAideAgentAgents2 } from './extHostAideAgentAgents2.js';
+import { ExtHostAideAgentVariables } from './extHostAideAgentVariables.js';
+import { ExtHostAideAgentCodeMapper } from './extHostAideAgentCodeMapper.js';
 import { ExtHostClipboard } from './extHostClipboard.js';
 import { ExtHostEditorInsets } from './extHostCodeInsets.js';
 import { IExtHostCommands } from './extHostCommands.js';
@@ -111,10 +115,7 @@ import type * as vscode from 'vscode';
 import { ExtHostCodeMapper } from './extHostCodeMapper.js';
 import { IExtHostCSAuthentication } from './extHostCSAuthentication.js';
 import { ExtHostCSEvents } from './extHostCSEvents.js';
-import { ExtHostModelSelection } from './extHostModelSelection.js';
-import { ExtHostAideAgentAgents2 } from './extHostAideAgentAgents2.js';
-import { ExtHostAideAgentVariables } from './extHostAideAgentVariables.js';
-import { ExtHostAideAgentCodeMapper } from './extHostAideAgentCodeMapper.js';
+import { ExtHostSidecar } from './extHostSidecar.js';
 
 export interface IExtensionRegistries {
 	mine: ExtensionDescriptionRegistry;
@@ -232,6 +233,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 	const extHostSpeech = rpcProtocol.set(ExtHostContext.ExtHostSpeech, new ExtHostSpeech(rpcProtocol));
 	const extHostModelSelection = rpcProtocol.set(ExtHostContext.ExtHostModelSelection, new ExtHostModelSelection(rpcProtocol));
 	const extHostCSEvents = rpcProtocol.set(ExtHostContext.ExtHostCSEvents, new ExtHostCSEvents(rpcProtocol));
+	const extHostSidecar = rpcProtocol.set(ExtHostContext.ExtHostSidecar, new ExtHostSidecar(rpcProtocol));
 	const extHostEmbeddings = rpcProtocol.set(ExtHostContext.ExtHostEmbeddings, new ExtHostEmbeddings(rpcProtocol));
 
 	// Check that no named customers are missing
@@ -1587,6 +1589,22 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			},
 		};
 
+		// namespace: sidecar
+		const sidecar: typeof vscode.sidecar = {
+			setDownloadStatus(status) {
+				checkProposedApiEnabled(extension, 'sidecar');
+				return extHostSidecar.setDownloadStatus(status);
+			},
+			setRunningStatus(status) {
+				checkProposedApiEnabled(extension, 'sidecar');
+				return extHostSidecar.setRunningStatus(status);
+			},
+			onDidTriggerSidecarRestart: function (listener, thisArgs?, disposables?) {
+				checkProposedApiEnabled(extension, 'sidecar');
+				return _asExtensionEvent(extHostSidecar.onDidTriggerSidecarRestart)(listener, thisArgs, disposables);
+			},
+		};
+
 		return <typeof vscode>{
 			version: initData.version,
 			// namespaces
@@ -1608,6 +1626,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			modelSelection,
 			notebooks,
 			scm,
+			sidecar,
 			speech,
 			tasks,
 			tests,
@@ -1711,6 +1730,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			SemanticTokensLegend: extHostTypes.SemanticTokensLegend,
 			ShellExecution: extHostTypes.ShellExecution,
 			ShellQuoting: extHostTypes.ShellQuoting,
+			SidecarRunningStatus: extHostTypes.SidecarRunningStatus,
 			SignatureHelp: extHostTypes.SignatureHelp,
 			SignatureHelpTriggerKind: extHostTypes.SignatureHelpTriggerKind,
 			SignatureInformation: extHostTypes.SignatureInformation,

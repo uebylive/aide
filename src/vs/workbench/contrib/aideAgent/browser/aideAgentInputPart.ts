@@ -63,6 +63,7 @@ import { IChatFollowup } from '../common/aideAgentService.js';
 import { IChatResponseViewModel } from '../common/aideAgentViewModel.js';
 import { IAideAgentWidgetHistoryService, IChatHistoryEntry } from '../common/aideAgentWidgetHistoryService.js';
 import { IAideAgentLMService } from '../common/languageModels.js';
+import { ISidecarService, SidecarDownloadStatus, SidecarRunningStatus } from '../common/sidecarService.js';
 import { AgentScopePickerActionId, CancelAction, ExecuteChatAction, IChatExecuteActionContext, ToggleEditModeAction } from './actions/aideAgentExecuteActions.js';
 import { IChatWidget } from './aideAgent.js';
 import { ChatFollowups } from './aideAgentFollowups.js';
@@ -211,17 +212,18 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		private readonly location: ChatAgentLocation,
 		private readonly options: IChatInputPartOptions,
 		private readonly getInputState: () => any,
-		@IAideAgentWidgetHistoryService private readonly historyService: IAideAgentWidgetHistoryService,
-		@IModelService private readonly modelService: IModelService,
-		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@IContextKeyService private readonly contextKeyService: IContextKeyService,
-		@IConfigurationService private readonly configurationService: IConfigurationService,
-		@IKeybindingService private readonly keybindingService: IKeybindingService,
 		@IAccessibilityService private readonly accessibilityService: IAccessibilityService,
 		@IAideAgentLMService private readonly languageModelsService: IAideAgentLMService,
+		@IAideAgentWidgetHistoryService private readonly historyService: IAideAgentWidgetHistoryService,
 		@IAIModelSelectionService private readonly aiModelSelectionService: IAIModelSelectionService,
 		@ICommandService private readonly commandService: ICommandService,
+		@IConfigurationService private readonly configurationService: IConfigurationService,
+		@IContextKeyService private readonly contextKeyService: IContextKeyService,
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IKeybindingService private readonly keybindingService: IKeybindingService,
 		@ILogService private readonly logService: ILogService,
+		@IModelService private readonly modelService: IModelService,
+		@ISidecarService private readonly sidecarService: ISidecarService,
 	) {
 		super();
 
@@ -660,11 +662,22 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 
 		// Sidecar status
 		const textSpan = dom.$('span');
-		textSpan.textContent = 'Sidecar connected';
+		const runningStatus = this.sidecarService.runningStatus;
+		const downloadStatus = this.sidecarService.downloadStatus;
+		const { text, color } = this.getSidecarStatus(runningStatus, downloadStatus);
+		textSpan.textContent = text;
+
 		const iconSpan = dom.$('span');
 		iconSpan.classList.add(...ThemeIcon.asClassNameArray(Codicon.circleFilled));
+		iconSpan.style.color = color;
 		statusMessage.appendChild(textSpan);
 		statusMessage.appendChild(iconSpan);
+
+		this._register(this.sidecarService.onDidChangeStatus(({ runningStatus, downloadStatus }) => {
+			const { text, color } = this.getSidecarStatus(runningStatus, downloadStatus);
+			textSpan.textContent = text;
+			iconSpan.style.color = color;
+		}));
 
 		let inputModel = this.modelService.getModel(this.inputUri);
 		if (!inputModel) {
@@ -700,6 +713,26 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		};
 		this._register(this._inputEditor.onDidChangeCursorPosition(e => onDidChangeCursorPosition()));
 		onDidChangeCursorPosition();
+	}
+
+	private getSidecarStatus(runningStatus: SidecarRunningStatus, downloadStatus: SidecarDownloadStatus): { text: string; color: string } {
+		let text = '';
+		let color = 'var(--vscode-editorGutter-addedBackground)';
+		if (runningStatus === SidecarRunningStatus.Connected) {
+			text = `Sidecar connected${downloadStatus.downloading && downloadStatus.update ? ' (Downloading update)' : ''}`;
+			color = 'var(--vscode-editorGutter-addedBackground)';
+		} else if (downloadStatus.downloading) {
+			text = `Downloading sidecar`;
+			color = 'var(--vscode-editorGutter-modifiedBackground)';
+		} else if (runningStatus === SidecarRunningStatus.Unavailable) {
+			text = 'Sidecar not running';
+			color = 'var(--vscode-editorGutter-deletedBackground)';
+		} else {
+			text = `${SidecarRunningStatus[runningStatus]} Sidecar`;
+			color = 'var(--vscode-editorGutter-modifiedBackground)';
+		}
+
+		return { text, color };
 	}
 
 	private initAttachedContext(container: HTMLElement, isLayout = false) {

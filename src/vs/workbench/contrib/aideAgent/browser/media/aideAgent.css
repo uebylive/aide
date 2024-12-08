@@ -555,7 +555,6 @@ have to be updated for changes to the rules above, or to support more deeply nes
 }
 
 .interactive-session .interactive-input-status-message .status-message .codicon.codicon-circle-filled {
-	color: var(--vscode-editorGutter-addedBackground);
 	font-size: 14px;
 }
 

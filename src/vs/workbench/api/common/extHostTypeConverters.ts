@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import type * as vscode from 'vscode';
+import * as vscode from 'vscode';
 import { asArray, coalesce, isNonEmptyArray } from '../../../base/common/arrays.js';
 import { VSBuffer, encodeBase64 } from '../../../base/common/buffer.js';
 import { IDataTransferFile, IDataTransferItem, UriList } from '../../../base/common/dataTransfer.js';
@@ -39,6 +39,7 @@ import { IViewBadge } from '../../common/views.js';
 import { IChatAgentRequest as IAideAgentRequest } from '../../contrib/aideAgent/common/aideAgentAgents.js';
 import { AgentMode, AgentScope } from '../../contrib/aideAgent/common/aideAgentModel.js';
 import { IAideAgentPlanStep, IAideAgentProgressStage, IChatEndResponse } from '../../contrib/aideAgent/common/aideAgentService.js';
+import { SidecarRunningStatus } from '../../contrib/aideAgent/common/sidecarService.js';
 import { ChatAgentLocation, IChatAgentRequest, IChatAgentResult } from '../../contrib/chat/common/chatAgents.js';
 import { IChatRequestVariableEntry } from '../../contrib/chat/common/chatModel.js';
 import { IChatAgentDetection, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatMarkdownContent, IChatMoveMessage, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatTaskDto, IChatTaskResult, IChatTextEdit, IChatTreeData, IChatUserActionEvent, IChatWarningMessage } from '../../contrib/chat/common/chatService.js';
@@ -3047,6 +3048,23 @@ export namespace ChatResponseClosePart {
 	}
 }
 ///////////////////////////// END AIDE /////////////////////////////
+
+export namespace SidecarRunningState {
+	export function from(status: types.SidecarRunningStatus): SidecarRunningStatus {
+		switch (status) {
+			case types.SidecarRunningStatus.Unavailable:
+				return SidecarRunningStatus.Unavailable;
+			case types.SidecarRunningStatus.Starting:
+				return SidecarRunningStatus.Starting;
+			case types.SidecarRunningStatus.Connected:
+				return SidecarRunningStatus.Connected;
+			case types.SidecarRunningStatus.Restarting:
+				return SidecarRunningStatus.Restarting;
+			default:
+				return SidecarRunningStatus.Unavailable;
+		}
+	}
+}
 
 export namespace TerminalQuickFix {
 	export function from(quickFix: vscode.TerminalQuickFixTerminalCommand | vscode.TerminalQuickFixOpener | vscode.Command, converter: Command.ICommandsConverter, disposables: DisposableStore): extHostProtocol.ITerminalQuickFixTerminalCommandDto | extHostProtocol.ITerminalQuickFixOpenerDto | extHostProtocol.ICommandDto | undefined {
