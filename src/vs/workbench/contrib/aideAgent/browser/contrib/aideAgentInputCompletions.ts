@@ -17,6 +17,7 @@ import { CompletionContext, CompletionItem, CompletionItemKind, CompletionList, 
 import { ITextModel } from '../../../../../editor/common/model.js';
 import { ILanguageFeaturesService } from '../../../../../editor/common/services/languageFeatures.js';
 import { IModelService } from '../../../../../editor/common/services/model.js';
+import { ITextModelService } from '../../../../../editor/common/services/resolverService.js';
 import { SuggestController } from '../../../../../editor/contrib/suggest/browser/suggestController.js';
 import { localize } from '../../../../../nls.js';
 import { Action2, registerAction2 } from '../../../../../platform/actions/common/actions.js';
@@ -349,6 +350,7 @@ class BuiltinDynamicCompletions extends Disposable {
 		@IAideAgentWidgetService private readonly chatWidgetService: IAideAgentWidgetService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@IModelService private readonly modelService: IModelService,
+		@ITextModelService private readonly textModelService: ITextModelService,
 	) {
 		super();
 		this.cacheScheduler = this._register(new RunOnceScheduler(() => {
@@ -480,13 +482,18 @@ class BuiltinDynamicCompletions extends Disposable {
 	}
 
 	private async addFileEntries(pattern: string, widget: IChatWidget, result: CompletionList, info: { insert: Range; replace: Range; varWord: IWordAtPosition | null }, token: CancellationToken) {
-		const makeFileCompletionItem = (resource: URI): CompletionItem => {
+		const makeFileCompletionItem = async (resource: URI): Promise<CompletionItem | undefined> => {
 			const basename = this.labelService.getUriBasenameLabel(resource);
 			const insertText = `${chatVariableLeader}${basename}`;
 			let model = this.modelService.getModel(resource);
 			if (!model) {
-				model = this.modelService.createModel('', null, resource, false);
-				this._register(model);
+				try {
+					const modelReference = await this.textModelService.createModelReference(resource);
+					model = modelReference.object.textEditorModel;
+					modelReference.dispose();
+				} catch (e) {
+					return undefined;
+				}
 			}
 			const range = model.getFullModelRange();
 
@@ -530,8 +537,12 @@ class BuiltinDynamicCompletions extends Disposable {
 			}
 
 			seen.add(item.resource);
-			const newLen = result.suggestions.push(makeFileCompletionItem(item.resource));
-			if (newLen - len >= 5) {
+			const completionItem = await makeFileCompletionItem(item.resource);
+			if (completionItem) {
+				result.suggestions.push(completionItem);
+			}
+
+			if (result.suggestions.length - len >= 5) {
 				break;
 			}
 		}
@@ -540,11 +551,13 @@ class BuiltinDynamicCompletions extends Disposable {
 		// use file search when having a pattern
 		if (pattern) {
 			for (const match of this.fileEntries) {
-				if (seen.has(match.resource)) {
+				const completionItem = await makeFileCompletionItem(match.resource);
+				if (seen.has(match.resource) || !completionItem) {
 					// already included via history
 					continue;
 				}
-				result.suggestions.push(makeFileCompletionItem(match.resource));
+
+				result.suggestions.push(completionItem);
 			}
 		}
 	}
