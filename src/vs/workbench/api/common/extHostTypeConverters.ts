@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import type * as vscode from 'vscode';
+import * as vscode from 'vscode';
 import { asArray, coalesce, isNonEmptyArray } from '../../../base/common/arrays.js';
 import { VSBuffer, encodeBase64 } from '../../../base/common/buffer.js';
 import { IDataTransferFile, IDataTransferItem, UriList } from '../../../base/common/dataTransfer.js';
@@ -37,8 +37,9 @@ import { ProgressLocation as MainProgressLocation } from '../../../platform/prog
 import { DEFAULT_EDITOR_ASSOCIATION, SaveReason } from '../../common/editor.js';
 import { IViewBadge } from '../../common/views.js';
 import { IChatAgentRequest as IAideAgentRequest } from '../../contrib/aideAgent/common/aideAgentAgents.js';
-import { AgentMode, AgentScope, AgentSessionExchangeUserAction } from '../../contrib/aideAgent/common/aideAgentModel.js';
-import { IChatEditsInfo, IChatEndResponse, IChatPlanStep, IChatCommandButton as IAideChatCommandButton, IChatCommandGroup, IChatStreamingState, IChatPlanInfo, IChatThinkingForEditPart, IChatRollbackCompleted, IChatAideAgentPlanRegenerateInformationPart } from '../../contrib/aideAgent/common/aideAgentService.js';
+import { AgentMode, AgentScope } from '../../contrib/aideAgent/common/aideAgentModel.js';
+import { IAideAgentPlanStep, IAideAgentProgressStage, IChatEndResponse } from '../../contrib/aideAgent/common/aideAgentService.js';
+import { SidecarRunningStatus } from '../../contrib/aideAgent/common/sidecarService.js';
 import { ChatAgentLocation, IChatAgentRequest, IChatAgentResult } from '../../contrib/chat/common/chatAgents.js';
 import { IChatRequestVariableEntry } from '../../contrib/chat/common/chatModel.js';
 import { IChatAgentDetection, IChatAgentMarkdownContentWithVulnerability, IChatCodeCitation, IChatCommandButton, IChatConfirmation, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatMarkdownContent, IChatMoveMessage, IChatProgressMessage, IChatResponseCodeblockUriPart, IChatTaskDto, IChatTaskResult, IChatTextEdit, IChatTreeData, IChatUserActionEvent, IChatWarningMessage } from '../../contrib/chat/common/chatService.js';
@@ -2896,24 +2897,8 @@ export namespace AideAgentMode {
 	export function from(mode: types.AideAgentMode): AgentMode {
 		switch (mode) {
 			case types.AideAgentMode.Edit: return AgentMode.Edit;
-			case types.AideAgentMode.Plan: return AgentMode.Plan;
 			case types.AideAgentMode.Chat: return AgentMode.Chat;
-		}
-	}
-}
-
-export namespace AideSessionExchangeUserAction {
-	export function to(mode: AgentSessionExchangeUserAction): types.AideSessionExchangeUserAction {
-		switch (mode) {
-			case AgentSessionExchangeUserAction.AcceptAll: return types.AideSessionExchangeUserAction.AcceptAll;
-			case AgentSessionExchangeUserAction.RejectAll: return types.AideSessionExchangeUserAction.RejectAll;
-		}
-	}
-
-	export function from(mode: types.AideSessionExchangeUserAction): AgentSessionExchangeUserAction {
-		switch (mode) {
-			case types.AideSessionExchangeUserAction.AcceptAll: return AgentSessionExchangeUserAction.AcceptAll;
-			case types.AideSessionExchangeUserAction.RejectAll: return AgentSessionExchangeUserAction.RejectAll;
+			case types.AideAgentMode.Plan: return AgentMode.Plan;
 		}
 	}
 }
@@ -2937,122 +2922,20 @@ export namespace AideAgentScope {
 }
 
 export namespace AideAgentResponsePlanPart {
-	export function from(part: types.AideAgentResponsePlanPart): Dto<IChatPlanStep> {
+	export function from(part: types.AideAgentResponsePlanPart): Dto<IAideAgentPlanStep> {
 		return {
 			kind: 'planStep',
-			sessionId: part.sessionId,
-			exchangeId: part.exchangeId,
 			index: part.index,
-			isLast: part.isLast,
-			title: part.title,
 			description: MarkdownString.from(part.description),
-			descriptionDelta: part.descriptionDelta ? MarkdownString.from(part.descriptionDelta) : null,
-			files: part.files,
 		};
 	}
 }
 
-export namespace AideAgentResponseEditsInfoPart {
-	export function from(part: types.AideAgentResponseEditsInfoPart): Dto<IChatEditsInfo> {
+export namespace AideAgentProgressStagePart {
+	export function from(part: types.AideAgentProgressStagePart): Dto<IAideAgentProgressStage> {
 		return {
-			kind: 'editsInfo',
-			state: part.state,
-			isStale: part.isStale,
-			files: part.files,
-			sessionId: part.sessionId,
-			exchangeId: part.exchangeId,
-			description: part.description ? MarkdownString.from(part.description) : undefined
-		};
-	}
-}
-
-
-export namespace AideAgentRollbackCompletedPart {
-	export function from(part: types.AideAgentRollbackCompletedPart): Dto<IChatRollbackCompleted> {
-		return {
-			kind: 'rollbackCompleted',
-			sessionId: part.sessionId,
-			exchangeId: part.exchangeId,
-			exchangesRemoved: part.exchangesRemoved,
-		};
-	}
-}
-
-export namespace AideAgentResponsePlanInfoPart {
-	export function from(part: types.AideAgentResponsePlanInfoPart): Dto<IChatPlanInfo> {
-		return {
-			kind: 'planInfo',
-			state: part.state,
-			isStale: part.isStale,
-			sessionId: part.sessionId,
-			exchangeId: part.exchangeId,
-			description: part.description ? MarkdownString.from(part.description) : undefined
-		};
-	}
-}
-
-export namespace AideAgentPlanRegenerateInformationPart {
-	export function from(part: types.AideAgentPlanRegenerateInformationPart): Dto<IChatAideAgentPlanRegenerateInformationPart> {
-		return {
-			kind: 'planRegeneration',
-			sessionId: part.sessionId,
-			exchangeId: part.exchangeId,
-		};
-	}
-}
-
-export namespace AideAgentThinkingForEditPart {
-	export function from(part: types.AideAgentThinkingForEditPart): Dto<IChatThinkingForEditPart> {
-		return {
-			kind: 'thinkingForEdit',
-			sessionId: part.sessionId,
-			exchangeId: part.exchangeId,
-			thinkingDelta: MarkdownString.from(part.thinkingDelta),
-		};
-	}
-}
-
-export namespace AideAgentResponseStreamingStatePart {
-	export function from(part: types.AideAgentResponseStreamingStatePart): Dto<IChatStreamingState> {
-		return {
-			kind: 'streamingState',
-			state: part.state,
-			loadingLabel: part.loadingLabel,
-			files: part.files,
-			sessionId: part.sessionId,
-			exchangeId: part.exchangeId,
-			isError: part.isError,
+			kind: 'stage',
 			message: part.message,
-		};
-	}
-}
-
-export namespace AideAgentResponseCommandButtonPart {
-	export function from(part: types.AideAgentResponseCommandButtonPart, commandsConverter: CommandsConverter, commandDisposables: DisposableStore): Dto<IAideChatCommandButton> {
-		const { command, buttonOptions } = part.value;
-
-		// If the command isn't in the converter, then this session may have been restored, and the command args don't exist anymore
-		const convertedCommand = commandsConverter.toInternal(command, commandDisposables) ?? { command, title: command.title };
-		return {
-			kind: 'command',
-			command: convertedCommand,
-			buttonOptions,
-		};
-	}
-
-}
-
-export namespace AideAgentResponseCommandGroupPart {
-	export function from(part: types.AideAgentResponseCommandGroupPart, commandsConverter: CommandsConverter, commandDisposables: DisposableStore): Dto<IChatCommandGroup> {
-
-		const commands = part.value.map(aideCommand => {
-			const { command, buttonOptions } = aideCommand;
-			const convertedCommand = commandsConverter.toInternal(command, commandDisposables) ?? { command, title: command.title };
-			return { command: convertedCommand, buttonOptions };
-		});
-		return {
-			kind: 'commandGroup',
-			commands,
 		};
 	}
 }
@@ -3069,6 +2952,19 @@ export namespace AideAgentPromptReference {
 				const valueObj = value as { uri: UriComponents; range: editorRange.IRange };
 				return {
 					id: 'vscode.file',
+					name: variable.name,
+					range: variable.range && [variable.range.start, variable.range.endExclusive],
+					value: {
+						uri: URI.revive(valueObj.uri),
+						range: Range.to(valueObj.range)
+					},
+					modelDescription: variable.modelDescription
+				};
+			}
+			case 'vscode.code': {
+				const valueObj = value as { uri: UriComponents; range: editorRange.IRange };
+				return {
+					id: 'vscode.code',
 					name: variable.name,
 					range: variable.range && [variable.range.start, variable.range.endExclusive],
 					value: {
@@ -3139,8 +3035,8 @@ export namespace AideAgentResponsePart {
 		}
 	}
 
-	export function toContent(part: extHostProtocol.IChatContentProgressDto, commandsConverter: CommandsConverter): vscode.ChatResponseMarkdownPart | vscode.ChatResponseFileTreePart | vscode.ChatResponseAnchorPart | vscode.ChatResponseCommandButtonPart | undefined {
-		return ChatResponsePart.toContent(part, commandsConverter);
+	export function toContent(part: extHostProtocol.IAideAgentContentProgressDto, commandsConverter: CommandsConverter): vscode.ChatResponseMarkdownPart | vscode.ChatResponseFileTreePart | vscode.ChatResponseAnchorPart | vscode.ChatResponseCommandButtonPart | undefined {
+		return ChatResponsePart.toContent(part as extHostProtocol.IChatContentProgressDto, commandsConverter);
 	}
 }
 
@@ -3152,6 +3048,23 @@ export namespace ChatResponseClosePart {
 	}
 }
 ///////////////////////////// END AIDE /////////////////////////////
+
+export namespace SidecarRunningState {
+	export function from(status: types.SidecarRunningStatus): SidecarRunningStatus {
+		switch (status) {
+			case types.SidecarRunningStatus.Unavailable:
+				return SidecarRunningStatus.Unavailable;
+			case types.SidecarRunningStatus.Starting:
+				return SidecarRunningStatus.Starting;
+			case types.SidecarRunningStatus.Connected:
+				return SidecarRunningStatus.Connected;
+			case types.SidecarRunningStatus.Restarting:
+				return SidecarRunningStatus.Restarting;
+			default:
+				return SidecarRunningStatus.Unavailable;
+		}
+	}
+}
 
 export namespace TerminalQuickFix {
 	export function from(quickFix: vscode.TerminalQuickFixTerminalCommand | vscode.TerminalQuickFixOpener | vscode.Command, converter: Command.ICommandsConverter, disposables: DisposableStore): extHostProtocol.ITerminalQuickFixTerminalCommandDto | extHostProtocol.ITerminalQuickFixOpenerDto | extHostProtocol.ICommandDto | undefined {

@@ -28,7 +28,7 @@ import { isRequestVM, isResponseVM } from '../../common/aideAgentViewModel.js';
 import { IMarkdownVulnerability } from '../../common/annotations.js';
 import { CodeBlockModelCollection } from '../../common/codeBlockModelCollection.js';
 import { IChatCodeBlockInfo, IChatListItemRendererOptions, IEditPreviewCodeBlockInfo } from '../aideAgent.js';
-import { IBaseRenderDelegate } from '../aideAgentListRenderer.js';
+import { IChatRendererDelegate } from '../aideAgentListRenderer.js';
 import { ChatMarkdownDecorationsRenderer } from '../aideAgentMarkdownDecorationsRenderer.js';
 import { ChatEditorOptions } from '../aideAgentOptions.js';
 import { CodeBlockPart, ICodeBlockData, localFileLanguageId, parseLocalFileData } from '../codeBlockPart.js';
@@ -56,20 +56,31 @@ export class ChatMarkdownContentPart extends Disposable implements IChatContentP
 	public readonly codeblocks: IChatCodeBlockInfo[] = [];
 	public readonly editPreviewBlocks: IEditPreviewCodeBlockInfo[] = [];
 
-	private extractUriFromMarkdown(markdown: string): URI | undefined {
-		const lines = markdown.split('\n');
-		for (let i = 0; i < lines.length; i++) {
-			const line = lines[i].trim();
-			if (line.startsWith('```') && i > 0) {
-				const previousLine = lines[i - 1].trim();
+	private extractUriFromMarkdown(markdown: IMarkdownString): { uri: URI | undefined; cleanMarkdown: IMarkdownString } {
+		const lines = markdown.value.split('\n');
+		let extractedUri: URI | undefined;
+
+		// Find URI and filter lines in a single pass
+		const modifiedLines = lines.filter((line, i) => {
+			const currentLine = line.trim();
+			const nextLine = lines[i + 1]?.trim() || '';
+
+			if (nextLine.startsWith('```') && !extractedUri) {
 				try {
-					return URI.parse(previousLine);
+					extractedUri = URI.parse(currentLine);
+					return false; // Remove the URI line
 				} catch {
-					return undefined;
+					// Not a valid URI, keep the line
+					return true;
 				}
 			}
-		}
-		return undefined;
+			return true;
+		});
+
+		return {
+			uri: extractedUri,
+			cleanMarkdown: { ...markdown, value: modifiedLines.join('\n') }
+		};
 	}
 
 	constructor(
@@ -93,7 +104,8 @@ export class ChatMarkdownContentPart extends Disposable implements IChatContentP
 		const markdownDecorationsRenderer = instantiationService.createInstance(ChatMarkdownDecorationsRenderer);
 
 		// Extract URI before rendering
-		const extractedUri = this.extractUriFromMarkdown(markdown.value);
+		const { uri: extractedUri, cleanMarkdown } = this.extractUriFromMarkdown(markdown);
+		markdown = cleanMarkdown;
 
 		// We release editors in order so that it's more likely that the same editor will be assigned if this element is re-rendered right away, like it often is during progressive rendering
 		const orderedDisposablesList: IDisposable[] = [];
@@ -357,7 +369,7 @@ export class EditorPool extends Disposable {
 
 	constructor(
 		options: ChatEditorOptions,
-		delegate: IBaseRenderDelegate,
+		delegate: IChatRendererDelegate,
 		overflowWidgetsDomNode: HTMLElement | undefined,
 		@IInstantiationService instantiationService: IInstantiationService,
 	) {
@@ -391,7 +403,7 @@ export class EditPreviewEditorPool extends Disposable {
 
 	constructor(
 		options: ChatEditorOptions,
-		delegate: IBaseRenderDelegate,
+		delegate: IChatRendererDelegate,
 		overflowWidgetsDomNode: HTMLElement | undefined,
 		@IInstantiationService instantiationService: IInstantiationService,
 	) {

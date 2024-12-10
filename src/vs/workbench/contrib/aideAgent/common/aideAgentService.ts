@@ -40,11 +40,6 @@ export interface IChatResponseProgressFileTreeData {
 	children?: IChatResponseProgressFileTreeData[];
 }
 
-export interface IAideAgentCodeEditsItem {
-	uri: URI;
-	range: Range;
-}
-
 export type IDocumentContext = {
 	uri: URI;
 	version: number;
@@ -170,23 +165,9 @@ export interface IChatAgentMarkdownContentWithVulnerability {
 	kind: 'markdownVuln';
 }
 
-
-export interface ISingleCommandButton {
+export interface IChatCommandButton {
 	command: Command;
-	buttonOptions?: {
-		title?: string;
-		look?: 'primary' | 'secondary';
-		codiconId?: string;
-	};
-}
-
-export interface IChatCommandButton extends ISingleCommandButton {
 	kind: 'command';
-}
-
-export interface IChatCommandGroup {
-	commands: ISingleCommandButton[];
-	kind: 'commandGroup';
 }
 
 export interface IChatMoveMessage {
@@ -215,115 +196,22 @@ export interface IChatConfirmation {
 	kind: 'confirmation';
 }
 
-export enum ChatStreamingState {
-	Loading = 'loading',
-	EditsStarted = 'editsStarted',
-	WaitingFeedback = 'waitingFeedback',
-	Finished = 'finished',
-	Cancelled = 'cancelled',
-}
-
-export enum ChatStreamingStateLoadingLabel {
-	UnderstandingRequest = 'understandingRequest',
-	ExploringCodebase = 'exploringCodebase',
-	Reasoning = 'reasoning',
-	Generating = 'generating',
-}
-
-export interface IChatAideAgentPlanRegenerateInformationPart {
-	kind: 'planRegeneration';
-	sessionId: string;
-	exchangeId: string;
-}
-
-export interface IChatThinkingForEditPart {
-	kind: 'thinkingForEdit';
-	sessionId: string;
-	exchangeId: string;
-	thinkingDelta: IMarkdownString;
-}
-
-export interface IChatStreamingState {
-	kind: 'streamingState';
-	state: `${ChatStreamingState}`;
-	loadingLabel?: `${ChatStreamingStateLoadingLabel}`;
-	files: string[];
-	sessionId: string;
-	exchangeId: string;
-	isError: boolean;
-	message?: string;
-}
-
-export enum ChatEditsState {
-	Loading = 'loading',
-	MarkedComplete = 'markedComplete',
-	Cancelled = 'cancelled',
-}
-
-// Use the same enum as above, rename every plan to multi-step edit
-export enum ChatPlanState {
-	Started = 'Started',
-	Complete = 'Complete',
-	Cancelled = 'Cancelled',
-	Accepted = 'Accepted',
-}
-
-export interface IChatEditsInfo {
-	kind: 'editsInfo';
-	state: `${ChatEditsState}`;
-	isStale: boolean;
-	files: URI[];
-	sessionId: string;
-	exchangeId: string;
-	description?: IMarkdownString;
-}
-
-export interface IChatPlanInfo {
-	kind: 'planInfo';
-	state: `${ChatPlanState}`;
-	isStale: boolean;
-	sessionId: string;
-	exchangeId: string;
-	description?: IMarkdownString;
-}
-
-export interface IChatPlanStep {
-	description: IMarkdownString;
-	descriptionDelta: IMarkdownString | null;
-	files: URI[];
-	sessionId: string;
-	exchangeId: string;
-	title: string;
+export interface IAideAgentPlanStep {
 	index: number;
-	isLast: boolean;
+	description: IMarkdownString;
 	kind: 'planStep';
 }
+
+export interface IAideAgentProgressStage {
+	message: string;
+	kind: 'stage';
+}
+
+export type IAideAgentPlanProgressContent = IAideAgentPlanStep | IAideAgentProgressStage;
 
 export interface IChatEndResponse {
 	kind: 'endResponse';
 }
-
-export interface ICodePlanEditInfo {
-	kind: 'planEditInfo';
-	sessionId: string;
-	exchangeId: string;
-	currentStepIndex: number;
-	startStepIndex: number;
-}
-
-export interface IChatCheckpointAdded {
-	kind: 'checkpointAdded';
-	sessionId: string;
-	exchangeId: string;
-}
-
-export interface IChatRollbackCompleted {
-	kind: 'rollbackCompleted';
-	sessionId: string;
-	exchangeId: string;
-	exchangesRemoved: number;
-}
-
 
 export type IChatProgress =
 	| IChatMarkdownContent
@@ -338,23 +226,15 @@ export type IChatProgress =
 	| IChatTask
 	| IChatTaskResult
 	| IChatCommandButton
-	| IChatCommandGroup
 	| IChatWarningMessage
 	| IChatTextEdit
 	| IChatCodeEdit
 	| IChatMoveMessage
 	| IChatResponseCodeblockUriPart
 	| IChatConfirmation
-	| IChatStreamingState
-	| IChatPlanInfo
-	| IChatEditsInfo
-	| IChatPlanStep
-	| IChatEndResponse
-	| IChatThinkingForEditPart
-	| IChatRollbackCompleted
-	| IChatCheckpointAdded
-	| ICodePlanEditInfo
-	| IChatAideAgentPlanRegenerateInformationPart;
+	| IAideAgentPlanStep
+	| IAideAgentPlanProgressContent
+	| IChatEndResponse;
 
 export interface IChatFollowup {
 	kind: 'reply';
@@ -550,13 +430,11 @@ export interface IAideAgentService {
 
 	isEnabled(location: ChatAgentLocation): boolean;
 	hasSessions(): boolean;
-	startSessionWithId(location: ChatAgentLocation, token: CancellationToken, sessionId: string, isPassthrough?: boolean): ChatModel | undefined;
 	startSession(location: ChatAgentLocation, token: CancellationToken, isPassthrough?: boolean): ChatModel | undefined;
 	getSession(sessionId: string): IChatModel | undefined;
 	getOrRestoreSession(sessionId: string): IChatModel | undefined;
 	loadSessionFromContent(data: IExportableChatData | ISerializableChatData): IChatModel | undefined;
 
-	sendIterationRequest(sessionId: string, exchangeId: string, iterationQuery: string, options?: IChatSendRequestOptions): Promise<void>;
 	/**
 	 * Returns whether the request was accepted.
 	 */
@@ -565,18 +443,11 @@ export interface IAideAgentService {
 	// resendRequest(request: IChatRequestModel, options?: IChatSendRequestOptions): Promise<void>;
 	// TODO(@ghostwriternr): Remove this if we no longer need to remove requests.
 	// removeRequest(sessionid: string, requestId: string): Promise<void>;
-	/**
-	 * Push incremental progress events here to a sessionId and exchangeId implicitly
-	 * from the system
-	 *
-	 * Such requests can only update the UI elements and not change the storage layer at all
-	 * (nothing happens to the sidecar)
-	 */
-	pushProgress(sessionId: string, progress: IChatProgress): void;
 
 	cancelExchange(exchangeId: string): void;
 	cancelAllExchangesForSession(): void;
 
+	readonly lastExchangeId: string | undefined;
 	initiateResponse(sessionId: string): Promise<{ responseId: string; callback: (p: IChatProgress) => void; token: CancellationToken }>;
 
 	clearSession(sessionId: string): void;
@@ -591,8 +462,6 @@ export interface IAideAgentService {
 	onDidDisposeSession: Event<{ sessionId: string; reason: 'initializationFailed' | 'cleared' }>;
 
 	transferChatSession(transferredSessionData: IChatTransferredSessionData, toWorkspace: URI): void;
-	handleUserActionForSession(sessionId: string, exchangeId: string, stepIndex: number | undefined, agentId: string | undefined, accepted: boolean): void;
-	handleUserActionUndoSession(sessionId: string, exchangeId: string): Promise<void>;
 }
 
 export const KEYWORD_ACTIVIATION_SETTING_ID = 'accessibility.voice.keywordActivation';

@@ -5,57 +5,23 @@
 
 import * as vscode from 'vscode';
 
-const SIDECAR_URL = 'http://127.0.0.1:42424';
+const DEFAULT_URL = 'http://127.0.0.1:42424';
 
-export const readSideCarURL = (): string => {
+export const sidecarURL = (): string => {
 	const aideConfiguration = vscode.workspace.getConfiguration('aide');
-	const sideCarURL = aideConfiguration.get('sidecarURL');
-	if (sideCarURL === undefined) {
-		return SIDECAR_URL;
-	}
-	if (sideCarURL === '') {
-		return SIDECAR_URL;
-	}
-	if (typeof sideCarURL === 'string') {
-		return sideCarURL;
-	}
-	return SIDECAR_URL;
+	const sideCarURL = aideConfiguration.get('sidecarURL') as string;
+	return sideCarURL ?? DEFAULT_URL;
 };
-
 
 export const shouldUseUnstableToolAgent = (): boolean => {
 	const aideConfiguration = vscode.workspace.getConfiguration('aide');
 	const shouldUseUnstableToolAgent = aideConfiguration.get('specialToolAgentUseAtYourOwnRisk');
-	if (shouldUseUnstableToolAgent === undefined) {
-		return false;
-	}
-	if (typeof shouldUseUnstableToolAgent === 'boolean') {
-		return shouldUseUnstableToolAgent;
-	}
-	return false;
-}
+	return !!shouldUseUnstableToolAgent;
+};
 
 
 export const sidecarUseSelfRun = (): boolean => {
 	const aideConfiguration = vscode.workspace.getConfiguration('aide');
 	const sideCarUseSelfRun = aideConfiguration.get('sidecarUseSelfRun');
-	if (sideCarUseSelfRun === undefined) {
-		return false;
-	}
-	if (typeof sideCarUseSelfRun === 'boolean') {
-		return sideCarUseSelfRun;
-	}
-	return false;
-};
-
-export const sidecarNotIndexRepository = (): boolean => {
-	const aideConfiguration = vscode.workspace.getConfiguration('aide');
-	const sideCarIndexRepository = aideConfiguration.get('disableIndexing');
-	if (sideCarIndexRepository === undefined) {
-		return true;
-	}
-	if (typeof sideCarIndexRepository === 'boolean') {
-		return sideCarIndexRepository;
-	}
-	return true;
+	return !!sideCarUseSelfRun;
 };

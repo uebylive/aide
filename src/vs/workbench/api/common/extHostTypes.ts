@@ -4691,8 +4691,8 @@ export class LanguageModelError extends Error {
 //#region AideChat
 export enum AideAgentMode {
 	Edit = 1,
-	Plan = 2,
-	Chat = 3
+	Chat = 2,
+	Plan = 3
 }
 
 export enum AideAgentScope {
@@ -4701,168 +4701,36 @@ export enum AideAgentScope {
 	Codebase = 3
 }
 
-export enum AideSessionExchangeUserAction {
-	AcceptAll = 1,
-	RejectAll = 2,
-}
-
-export enum AideAgentEditsState {
-	Loading = 'loading',
-	InReview = 'inReview',
-	MarkedComplete = 'markedComplete',
-	Cancelled = 'cancelled',
-}
-
-export enum AideAgentStreamingStateEnum {
-	Loading = 'loading',
-	EditsStarted = 'editsStarted',
-	WaitingFeedback = 'waitingFeedback',
-	Finished = 'finished',
-	Cancelled = 'cancelled',
-}
-
-export enum AideAgentStreamingStateLoadingLabel {
-	UnderstandingRequest = 'understandingRequest',
-	ExploringCodebase = 'exploringCodebase',
-	Reasoning = 'reasoning',
-	Generating = 'generating',
-}
-
-export enum AideAgentPlanState {
-	Started = 'Started',
-	Complete = 'Complete',
-	Cancelled = 'Cancelled',
-	InReview = 'InReview',
-	Accepted = 'Accepted',
-}
-
-export enum AideButtonLook {
-	Primary = 'primary',
-	Secondary = 'secondary'
-}
-
-export class AideAgentResponsePlanPart {
-	description: string | vscode.MarkdownString;
-	descriptionDelta: string | vscode.MarkdownString | null;
-	sessionId: string;
-	exchangeId: string;
-	files: URI[];
-	index: number;
-	isLast: boolean;
-	title: string;
-	constructor(step: vscode.AideChatStep) {
-		this.description = step.description;
-		this.descriptionDelta = step.descriptionDelta;
-		this.sessionId = step.sessionId;
-		this.exchangeId = step.exchangeId;
-		this.index = step.index;
-		this.isLast = step.isLast;
-		this.title = step.title;
-		this.files = step.files;
-	}
-}
-
-export class AideAgentResponseCommandButtonPart {
-	value: vscode.AideCommand;
-	constructor(value: vscode.AideCommand) {
-		this.value = value;
-	}
-}
-
-export class AideAgentResponseCommandGroupPart {
-	value: vscode.AideCommand[];
-	constructor(value: vscode.AideCommand[]) {
-		this.value = value;
-	}
-}
-
-export class AideAgentResponseEditsInfoPart {
-	state: vscode.AideAgentEditsStateType;
-	isStale: boolean;
-	files: URI[];
-	sessionId: string;
-	exchangeId: string;
-	description?: string | vscode.MarkdownString;
-	constructor(step: vscode.AideAgentEditsInfo) {
-		this.state = step.state;
-		this.isStale = step.isStale;
-		this.files = step.files;
-		this.sessionId = step.sessionId;
-		this.exchangeId = step.exchangeId;
-		this.description = step.description;
-	}
-}
-
-export class AideAgentRollbackCompletedPart {
-	sessionId: string;
-	exchangeId: string;
-	exchangesRemoved: number;
-	constructor(value: vscode.AideRollbackCompleted) {
-		this.sessionId = value.sessionId;
-		this.exchangeId = value.exchangeId;
-		this.exchangesRemoved = value.exchangesRemoved;
-	}
-}
-
-export class AideAgentResponsePlanInfoPart {
-	state: vscode.AideAgentPlanStateType;
-	isStale: boolean;
-	sessionId: string;
-	exchangeId: string;
-	description?: string | vscode.MarkdownString;
-	constructor(step: vscode.AideAgentPlanInfo) {
-		this.state = step.state;
-		this.isStale = step.isStale;
-		this.sessionId = step.sessionId;
-		this.exchangeId = step.exchangeId;
-		this.description = step.description;
-	}
-}
-
-export class AideAgentPlanRegenerateInformationPart {
-	sessionId: string;
-	exchangeId: string;
-	constructor(step: vscode.AideAgentPlanRegenerateInformation) {
-		this.sessionId = step.sessionId;
-		this.exchangeId = step.exchangeId;
-	}
-}
-
-export class AideAgentThinkingForEditPart {
-	sessionId: string;
-	exchangeId: string;
-	thinkingDelta: vscode.MarkdownString;
-	constructor(step: vscode.AideAgentThinkingForEdit) {
-		this.exchangeId = step.exchangeId;
-		this.sessionId = step.sessionId;
-		this.thinkingDelta = new MarkdownString(step.thinkingDelta);
-	}
-}
-
-export class AideAgentResponseStreamingStatePart {
-	state: vscode.AideAgentStreamingStateType;
-	loadingLabel?: vscode.AideAgentStreamingStateLoadingLabelType;
-	files: string[];
-	exchangeId: string;
-	sessionId: string;
-	isError: boolean;
-	message?: string;
-	constructor(step: vscode.AideAgentStreamingState) {
-		this.state = step.state;
-		this.loadingLabel = step.loadingLabel;
-		this.files = step.files;
-		this.exchangeId = step.exchangeId;
-		this.sessionId = step.sessionId;
-		this.isError = step.isError;
-		this.message = step.message;
-	}
-}
-
 export class ChatResponseCodeEditPart {
 	edits: vscode.WorkspaceEdit;
 	constructor(edits: vscode.WorkspaceEdit) {
 		this.edits = edits;
 	}
+}
+
+export class AideAgentResponsePlanPart {
+	index: number;
+	description: string | vscode.MarkdownString;
+
+	constructor(step: vscode.AideAgentPlanStepPart) {
+		this.index = step.index;
+		this.description = step.description;
+	}
+}
+
+export class AideAgentProgressStagePart {
+	message: string;
+
+	constructor(stage: vscode.AideAgentProgressStagePart) {
+		this.message = stage.message;
+	}
+}
+
+export enum SidecarRunningStatus {
+	Unavailable = 0,
+	Starting = 1,
+	Restarting = 2,
+	Connected = 3
 }
 //#endregion
 

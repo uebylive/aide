@@ -9,7 +9,10 @@ import { IHistoryNavigationWidget } from '../../../../base/browser/history.js';
 import { StandardKeyboardEvent } from '../../../../base/browser/keyboardEvent.js';
 import * as aria from '../../../../base/browser/ui/aria/aria.js';
 import { Button } from '../../../../base/browser/ui/button/button.js';
+import { getBaseLayerHoverDelegate } from '../../../../base/browser/ui/hover/hoverDelegate2.js';
+import { getDefaultHoverDelegate } from '../../../../base/browser/ui/hover/hoverDelegateFactory.js';
 import { renderLabelWithIcons } from '../../../../base/browser/ui/iconLabel/iconLabels.js';
+import { Switch } from '../../../../base/browser/ui/switch/switch.js';
 import { IAction } from '../../../../base/common/actions.js';
 import { Codicon } from '../../../../base/common/codicons.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
@@ -18,6 +21,7 @@ import { KeyCode } from '../../../../base/common/keyCodes.js';
 import { Disposable, DisposableStore } from '../../../../base/common/lifecycle.js';
 import { basename, dirname } from '../../../../base/common/path.js';
 import { isMacintosh } from '../../../../base/common/platform.js';
+import { ThemeIcon } from '../../../../base/common/themables.js';
 import { URI } from '../../../../base/common/uri.js';
 import { IEditorConstructionOptions } from '../../../../editor/browser/config/editorConfiguration.js';
 import { EditorExtensionsRegistry } from '../../../../editor/browser/editorExtensions.js';
@@ -36,6 +40,8 @@ import { ActionViewItemWithKb } from '../../../../platform/actionbarWithKeybindi
 import { MenuEntryActionViewItem } from '../../../../platform/actions/browser/menuEntryActionViewItem.js';
 import { HiddenItemStrategy, MenuWorkbenchToolBar } from '../../../../platform/actions/browser/toolbar.js';
 import { MenuId, MenuItemAction } from '../../../../platform/actions/common/actions.js';
+import { IAIModelSelectionService } from '../../../../platform/aiModel/common/aiModels.js';
+import { ICommandService } from '../../../../platform/commands/common/commands.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IContextMenuService } from '../../../../platform/contextview/browser/contextView.js';
@@ -51,17 +57,18 @@ import { ResourceLabels } from '../../../browser/labels.js';
 import { AccessibilityVerbositySettingId } from '../../accessibility/browser/accessibilityConfiguration.js';
 import { AccessibilityCommandId } from '../../accessibility/common/accessibilityCommands.js';
 import { getSimpleCodeEditorWidgetOptions, getSimpleEditorOptions, setupSimpleEditorSelectionStyling } from '../../codeEditor/browser/simpleEditorOptions.js';
+import { ModelSelectionIndicator } from '../../preferences/browser/modelSelectionIndicator.js';
 import { ChatAgentLocation } from '../common/aideAgentAgents.js';
-import { CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_INPUT_PLANNING_ENABLED, CONTEXT_IN_CHAT_INPUT } from '../common/aideAgentContextKeys.js';
-import { AgentScope, IChatRequestVariableEntry } from '../common/aideAgentModel.js';
-import { IChatEditsInfo, IChatFollowup, IChatPlanInfo } from '../common/aideAgentService.js';
+import { CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_MODE, CONTEXT_IN_CHAT_INPUT } from '../common/aideAgentContextKeys.js';
+import { AgentMode, AgentScope, IChatRequestVariableEntry } from '../common/aideAgentModel.js';
+import { IChatFollowup } from '../common/aideAgentService.js';
 import { IChatResponseViewModel } from '../common/aideAgentViewModel.js';
 import { IAideAgentWidgetHistoryService, IChatHistoryEntry } from '../common/aideAgentWidgetHistoryService.js';
 import { IAideAgentLMService } from '../common/languageModels.js';
-import { CancelAction, ContinueEditing, IChatExecuteActionContext, SubmitChatRequestAction, SubmitPlanRequestAction } from './actions/aideAgentExecuteActions.js';
+import { ISidecarService, SidecarDownloadStatus, SidecarRunningStatus } from '../common/sidecarService.js';
+import { AgentScopePickerActionId, CancelAction, ExecuteChatAction, IChatExecuteActionContext, ToggleEditModeAction } from './actions/aideAgentExecuteActions.js';
 import { IChatWidget } from './aideAgent.js';
 import { ChatFollowups } from './aideAgentFollowups.js';
-import { StreamingStateWidget } from './aideAgentStreamingStateWidget.js';
 
 const $ = dom.$;
 
@@ -76,6 +83,7 @@ interface IChatInputPartOptions {
 		telemetrySource?: string;
 	};
 	editorOverflowWidgetsDomNode?: HTMLElement;
+	preventChatEditToggle?: boolean;
 }
 
 export class ChatInputPart extends Disposable implements IHistoryNavigationWidget {
@@ -112,23 +120,18 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 
 	private readonly inputEditorMaxHeight: number;
 	private inputEditorHeight = 0;
-	private _container!: HTMLElement;
-
-	get container() {
-		return this._container;
-	}
+	private container!: HTMLElement;
 
 	private inputSideToolbarContainer?: HTMLElement;
-	private _streamingStateWidget: StreamingStateWidget | undefined;
-	get streamingStateWidget() {
-		return this._streamingStateWidget;
-	}
 
 	private followupsContainer!: HTMLElement;
 	private readonly followupsDisposables = this._register(new DisposableStore());
 
 	private attachedContextContainer!: HTMLElement;
 	private readonly attachedContextDisposables = this._register(new DisposableStore());
+
+	private statusClickable = false;
+	private statusMessageContainer!: HTMLElement;
 
 	private _inputPartHeight: number = 0;
 	get inputPartHeight() {
@@ -139,6 +142,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	private _inputEditorElement!: HTMLElement;
 
 	private executeToolbar!: MenuWorkbenchToolBar;
+	private modeSwitch!: Switch;
 	private inputActionsToolbar!: MenuWorkbenchToolBar;
 
 	get inputEditor() {
@@ -161,6 +165,34 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		return metadataId;
 	}
 
+	private _agentMode: IContextKey<string>;
+	private _lastPlanningEnabled: boolean;
+	get mode() {
+		return AgentMode[this._agentMode.get() as keyof typeof AgentMode] ?? AgentMode.Plan;
+	}
+
+	setMode(mode: AgentMode, planningToggle: boolean = false) {
+		switch (mode) {
+			case AgentMode.Plan:
+				this._agentMode.set(AgentMode.Plan);
+				this._lastPlanningEnabled = true;
+				break;
+			case AgentMode.Edit:
+				if (planningToggle) {
+					this._agentMode.set(AgentMode.Edit);
+					this._lastPlanningEnabled = false;
+				} else {
+					this._agentMode.set(this._lastPlanningEnabled ? AgentMode.Plan : AgentMode.Edit);
+				}
+				this.modeSwitch.value = AgentMode.Edit;
+				break;
+			case AgentMode.Chat:
+				this._agentMode.set(AgentMode.Chat);
+				this.modeSwitch.value = AgentMode.Chat;
+				break;
+		}
+	}
+
 	private _onDidChangeCurrentAgentScope = this._register(new Emitter<string>());
 	private _currentAgentScope: AgentScope = AgentScope.Selection;
 	get currentAgentScope() {
@@ -170,15 +202,6 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	set currentAgentScope(scope: AgentScope) {
 		this._currentAgentScope = scope;
 		this._onDidChangeCurrentAgentScope.fire(scope);
-	}
-
-	private _planningEnabled: IContextKey<boolean>;
-	get planningEnabled() {
-		return this._planningEnabled.get() ?? false;
-	}
-
-	set planningEnabled(enabled: boolean) {
-		this._planningEnabled.set(enabled);
 	}
 
 	private cachedDimensions: dom.Dimension | undefined;
@@ -192,15 +215,18 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		private readonly location: ChatAgentLocation,
 		private readonly options: IChatInputPartOptions,
 		private readonly getInputState: () => any,
-		@IAideAgentWidgetHistoryService private readonly historyService: IAideAgentWidgetHistoryService,
-		@IModelService private readonly modelService: IModelService,
-		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@IContextKeyService private readonly contextKeyService: IContextKeyService,
-		@IConfigurationService private readonly configurationService: IConfigurationService,
-		@IKeybindingService private readonly keybindingService: IKeybindingService,
 		@IAccessibilityService private readonly accessibilityService: IAccessibilityService,
 		@IAideAgentLMService private readonly languageModelsService: IAideAgentLMService,
+		@IAideAgentWidgetHistoryService private readonly historyService: IAideAgentWidgetHistoryService,
+		@IAIModelSelectionService private readonly aiModelSelectionService: IAIModelSelectionService,
+		@ICommandService private readonly commandService: ICommandService,
+		@IConfigurationService private readonly configurationService: IConfigurationService,
+		@IContextKeyService private readonly contextKeyService: IContextKeyService,
+		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IKeybindingService private readonly keybindingService: IKeybindingService,
 		@ILogService private readonly logService: ILogService,
+		@IModelService private readonly modelService: IModelService,
+		@ISidecarService private readonly sidecarService: ISidecarService,
 	) {
 		super();
 
@@ -209,7 +235,8 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		this.inputEditorHasText = CONTEXT_CHAT_INPUT_HAS_TEXT.bindTo(contextKeyService);
 		this.chatCursorAtTop = CONTEXT_CHAT_INPUT_CURSOR_AT_TOP.bindTo(contextKeyService);
 		this.inputEditorHasFocus = CONTEXT_CHAT_INPUT_HAS_FOCUS.bindTo(contextKeyService);
-		this._planningEnabled = CONTEXT_CHAT_INPUT_PLANNING_ENABLED.bindTo(contextKeyService);
+		this._agentMode = CONTEXT_CHAT_MODE.bindTo(contextKeyService);
+		this._lastPlanningEnabled = this.mode === AgentMode.Plan;
 
 		this.history = this.loadHistory();
 		this._register(this.historyService.onDidClearHistory(() => this.history = new HistoryNavigator2([{ text: '' }], 50, historyKeyFn)));
@@ -284,7 +311,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	}
 
 	get element(): HTMLElement {
-		return this._container;
+		return this.container;
 	}
 
 	showPreviousValue(): void {
@@ -424,7 +451,6 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		let elements;
 		if (this.options.renderStyle === 'compact') {
 			elements = dom.h('.interactive-input-part', [
-				dom.h('.interactive-input-streaming-state@streamingStateContainer'),
 				dom.h('.interactive-input-and-side-toolbar@inputAndSideToolbar', [
 					dom.h('.chat-input-container@inputContainer', [
 						dom.h('.chat-editor-container@editorContainer'),
@@ -433,11 +459,14 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 				]),
 				dom.h('.aideagent-attached-context@attachedContextContainer'),
 				dom.h('.interactive-input-followups@followupsContainer'),
+				dom.h('.interactive-input-status-message@statusMessageContainer', [
+					dom.h('.model-config@modelConfig'),
+					dom.h('.status-message@statusMessage'),
+				])
 			]);
 		} else {
 			elements = dom.h('.interactive-input-part', [
 				dom.h('.interactive-input-followups@followupsContainer'),
-				dom.h('.interactive-input-streaming-state@streamingStateContainer'),
 				dom.h('.interactive-input-and-side-toolbar@inputAndSideToolbar', [
 					dom.h('.chat-input-container@inputContainer', [
 						dom.h('.aideagent-attached-context@attachedContextContainer'),
@@ -445,20 +474,30 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 						dom.h('.aideagent-input-toolbars@inputToolbars'),
 					]),
 				]),
+				dom.h('.interactive-input-status-message@statusMessageContainer', [
+					dom.h('.model-config@modelConfig'),
+					dom.h('.status-message@statusMessage'),
+				])
 			]);
 		}
-		this._container = elements.root;
-		container.append(this._container);
-		if (this.location === ChatAgentLocation.Panel) {
-			this._streamingStateWidget = this._register(this.instantiationService.createInstance(StreamingStateWidget, undefined, elements.streamingStateContainer, false));
-		}
-		this._container.classList.toggle('compact', this.options.renderStyle === 'compact');
+		this.container = elements.root;
+		container.append(this.container);
+		this.container.classList.toggle('compact', this.options.renderStyle === 'compact');
 		this.followupsContainer = elements.followupsContainer;
 		const inputAndSideToolbar = elements.inputAndSideToolbar; // The chat input and toolbar to the right
 		const inputContainer = elements.inputContainer; // The chat editor, attachments, and toolbars
 		const editorContainer = elements.editorContainer;
 		this.attachedContextContainer = elements.attachedContextContainer;
 		const toolbarsContainer = elements.inputToolbars;
+		this.statusMessageContainer = elements.statusMessageContainer;
+		const modelConfig = elements.modelConfig;
+		const modelConfigButton = this.instantiationService.createInstance(Button, modelConfig, {
+			buttonBackground: 'transparent',
+			buttonForeground: 'inherit',
+			buttonBorder: 'none',
+			supportIcons: true,
+		});
+		const statusMessage = elements.statusMessage;
 		this.initAttachedContext(this.attachedContextContainer);
 
 		const inputScopedContextKeyService = this._register(this.contextKeyService.createScoped(inputContainer));
@@ -490,7 +529,6 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		options.scrollbar = { ...(options.scrollbar ?? {}), vertical: 'hidden' };
 		options.stickyScroll = { enabled: false };
 		options.acceptSuggestionOnEnter = 'on';
-
 		// TODO(@ghostwriternr): This condition is a hack, to avoid going through the pain of adding a new aide agent location.
 		// But this condition is necessary because we currently use the compact style for the floating widget.
 		// And the floating widget has fixed position relative to the window, so it helps to have the suggest controller
@@ -537,16 +575,15 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			menuOptions: { shouldForwardArgs: true },
 			hiddenItemStrategy: HiddenItemStrategy.Ignore,
 			actionViewItemProvider: (action, options) => {
-				// if (action.id === AgentScopePickerActionId && action instanceof MenuItemAction) {
-				// const scopeDelegate: AgentScopeSetterDelegate = {
-				// onDidChangeScope: this._onDidChangeCurrentAgentScope.event,
-				// setScope: (scopeId: AgentScope) => {
-				// this._currentAgentScope = scopeId;
-				// }
-				// };
-				// const scopeSelect = this.instantiationService.createInstance(AgentScopeActionViewItem, action, this._currentAgentScope, scopeDelegate);
-				// return scopeSelect;
-				// }
+				if (action.id === AgentScopePickerActionId && action instanceof MenuItemAction) {
+					const scopeDelegate: AgentScopeSetterDelegate = {
+						onDidChangeScope: this._onDidChangeCurrentAgentScope.event,
+						setScope: (scopeId: AgentScope) => {
+							this._currentAgentScope = scopeId;
+						}
+					};
+					return this.instantiationService.createInstance(AgentScopeActionViewItem, action, this._currentAgentScope, scopeDelegate);
+				}
 
 				if (action instanceof MenuItemAction) {
 					return this.instantiationService.createInstance(MenuEntryActionViewItem, action, undefined);
@@ -561,6 +598,22 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 				this.layout(this.cachedDimensions.height, this.cachedDimensions.width);
 			}
 		}));
+
+		const keybinding = this.keybindingService.lookupKeybinding(ToggleEditModeAction.ID);
+		this.modeSwitch = this._register(this.instantiationService.createInstance(Switch, {
+			description: `Edit mode directly applies changes to your code${keybinding ? ` (${keybinding.getLabel()})` : ''}`,
+			options: ['Chat', 'Edit'],
+			value: 'Edit',
+		}));
+		dom.append(toolbarsContainer, this.modeSwitch.domNode);
+		if (this.options.preventChatEditToggle) {
+			this.modeSwitch.disable();
+			this.modeSwitch.domNode.style.display = 'none';
+		}
+		this._register(this.modeSwitch.onDidChange((mode) => {
+			this._agentMode.set(mode === 'Edit' ? AgentMode.Edit : AgentMode.Chat);
+		}));
+
 		this.executeToolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, toolbarsContainer, this.options.menus.executeToolbar, {
 			telemetrySource: this.options.menus.telemetrySource,
 			menuOptions: {
@@ -568,20 +621,9 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			},
 			hiddenItemStrategy: HiddenItemStrategy.Ignore, // keep it lean when hiding items and avoid a "..." overflow menu
 			actionViewItemProvider: (action, options) => {
-				const kbActionsSet = new Set([SubmitChatRequestAction.ID, SubmitPlanRequestAction.ID, CancelAction.ID, ContinueEditing.ID]);
-				if (kbActionsSet.has(action.id) && action instanceof MenuItemAction) {
+				if ((action.id === ExecuteChatAction.ID || action.id === CancelAction.ID) && action instanceof MenuItemAction) {
 					return this.instantiationService.createInstance(ActionViewItemWithKb, action);
 				}
-
-				// if (action.id === AgentModePickerActionId && action instanceof MenuItemAction) {
-				// 	const itemDelegate: AgentModeSetterDelegate = {
-				// 		onDidChangeMode: this._onDidChangeCurrentAgentMode.event,
-				// 		setMode: (modeId: string) => {
-				// 			this._currentAgentMode.set(modeId as AgentMode);
-				// 		}
-				// 	};
-				// 	return this.instantiationService.createInstance(AgentModeActionViewItem, action, this._currentAgentMode.get() || AgentMode.Chat, itemDelegate);
-				// }
 
 				return undefined;
 			}
@@ -603,6 +645,68 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			toolbarSide.getElement().classList.add('chat-side-toolbar');
 			toolbarSide.context = { widget } satisfies IChatExecuteActionContext;
 		}
+
+		if (this.options.preventChatEditToggle) {
+			this.statusMessageContainer.style.display = 'none';
+		}
+
+		// Model selection
+		this.aiModelSelectionService.getValidatedModelSelectionSettings().then(settings => {
+			const model = settings.slowModel;
+			modelConfigButton.label = `$(${Codicon.chevronDown.id}) ${settings.models[model].name}`;
+		});
+		this._register(this.aiModelSelectionService.onDidChangeModelSelection((settings) => {
+			const model = settings.slowModel;
+			modelConfigButton.label = `$(${Codicon.chevronDown.id}) ${settings.models[model].name}`;
+		}));
+		modelConfigButton.onDidClick(() => {
+			this.commandService.executeCommand(ModelSelectionIndicator.SWITCH_SLOW_MODEL_COMMAND_ID);
+		});
+
+		// Sidecar status
+		const textSpan = dom.$('span');
+		const runningStatus = this.sidecarService.runningStatus;
+		const downloadStatus = this.sidecarService.downloadStatus;
+		const { text, color, updateAvailable } = this.getSidecarStatus(runningStatus, downloadStatus);
+		textSpan.textContent = text;
+		this.statusClickable = updateAvailable || runningStatus === SidecarRunningStatus.Unavailable;
+		this._register(dom.addDisposableListener(textSpan, dom.EventType.CLICK, () => {
+			if (this.statusClickable) {
+				this.sidecarService.triggerRestart();
+			}
+		}));
+		this._register(getBaseLayerHoverDelegate().setupManagedHover(
+			getDefaultHoverDelegate('mouse'),
+			statusMessage,
+			() => {
+				if (this.statusClickable) {
+					return 'Click to restart the sidecar';
+				} else {
+					return text;
+				}
+			}
+		));
+
+		const iconSpan = dom.$('span');
+		iconSpan.classList.add(...ThemeIcon.asClassNameArray(Codicon.circleFilled));
+		iconSpan.style.color = color;
+		statusMessage.appendChild(textSpan);
+		statusMessage.appendChild(iconSpan);
+
+		this._register(this.sidecarService.onDidChangeStatus(({ runningStatus, downloadStatus }) => {
+			const { text, color, updateAvailable } = this.getSidecarStatus(runningStatus, downloadStatus);
+			textSpan.textContent = text;
+			const clickable = updateAvailable || runningStatus === SidecarRunningStatus.Unavailable;
+			this.statusClickable = clickable;
+			textSpan.style.cursor = clickable ? 'pointer' : 'default';
+			iconSpan.style.color = color;
+
+			if (runningStatus !== SidecarRunningStatus.Connected) {
+				this.inputEditor.updateOptions({ readOnly: true });
+			} else {
+				this.inputEditor.updateOptions({ readOnly: false });
+			}
+		}));
 
 		let inputModel = this.modelService.getModel(this.inputUri);
 		if (!inputModel) {
@@ -640,13 +744,35 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		onDidChangeCursorPosition();
 	}
 
+	private getSidecarStatus(
+		runningStatus: SidecarRunningStatus,
+		downloadStatus: SidecarDownloadStatus
+	): { text: string; color: string; updateAvailable: boolean } {
+		let text = '';
+		let color = 'var(--vscode-editorGutter-addedBackground)';
+		let updateAvailable = false;
 
-	updateStreamingState(state: IChatPlanInfo | IChatEditsInfo): void {
-		this._streamingStateWidget?.update(state);
-	}
+		if (runningStatus === SidecarRunningStatus.Connected) {
+			text = 'Sidecar connected';
+			if (downloadStatus.downloading && downloadStatus.update) {
+				text += ' (downloading update)';
+			} else if (!downloadStatus.downloading && downloadStatus.update) {
+				text += ' (click to update)';
+				updateAvailable = true;
+			}
+			color = 'var(--vscode-editorGutter-addedBackground)';
+		} else if (downloadStatus.downloading) {
+			text = `Downloading sidecar`;
+			color = 'var(--vscode-editorGutter-modifiedBackground)';
+		} else if (runningStatus === SidecarRunningStatus.Unavailable) {
+			text = 'Sidecar not running';
+			color = 'var(--vscode-editorGutter-deletedBackground)';
+		} else {
+			text = `${SidecarRunningStatus[runningStatus]} Sidecar`;
+			color = 'var(--vscode-editorGutter-modifiedBackground)';
+		}
 
-	hideStreamingState(): void {
-		this._streamingStateWidget?.hide();
+		return { text, color, updateAvailable };
 	}
 
 	private initAttachedContext(container: HTMLElement, isLayout = false) {
@@ -731,7 +857,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 
 	get contentHeight(): number {
 		const data = this.getLayoutData();
-		return data.followupsHeight + data.inputPartEditorHeight + data.inputPartVerticalPadding + data.inputEditorBorder + data.attachmentsHeight + data.toolbarsHeight;
+		return data.followupsHeight + data.inputPartEditorHeight + data.inputPartVerticalPadding + data.inputEditorBorder + data.attachmentsHeight + data.toolbarsHeight + data.statusMessageHeight;
 	}
 
 	layout(height: number, width: number) {
@@ -745,12 +871,12 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		this.initAttachedContext(this.attachedContextContainer, true);
 
 		const data = this.getLayoutData();
-		const inputEditorHeight = Math.min(data.inputPartEditorHeight, height - data.followupsHeight - data.attachmentsHeight - data.inputPartVerticalPadding - data.toolbarsHeight);
+		const inputEditorHeight = Math.min(data.inputPartEditorHeight, height - data.followupsHeight - data.attachmentsHeight - data.inputPartVerticalPadding - data.toolbarsHeight - data.statusMessageHeight);
 
 		const followupsWidth = width - data.inputPartHorizontalPadding;
 		this.followupsContainer.style.width = `${followupsWidth}px`;
 
-		this._inputPartHeight = data.inputPartVerticalPadding + data.followupsHeight + inputEditorHeight + data.inputEditorBorder + data.attachmentsHeight + data.toolbarsHeight;
+		this._inputPartHeight = data.inputPartVerticalPadding + data.followupsHeight + inputEditorHeight + data.inputEditorBorder + data.attachmentsHeight + data.toolbarsHeight + data.statusMessageHeight;
 
 		const initialEditorScrollWidth = this._inputEditor.getScrollWidth();
 		const newEditorWidth = width - data.inputPartHorizontalPadding - data.editorBorder - data.inputPartHorizontalPaddingInside - data.toolbarsWidth - data.sideToolbarWidth;
@@ -785,6 +911,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			toolbarsWidth: this.options.renderStyle === 'compact' ? executeToolbarWidth + executeToolbarPadding + inputToolbarWidth + inputToolbarPadding : 0,
 			toolbarsHeight: this.options.renderStyle === 'compact' ? 0 : 22,
 			sideToolbarWidth: this.inputSideToolbarContainer ? dom.getTotalWidth(this.inputSideToolbarContainer) + 4 /*gap*/ : 0,
+			statusMessageHeight: this.statusMessageContainer ? this.statusMessageContainer.offsetHeight : 0
 		};
 	}
 
@@ -800,7 +927,6 @@ const historyKeyFn = (entry: IChatHistoryEntry) => JSON.stringify(entry);
 function getLastPosition(model: ITextModel): IPosition {
 	return { lineNumber: model.getLineCount(), column: model.getLineLength(model.getLineCount()) + 1 };
 }
-
 
 export interface AgentScopeSetterDelegate {
 	onDidChangeScope: Event<string>;
@@ -873,72 +999,3 @@ export class AgentScopeActionViewItem extends MenuEntryActionViewItem {
 
 const chatInputEditorContainerSelector = '.interactive-input-editor';
 setupSimpleEditorSelectionStyling(chatInputEditorContainerSelector);
-
-// interface AgentModeSetterDelegate {
-// 	onDidChangeMode: Event<string>;
-// 	setMode(selectedModeId: string): void;
-// }
-
-// class AgentModeActionViewItem extends MenuEntryActionViewItem {
-// 	constructor(
-// 		action: MenuItemAction,
-// 		private currentAgentMode: AgentMode,
-// 		private delegate: AgentModeSetterDelegate,
-// 		@IKeybindingService keybindingService: IKeybindingService,
-// 		@INotificationService notificationService: INotificationService,
-// 		@IContextKeyService contextKeyService: IContextKeyService,
-// 		@IThemeService themeService: IThemeService,
-// 		@IContextMenuService contextMenuService: IContextMenuService,
-// 		@IAccessibilityService _accessibilityService: IAccessibilityService
-// 	) {
-// 		super(action, undefined, keybindingService, notificationService, contextKeyService, themeService, contextMenuService, _accessibilityService);
-
-// 		this._register(delegate.onDidChangeMode(modeId => {
-// 			this.currentAgentMode = modeId as AgentMode;
-// 			this.updateLabel();
-// 		}));
-// 	}
-
-// 	override async onClick(): Promise<void> {
-// 		this._openContextMenu();
-// 	}
-
-// 	override render(container: HTMLElement): void {
-// 		super.render(container);
-// 		container.classList.add('agentmode-picker-item');
-// 	}
-
-// 	protected override updateLabel(): void {
-// 		if (this.label) {
-// 			this.label.textContent = this.currentAgentMode;
-// 			dom.reset(this.label, ...renderLabelWithIcons(`${this.currentAgentMode}$(chevron-down)`));
-// 		}
-// 	}
-
-// 	private _openContextMenu() {
-// 		const setAgentModeAction = (mode: string): IAction => {
-// 			return {
-// 				id: mode,
-// 				label: mode,
-// 				tooltip: '',
-// 				class: undefined,
-// 				enabled: true,
-// 				checked: mode === this.currentAgentMode,
-// 				run: () => {
-// 					this.currentAgentMode = mode as AgentMode;
-// 					this.delegate.setMode(mode);
-// 					this.updateLabel();
-// 				}
-// 			};
-// 		};
-
-// 		this._contextMenuService.showContextMenu({
-// 			getAnchor: () => this.element!,
-// 			getActions: () => [
-// 				setAgentModeAction('Edit'),
-// 				setAgentModeAction('Chat'),
-// 				setAgentModeAction('Plan'),
-// 			]
-// 		});
-// 	}
-// }

@@ -149,9 +149,7 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 			const loginPrompt = dom.append(this.csAccountCard, $('.login-prompt'));
 			loginPrompt.textContent = 'Log in to CodeStory Account';
 			const loginDescription = dom.append(this.csAccountCard, $('.login-description'));
-
-			// zi: for now.
-			loginDescription.textContent = 'For unlimited requests';
+			loginDescription.textContent = 'To get access to AI features';
 
 			const loginButton = this._register(this.instantiationService.createInstance(Button, csAccountCard, defaultButtonStyles));
 			loginButton.label = 'Log In...';

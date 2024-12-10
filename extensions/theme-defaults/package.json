@@ -20,6 +20,12 @@
         "path": "./themes/codestory_dark.json"
       },
       {
+        "id": "CodeStory Light",
+        "label": "%codestoryLightColorThemeLabel%",
+        "uiTheme": "vs",
+        "path": "./themes/codestory_light.json"
+      },
+      {
         "id": "Default Dark+",
         "label": "%darkPlusColorThemeLabel%",
         "uiTheme": "vs-dark",

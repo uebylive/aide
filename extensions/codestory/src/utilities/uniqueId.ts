@@ -81,8 +81,8 @@ export function getUniqueId(): string {
 export function getUserId(): string {
 	try {
 		const codestoryConfiguration = vscode.workspace.getConfiguration('codestory');
-		const disableUseNameLookup = codestoryConfiguration.get('disableUseNameLookup');
-		if (disableUseNameLookup) {
+		const disableUserNameLookup = codestoryConfiguration.get('disableUserNameLookup');
+		if (disableUserNameLookup) {
 			return 'You';
 		} else {
 			return os.userInfo().username;
@@ -90,19 +90,5 @@ export function getUserId(): string {
 	} catch (err) {
 		// console.log('err', err);
 		return 'You';
-	}
-}
-
-export function shouldUseExactMatching(): boolean {
-	try {
-		const aideConfiguration = vscode.workspace.getConfiguration('aide');
-		const useExactMatching = aideConfiguration.get('useExactSelection');
-		if (useExactMatching) {
-			return true;
-		} else {
-			return false;
-		}
-	} catch (err) {
-		return false;
 	}
 }

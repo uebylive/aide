@@ -12,9 +12,8 @@ import { CompletionRequest, CompletionResponse } from '../inlineCompletion/sidec
 import { CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, SidecarContextEvent, UserContext } from '../server/types';
 import { SelectionDataForExplain } from '../utilities/getSelectionContext';
 import { AidePlanTimer } from '../utilities/planTimer';
-import { shouldUseUnstableToolAgent, sidecarNotIndexRepository } from '../utilities/sidecarUrl';
+import { shouldUseUnstableToolAgent, sidecarURL } from '../utilities/sidecarUrl';
 import { sleep } from '../utilities/sleep';
-import { readCustomSystemInstruction } from '../utilities/systemInstruction';
 import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/types';
 import { getUserId } from '../utilities/uniqueId';
 import { detectDefaultShell } from './default-shell';
@@ -66,10 +65,9 @@ export class SideCarClient {
 	private _userId: string | null;
 
 	constructor(
-		url: string,
 		modelConfiguration: vscode.ModelSelection,
 	) {
-		this._url = url;
+		this._url = sidecarURL();
 		this._modelConfiguration = modelConfiguration;
 		this._userId = getUserId();
 	}
@@ -229,16 +227,12 @@ export class SideCarClient {
 		baseUrl.pathname = '/api/plan/append';
 		const url = baseUrl.toString();
 
-		// check for deep reasoning
-		const codestoryConfiguration = vscode.workspace.getConfiguration('aide');
-		const deepReasoning = codestoryConfiguration.get('deepReasoning') as boolean;
-
 		const body = {
 			user_query: query,
 			thread_id: threadId,
 			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query),
 			editor_url: editorUrl,
-			is_deep_reasoning: deepReasoning,
+			is_deep_reasoning: true,
 			with_lsp_enrichment: withLspEnrichments,
 		};
 
@@ -264,10 +258,6 @@ export class SideCarClient {
 		baseUrl.pathname = '/api/plan/append';
 		const url = baseUrl.toString();
 
-		// check for deep reasoning
-		const codestoryConfiguration = vscode.workspace.getConfiguration('aide');
-		const deepReasoning = codestoryConfiguration.get('deepReasoning') as boolean;
-
 		// we need with_lsp_enrichment flag
 
 		const body = {
@@ -275,7 +265,7 @@ export class SideCarClient {
 			thread_id: threadId,
 			editor_url: editorUrl,
 			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query),
-			is_deep_reasoning: deepReasoning,
+			is_deep_reasoning: true,
 			with_lsp_enrichment: false,
 		};
 
@@ -306,10 +296,6 @@ export class SideCarClient {
 		baseUrl.pathname = '/api/plan/check_references';
 		const url = baseUrl.toString();
 
-		// check for deep reasoning
-		const codestoryConfiguration = vscode.workspace.getConfiguration('aide');
-		const deepReasoning = codestoryConfiguration.get('deepReasoning') as boolean;
-
 		// we need with_lsp_enrichment flag
 
 		const body = {
@@ -317,7 +303,7 @@ export class SideCarClient {
 			thread_id: threadId,
 			editor_url: editorUrl,
 			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query),
-			is_deep_reasoning: deepReasoning,
+			is_deep_reasoning: true,
 			with_lsp_enrichment: false,
 		};
 
@@ -444,13 +430,8 @@ export class SideCarClient {
 		if (userContext.is_plan_generation) {
 			aidePlanTimer.startPlanTimer();
 		}
-		const codestoryConfiguration = vscode.workspace.getConfiguration('aide');
-		const deepReasoning = codestoryConfiguration.get('deepReasoning') as boolean;
-		const agentSystemInstruction = readCustomSystemInstruction();
 
 		const user_context = await convertVSCodeVariableToSidecarHackingForPlan(variables, query);
-
-		console.log({ user_context });
 
 		const body = {
 			repo_ref: repoRef.getRepresentation(),
@@ -461,9 +442,9 @@ export class SideCarClient {
 			active_window_data: activeWindowData,
 			model_config: sideCarModelConfiguration,
 			user_id: this._userId,
-			system_instruction: agentSystemInstruction,
+			system_instruction: '',
 			editor_url: editorUrl,
-			is_deep_reasoning: deepReasoning,
+			is_deep_reasoning: true,
 			with_lsp_enrichment: user_context.with_lsp_enrichment,
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
@@ -929,32 +910,6 @@ export class SideCarClient {
 				const editFileResponse = JSON.parse(JSON.parse(`"${finalString}"`)) as CompletionResponse;
 				yield editFileResponse;
 			}
-		}
-	}
-
-
-	async indexRepositoryIfNotInvoked(repoRef: RepoRef): Promise<boolean> {
-		// First get the list of indexed repositories
-		// log repo ref
-		await this.waitForGreenHC();
-		// console.log('fetching the status of the various repositories');
-		const response = await fetch(this.getRepoListUrl());
-		const repoList = (await response.json()) as RepoStatus;
-		if (sidecarNotIndexRepository()) {
-			return true;
-		}
-		if (!(repoRef.getRepresentation() in repoList.repo_map)) {
-			// We need to index this repository
-			const baseUrl = new URL(this._url);
-			baseUrl.pathname = '/api/repo/sync';
-			baseUrl.searchParams.set('repo', repoRef.getRepresentation());
-			const url = baseUrl.toString();
-			const response = await fetch(url);
-			const responseJson = await response.json();
-			return responseJson.status === 'ok';
-		} else {
-			// We don't need to index this repository
-			return true;
 		}
 	}
 
@@ -1551,8 +1506,7 @@ export class SideCarClient {
 				language: activeWindowData.language,
 			};
 		}
-		const codestoryConfiguration = vscode.workspace.getConfiguration('aide');
-		const deepReasoning = codestoryConfiguration.get('deepReasoning') as boolean;
+
 		const body: CodeEditAgentBody = {
 			user_query: query,
 			editor_url: editorUrl,
@@ -1563,7 +1517,7 @@ export class SideCarClient {
 			codebase_search: codebaseSearch,
 			anchor_editing: isAnchorEditing,
 			enable_import_nodes: false,
-			deep_reasoning: deepReasoning,
+			deep_reasoning: true,
 		};
 		const asyncIterableResponse = await callServerEventStreamingBufferedPOST(url, body);
 		for await (const line of asyncIterableResponse) {
@@ -1628,20 +1582,20 @@ export async function convertVSCodeVariableToSidecarHackingForPlan(
 	for (const variable of variables) {
 		// vscode.editor.selection is a special id which is also present in the editor
 		// this help us understand that this is a selection and not a file reference
-		if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile' || variable.id === 'vscode.editor.selection' || variable.id === 'vscode.file.pinnedContext') {
+		if (variable.id === 'vscode.file' || variable.id === 'vscode.editor.selection' || variable.id === 'vscode.file.pinnedContext') {
 			const v = variable as vscode.AideAgentFileReference;
 			const value = v.value;
 			const attachedFile = await resolveFile(value.uri);
 			let range = value.range;
 			let type: SidecarVariableType = 'File';
-			if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile' || variable.id === 'vscode.file.pinnedContext') {
+			if (variable.id === 'vscode.file' || variable.id === 'vscode.file.pinnedContext') {
 				type = 'File';
 			} else if (variable.id === 'vscode.editor.selection') {
 				type = 'Selection';
 			}
 			// we do this shoe-horning over here to make sure that we do not perform
 			// extensive reads or creation of the text models on the editor layer
-			if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile') {
+			if (variable.id === 'vscode.file') {
 				const textModel = await vscode.workspace.openTextDocument(v.value.uri);
 				// get the full range over here somehow
 				const lastLine = textModel.lineCount;
@@ -1908,7 +1862,7 @@ async function newConvertVSCodeVariableToSidecar(
 	for (const variable of variables) {
 		// vscode.editor.selection is a special id which is also present in the editor
 		// this help us understand that this is a selection and not a file reference
-		if (variable.id === 'vscode.file' || variable.id === 'vscode.editor.selection' || variable.id === 'vscode.file.rangeNotSetProperlyFullFile') {
+		if (variable.id === 'vscode.file' || variable.id === 'vscode.editor.selection') {
 			const v = variable as vscode.AideAgentFileReference;
 			const value = v.value;
 			const attachedFile = await resolveFile(value.uri);
@@ -1919,14 +1873,14 @@ async function newConvertVSCodeVariableToSidecar(
 			} else if (variable.id === 'vscode.editor.selection') {
 				type = 'Selection';
 			}
-			if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile') {
+			if (variable.id === 'vscode.file') {
 				type = 'File';
 			} else if (variable.id === 'vscode.editor.selection') {
 				type = 'Selection';
 			}
 			// we do this shoe-horning over here to make sure that we do not perform
 			// extensive reads or creation of the text models on the editor layer
-			if (variable.id === 'vscode.file.rangeNotSetProperlyFullFile') {
+			if (variable.id === 'vscode.file') {
 				const textModel = await vscode.workspace.openTextDocument(v.value.uri);
 				// get the full range over here somehow
 				const lastLine = textModel.lineCount;

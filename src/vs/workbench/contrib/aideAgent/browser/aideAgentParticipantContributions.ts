@@ -22,10 +22,12 @@ import { isProposedApiEnabled } from '../../../services/extensions/common/extens
 import * as extensionsRegistry from '../../../services/extensions/common/extensionsRegistry.js';
 import { showExtensionsWithIdsCommandId } from '../../extensions/browser/extensionsActions.js';
 import { IExtensionsWorkbenchService } from '../../extensions/common/extensions.js';
-import { ChatAgentLocation, IChatAgentData, IAideAgentAgentService } from '../common/aideAgentAgents.js';
-import { CONTEXT_CHAT_EXTENSION_INVALID, CONTEXT_CHAT_PANEL_PARTICIPANT_REGISTERED } from '../common/aideAgentContextKeys.js';
+import { ChatAgentLocation, IAideAgentAgentService, IChatAgentData } from '../common/aideAgentAgents.js';
+import { CONTEXT_CHAT_IS_PLAN_VISIBLE, CONTEXT_CHAT_EXTENSION_INVALID, CONTEXT_CHAT_PANEL_PARTICIPANT_REGISTERED } from '../common/aideAgentContextKeys.js';
 import { IRawChatParticipantContribution } from '../common/aideAgentParticipantContribTypes.js';
 import { CHAT_VIEW_ID } from './aideAgent.js';
+import { AIDE_AGENT_PLAN_VIEW_PANE_ID } from './aideAgentPlan.js';
+import { AideAgentPlanViewPane } from './aideAgentPlanViewPane.js';
 import { CHAT_SIDEBAR_PANEL_ID, ChatViewPane } from './aideAgentViewPane.js';
 
 const chatParticipantExtensionPoint = extensionsRegistry.ExtensionsRegistry.registerExtensionPoint<IRawChatParticipantContribution[]>({
@@ -173,6 +175,17 @@ const viewContainer: ViewContainer = Registry.as<IViewContainersRegistry>(ViewEx
 	order: 0,
 }, ViewContainerLocation.AuxiliaryBar, { isDefault: true });
 
+const planViewContainerId = AIDE_AGENT_PLAN_VIEW_PANE_ID;
+const planViewContainer: ViewContainer = Registry.as<IViewContainersRegistry>(ViewExtensions.ViewContainersRegistry).registerViewContainer({
+	id: planViewContainerId,
+	title: localize2('aideAgent.planViewContainer.label', "Step-wise plan"),
+	icon: Codicon.mapVertical,
+	ctorDescriptor: new SyncDescriptor(ViewPaneContainer, [planViewContainerId, { mergeViewWithContainerWhenSingleView: true }]),
+	storageId: planViewContainerId,
+	hideIfEmpty: true,
+	order: 5,
+}, ViewContainerLocation.Sidebar, { isDefault: true });
+
 export class ChatExtensionPointHandler implements IWorkbenchContribution {
 
 	static readonly ID = 'workbench.contrib.aideAgentExtensionPointHandler';
@@ -186,6 +199,7 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 	) {
 		this._viewContainer = viewContainer;
 		this.registerDefaultParticipantView();
+		this.registerDefaultPlanView();
 		this.handleAndRegisterChatExtensions();
 	}
 
@@ -307,6 +321,26 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 
 		return toDisposable(() => {
 			Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry).deregisterViews(viewDescriptor, this._viewContainer);
+		});
+	}
+
+	private registerDefaultPlanView(): IDisposable {
+		const name = 'Step-wise plan';
+		const viewDescriptor: IViewDescriptor[] = [{
+			id: AIDE_AGENT_PLAN_VIEW_PANE_ID,
+			containerIcon: planViewContainer.icon,
+			containerTitle: planViewContainer.title.value,
+			singleViewPaneContainerTitle: planViewContainer.title.value,
+			name: { value: name, original: name },
+			canMoveView: false,
+			canToggleVisibility: true,
+			when: CONTEXT_CHAT_IS_PLAN_VISIBLE,
+			ctorDescriptor: new SyncDescriptor(AideAgentPlanViewPane),
+		}];
+		Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry).registerViews(viewDescriptor, planViewContainer);
+
+		return toDisposable(() => {
+			Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry).deregisterViews(viewDescriptor, planViewContainer);
 		});
 	}
 }

@@ -12,7 +12,7 @@ import { Action2, MenuId, registerAction2 } from '../../../../../platform/action
 import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
 import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { ActiveEditorContext } from '../../../../common/contextkeys.js';
-import { CHAT_CATEGORY, isChatViewTitleActionContext } from './aideAgentChatActions.js';
+import { CHAT_CATEGORY, isChatViewTitleActionContext } from './aideAgentActions.js';
 import { clearChatEditor } from './aideAgentClear.js';
 import { CHAT_VIEW_ID, IAideAgentWidgetService } from '../aideAgent.js';
 import { ChatEditorInput } from '../aideAgentEditorInput.js';

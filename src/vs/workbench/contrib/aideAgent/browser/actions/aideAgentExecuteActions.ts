@@ -7,15 +7,15 @@ import { Codicon } from '../../../../../base/common/codicons.js';
 import { KeyCode, KeyMod } from '../../../../../base/common/keyCodes.js';
 import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions.js';
 import { localize2 } from '../../../../../nls.js';
-import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
+import { Action2, MenuId, MenuRegistry, registerAction2 } from '../../../../../platform/actions/common/actions.js';
 import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
 import { IsDevelopmentContext } from '../../../../../platform/contextkey/common/contextkeys.js';
 import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
-import { CONTEXT_AIDE_PLAN_INPUT, CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_INPUT } from '../../common/aideAgentContextKeys.js';
+import { CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_MODE, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_INPUT } from '../../common/aideAgentContextKeys.js';
 import { AgentMode } from '../../common/aideAgentModel.js';
 import { IAideAgentService } from '../../common/aideAgentService.js';
 import { IAideAgentWidgetService, IChatWidget } from '../aideAgent.js';
-import { CHAT_CATEGORY } from './aideAgentChatActions.js';
+import { CHAT_CATEGORY } from './aideAgentActions.js';
 
 export interface IVoiceChatExecuteActionContext {
 	readonly disableTimeout?: boolean;
@@ -27,54 +27,13 @@ export interface IChatExecuteActionContext {
 	voice?: IVoiceChatExecuteActionContext;
 }
 
-export class SubmitChatRequestAction extends Action2 {
-	static readonly ID = 'workbench.action.aideAgent.chat.submit';
+export class ExecuteChatAction extends Action2 {
+	static readonly ID = 'workbench.action.aideAgent.executeChat';
 
 	constructor() {
 		super({
-			id: SubmitChatRequestAction.ID,
-			title: localize2('interactive.chat.submit.label', "Chat"),
-			f1: false,
-			category: CHAT_CATEGORY,
-			icon: Codicon.send,
-			precondition: ContextKeyExpr.and(CONTEXT_CHAT_INPUT_HAS_TEXT),
-			keybinding: {
-				when: CONTEXT_IN_CHAT_INPUT,
-				primary: KeyMod.CtrlCmd | KeyCode.Enter,
-				weight: KeybindingWeight.EditorContrib
-			},
-			menu: [
-				{
-					id: MenuId.AideAgentExecuteSecondary,
-					group: 'group_1',
-				},
-				{
-					id: MenuId.AideAgentExecute,
-					order: 1,
-					when: ContextKeyExpr.and(CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET.negate()), // and CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate()
-					group: 'navigation',
-				},
-			]
-		});
-	}
-
-	run(accessor: ServicesAccessor, ...args: any[]) {
-		const context: IChatExecuteActionContext | undefined = args[0];
-
-		const widgetService = accessor.get(IAideAgentWidgetService);
-		const widget = context?.widget ?? widgetService.lastFocusedWidget;
-		const input = widget?.getInput() ?? context?.inputValue;
-		widget?.acceptInput(AgentMode.Chat, input);
-	}
-}
-
-export class SubmitPlanRequestAction extends Action2 {
-	static readonly ID = 'workbench.action.aideAgent.plan.submit';
-
-	constructor() {
-		super({
-			id: SubmitPlanRequestAction.ID,
-			title: localize2('interactive.edit.submit.label', "Edit"),
+			id: ExecuteChatAction.ID,
+			title: localize2('interactive.executeChat.label', "Execute"),
 			f1: false,
 			category: CHAT_CATEGORY,
 			icon: Codicon.send,
@@ -88,11 +47,12 @@ export class SubmitPlanRequestAction extends Action2 {
 				{
 					id: MenuId.AideAgentExecuteSecondary,
 					group: 'group_1',
+					when: CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET.negate(),
 				},
 				{
 					id: MenuId.AideAgentExecute,
 					order: 2,
-					when: CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate(), // CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate()
+					when: CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate(),
 					group: 'navigation',
 				},
 			]
@@ -105,9 +65,9 @@ export class SubmitPlanRequestAction extends Action2 {
 		const widgetService = accessor.get(IAideAgentWidgetService);
 		const widget = context?.widget ?? widgetService.lastFocusedWidget;
 		const input = widget?.getInput() ?? context?.inputValue;
-		// deprecating planningEnable as we want to funnel user to plan
+		const mode = widget?.mode ?? AgentMode.Plan;
 
-		widget?.acceptInput(AgentMode.Plan, input);
+		widget?.acceptInput(mode, input);
 	}
 }
 
@@ -117,7 +77,7 @@ class TogglePlanningAction extends Action2 {
 	constructor() {
 		super({
 			id: TogglePlanningAction.ID,
-			title: localize2('interactive.togglePlanning.label', "Toggle additional reasoning"),
+			title: localize2('interactive.togglePlanning.label', "Toggle step-by-step reasoning"),
 			f1: false,
 			category: CHAT_CATEGORY,
 			icon: Codicon.compass,
@@ -138,41 +98,58 @@ class TogglePlanningAction extends Action2 {
 	}
 }
 
-// Remove toggle for additional reasoning
-// function registerPlanningToggleMenu() {
-// 	MenuRegistry.appendMenuItem(MenuId.AideAgentInput, {
-// 		group: 'navigation',
-// 		command: {
-// 			id: TogglePlanningAction.ID,
-// 			title: localize2('interactive.togglePlanning.label', "Toggle additional reasoning"),
-// 			icon: Codicon.compass,
-// 			toggled: { condition: CONTEXT_CHAT_INPUT_PLANNING_ENABLED, icon: Codicon.compassActive }
-// 		},
-// 	});
-// }
+function registerPlanningToggleMenu() {
+	MenuRegistry.appendMenuItem(MenuId.AideAgentInput, {
+		group: 'navigation',
+		when: ContextKeyExpr.notEquals(CONTEXT_CHAT_MODE.key, 'Chat'),
+		command: {
+			id: TogglePlanningAction.ID,
+			title: localize2('interactive.togglePlanning.label', "Toggle step-by-step reasoning"),
+			icon: Codicon.compass,
+			toggled: { condition: ContextKeyExpr.equals(CONTEXT_CHAT_MODE.key, 'Plan'), icon: Codicon.compassActive }
+		},
+	});
+}
 
-// export const AgentModePickerActionId = 'workbench.action.aideAgent.setMode';
-// MenuRegistry.appendMenuItem(MenuId.AideAgentExecute, {
-// 	command: {
-// 		id: AgentModePickerActionId,
-// 		title: localize2('aideAgent.setMode.label', "Set Mode"),
-// 	},
-// 	order: 1,
-// 	group: 'navigation',
-// 	// TODO(@ghostwriternr): This is a hack to get around the pain (very high) of adding a new entry to the chat location
-// 	when: ContextKeyExpr.and(CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET.negate(), ContextKeyExpr.equals(CONTEXT_CHAT_LOCATION.key, 'panel')),
-// });
+export class ToggleEditModeAction extends Action2 {
+	static readonly ID = 'workbench.action.aideAgent.toggleEditMode';
 
-// export const AgentScopePickerActionId = 'workbench.action.aideAgent.setScope';
-// MenuRegistry.appendMenuItem(MenuId.AideAgentInput, {
-// 	command: {
-// 		id: AgentScopePickerActionId,
-// 		title: localize2('aideAgent.setScope.label', "Set Scope"),
-// 	},
-// 	order: 2,
-// 	group: 'navigation',
-// 	when: ContextKeyExpr.and(ContextKeyExpr.equals(CONTEXT_CHAT_LOCATION.key, 'panel'), ContextKeyExpr.equals(CONTEXT_AGENT_MODE.key, AgentMode.Edit)),
-// });
+	constructor() {
+		super({
+			id: ToggleEditModeAction.ID,
+			title: localize2('interactive.toggleEditMode.label', "Toggle edit mode"),
+			f1: false,
+			category: CHAT_CATEGORY,
+			precondition: ContextKeyExpr.and(CONTEXT_IN_CHAT_INPUT, CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET.negate()),
+			keybinding: {
+				when: CONTEXT_IN_CHAT_INPUT,
+				primary: KeyMod.CtrlCmd | KeyCode.Period,
+				weight: KeybindingWeight.WorkbenchContrib
+			}
+		});
+	}
+
+	run(accessor: ServicesAccessor, ...args: any[]) {
+		const widgetService = accessor.get(IAideAgentWidgetService);
+		const widget = widgetService.lastFocusedWidget;
+		if (widget) {
+			widget.toggleEditMode();
+		}
+	}
+}
+
+export const AgentScopePickerActionId = 'workbench.action.aideAgent.setScope';
+/*
+MenuRegistry.appendMenuItem(MenuId.AideAgentInput, {
+	command: {
+		id: AgentScopePickerActionId,
+		title: localize2('aideAgent.setScope.label', "Set Scope"),
+	},
+	order: 2,
+	group: 'navigation',
+	when: ContextKeyExpr.equals(CONTEXT_CHAT_LOCATION.key, 'panel'),
+});
+*/
 
 export class CancelAction extends Action2 {
 	static readonly ID = 'workbench.action.aideAgent.cancel';
@@ -182,26 +159,13 @@ export class CancelAction extends Action2 {
 			title: localize2('interactive.cancel.label', "Cancel"),
 			f1: false,
 			category: CHAT_CATEGORY,
-			icon: Codicon.stopCircle,
-			menu: [
-				// 	{
-				// 	id: MenuId.AideAgentExecute,
-				// 	when: CONTEXT_CHAT_REQUEST_IN_PROGRESS,
-				// 	order: 2,
-				// 	group: 'navigation',
-				// },
-				{
-					id: MenuId.AideAgentPlanLoading,
-					// no need to check for when as we swap the toolbar menu completely
-					order: 1,
-					group: 'navigation',
-				},
-				{
-					id: MenuId.AideAgentEditsLoading,
-					group: 'navigation',
-					order: 0 // First hidden element
-				}
-			],
+			icon: Codicon.debugStop,
+			menu: {
+				id: MenuId.AideAgentExecute,
+				when: CONTEXT_CHAT_REQUEST_IN_PROGRESS,
+				order: 2,
+				group: 'navigation',
+			},
 			keybinding: {
 				when: CONTEXT_IN_CHAT_INPUT,
 				weight: KeybindingWeight.WorkbenchContrib,
@@ -220,65 +184,17 @@ export class CancelAction extends Action2 {
 			return;
 		}
 
-		// TODO(skcd): Cancel here needs to do more than just cancel the running
-		// exchanges, we have to make sure that the running plan gets rejected
-		// properly and the UX is updated about it
 		const chatService = accessor.get(IAideAgentService);
 		if (widget.viewModel) {
 			chatService.cancelAllExchangesForSession();
-			const model = chatService.getSession(widget.viewModel.sessionId);
-			model?.handleUserCancelActionForSession();
-		}
-	}
-}
-
-export class ContinueEditing extends Action2 {
-	static readonly ID = 'workbench.action.aideAgent.continueEditing';
-	constructor() {
-		super({
-			id: ContinueEditing.ID,
-			title: localize2('interactive.continueEditing.label', "Continue Editing"),
-			f1: false,
-			category: CHAT_CATEGORY,
-			icon: Codicon.send,
-			menu: [{
-				id: MenuId.AideAgentExecute,
-				when: ContextKeyExpr.and(CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_AIDE_PLAN_INPUT, CONTEXT_CHAT_INPUT_HAS_TEXT),
-				order: 2,
-				group: 'navigation',
-			}],
-			keybinding: {
-				when: ContextKeyExpr.and(CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_AIDE_PLAN_INPUT, CONTEXT_CHAT_INPUT_HAS_TEXT),
-				weight: KeybindingWeight.WorkbenchContrib + 51,
-				// This keycombination is totally fucked but its a good start
-				// TODO(codestory): Fix this to render better
-				primary: KeyCode.Enter,
-				win: { primary: KeyMod.Alt | KeyCode.Backspace },
-			}
-		});
-	}
-
-	run(accessor: ServicesAccessor, ...args: any[]) {
-		const context: IChatExecuteActionContext | undefined = args[0];
-
-		const widgetService = accessor.get(IAideAgentWidgetService);
-		const widget = context?.widget ?? widgetService.lastFocusedWidget;
-		if (!widget) {
-			return;
-		}
-		const sessionId = widget.runningSessionId;
-		const exchangeId = widget.runningExchangeId;
-		const input = widget?.getInput() ?? context?.inputValue;
-		if (sessionId && exchangeId) {
-			widget?.acceptIterationInput(input, sessionId, exchangeId);
 		}
 	}
 }
 
 export function registerChatExecuteActions() {
-	registerAction2(SubmitChatRequestAction);
-	registerAction2(SubmitPlanRequestAction);
+	registerAction2(ExecuteChatAction);
 	registerAction2(CancelAction);
-	registerAction2(ContinueEditing);
 	registerAction2(TogglePlanningAction);
+	registerAction2(ToggleEditModeAction);
+	registerPlanningToggleMenu();
 }

@@ -3,53 +3,50 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { Codicon } from '../../../../../base/common/codicons.js';
 import { KeyCode, KeyMod } from '../../../../../base/common/keyCodes.js';
 import { localize2 } from '../../../../../nls.js';
-import { Action2, registerAction2 } from '../../../../../platform/actions/common/actions.js';
+import { Action2, MenuId, registerAction2 } from '../../../../../platform/actions/common/actions.js';
+import { ICommandService } from '../../../../../platform/commands/common/commands.js';
+import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
 import { ServicesAccessor } from '../../../../../platform/instantiation/common/instantiation.js';
 import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
+import { SAVE_FILES_COMMAND_ID } from '../../../files/browser/fileConstants.js';
 import { IAideAgentCodeEditingService } from '../../common/aideAgentCodeEditingService.js';
-import { CONTEXT_IN_CHAT_INPUT } from '../../common/aideAgentContextKeys.js';
+import { CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE } from '../../common/aideAgentContextKeys.js';
 import { IAideAgentService } from '../../common/aideAgentService.js';
-import { CHAT_CATEGORY } from './aideAgentChatActions.js';
+import { isAideAgentEditPreviewContext } from '../aideAgentEditPreviewWidget.js';
+import { CHAT_CATEGORY } from './aideAgentActions.js';
 
 export function registerCodeEditActions() {
-	registerAction2(class AcceptAllAction extends Action2 {
-		static readonly ID = 'aideAgent.acceptAll';
+	registerAction2(class SaveAllAction extends Action2 {
+		static readonly ID = 'aideAgent.saveAll';
 
 		constructor() {
 			super({
-				id: AcceptAllAction.ID,
-				title: localize2('aideAgent.acceptAll', "Accept all"),
+				id: SaveAllAction.ID,
+				title: localize2('aideAgent.saveAll', "Save all"),
 				f1: false,
 				category: CHAT_CATEGORY,
+				icon: Codicon.saveAll,
+				precondition: CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE,
 				keybinding: {
-					when: CONTEXT_IN_CHAT_INPUT,
-					primary: KeyMod.CtrlCmd | KeyCode.Enter,
-					weight: KeybindingWeight.EditorContrib
+					when: ContextKeyExpr.and(CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE, CONTEXT_CHAT_INPUT_HAS_FOCUS),
+					primary: KeyMod.CtrlCmd | KeyCode.KeyS,
+					weight: KeybindingWeight.WorkbenchContrib
 				},
+				menu: {
+					id: MenuId.AideAgentEditPreviewWidget,
+					group: 'navigation',
+					order: 0,
+					when: CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE
+				}
 			});
 		}
 
-		/**
-		 * TODO(codestory): When we accept here, if any of the previous exchanges
-		 * which were not accepted also go into accepted state cause we build up
-		 * incrementally and there is no branching
-		 */
 		run(accessor: ServicesAccessor, ...args: any[]) {
-			const exchangeId = args[0];
-			const sessionId = args[1];
-
-			try {
-				const aideAgentSession = accessor.get(IAideAgentService);
-				aideAgentSession.handleUserActionForSession(args[1], exchangeId, undefined, args[2], args[3]);
-			} catch (exception) {
-				console.error(exception);
-			}
-
-			const aideAgentCodeEditingService = accessor.get(IAideAgentCodeEditingService);
-			const editingSession = aideAgentCodeEditingService.getOrStartCodeEditingSession(sessionId);
-			editingSession.accept();
+			const commandService = accessor.get(ICommandService);
+			commandService.executeCommand(SAVE_FILES_COMMAND_ID);
 		}
 	});
 
@@ -62,34 +59,82 @@ export function registerCodeEditActions() {
 				title: localize2('aideAgent.rejectAll', "Reject all"),
 				f1: false,
 				category: CHAT_CATEGORY,
+				icon: Codicon.closeAll,
+				precondition: CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE,
 				keybinding: {
-					when: CONTEXT_IN_CHAT_INPUT,
+					when: ContextKeyExpr.and(CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE, CONTEXT_CHAT_INPUT_HAS_FOCUS),
 					primary: KeyMod.CtrlCmd | KeyCode.Backspace,
-					weight: KeybindingWeight.EditorContrib
+					weight: KeybindingWeight.WorkbenchContrib
 				},
+				menu: {
+					id: MenuId.AideAgentEditPreviewWidget,
+					group: 'navigation',
+					order: 1,
+					when: CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE
+				}
 			});
 		}
 
 		run(accessor: ServicesAccessor, ...args: any[]) {
-			const exchangeId = args[0];
-			const sessionId = args[1];
-
-			try {
-				const aideAgentSession = accessor.get(IAideAgentService);
-				// to understand about args[1], args[2], args[3], grep for `aideAgent.rejectAll`
-				// and see how these values are passed
-				aideAgentSession.handleUserActionForSession(sessionId, exchangeId, undefined, args[2], args[3]);
-			} catch (exception) {
-				console.error(exception);
+			const aideAgentService = accessor.get(IAideAgentService);
+			let exchangeId = aideAgentService.lastExchangeId;
+			if (!exchangeId) {
+				const context = args[0];
+				if (isAideAgentEditPreviewContext(context)) {
+					exchangeId = context.exchangeId;
+				}
+				return;
 			}
 
 			const aideAgentCodeEditingService = accessor.get(IAideAgentCodeEditingService);
-			const editingSession = aideAgentCodeEditingService.getOrStartCodeEditingSession(sessionId);
-			// we reject all the changes which are related to this exchange and not
-			// the ones related to the previous one
-			// Note: this is an async function so the GC will not clear it when we
-			// go out of scope over here in the `run` function
-			editingSession.rejectForExchange(args[1], exchangeId);
+			const editingSession = aideAgentCodeEditingService.getExistingCodeEditingSession(exchangeId);
+			if (editingSession) {
+				editingSession.reject();
+			}
+		}
+	});
+
+	registerAction2(class AcceptAllAction extends Action2 {
+		static readonly ID = 'aideAgent.acceptAll';
+
+		constructor() {
+			super({
+				id: AcceptAllAction.ID,
+				title: localize2('aideAgent.acceptAll', "Accept all"),
+				f1: false,
+				category: CHAT_CATEGORY,
+				icon: Codicon.checkAll,
+				precondition: CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE,
+				keybinding: {
+					when: ContextKeyExpr.and(CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE, CONTEXT_CHAT_INPUT_HAS_FOCUS),
+					primary: KeyMod.CtrlCmd | KeyCode.Enter,
+					weight: KeybindingWeight.WorkbenchContrib,
+				},
+				menu: {
+					id: MenuId.AideAgentEditPreviewWidget,
+					group: 'navigation',
+					order: 2,
+					when: CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE
+				}
+			});
+		}
+
+		run(accessor: ServicesAccessor, ...args: any[]) {
+			const aideAgentService = accessor.get(IAideAgentService);
+			let exchangeId = aideAgentService.lastExchangeId;
+			if (!exchangeId) {
+				const context = args[0];
+				if (isAideAgentEditPreviewContext(context)) {
+					exchangeId = context.exchangeId;
+				}
+				return;
+			}
+
+			const aideAgentCodeEditingService = accessor.get(IAideAgentCodeEditingService);
+			const editingSession = aideAgentCodeEditingService.getExistingCodeEditingSession(exchangeId);
+			if (editingSession) {
+				editingSession.accept();
+			}
 		}
 	});
 }
