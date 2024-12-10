@@ -8,14 +8,12 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 import { gt } from 'semver';
-import { promisify } from 'util';
 import * as vscode from 'vscode';
 import { downloadSidecarZip } from './gcpBucket';
+import { killProcessOnPort } from './killPort';
 import { sidecarURL, sidecarUseSelfRun } from './sidecarUrl';
 import { unzip } from './unzip';
-import { killProcessOnPort } from './killPort';
 
-const exec = promisify(cp.exec);
 const updateBaseURL = `https://aide-updates.codestory.ai/api/update/sidecar`;
 
 async function healthCheck(): Promise<boolean> {
@@ -168,17 +166,6 @@ export async function startSidecarBinary(extensionBasePath: string) {
 }
 
 async function runSideCarBinary(webserverPath: string) {
-	if (os.platform() === 'darwin' || os.platform() === 'linux') {
-		// Set executable permissions on Unix-like systems (owner: rwx, group: r-x, others: r-x)
-		// This is required because the binary may not have executable permissions when extracted from zip
-		fs.chmodSync(webserverPath, 0o7_5_5);
-	}
-
-	if (os.platform() === 'darwin') {
-		// Remove quarantine attribute on macOS to allow binary execution without security warnings
-		await exec(`xattr -dr com.apple.quarantine ${webserverPath}`);
-	}
-
 	try {
 		const process = cp.spawn(webserverPath, [], {
 			stdio: 'pipe',
