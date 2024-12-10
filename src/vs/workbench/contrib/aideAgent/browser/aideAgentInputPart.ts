@@ -128,6 +128,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	private attachedContextContainer!: HTMLElement;
 	private readonly attachedContextDisposables = this._register(new DisposableStore());
 
+	private isSidecarUpdateAvailable = false;
 	private statusMessageContainer!: HTMLElement;
 
 	private _inputPartHeight: number = 0;
@@ -664,8 +665,14 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		const textSpan = dom.$('span');
 		const runningStatus = this.sidecarService.runningStatus;
 		const downloadStatus = this.sidecarService.downloadStatus;
-		const { text, color } = this.getSidecarStatus(runningStatus, downloadStatus);
+		const { text, color, updateAvailable } = this.getSidecarStatus(runningStatus, downloadStatus);
 		textSpan.textContent = text;
+		this.isSidecarUpdateAvailable = updateAvailable;
+		this._register(dom.addDisposableListener(textSpan, dom.EventType.CLICK, () => {
+			if (this.isSidecarUpdateAvailable) {
+				this.sidecarService.triggerRestart();
+			}
+		}));
 
 		const iconSpan = dom.$('span');
 		iconSpan.classList.add(...ThemeIcon.asClassNameArray(Codicon.circleFilled));
@@ -674,8 +681,10 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		statusMessage.appendChild(iconSpan);
 
 		this._register(this.sidecarService.onDidChangeStatus(({ runningStatus, downloadStatus }) => {
-			const { text, color } = this.getSidecarStatus(runningStatus, downloadStatus);
+			const { text, color, updateAvailable } = this.getSidecarStatus(runningStatus, downloadStatus);
 			textSpan.textContent = text;
+			this.isSidecarUpdateAvailable = updateAvailable;
+			textSpan.style.cursor = updateAvailable ? 'pointer' : 'default';
 			iconSpan.style.color = color;
 		}));
 
@@ -715,11 +724,22 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		onDidChangeCursorPosition();
 	}
 
-	private getSidecarStatus(runningStatus: SidecarRunningStatus, downloadStatus: SidecarDownloadStatus): { text: string; color: string } {
+	private getSidecarStatus(
+		runningStatus: SidecarRunningStatus,
+		downloadStatus: SidecarDownloadStatus
+	): { text: string; color: string; updateAvailable: boolean } {
 		let text = '';
 		let color = 'var(--vscode-editorGutter-addedBackground)';
+		let updateAvailable = false;
+
 		if (runningStatus === SidecarRunningStatus.Connected) {
-			text = `Sidecar connected${downloadStatus.downloading && downloadStatus.update ? ' (Downloading update)' : ''}`;
+			text = 'Sidecar connected';
+			if (downloadStatus.downloading && downloadStatus.update) {
+				text += ' (downloading update)';
+			} else if (!downloadStatus.downloading && downloadStatus.update) {
+				text += ' (click to update)';
+				updateAvailable = true;
+			}
 			color = 'var(--vscode-editorGutter-addedBackground)';
 		} else if (downloadStatus.downloading) {
 			text = `Downloading sidecar`;
@@ -732,7 +752,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			color = 'var(--vscode-editorGutter-modifiedBackground)';
 		}
 
-		return { text, color };
+		return { text, color, updateAvailable };
 	}
 
 	private initAttachedContext(container: HTMLElement, isLayout = false) {

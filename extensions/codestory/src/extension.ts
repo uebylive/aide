@@ -20,7 +20,7 @@ import { loadOrSaveToStorage } from './storage/types';
 import { copySettings } from './utilities/copySettings';
 import { getRelevantFiles, shouldTrackFile } from './utilities/openTabs';
 import { checkReadonlyFSMode } from './utilities/readonlyFS';
-import { startSidecarBinary } from './utilities/setupSidecarBinary';
+import { restartSidecarBinary, startSidecarBinary } from './utilities/setupSidecarBinary';
 import { getUniqueId } from './utilities/uniqueId';
 import { ProjectContext } from './utilities/workspaceContext';
 import { killProcessOnPort } from './utilities/killPort';
@@ -92,6 +92,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// Setup the sidecar client here
 	await startSidecarBinary(context.globalStorageUri.fsPath);
+	vscode.sidecar.onDidTriggerSidecarRestart(() => {
+		restartSidecarBinary(context.globalStorageUri.fsPath);
+	});
 
 	// Get model selection configuration
 	const modelConfiguration = await vscode.modelSelection.getConfiguration();

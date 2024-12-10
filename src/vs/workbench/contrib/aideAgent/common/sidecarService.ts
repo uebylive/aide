@@ -11,9 +11,11 @@ export const ISidecarService = createDecorator<ISidecarService>('ISidecarService
 export interface ISidecarService {
 	_serviceBrand: undefined;
 	onDidChangeStatus: Event<SidecarStatusUpdateEvent>;
+	onDidRestart: Event<void>;
 
 	runningStatus: SidecarRunningStatus;
 	downloadStatus: SidecarDownloadStatus;
+	triggerRestart(): void;
 }
 
 export enum SidecarRunningStatus {
@@ -38,6 +40,9 @@ export class SidecarService extends Disposable implements ISidecarService {
 
 	private readonly _onDidChangeStatus = this._register(new Emitter<SidecarStatusUpdateEvent>());
 	public readonly onDidChangeStatus = this._onDidChangeStatus.event;
+
+	private readonly _onDidRestart = this._register(new Emitter<void>());
+	public readonly onDidRestart = this._onDidRestart.event;
 
 	private _runningStatus: SidecarRunningStatus;
 	get runningStatus(): SidecarRunningStatus {
@@ -64,5 +69,9 @@ export class SidecarService extends Disposable implements ISidecarService {
 
 		this._runningStatus = SidecarRunningStatus.Unavailable;
 		this._downloadStatus = { downloading: false, update: false };
+	}
+
+	triggerRestart(): void {
+		this._onDidRestart.fire();
 	}
 }

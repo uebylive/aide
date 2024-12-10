@@ -18,10 +18,10 @@ export class MainThreadSidecar extends Disposable implements MainThreadSidecarSh
 	) {
 		super();
 		this._proxy = extHostContext.getProxy(ExtHostContext.ExtHostSidecar);
-	}
 
-	attemptRestart(): void {
-		this._proxy.$attemptRestart();
+		this._register(this._sidecarService.onDidRestart(() => {
+			this._proxy.$attemptRestart();
+		}));
 	}
 
 	$setRunningStatus(status: SidecarRunningStatus): void {
