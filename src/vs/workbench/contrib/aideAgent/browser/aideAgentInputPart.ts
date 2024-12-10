@@ -9,6 +9,8 @@ import { IHistoryNavigationWidget } from '../../../../base/browser/history.js';
 import { StandardKeyboardEvent } from '../../../../base/browser/keyboardEvent.js';
 import * as aria from '../../../../base/browser/ui/aria/aria.js';
 import { Button } from '../../../../base/browser/ui/button/button.js';
+import { getBaseLayerHoverDelegate } from '../../../../base/browser/ui/hover/hoverDelegate2.js';
+import { getDefaultHoverDelegate } from '../../../../base/browser/ui/hover/hoverDelegateFactory.js';
 import { renderLabelWithIcons } from '../../../../base/browser/ui/iconLabel/iconLabels.js';
 import { Switch } from '../../../../base/browser/ui/switch/switch.js';
 import { IAction } from '../../../../base/common/actions.js';
@@ -673,6 +675,17 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 				this.sidecarService.triggerRestart();
 			}
 		}));
+		this._register(getBaseLayerHoverDelegate().setupManagedHover(
+			getDefaultHoverDelegate('mouse'),
+			statusMessage,
+			() => {
+				if (this.statusClickable) {
+					return 'Click to restart the sidecar';
+				} else {
+					return text;
+				}
+			}
+		));
 
 		const iconSpan = dom.$('span');
 		iconSpan.classList.add(...ThemeIcon.asClassNameArray(Codicon.circleFilled));
