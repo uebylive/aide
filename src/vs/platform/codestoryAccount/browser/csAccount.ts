@@ -63,9 +63,9 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 	}
 
 	async ensureAuthenticated(): Promise<boolean> {
-		// For first 5 calls, return true without authenticating
+		// For first 50 calls, return true without authenticating
 		const count = this.storageService.getNumber(STORAGE_KEY, StorageScope.PROFILE, 0);
-		if (count < 5) {
+		if (count < 50) {
 			this.storageService.store(STORAGE_KEY, count + 1, StorageScope.PROFILE, StorageTarget.MACHINE);
 			return true;
 		}
@@ -74,7 +74,7 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 			let csAuthSession = await this.csAuthenticationService.getSession();
 			if (!csAuthSession) {
 				// Notify the user that they need to authenticate
-				this.notificationService.info('You have used up your 5 free requests. Please log in for unlimited requests.');
+				this.notificationService.info('You have used up your 50 unauthenticated requests. Please log in for unlimited requests.');
 				// Show the account card
 				this.toggle();
 				// Wait for the user to authenticate
