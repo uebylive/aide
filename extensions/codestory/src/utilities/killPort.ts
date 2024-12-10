@@ -31,9 +31,12 @@ export async function killProcessOnPort(port: number, method: string = 'tcp') {
 		return exec(`TaskKill /F /PID ${processIds.join(' /PID ')}`);
 	}
 
-	const lsofResult = await exec(`lsof -i :${port} -P`);
-	const { stdout: lsofOutput } = lsofResult;
-	if (!lsofOutput) {
+	try {
+		const { stdout: lsofOutput } = await exec(`lsof -i :${port} -P`);
+		if (!lsofOutput.trim()) {
+			return Promise.reject(new Error('No process running on port'));
+		}
+	} catch (error) {
 		return Promise.reject(new Error('No process running on port'));
 	}
 

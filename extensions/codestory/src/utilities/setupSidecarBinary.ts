@@ -219,10 +219,10 @@ export async function restartSidecarBinary(extensionBasePath: string) {
 		const port = parseInt(url.split(':').at(-1) ?? '42424');
 		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Restarting);
 		await killProcessOnPort(port);
-		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
 	} catch (error) {
 		console.warn(error);
 	}
+	vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
 
 	// Then start a new sidecar process
 	vscode.sidecar.setDownloadStatus({ downloading: false, update: false });
