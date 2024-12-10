@@ -128,7 +128,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 	private attachedContextContainer!: HTMLElement;
 	private readonly attachedContextDisposables = this._register(new DisposableStore());
 
-	private isSidecarUpdateAvailable = false;
+	private statusClickable = false;
 	private statusMessageContainer!: HTMLElement;
 
 	private _inputPartHeight: number = 0;
@@ -667,9 +667,9 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		const downloadStatus = this.sidecarService.downloadStatus;
 		const { text, color, updateAvailable } = this.getSidecarStatus(runningStatus, downloadStatus);
 		textSpan.textContent = text;
-		this.isSidecarUpdateAvailable = updateAvailable;
+		this.statusClickable = updateAvailable || runningStatus === SidecarRunningStatus.Unavailable;
 		this._register(dom.addDisposableListener(textSpan, dom.EventType.CLICK, () => {
-			if (this.isSidecarUpdateAvailable) {
+			if (this.statusClickable) {
 				this.sidecarService.triggerRestart();
 			}
 		}));
@@ -683,9 +683,16 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		this._register(this.sidecarService.onDidChangeStatus(({ runningStatus, downloadStatus }) => {
 			const { text, color, updateAvailable } = this.getSidecarStatus(runningStatus, downloadStatus);
 			textSpan.textContent = text;
-			this.isSidecarUpdateAvailable = updateAvailable;
-			textSpan.style.cursor = updateAvailable ? 'pointer' : 'default';
+			const clickable = updateAvailable || runningStatus === SidecarRunningStatus.Unavailable;
+			this.statusClickable = clickable;
+			textSpan.style.cursor = clickable ? 'pointer' : 'default';
 			iconSpan.style.color = color;
+
+			if (runningStatus !== SidecarRunningStatus.Connected) {
+				this.inputEditor.updateOptions({ readOnly: true });
+			} else {
+				this.inputEditor.updateOptions({ readOnly: false });
+			}
 		}));
 
 		let inputModel = this.modelService.getModel(this.inputUri);

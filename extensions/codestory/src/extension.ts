@@ -18,13 +18,13 @@ import { RecentEditsRetriever } from './server/editedFiles';
 import { RepoRef, RepoRefBackend, SideCarClient } from './sidecar/client';
 import { loadOrSaveToStorage } from './storage/types';
 import { copySettings } from './utilities/copySettings';
+import { killProcessOnPort } from './utilities/killPort';
 import { getRelevantFiles, shouldTrackFile } from './utilities/openTabs';
 import { checkReadonlyFSMode } from './utilities/readonlyFS';
-import { restartSidecarBinary, startSidecarBinary } from './utilities/setupSidecarBinary';
+import { restartSidecarBinary, setupSidecar } from './utilities/setupSidecarBinary';
+import { sidecarURL } from './utilities/sidecarUrl';
 import { getUniqueId } from './utilities/uniqueId';
 import { ProjectContext } from './utilities/workspaceContext';
-import { killProcessOnPort } from './utilities/killPort';
-import { sidecarURL } from './utilities/sidecarUrl';
 
 export let SIDECAR_CLIENT: SideCarClient | null = null;
 
@@ -91,7 +91,8 @@ export async function activate(context: vscode.ExtensionContext) {
 	});
 
 	// Setup the sidecar client here
-	await startSidecarBinary(context.globalStorageUri.fsPath);
+	const sidecarDisposable = await setupSidecar(context.globalStorageUri.fsPath);
+	context.subscriptions.push(sidecarDisposable);
 	vscode.sidecar.onDidTriggerSidecarRestart(() => {
 		restartSidecarBinary(context.globalStorageUri.fsPath);
 	});

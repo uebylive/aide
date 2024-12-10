@@ -119,6 +119,29 @@ async function retryHealthCheck(maxAttempts: number = 15, intervalMs: number = 1
 	return false;
 }
 
+export async function setupSidecar(extensionBasePath: string): Promise<vscode.Disposable> {
+	const zipDestination = path.join(extensionBasePath, 'sidecar_zip.zip');
+	const extractedDestination = path.join(extensionBasePath, 'sidecar_bin');
+
+	await startSidecarBinary(extensionBasePath);
+
+	// Asynchronously check for updates
+	checkForUpdates(zipDestination, extractedDestination);
+
+	// Set up recurring health check every 5 seconds
+	const healthCheckInterval = setInterval(async () => {
+		const isHealthy = await healthCheck();
+		if (isHealthy) {
+			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Connected);
+		} else {
+			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
+		}
+	}, 5000);
+
+	// Clean up interval when extension is deactivated
+	return vscode.Disposable.from({ dispose: () => clearInterval(healthCheckInterval) });
+}
+
 export async function startSidecarBinary(extensionBasePath: string) {
 	const zipDestination = path.join(extensionBasePath, 'sidecar_zip.zip');
 	const extractedDestination = path.join(extensionBasePath, 'sidecar_bin');
@@ -142,9 +165,6 @@ export async function startSidecarBinary(extensionBasePath: string) {
 		// Use self-running sidecar
 		return;
 	}
-
-	// Asynchronously check for updates
-	checkForUpdates(zipDestination, extractedDestination);
 }
 
 async function runSideCarBinary(webserverPath: string) {
