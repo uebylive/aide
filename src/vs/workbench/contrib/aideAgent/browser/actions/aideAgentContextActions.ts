@@ -3,7 +3,8 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { FileAccess, Schemas } from '../../../../../base/common/network.js';
+import { Codicon } from '../../../../../base/common/codicons.js';
+import { Schemas } from '../../../../../base/common/network.js';
 import { ThemeIcon } from '../../../../../base/common/themables.js';
 import { URI } from '../../../../../base/common/uri.js';
 import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions.js';
@@ -138,10 +139,7 @@ class TriggerContextProvider extends Action2 {
 			title: localize2('workbench.action.aideAgent.triggerContextProvider.label', "Add context"),
 			f1: false,
 			category: CHAT_CATEGORY,
-			icon: {
-				light: FileAccess.asFileUri('vs/workbench/contrib/aideAgent/browser/aideAgentContentParts/media/at-light.svg'),
-				dark: FileAccess.asFileUri('vs/workbench/contrib/aideAgent/browser/aideAgentContentParts/media/at-dark.svg'),
-			},
+			icon: Codicon.attach,
 			menu: [
 				{
 					id: MenuId.AideAgentInput,
