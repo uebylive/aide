@@ -527,7 +527,19 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					// Update the stored text
 					this.lastThinkingText.set(key, currentText);
 				} else if (event.event.FrameworkEvent.ToolParameterFound) {
-					responseStream.stream.markdown(`${event.event.FrameworkEvent.ToolParameterFound.tool_parameter_input.field_content_delta}\n`);
+					const toolParameterInput = event.event.FrameworkEvent.ToolParameterFound.tool_parameter_input;
+					const fieldName = toolParameterInput.field_name;
+					if (fieldName === 'fs_file_path' || fieldName === 'directory_path') {
+						responseStream.stream.reference(vscode.Uri.file(toolParameterInput.field_content_delta));
+					} else if (fieldName === 'instruction' || fieldName === 'result' || fieldName === 'question') {
+						responseStream.stream.markdown(`${toolParameterInput.field_content_delta}\n`);
+					} else if (fieldName === 'command') {
+						responseStream.stream.markdown(`Running command: \`${toolParameterInput.field_content_delta}\`\n`);
+					} else if (fieldName === 'regex_pattern') {
+						responseStream.stream.markdown(`\nSearching the codebase: \`${toolParameterInput.field_content_delta}\`\n`);
+					} else if (fieldName === 'file_pattern') {
+						responseStream.stream.markdown(`\nLooking for files: \`${toolParameterInput.field_content_delta}\`\n`);
+					}
 				} else if (event.event.FrameworkEvent.ToolUseDetected) {
 					const toolUsePartialInput = event.event.FrameworkEvent.ToolUseDetected.tool_use_partial_input;
 					if (toolUsePartialInput) {

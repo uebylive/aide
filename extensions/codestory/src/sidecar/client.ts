@@ -1019,7 +1019,7 @@ export class SideCarClient {
 		codebaseSearch: boolean,
 		workosAccessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
-		const useToolAgent = true;
+		const useToolAgent = false;
 		const baseUrl = new URL(this._url);
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), workosAccessToken);
 		const allFiles = vscode.workspace.textDocuments.map((textDocument) => {
