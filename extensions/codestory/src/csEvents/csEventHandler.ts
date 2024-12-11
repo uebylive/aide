@@ -56,7 +56,6 @@ export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable 
 				event_type: getSymbolNavigationActionTypeLabel(event.action),
 			}
 		});
-		console.log('handleSymbolNavigation');
 	}
 
 	async handleAgentCodeEdit(event: { accepted: boolean; added: number; removed: number }): Promise<void> {
@@ -181,7 +180,6 @@ export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable 
 				fs_file_path: filePath,
 				line_content: textDocument.lineAt(currentSelectionRange.startPosition.line).text,
 			};
-			console.log('onDidChangeTextDocumentSelection::update_destination');
 			return;
 		}
 		// we should not track any events which are just movements, a movement

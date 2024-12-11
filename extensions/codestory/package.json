@@ -135,11 +135,6 @@
           "type": "boolean",
           "default": true,
           "description": "Should we allow clip board content to be sent over"
-        },
-        "aide.specialToolAgentUseAtYourOwnRisk": {
-          "type": "boolean",
-          "default": false,
-          "description": "Tool use agent, use it at your own risk this is not ready for production yet"
         }
       }
     }

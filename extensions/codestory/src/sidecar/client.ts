@@ -12,7 +12,7 @@ import { CompletionRequest, CompletionResponse } from '../inlineCompletion/sidec
 import { CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, SidecarContextEvent, UserContext } from '../server/types';
 import { SelectionDataForExplain } from '../utilities/getSelectionContext';
 import { AidePlanTimer } from '../utilities/planTimer';
-import { shouldUseUnstableToolAgent, sidecarURL } from '../utilities/sidecarUrl';
+import { sidecarURL } from '../utilities/sidecarUrl';
 import { sleep } from '../utilities/sleep';
 import { CodeSymbolInformationEmbeddings, CodeSymbolKind } from '../utilities/types';
 import { getUserId } from '../utilities/uniqueId';
@@ -1019,6 +1019,7 @@ export class SideCarClient {
 		codebaseSearch: boolean,
 		workosAccessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
+		const useToolAgent = true;
 		const baseUrl = new URL(this._url);
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), workosAccessToken);
 		const allFiles = vscode.workspace.textDocuments.map((textDocument) => {
@@ -1028,7 +1029,7 @@ export class SideCarClient {
 			return textDocument.document.uri.fsPath;
 		});
 		const currentShell = detectDefaultShell();
-		if (shouldUseUnstableToolAgent()) {
+		if (useToolAgent) {
 			baseUrl.pathname = '/api/agentic/agent_tool_use';
 		} else {
 			baseUrl.pathname = '/api/agentic/agent_session_plan';
