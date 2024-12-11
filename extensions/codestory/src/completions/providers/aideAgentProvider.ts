@@ -67,6 +67,7 @@ class AideResponseStreamCollection {
 
 export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	private aideAgent: vscode.AideSessionAgent;
+	private lastThinkingText: Map<string, string> = new Map();
 
 	editorUrl: string | undefined;
 	private iterationEdits = new vscode.WorkspaceEdit();
@@ -511,14 +512,27 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						responseStream.stream.reference(vscode.Uri.file(filePath));
 					}
 				} else if (event.event.FrameworkEvent.ToolThinking) {
-					responseStream.stream.markdown(`${event.event.FrameworkEvent.ToolThinking.thinking}\n`);
+					const currentText = event.event.FrameworkEvent.ToolThinking.thinking;
+					const key = `${sessionId}-${exchangeId}`;
+					const lastText = this.lastThinkingText.get(key) || '';
+
+					// Calculate the delta (everything after the last text)
+					const delta = currentText.slice(lastText.length);
+
+					// Only send if there's new content
+					if (delta) {
+						responseStream.stream.markdown(`${delta}\n`);
+					}
+
+					// Update the stored text
+					this.lastThinkingText.set(key, currentText);
+				} else if (event.event.FrameworkEvent.ToolParameterFound) {
+					responseStream.stream.markdown(`${event.event.FrameworkEvent.ToolParameterFound.tool_parameter_input.field_content_delta}\n`);
 				} else if (event.event.FrameworkEvent.ToolUseDetected) {
 					const toolUsePartialInput = event.event.FrameworkEvent.ToolUseDetected.tool_use_partial_input;
 					if (toolUsePartialInput) {
 						const toolUseKey = Object.keys(toolUsePartialInput)[0] as keyof ToolInputPartial;
 						if (toolUseKey === 'AttemptCompletion') {
-							const result = toolUsePartialInput.AttemptCompletion.result;
-							responseStream.stream.markdown(result);
 							const openStreams = this.responseStreamCollection.getAllResponseStreams();
 							for (const stream of openStreams) {
 								this.closeAndRemoveResponseStream(sessionId, stream.exchangeId);
@@ -721,6 +735,10 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		const responseStream = this.responseStreamCollection.getResponseStream(responseStreamIdentifier);
 		responseStream?.stream.close();
 		this.responseStreamCollection.removeResponseStream(responseStreamIdentifier);
+
+		// Clean up the thinking text tracking
+		const key = `${sessionId}-${exchangeId}`;
+		this.lastThinkingText.delete(key);
 	}
 
 	dispose() {
