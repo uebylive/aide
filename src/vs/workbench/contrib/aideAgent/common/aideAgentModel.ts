@@ -802,7 +802,8 @@ export enum ChatModelInitState {
 export enum AgentMode {
 	Chat = 'Chat',
 	Edit = 'Edit',
-	Plan = 'Plan'
+	Plan = 'Plan',
+	Agentic = 'Agentic'
 }
 
 export enum AgentScope {

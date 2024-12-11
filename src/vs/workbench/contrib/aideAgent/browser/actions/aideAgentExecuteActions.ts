@@ -101,7 +101,7 @@ class TogglePlanningAction extends Action2 {
 function registerPlanningToggleMenu() {
 	MenuRegistry.appendMenuItem(MenuId.AideAgentInput, {
 		group: 'navigation',
-		when: ContextKeyExpr.notEquals(CONTEXT_CHAT_MODE.key, 'Chat'),
+		when: ContextKeyExpr.or(ContextKeyExpr.equals(CONTEXT_CHAT_MODE.key, 'Plan'), ContextKeyExpr.equals(CONTEXT_CHAT_MODE.key, 'Edit')),
 		command: {
 			id: TogglePlanningAction.ID,
 			title: localize2('interactive.togglePlanning.label', "Toggle step-by-step reasoning"),

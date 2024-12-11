@@ -457,7 +457,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				const responseStream = await this.sidecarClient.agentSessionPlanStep(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, isWholeCodebase, workosAccessToken);
 				await this.reportAgentEventsToChat(true, responseStream);
 			}
-		} else if (event.mode === vscode.AideAgentMode.Plan) {
+		} else if (event.mode === vscode.AideAgentMode.Plan || event.mode === vscode.AideAgentMode.Agentic) {
 			// For plan generation we have 2 things which can happen:
 			// plan gets generated incrementally or in an instant depending on people using
 			// o1 or not

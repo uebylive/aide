@@ -4692,7 +4692,8 @@ export class LanguageModelError extends Error {
 export enum AideAgentMode {
 	Edit = 1,
 	Chat = 2,
-	Plan = 3
+	Plan = 3,
+	Agentic = 4
 }
 
 export enum AideAgentScope {
