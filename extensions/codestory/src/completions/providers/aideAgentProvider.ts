@@ -590,7 +590,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					// response.location({ uri, range, name: symbol_identifier.symbol_name, thinking: goToDefinition.thinking });
 					continue;
 				} else if (symbolEventSubStep.Edit) {
-					if (!symbol_identifier.fs_file_path) {
+					if (!symbol_identifier.fs_file_path && !symbol_identifier.symbol_name) {
 						continue;
 					}
 					const editEvent = symbolEventSubStep.Edit;
