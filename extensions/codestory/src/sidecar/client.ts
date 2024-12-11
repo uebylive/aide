@@ -1019,7 +1019,10 @@ export class SideCarClient {
 		codebaseSearch: boolean,
 		workosAccessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
-		const useToolAgent = false;
+		if (agentMode !== vscode.AideAgentMode.Agentic && agentMode !== vscode.AideAgentMode.Plan) {
+			throw new Error('Invalid agent mode');
+		}
+
 		const baseUrl = new URL(this._url);
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), workosAccessToken);
 		const allFiles = vscode.workspace.textDocuments.map((textDocument) => {
@@ -1029,7 +1032,7 @@ export class SideCarClient {
 			return textDocument.document.uri.fsPath;
 		});
 		const currentShell = detectDefaultShell();
-		if (useToolAgent) {
+		if (agentMode === vscode.AideAgentMode.Agentic) {
 			baseUrl.pathname = '/api/agentic/agent_tool_use';
 		} else {
 			baseUrl.pathname = '/api/agentic/agent_session_plan';

@@ -457,7 +457,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				const responseStream = await this.sidecarClient.agentSessionPlanStep(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, isWholeCodebase, workosAccessToken);
 				await this.reportAgentEventsToChat(true, responseStream);
 			}
-		} else if (event.mode === vscode.AideAgentMode.Plan) {
+		} else if (event.mode === vscode.AideAgentMode.Plan || event.mode === vscode.AideAgentMode.Agentic) {
 			// For plan generation we have 2 things which can happen:
 			// plan gets generated incrementally or in an instant depending on people using
 			// o1 or not
@@ -590,7 +590,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					// response.location({ uri, range, name: symbol_identifier.symbol_name, thinking: goToDefinition.thinking });
 					continue;
 				} else if (symbolEventSubStep.Edit) {
-					if (!symbol_identifier.fs_file_path) {
+					if (!symbol_identifier.fs_file_path && !symbol_identifier.symbol_name) {
 						continue;
 					}
 					const editEvent = symbolEventSubStep.Edit;

@@ -948,6 +948,9 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		switch (this.inputPart.mode) {
 			case AgentMode.Edit:
 			case AgentMode.Plan:
+				this.inputPart.setMode(AgentMode.Agentic);
+				break;
+			case AgentMode.Agentic:
 				this.inputPart.setMode(AgentMode.Chat);
 				break;
 			case AgentMode.Chat:

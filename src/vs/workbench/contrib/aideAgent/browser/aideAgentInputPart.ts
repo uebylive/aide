@@ -186,6 +186,10 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 				}
 				this.modeSwitch.value = AgentMode.Edit;
 				break;
+			case AgentMode.Agentic:
+				this._agentMode.set(AgentMode.Agentic);
+				this.modeSwitch.value = AgentMode.Agentic;
+				break;
 			case AgentMode.Chat:
 				this._agentMode.set(AgentMode.Chat);
 				this.modeSwitch.value = AgentMode.Chat;
@@ -602,7 +606,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		const keybinding = this.keybindingService.lookupKeybinding(ToggleEditModeAction.ID);
 		this.modeSwitch = this._register(this.instantiationService.createInstance(Switch, {
 			description: `Edit mode directly applies changes to your code${keybinding ? ` (${keybinding.getLabel()})` : ''}`,
-			options: ['Chat', 'Edit'],
+			options: ['Chat', 'Edit', 'Agentic'],
 			value: 'Edit',
 		}));
 		dom.append(toolbarsContainer, this.modeSwitch.domNode);
