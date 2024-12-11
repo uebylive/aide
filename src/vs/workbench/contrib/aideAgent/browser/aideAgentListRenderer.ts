@@ -42,7 +42,7 @@ import { IChatCodeCitations, IChatReferences, IChatRendererContent, IChatRequest
 import { annotateSpecialMarkdownContent } from '../common/annotations.js';
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
 import { MarkUnhelpfulActionId } from './actions/aideAgentTitleActions.js';
-import { ChatTreeItem, GeneratingPhrase, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions, IEditPreviewCodeBlockInfo } from './aideAgent.js';
+import { ChatTreeItem, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions, IEditPreviewCodeBlockInfo } from './aideAgent.js';
 import { ChatAttachmentsContentPart } from './aideAgentContentParts/aideAgentAttachmentsContentPart.js';
 import { ChatCodeCitationContentPart } from './aideAgentContentParts/aideAgentCodeCitationContentPart.js';
 import { ChatCommandButtonContentPart } from './aideAgentContentParts/aideAgentCommandContentPart.js';
@@ -382,7 +382,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 			}));
 
 		} else if (!element.isComplete) {
-			templateData.detail.textContent = GeneratingPhrase;
+			// templateData.detail.textContent = GeneratingPhrase;
 		}
 	}
 

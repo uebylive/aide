@@ -12,7 +12,7 @@ import { AnswerSplitOnNewLineAccumulatorStreaming, StreamProcessor } from '../..
 import { applyEdits, applyEditsDirectly, } from '../../server/applyEdits';
 import { RecentEditsRetriever } from '../../server/editedFiles';
 import { handleRequest } from '../../server/requestHandler';
-import { EditedCodeStreamingRequest, SideCarAgentEvent, SidecarApplyEditsRequest, SidecarContextEvent, SidecarUndoPlanStep } from '../../server/types';
+import { EditedCodeStreamingRequest, SideCarAgentEvent, SidecarApplyEditsRequest, SidecarContextEvent, SidecarUndoPlanStep, ToolInputPartial } from '../../server/types';
 import { RepoRef, SideCarClient } from '../../sidecar/client';
 import { getUniqueId, getUserId } from '../../utilities/uniqueId';
 import { ProjectContext } from '../../utilities/workspaceContext';
@@ -58,11 +58,16 @@ class AideResponseStreamCollection {
 	removeResponseStream(responseStreamIdentifer: ResponseStreamIdentifier) {
 		this.responseStreamCollection.delete(this.getKey(responseStreamIdentifer));
 	}
+
+	getAllResponseStreams(): vscode.AideAgentEventSenderResponse[] {
+		return Array.from(this.responseStreamCollection.values());
+	}
 }
 
 
 export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	private aideAgent: vscode.AideSessionAgent;
+	private lastThinkingText: Map<string, string> = new Map();
 
 	editorUrl: string | undefined;
 	private iterationEdits = new vscode.WorkspaceEdit();
@@ -501,73 +506,57 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			}
 
 			if (event.event.FrameworkEvent) {
-				if (event.event.FrameworkEvent.InitialSearchSymbols) {
-					// const initialSearchSymbolInformation = event.event.FrameworkEvent.InitialSearchSymbols.symbols.map((item) => {
-					// 	return {
-					// 		symbolName: item.symbol_name,
-					// 		uri: vscode.Uri.file(item.fs_file_path),
-					// 		isNew: item.is_new,
-					// 		thinking: item.thinking,
-					// 	};
-					// });
-					// response.initialSearchSymbols(initialSearchSymbolInformation);
-				} else if (event.event.FrameworkEvent.RepoMapGenerationStart) {
-					// response.repoMapGeneration(false);
-				} else if (event.event.FrameworkEvent.RepoMapGenerationFinished) {
-					// response.repoMapGeneration(true);
-				} else if (event.event.FrameworkEvent.LongContextSearchStart) {
-					// response.longContextSearch(false);
-				} else if (event.event.FrameworkEvent.LongContextSearchFinished) {
-					// response.longContextSearch(true);
-				} else if (event.event.FrameworkEvent.OpenFile) {
+				if (event.event.FrameworkEvent.OpenFile) {
 					const filePath = event.event.FrameworkEvent.OpenFile.fs_file_path;
 					if (filePath) {
 						responseStream.stream.reference(vscode.Uri.file(filePath));
 					}
-				} else if (event.event.FrameworkEvent.CodeIterationFinished) {
-					// response.codeIterationFinished({ edits: iterationEdits });
-				} else if (event.event.FrameworkEvent.ReferenceFound) {
-					// response.referenceFound({ references: event.event.FrameworkEvent.ReferenceFound });
-				} else if (event.event.FrameworkEvent.RelevantReference) {
-					// const ref = event.event.FrameworkEvent.RelevantReference;
-					// response.relevantReference({
-					// 	uri: vscode.Uri.file(ref.fs_file_path),
-					// 	symbolName: ref.symbol_name,
-					// 	reason: ref.reason,
-					// });
-				} else if (event.event.FrameworkEvent.ToolUseDetected) {
-					// const toolUseDetectedEvent = event.event.FrameworkEvent.ToolUseDetected;
-					// just send this over as markdown right now for checking if things are working
-					// responseStream.stream.markdown(`${toolUseDetectedEvent.thinking}\n${JSON.stringify(toolUseDetectedEvent.tool_use_partial_input)}`);
-				} else if (event.event.FrameworkEvent.ReferencesUsed) {
-					const references = event.event.FrameworkEvent.ReferencesUsed.variables;
-					references.forEach((reference) => {
-						// send to the response stream that we have a bunch of references
-						// to look at
-						responseStream.stream.reference2({
-							variableName: reference.name,
-							value: new vscode.Location(vscode.Uri.file(reference.fs_file_path), new vscode.Range(new vscode.Position(reference.start_position.line, reference.start_position.character), new vscode.Position(reference.end_position.line, reference.end_position.character))),
-						});
-					});
-				} else if (event.event.FrameworkEvent.GroupedReferences) {
-					const groupedRefs = event.event.FrameworkEvent.GroupedReferences;
-					const followups: { [key: string]: { symbolName: string; uri: vscode.Uri }[] } = {};
-					for (const [reason, references] of Object.entries(groupedRefs)) {
-						followups[reason] = references.map((ref) => {
-							return {
-								symbolName: ref.symbol_name,
-								uri: vscode.Uri.file(ref.fs_file_path),
-							};
-						});
+				} else if (event.event.FrameworkEvent.ToolThinking) {
+					const currentText = event.event.FrameworkEvent.ToolThinking.thinking;
+					const key = `${sessionId}-${exchangeId}`;
+					const lastText = this.lastThinkingText.get(key) || '';
+
+					// Calculate the delta (everything after the last text)
+					const delta = currentText.slice(lastText.length);
+
+					// Only send if there's new content
+					if (delta) {
+						responseStream.stream.markdown(`${delta}\n`);
 					}
-					// response.followups(followups);
-				} else if (event.event.FrameworkEvent.SearchIteration) {
-				} else if (event.event.FrameworkEvent.AgenticTopLevelThinking) {
-					// TODO(skcd): The agent thinking event is over here, not streamed
-					// but it can get the job done
-				} else if (event.event.FrameworkEvent.AgenticSymbolLevelThinking) {
-					// TODO(skcd): The agent symbol level thinking is here, not streamed
-					// but we can hook into it for information and context
+
+					// Update the stored text
+					this.lastThinkingText.set(key, currentText);
+				} else if (event.event.FrameworkEvent.ToolParameterFound) {
+					const toolParameterInput = event.event.FrameworkEvent.ToolParameterFound.tool_parameter_input;
+					const fieldName = toolParameterInput.field_name;
+					if (fieldName === 'fs_file_path' || fieldName === 'directory_path') {
+						responseStream.stream.reference(vscode.Uri.file(toolParameterInput.field_content_delta));
+					} else if (fieldName === 'instruction' || fieldName === 'result' || fieldName === 'question') {
+						responseStream.stream.markdown(`${toolParameterInput.field_content_delta}\n`);
+					} else if (fieldName === 'command') {
+						responseStream.stream.markdown(`Running command: \`${toolParameterInput.field_content_delta}\`\n`);
+					} else if (fieldName === 'regex_pattern') {
+						responseStream.stream.markdown(`\nSearching the codebase: \`${toolParameterInput.field_content_delta}\`\n`);
+					} else if (fieldName === 'file_pattern') {
+						responseStream.stream.markdown(`\nLooking for files: \`${toolParameterInput.field_content_delta}\`\n`);
+					}
+				} else if (event.event.FrameworkEvent.ToolUseDetected) {
+					const toolUsePartialInput = event.event.FrameworkEvent.ToolUseDetected.tool_use_partial_input;
+					if (toolUsePartialInput) {
+						const toolUseKey = Object.keys(toolUsePartialInput)[0] as keyof ToolInputPartial;
+						if (toolUseKey === 'AttemptCompletion') {
+							const openStreams = this.responseStreamCollection.getAllResponseStreams();
+							for (const stream of openStreams) {
+								this.closeAndRemoveResponseStream(sessionId, stream.exchangeId);
+							}
+							return;
+						} else if (toolUseKey === 'OpenFile') {
+							const filePath = toolUsePartialInput.OpenFile.fs_file_path;
+							if (filePath) {
+								responseStream.stream.reference(vscode.Uri.file(filePath));
+							}
+						}
+					}
 				}
 			} else if (event.event.SymbolEvent) {
 				const symbolEvent = event.event.SymbolEvent.event;
@@ -758,6 +747,10 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		const responseStream = this.responseStreamCollection.getResponseStream(responseStreamIdentifier);
 		responseStream?.stream.close();
 		this.responseStreamCollection.removeResponseStream(responseStreamIdentifier);
+
+		// Clean up the thinking text tracking
+		const key = `${sessionId}-${exchangeId}`;
+		this.lastThinkingText.delete(key);
 	}
 
 	dispose() {

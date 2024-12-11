@@ -13,13 +13,6 @@ export const sidecarURL = (): string => {
 	return sideCarURL ?? DEFAULT_URL;
 };
 
-export const shouldUseUnstableToolAgent = (): boolean => {
-	const aideConfiguration = vscode.workspace.getConfiguration('aide');
-	const shouldUseUnstableToolAgent = aideConfiguration.get('specialToolAgentUseAtYourOwnRisk');
-	return !!shouldUseUnstableToolAgent;
-};
-
-
 export const sidecarUseSelfRun = (): boolean => {
 	const aideConfiguration = vscode.workspace.getConfiguration('aide');
 	const sideCarUseSelfRun = aideConfiguration.get('sidecarUseSelfRun');

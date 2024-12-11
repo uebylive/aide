@@ -96,6 +96,49 @@ interface RequestEvents {
 	ProbeFinished?: RequestEventProbeFinished;
 }
 
+export enum ToolParameter {
+	FSFilePath = 'fs_file_path',
+	DirectoryPath = 'directory_path',
+	Instruction = 'instruction',
+	Command = 'command',
+	Question = 'question',
+	Result = 'result',
+	RegexPattern = 'regex_pattern',
+	FilePattern = 'file_pattern',
+	Recursive = 'recursive'
+}
+
+export type ToolParameterType = `${ToolParameter}`;
+
+interface ToolParameterFoundEvent {
+	tool_parameter_input: {
+		field_name: ToolParameterType;
+		field_content_up_until_now: string;
+		field_content_delta: string;
+	};
+}
+
+type ToolType = 'ListFiles' |
+	'SearchFileContentWithRegex' |
+	'OpenFile' |
+	'CodeEditing' |
+	'LSPDiagnostics' |
+	'AskFollowupQuestions' |
+	'AttemptCompletion' |
+	'RepoMapGeneration';
+
+interface ToolTypeFoundEvent {
+	tool_type: ToolType;
+}
+
+interface ToolThinkingEvent {
+	thinking: string;
+}
+
+interface ToolNotFoundEvent {
+	full_output: string;
+}
+
 type FrameworkEvent = {
 	RepoMapGenerationStart: string;
 	RepoMapGenerationFinished: string;
@@ -112,14 +155,33 @@ type FrameworkEvent = {
 	AgenticTopLevelThinking: string;
 	AgenticSymbolLevelThinking: StepListItem;
 	ToolUseDetected: ToolUseDetectedEvent;
+	ToolThinking: ToolThinkingEvent;
+	ToolNotFound: ToolNotFoundEvent;
+	ToolTypeFound: ToolTypeFoundEvent;
+	ToolParameterFound: ToolParameterFoundEvent;
+	ToolOutput: ToolOutputEvent;
 };
+
+type ToolOutputEvent = {
+	ToolTypeForOutput: ToolTypeForOutputEvent;
+	ToolOutputResponse: ToolOutputResponseEvent;
+};
+
+interface ToolTypeForOutputEvent {
+	tool_type: ToolType;
+}
+
+interface ToolOutputResponseEvent {
+	delta: string;
+	answer_up_until_now: string;
+}
 
 interface ToolUseDetectedEvent {
 	tool_use_partial_input: ToolInputPartial;
 	thinking: string;
-};
+}
 
-type ToolInputPartial = {
+export type ToolInputPartial = {
 	CodeEditing: CodeEditingPartialRequest;
 	ListFiles: ListFilesInput;
 	SearchFileContentWithRegex: SearchFileContentInputPartial;
@@ -248,8 +310,8 @@ interface SearchQuery {
 }
 
 type SearchResultSnippet =
-	| { type: 'FileContent', content: Uint8Array }
-	| { type: 'Tag', tag: string };
+	| { type: 'FileContent'; content: Uint8Array }
+	| { type: 'Tag'; tag: string };
 
 interface SearchResult {
 	path: string;
@@ -274,14 +336,14 @@ interface DecideResponse {
 
 type IterativeSearchEvent =
 	| { type: 'SearchStarted' }
-	| { type: 'SeedApplied', duration: Duration }
-	| { type: 'SearchQueriesGenerated', queries: SearchQuery[], duration: Duration }
-	| { type: 'SearchExecuted', results: SearchResult[], duration: Duration }
-	| { type: 'IdentificationCompleted', response: IdentifyResponse, duration: Duration }
-	| { type: 'FileOutlineGenerated', duration: Duration }
-	| { type: 'DecisionMade', response: DecideResponse, duration: Duration }
-	| { type: 'LoopCompleted', iteration: number, duration: Duration }
-	| { type: 'SearchCompleted', duration: Duration };
+	| { type: 'SeedApplied'; duration: Duration }
+	| { type: 'SearchQueriesGenerated'; queries: SearchQuery[]; duration: Duration }
+	| { type: 'SearchExecuted'; results: SearchResult[]; duration: Duration }
+	| { type: 'IdentificationCompleted'; response: IdentifyResponse; duration: Duration }
+	| { type: 'FileOutlineGenerated'; duration: Duration }
+	| { type: 'DecisionMade'; response: DecideResponse; duration: Duration }
+	| { type: 'LoopCompleted'; iteration: number; duration: Duration }
+	| { type: 'SearchCompleted'; duration: Duration };
 
 interface Duration {
 	secs: number;
@@ -1131,7 +1193,7 @@ export type SidecarDiagnosticsResponse = {
 
 export type SidecarParameterHints = {
 	signature_labels: string[];
-}
+};
 
 export interface SidecarOpenFileContextEvent {
 	fs_file_path: string;

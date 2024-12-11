@@ -675,16 +675,10 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 				this.sidecarService.triggerRestart();
 			}
 		}));
-		this._register(getBaseLayerHoverDelegate().setupManagedHover(
+		const managedHover = this._register(getBaseLayerHoverDelegate().setupManagedHover(
 			getDefaultHoverDelegate('mouse'),
 			statusMessage,
-			() => {
-				if (this.statusClickable) {
-					return 'Click to restart the sidecar';
-				} else {
-					return text;
-				}
-			}
+			text
 		));
 
 		const iconSpan = dom.$('span');
@@ -699,6 +693,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			const clickable = updateAvailable || runningStatus === SidecarRunningStatus.Unavailable;
 			this.statusClickable = clickable;
 			textSpan.style.cursor = clickable ? 'pointer' : 'default';
+			managedHover.update(clickable ? 'Click to restart the sidecar' : text);
 			iconSpan.style.color = color;
 
 			if (runningStatus !== SidecarRunningStatus.Connected) {
