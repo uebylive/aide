@@ -22,7 +22,7 @@ import { killProcessOnPort } from './utilities/killPort';
 import { getRelevantFiles, shouldTrackFile } from './utilities/openTabs';
 import { checkReadonlyFSMode } from './utilities/readonlyFS';
 import { restartSidecarBinary, setupSidecar } from './utilities/setupSidecarBinary';
-import { sidecarURL } from './utilities/sidecarUrl';
+import { sidecarURL, sidecarUseSelfRun } from './utilities/sidecarUrl';
 import { getUniqueId } from './utilities/uniqueId';
 import { ProjectContext } from './utilities/workspaceContext';
 
@@ -256,7 +256,9 @@ export async function activate(context: vscode.ExtensionContext) {
 }
 
 export async function deactivate() {
-	const sidecarUrl = sidecarURL();
-	const port = parseInt(sidecarUrl.split(':').at(-1) ?? '42424');
-	await killProcessOnPort(port);
+	if (!sidecarUseSelfRun()) {
+		const sidecarUrl = sidecarURL();
+		const port = parseInt(sidecarUrl.split(':').at(-1) ?? '42424');
+		await killProcessOnPort(port);
+	}
 }
