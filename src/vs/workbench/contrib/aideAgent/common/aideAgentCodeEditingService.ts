@@ -15,7 +15,7 @@ export const enum AideAgentCodeEditingSessionState {
 }
 
 export interface IAideAgentCodeEditingSession {
-	readonly exchangeId: string;
+	readonly sessionId: string;
 	readonly onDidChange: Event<void>;
 	readonly onDidDispose: Event<void>;
 	apply(edits: IWorkspaceTextEdit): Promise<void>;
@@ -34,6 +34,6 @@ export interface IAideAgentCodeEditingService {
 	_serviceBrand: undefined;
 
 	onDidComplete: Event<void>;
-	getOrStartCodeEditingSession(exchangeId: string): IAideAgentCodeEditingSession;
-	getExistingCodeEditingSession(exchangeId: string): IAideAgentCodeEditingSession | undefined;
+	getOrStartCodeEditingSession(sessionId: string): IAideAgentCodeEditingSession;
+	getExistingCodeEditingSession(sessionId: string): IAideAgentCodeEditingSession | undefined;
 }

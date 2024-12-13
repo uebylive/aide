@@ -14,8 +14,7 @@ import { KeybindingWeight } from '../../../../../platform/keybinding/common/keyb
 import { SAVE_FILES_COMMAND_ID } from '../../../files/browser/fileConstants.js';
 import { IAideAgentCodeEditingService } from '../../common/aideAgentCodeEditingService.js';
 import { CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE } from '../../common/aideAgentContextKeys.js';
-import { IAideAgentService } from '../../common/aideAgentService.js';
-import { isAideAgentEditPreviewContext } from '../aideAgentEditPreviewWidget.js';
+import { IAideAgentWidgetService } from '../aideAgent.js';
 import { CHAT_CATEGORY } from './aideAgentActions.js';
 
 export function registerCodeEditActions() {
@@ -76,18 +75,14 @@ export function registerCodeEditActions() {
 		}
 
 		run(accessor: ServicesAccessor, ...args: any[]) {
-			const aideAgentService = accessor.get(IAideAgentService);
-			let exchangeId = aideAgentService.lastExchangeId;
-			if (!exchangeId) {
-				const context = args[0];
-				if (isAideAgentEditPreviewContext(context)) {
-					exchangeId = context.exchangeId;
-				}
+			const widgetService = accessor.get(IAideAgentWidgetService);
+			const sessionId = widgetService.lastFocusedWidget?.viewModel?.sessionId;
+			if (!sessionId) {
 				return;
 			}
 
 			const aideAgentCodeEditingService = accessor.get(IAideAgentCodeEditingService);
-			const editingSession = aideAgentCodeEditingService.getExistingCodeEditingSession(exchangeId);
+			const editingSession = aideAgentCodeEditingService.getExistingCodeEditingSession(sessionId);
 			if (editingSession) {
 				editingSession.reject();
 			}
@@ -120,18 +115,14 @@ export function registerCodeEditActions() {
 		}
 
 		run(accessor: ServicesAccessor, ...args: any[]) {
-			const aideAgentService = accessor.get(IAideAgentService);
-			let exchangeId = aideAgentService.lastExchangeId;
-			if (!exchangeId) {
-				const context = args[0];
-				if (isAideAgentEditPreviewContext(context)) {
-					exchangeId = context.exchangeId;
-				}
+			const widgetService = accessor.get(IAideAgentWidgetService);
+			const sessionId = widgetService.lastFocusedWidget?.viewModel?.sessionId;
+			if (!sessionId) {
 				return;
 			}
 
 			const aideAgentCodeEditingService = accessor.get(IAideAgentCodeEditingService);
-			const editingSession = aideAgentCodeEditingService.getExistingCodeEditingSession(exchangeId);
+			const editingSession = aideAgentCodeEditingService.getExistingCodeEditingSession(sessionId);
 			if (editingSession) {
 				editingSession.accept();
 			}

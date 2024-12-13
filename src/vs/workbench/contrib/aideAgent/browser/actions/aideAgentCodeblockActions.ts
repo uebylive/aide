@@ -22,7 +22,7 @@ import { ChatCopyKind, IAideAgentService } from '../../common/aideAgentService.j
 import { IChatResponseViewModel, isResponseVM } from '../../common/aideAgentViewModel.js';
 import { IAideAgentCodeBlockContextProviderService, IAideAgentWidgetService } from '../aideAgent.js';
 import { DefaultChatTextEditor, ICodeBlockActionContext, ICodeCompareBlockActionContext } from '../codeBlockPart.js';
-import { CHAT_CATEGORY } from './aideAgentChatActions.js';
+import { CHAT_CATEGORY } from './aideAgentActions.js';
 import { InsertCodeBlockOperation } from './codeBlockOperations.js';
 
 /*

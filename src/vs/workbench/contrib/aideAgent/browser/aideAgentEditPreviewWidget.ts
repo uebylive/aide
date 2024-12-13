@@ -13,14 +13,6 @@ import { MenuId } from '../../../../platform/actions/common/actions.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import './media/aideAgentEditPreviewWidget.css';
 
-export interface IAideAgentEditPreviewContext {
-	exchangeId: string;
-}
-
-export function isAideAgentEditPreviewContext(thing: unknown): thing is IAideAgentEditPreviewContext {
-	return typeof thing === 'object' && thing !== null && 'exchangeId' in thing;
-}
-
 const defaultIconClasses = ThemeIcon.asClassNameArray(Codicon.symbolEvent);
 const progressIconClasses = ThemeIcon.asClassNameArray(ThemeIcon.modify(Codicon.sync, 'spin'));
 
@@ -53,7 +45,6 @@ export class AideAgentEditPreviewWidget extends Disposable {
 	}
 
 	private isProgressing = false;
-	private toolbar!: MenuWorkbenchToolBar;
 
 	constructor(
 		parent: HTMLElement,
@@ -74,14 +65,14 @@ export class AideAgentEditPreviewWidget extends Disposable {
 		titleElement.textContent = '';
 
 		const toolbarContainer = this._elements.toolbar;
-		this.toolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, toolbarContainer, MenuId.AideAgentEditPreviewWidget, {
+		this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, toolbarContainer, MenuId.AideAgentEditPreviewWidget, {
 			menuOptions: {
 				shouldForwardArgs: true
 			}
 		}));
 	}
 
-	updateProgress(message: string, exchangeId: string) {
+	updateProgress(message: string) {
 		this.visible = true;
 		if (message === 'Complete') {
 			this._elements.icon.classList.remove(...progressIconClasses);
@@ -95,7 +86,5 @@ export class AideAgentEditPreviewWidget extends Disposable {
 
 		const titleElement = this._elements.titleText;
 		titleElement.textContent = message;
-
-		this.toolbar.context = { exchangeId } as IAideAgentEditPreviewContext;
 	}
 }
