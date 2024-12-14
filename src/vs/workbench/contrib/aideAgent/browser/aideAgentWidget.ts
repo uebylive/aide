@@ -27,7 +27,7 @@ import { IThemeService } from '../../../../platform/theme/common/themeService.js
 import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgentData } from '../common/aideAgentAgents.js';
 import { IAideAgentCodeEditingService } from '../common/aideAgentCodeEditingService.js';
-import { CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_SESSION, CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER, CONTEXT_RESPONSE_FILTERED } from '../common/aideAgentContextKeys.js';
+import { CONTEXT_CHAT_INPUT_HAS_AGENT, CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_LOCATION, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_CHAT_SESSION_WITH_EDITS, CONTEXT_IN_CHAT_SESSION, CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER, CONTEXT_RESPONSE_FILTERED } from '../common/aideAgentContextKeys.js';
 import { AgentMode, AgentScope, ChatModelInitState, IChatModel, IChatProgressResponseContent, IChatRequestVariableEntry, IChatResponseModel } from '../common/aideAgentModel.js';
 import { ChatRequestAgentPart, IParsedChatRequest, formatChatQuestion } from '../common/aideAgentParserTypes.js';
 import { ChatRequestParser } from '../common/aideAgentRequestParser.js';
@@ -146,6 +146,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	private requestInProgress: IContextKey<boolean>;
 	private agentInInput: IContextKey<boolean>;
 	private agentSupportsModelPicker: IContextKey<boolean>;
+	private sessionHasEdits: IContextKey<boolean>;
 
 	private _visible = false;
 	public get visible() {
@@ -230,6 +231,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		this.agentInInput = CONTEXT_CHAT_INPUT_HAS_AGENT.bindTo(contextKeyService);
 		this.agentSupportsModelPicker = CONTEXT_PARTICIPANT_SUPPORTS_MODEL_PICKER.bindTo(contextKeyService);
 		this.requestInProgress = CONTEXT_CHAT_REQUEST_IN_PROGRESS.bindTo(contextKeyService);
+		this.sessionHasEdits = CONTEXT_CHAT_SESSION_WITH_EDITS.bindTo(contextKeyService);
 
 		this._register((chatWidgetService as ChatWidgetService).register(this));
 
@@ -303,6 +305,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 	private hideEditPreviewWidget() {
 		if (this.editPreviewWidget) {
+			this.editPreviewWidget.clear();
 			this.editPreviewWidget.visible = false;
 		}
 	}
@@ -488,7 +491,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 				.pop();
 			if (lastProgressStage && lastProgressStage.exchangeId === this.chatService.lastExchangeId) {
 				const entry = lastProgressStage?.progress as IChatProgressResponseContent & { kind: 'stage' };
-				this.editPreviewWidget.updateProgress(entry.message, lastProgressStage.exchangeId);
+				this.editPreviewWidget.updateProgress(entry.message);
 			}
 		}
 	}
@@ -763,6 +766,16 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			if (events.some(e => e?.kind === 'addRequest') && this.visible) {
 				revealLastElement(this.tree);
 				this.focusInput();
+			}
+
+			const activeCodeEditingSession = this.codeEditingService.getExistingCodeEditingSession(model.sessionId);
+			if (this.editPreviewWidget && activeCodeEditingSession) {
+				const edits = activeCodeEditingSession.codeEdits;
+				this.editPreviewWidget?.setCodeEdits(edits);
+
+				this.sessionHasEdits.set(edits.size > 0);
+			} else {
+				this.sessionHasEdits.set(false);
 			}
 		}));
 		this.viewModelDisposables.add(this.viewModel.onDidDisposeModel(() => {

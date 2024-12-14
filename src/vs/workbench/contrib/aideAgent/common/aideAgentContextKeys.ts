@@ -27,6 +27,7 @@ export const CONTEXT_IN_CHAT_SESSION = new RawContextKey<boolean>('inAideAgent',
 export const CONTEXT_CHAT_MODE = new RawContextKey<string>('aideAgentMode', 'Plan', { type: 'string', description: localize('chatMode', "The current chat mode.") });
 export const CONTEXT_CHAT_IS_PLAN_VISIBLE = new RawContextKey<boolean>('aideAgentIsPlanVisible', false, { type: 'boolean', description: localize('chatIsPlanVisible', "True when the plan is visible.") });
 export const CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE = new RawContextKey<boolean>('aideAgentLastExchangeComplete', false, { type: 'boolean', description: localize('chatLastExchangeComplete', "True when the last exchange is complete.") });
+export const CONTEXT_CHAT_SESSION_WITH_EDITS = new RawContextKey<boolean>('aideAgentSessionWithEdits', false, { type: 'boolean', description: localize('chatSessionWithEdits', "True when the chat session has edits.") });
 
 export const CONTEXT_CHAT_ENABLED = new RawContextKey<boolean>('aideAgentIsEnabled', false, { type: 'boolean', description: localize('chatIsEnabled', "True when chat is enabled because a default chat participant is activated with an implementation.") });
 export const CONTEXT_CHAT_PANEL_PARTICIPANT_REGISTERED = new RawContextKey<boolean>('aideAgentPanelParticipantRegistered', false, { type: 'boolean', description: localize('chatParticipantRegistered', "True when a default chat participant is registered for the panel.") });

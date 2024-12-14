@@ -13,9 +13,8 @@ import { ServicesAccessor } from '../../../../../platform/instantiation/common/i
 import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { SAVE_FILES_COMMAND_ID } from '../../../files/browser/fileConstants.js';
 import { IAideAgentCodeEditingService } from '../../common/aideAgentCodeEditingService.js';
-import { CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE } from '../../common/aideAgentContextKeys.js';
-import { IAideAgentService } from '../../common/aideAgentService.js';
-import { isAideAgentEditPreviewContext } from '../aideAgentEditPreviewWidget.js';
+import { CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE, CONTEXT_CHAT_SESSION_WITH_EDITS } from '../../common/aideAgentContextKeys.js';
+import { IAideAgentWidgetService } from '../aideAgent.js';
 import { CHAT_CATEGORY } from './aideAgentActions.js';
 
 export function registerCodeEditActions() {
@@ -29,9 +28,9 @@ export function registerCodeEditActions() {
 				f1: false,
 				category: CHAT_CATEGORY,
 				icon: Codicon.saveAll,
-				precondition: CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE,
+				precondition: ContextKeyExpr.and(CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE, CONTEXT_CHAT_SESSION_WITH_EDITS),
 				keybinding: {
-					when: ContextKeyExpr.and(CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE, CONTEXT_CHAT_INPUT_HAS_FOCUS),
+					when: ContextKeyExpr.and(CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE, CONTEXT_CHAT_SESSION_WITH_EDITS, CONTEXT_CHAT_INPUT_HAS_FOCUS),
 					primary: KeyMod.CtrlCmd | KeyCode.KeyS,
 					weight: KeybindingWeight.WorkbenchContrib
 				},
@@ -39,7 +38,7 @@ export function registerCodeEditActions() {
 					id: MenuId.AideAgentEditPreviewWidget,
 					group: 'navigation',
 					order: 0,
-					when: CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE
+					when: ContextKeyExpr.and(CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE, CONTEXT_CHAT_SESSION_WITH_EDITS),
 				}
 			});
 		}
@@ -60,9 +59,9 @@ export function registerCodeEditActions() {
 				f1: false,
 				category: CHAT_CATEGORY,
 				icon: Codicon.closeAll,
-				precondition: CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE,
+				precondition: ContextKeyExpr.and(CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE, CONTEXT_CHAT_SESSION_WITH_EDITS),
 				keybinding: {
-					when: ContextKeyExpr.and(CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE, CONTEXT_CHAT_INPUT_HAS_FOCUS),
+					when: ContextKeyExpr.and(CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE, CONTEXT_CHAT_SESSION_WITH_EDITS, CONTEXT_CHAT_INPUT_HAS_FOCUS),
 					primary: KeyMod.CtrlCmd | KeyCode.Backspace,
 					weight: KeybindingWeight.WorkbenchContrib
 				},
@@ -70,24 +69,20 @@ export function registerCodeEditActions() {
 					id: MenuId.AideAgentEditPreviewWidget,
 					group: 'navigation',
 					order: 1,
-					when: CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE
+					when: ContextKeyExpr.and(CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE, CONTEXT_CHAT_SESSION_WITH_EDITS),
 				}
 			});
 		}
 
 		run(accessor: ServicesAccessor, ...args: any[]) {
-			const aideAgentService = accessor.get(IAideAgentService);
-			let exchangeId = aideAgentService.lastExchangeId;
-			if (!exchangeId) {
-				const context = args[0];
-				if (isAideAgentEditPreviewContext(context)) {
-					exchangeId = context.exchangeId;
-				}
+			const widgetService = accessor.get(IAideAgentWidgetService);
+			const sessionId = widgetService.lastFocusedWidget?.viewModel?.sessionId;
+			if (!sessionId) {
 				return;
 			}
 
 			const aideAgentCodeEditingService = accessor.get(IAideAgentCodeEditingService);
-			const editingSession = aideAgentCodeEditingService.getExistingCodeEditingSession(exchangeId);
+			const editingSession = aideAgentCodeEditingService.getExistingCodeEditingSession(sessionId);
 			if (editingSession) {
 				editingSession.reject();
 			}
@@ -104,9 +99,9 @@ export function registerCodeEditActions() {
 				f1: false,
 				category: CHAT_CATEGORY,
 				icon: Codicon.checkAll,
-				precondition: CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE,
+				precondition: ContextKeyExpr.and(CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE, CONTEXT_CHAT_SESSION_WITH_EDITS),
 				keybinding: {
-					when: ContextKeyExpr.and(CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE, CONTEXT_CHAT_INPUT_HAS_FOCUS),
+					when: ContextKeyExpr.and(CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE, CONTEXT_CHAT_SESSION_WITH_EDITS, CONTEXT_CHAT_INPUT_HAS_FOCUS),
 					primary: KeyMod.CtrlCmd | KeyCode.Enter,
 					weight: KeybindingWeight.WorkbenchContrib,
 				},
@@ -114,24 +109,20 @@ export function registerCodeEditActions() {
 					id: MenuId.AideAgentEditPreviewWidget,
 					group: 'navigation',
 					order: 2,
-					when: CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE
+					when: ContextKeyExpr.and(CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE, CONTEXT_CHAT_SESSION_WITH_EDITS),
 				}
 			});
 		}
 
 		run(accessor: ServicesAccessor, ...args: any[]) {
-			const aideAgentService = accessor.get(IAideAgentService);
-			let exchangeId = aideAgentService.lastExchangeId;
-			if (!exchangeId) {
-				const context = args[0];
-				if (isAideAgentEditPreviewContext(context)) {
-					exchangeId = context.exchangeId;
-				}
+			const widgetService = accessor.get(IAideAgentWidgetService);
+			const sessionId = widgetService.lastFocusedWidget?.viewModel?.sessionId;
+			if (!sessionId) {
 				return;
 			}
 
 			const aideAgentCodeEditingService = accessor.get(IAideAgentCodeEditingService);
-			const editingSession = aideAgentCodeEditingService.getExistingCodeEditingSession(exchangeId);
+			const editingSession = aideAgentCodeEditingService.getExistingCodeEditingSession(sessionId);
 			if (editingSession) {
 				editingSession.accept();
 			}

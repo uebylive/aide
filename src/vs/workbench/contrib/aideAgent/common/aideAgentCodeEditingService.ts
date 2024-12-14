@@ -4,6 +4,8 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { Event } from '../../../../base/common/event.js';
+import { URI } from '../../../../base/common/uri.js';
+import { Range } from '../../../../editor/common/core/range.js';
 import { IWorkspaceTextEdit } from '../../../../editor/common/languages.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
 
@@ -15,9 +17,12 @@ export const enum AideAgentCodeEditingSessionState {
 }
 
 export interface IAideAgentCodeEditingSession {
-	readonly exchangeId: string;
 	readonly onDidChange: Event<void>;
 	readonly onDidDispose: Event<void>;
+
+	readonly sessionId: string;
+	readonly codeEdits: Map<URI, Range[]>;
+
 	apply(edits: IWorkspaceTextEdit): Promise<void>;
 	complete(): void;
 	accept(): void;
@@ -34,6 +39,6 @@ export interface IAideAgentCodeEditingService {
 	_serviceBrand: undefined;
 
 	onDidComplete: Event<void>;
-	getOrStartCodeEditingSession(exchangeId: string): IAideAgentCodeEditingSession;
-	getExistingCodeEditingSession(exchangeId: string): IAideAgentCodeEditingSession | undefined;
+	getOrStartCodeEditingSession(sessionId: string): IAideAgentCodeEditingSession;
+	getExistingCodeEditingSession(sessionId: string): IAideAgentCodeEditingSession | undefined;
 }

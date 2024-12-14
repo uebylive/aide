@@ -496,7 +496,10 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 	}
 
 	async applyCodeEdit(codeEdit: IChatCodeEdit) {
-		this._editingSession = this._register(this._aideAgentCodeEditingService.getOrStartCodeEditingSession(this.id));
+		this._editingSession = this._register(this._aideAgentCodeEditingService.getOrStartCodeEditingSession(this.session.sessionId));
+		this._register(this._editingSession.onDidChange(() => {
+			this._onDidChange.fire();
+		}));
 		this._register(this._editingSession.onDidDispose(() => {
 			this._editingSession = undefined;
 		}));
@@ -1105,12 +1108,9 @@ export class ChatModel extends Disposable implements IChatModel {
 
 	// TODO(@ghostwriternr): This might break if we do proactive agent?
 	private autoAcceptLastExchange() {
-		const lastExchangeId = this.lastExchange?.id;
-		if (lastExchangeId) {
-			const editingSession = this.aideAgentCodeEditingService.getExistingCodeEditingSession(lastExchangeId);
-			if (editingSession) {
-				editingSession.accept();
-			}
+		const editingSession = this.aideAgentCodeEditingService.getExistingCodeEditingSession(this.sessionId);
+		if (editingSession) {
+			editingSession.accept();
 		}
 	}
 

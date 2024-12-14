@@ -545,6 +545,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					if (toolUsePartialInput) {
 						const toolUseKey = Object.keys(toolUsePartialInput)[0] as keyof ToolInputPartial;
 						if (toolUseKey === 'AttemptCompletion') {
+							responseStream.stream.stage({ message: 'Complete' });
 							const openStreams = this.responseStreamCollection.getAllResponseStreams();
 							for (const stream of openStreams) {
 								this.closeAndRemoveResponseStream(sessionId, stream.exchangeId);

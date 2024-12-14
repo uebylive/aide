@@ -10,12 +10,15 @@
 .edit-preview > .aideagent-edit-preview {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
 	padding: 8px;
 	background-color: var(--vscode-input-background);
 	border: 1px solid var(--vscode-input-border, transparent);
 	border-radius: 4px;
 	transition: transform 0.2s ease;
+}
+
+.edit-preview > .aideagent-edit-preview:has(> .code-edits .monaco-list-row) {
+	gap: 8px;
 }
 
 .edit-preview > .aideagent-edit-preview.hidden {
@@ -26,6 +29,7 @@
 .edit-preview > .aideagent-edit-preview > .header {
 	display: flex;
 	justify-content: space-between;
+	height: 22px;
 }
 
 .edit-preview > .aideagent-edit-preview > .header > .title {

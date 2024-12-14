@@ -65,8 +65,23 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 	private readonly _codeEdits = new Map<string, IAideAgentEdits>();
 	private readonly _workingSet = new Set<string>();
 
+	get codeEdits(): Map<URI, Range[]> {
+		const result = new Map<URI, Range[]>();
+
+		for (const [uriString, edits] of this._codeEdits) {
+			const uri = URI.parse(uriString);
+			for (const hunkInfo of edits.hunkData.getInfo()) {
+				if (hunkInfo.getState() === HunkState.Pending && hunkInfo.getRangesN().length > 0) {
+					result.set(uri, [hunkInfo.getRangesN()[0]]);
+				}
+			}
+		}
+
+		return result;
+	}
+
 	constructor(
-		readonly exchangeId: string,
+		readonly sessionId: string,
 		@IEditorService private readonly editorService: IEditorService,
 		@IEditorWorkerService private readonly _editorWorkerService: IEditorWorkerService,
 		@IModelService private readonly _modelService: IModelService,
@@ -205,6 +220,8 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 		if (this.activeEditor?.getModel()?.uri.toString() === resource.toString()) {
 			this.updateDecorations(this.activeEditor, codeEdits);
 		}
+
+		this._onDidChange.fire();
 	}
 
 	private async calculateDiff(textModel0: ITextModel, textModelN: ITextModel) {
@@ -306,7 +323,7 @@ export class AideAgentCodeEditingService extends Disposable implements IAideAgen
 	private readonly _onDidComplete = this._register(new Emitter<void>());
 	readonly onDidComplete = this._onDidComplete.event;
 
-	private _sessions = new DisposableMap<string, IAideAgentCodeEditingSession>();
+	private _editingSessions = new DisposableMap<string, IAideAgentCodeEditingSession>();
 
 	constructor(
 		@IInstantiationService private readonly instantiationService: IInstantiationService
@@ -314,22 +331,23 @@ export class AideAgentCodeEditingService extends Disposable implements IAideAgen
 		super();
 	}
 
-	getOrStartCodeEditingSession(exchangeId: string): IAideAgentCodeEditingSession {
-		if (this._sessions.get(exchangeId)) {
-			return this._sessions.get(exchangeId)!;
+	getOrStartCodeEditingSession(sessionId: string): IAideAgentCodeEditingSession {
+		if (this._editingSessions.get(sessionId)) {
+			return this._editingSessions.get(sessionId)!;
 		}
 
-		const session = this.instantiationService.createInstance(AideAgentCodeEditingSession, exchangeId);
-		this._register(session.onDidComplete(() => {
-			session.dispose();
+		const editingSession = this.instantiationService.createInstance(AideAgentCodeEditingSession, sessionId);
+		this._register(editingSession.onDidComplete(() => {
+			editingSession.dispose();
+			this._editingSessions.deleteAndDispose(sessionId);
 			this._onDidComplete.fire();
 		}));
 
-		this._sessions.set(exchangeId, session);
-		return session;
+		this._editingSessions.set(sessionId, editingSession);
+		return editingSession;
 	}
 
-	getExistingCodeEditingSession(exchangeId: string): IAideAgentCodeEditingSession | undefined {
-		return this._sessions.get(exchangeId);
+	getExistingCodeEditingSession(sessionId: string): IAideAgentCodeEditingSession | undefined {
+		return this._editingSessions.get(sessionId);
 	}
 }
