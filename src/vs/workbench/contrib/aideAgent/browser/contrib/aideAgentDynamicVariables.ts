@@ -154,8 +154,6 @@ export class ChatDynamicVariableModel extends Disposable implements IChatWidgetC
 	}
 
 	private updateDecorations(): void {
-		// remove the decorations and then add it back over here
-		this.widget.inputEditor.removeDecorationsByType(dynamicVariableDecorationType);
 		this.widget.inputEditor.setDecorationsByType('chat', dynamicVariableDecorationType, this._variables.map((r): IDecorationOptions => ({
 			range: r.range,
 			hoverMessage: this.getHoverForReference(r)

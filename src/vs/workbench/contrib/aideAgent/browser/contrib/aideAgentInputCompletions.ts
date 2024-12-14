@@ -16,6 +16,8 @@ import { IWordAtPosition, getWordAtText } from '../../../../../editor/common/cor
 import { CompletionContext, CompletionItem, CompletionItemKind, CompletionList, CompletionTriggerKind } from '../../../../../editor/common/languages.js';
 import { ITextModel } from '../../../../../editor/common/model.js';
 import { ILanguageFeaturesService } from '../../../../../editor/common/services/languageFeatures.js';
+import { IModelService } from '../../../../../editor/common/services/model.js';
+import { ITextModelService } from '../../../../../editor/common/services/resolverService.js';
 import { SuggestController } from '../../../../../editor/contrib/suggest/browser/suggestController.js';
 import { localize } from '../../../../../nls.js';
 import { Action2, registerAction2 } from '../../../../../platform/actions/common/actions.js';
@@ -36,7 +38,7 @@ import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestTextPa
 import { IAideAgentSlashCommandService } from '../../common/aideAgentSlashCommands.js';
 import { IAideAgentVariablesService, IDynamicVariable } from '../../common/aideAgentVariables.js';
 import { IAideAgentLMToolsService } from '../../common/languageModelToolsService.js';
-import { SubmitChatRequestAction } from '../actions/aideAgentExecuteActions.js';
+import { ExecuteChatAction } from '../actions/aideAgentExecuteActions.js';
 import { IAideAgentWidgetService, IChatWidget } from '../aideAgent.js';
 import { ChatInputPart } from '../aideAgentInputPart.js';
 import { IChatWidgetCompletionContext } from '../aideAgentWidget.js';
@@ -52,7 +54,7 @@ class SlashCommandCompletions extends Disposable {
 	) {
 		super();
 
-		const slashCommandsCompletionProvider = {
+		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
 			_debugDisplayName: 'globalSlashCommands',
 			triggerCharacters: [chatSubcommandLeader],
 			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
@@ -88,13 +90,12 @@ class SlashCommandCompletions extends Disposable {
 							range: new Range(1, 1, 1, 1),
 							sortText: c.sortText ?? 'a'.repeat(i + 1),
 							kind: CompletionItemKind.Text, // The icons are disabled here anyway,
-							command: c.executeImmediately ? { id: SubmitChatRequestAction.ID, title: withSlash, arguments: [{ widget, inputValue: `${withSlash} ` }] } : undefined,
+							command: c.executeImmediately ? { id: ExecuteChatAction.ID, title: withSlash, arguments: [{ widget, inputValue: `${withSlash} ` }] } : undefined,
 						};
 					})
 				};
 			}
-		};
-		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, slashCommandsCompletionProvider));
+		}));
 	}
 }
 
@@ -328,8 +329,7 @@ class ReferenceArgument {
 
 class BuiltinDynamicCompletions extends Disposable {
 	public static readonly addReferenceCommand = '_addReferenceCmd';
-	private static readonly VariableNameDef = new RegExp(`${chatVariableLeader}[\\w/.-]*`, 'g'); // -g flag should always be included
-	// public static readonly VariableNameDef = new RegExp(`${chatVariableLeader}\\w*`, 'g'); // MUST be using `g`-flag
+	public static readonly VariableNameDef = new RegExp(`${chatVariableLeader}\\w*`, 'g'); // MUST be using `g`-flag
 	private readonly workspaceSymbolsQuickAccess: SymbolsQuickAccessProvider;
 
 	private readonly queryBuilder: QueryBuilder;
@@ -349,6 +349,8 @@ class BuiltinDynamicCompletions extends Disposable {
 		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
 		@IAideAgentWidgetService private readonly chatWidgetService: IAideAgentWidgetService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
+		@IModelService private readonly modelService: IModelService,
+		@ITextModelService private readonly textModelService: ITextModelService,
 	) {
 		super();
 		this.cacheScheduler = this._register(new RunOnceScheduler(() => {
@@ -356,26 +358,9 @@ class BuiltinDynamicCompletions extends Disposable {
 			this.cacheCodeEntries();
 		}, 0));
 
-		const alphabetArray: string[] = [];
-
-		for (let i = 97; i <= 122; i++) {
-			alphabetArray.push(String.fromCharCode(i)); // lowercase letters 'a' to 'z'
-		}
-
-		for (let i = 65; i <= 90; i++) {
-			alphabetArray.push(String.fromCharCode(i)); // uppercase letters 'A' to 'Z'
-		}
-		alphabetArray.push(chatVariableLeader);
-		alphabetArray.push('/');
-		alphabetArray.push('.');
-
-		const dynamicCompletionsProvider = {
+		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
 			_debugDisplayName: chatDynamicCompletions,
-			// this makes the completion trigger everytime no matter what we type
-			// we will have to handle the case so we only trigger it when the word at the current position starts with '@'
-			triggerCharacters: alphabetArray,
-			// This triggers even when we do backspace but the search is broken because we are not searching for the prefix
-			// we do want to show an empty suggestion box somehow or when we have a match
+			triggerCharacters: [chatVariableLeader],
 			provideCompletionItems: async (model: ITextModel, position: Position, context: CompletionContext, token: CancellationToken) => {
 				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
 				if (!widget || !widget.supportsFileReferences) {
@@ -413,8 +398,8 @@ class BuiltinDynamicCompletions extends Disposable {
 					this.addStaticFileEntry(widget, range, result);
 					this.addStaticCodeEntry(widget, range, result);
 				} else if (currentCompletionContext === 'default') {
-					// run both the file entries and the code entries in parallel
-					await Promise.all([this.addFileEntries(pattern, widget, result, range, token), this.addCodeEntries(pattern, widget, result, range, token)]);
+					await this.addFileEntries(pattern, widget, result, range, token);
+					await this.addCodeEntries(pattern, widget, result, range, token);
 				} else if (currentCompletionContext === 'files') {
 					await this.addFileEntries(pattern, widget, result, range, token);
 				} else if (currentCompletionContext === 'code') {
@@ -428,19 +413,10 @@ class BuiltinDynamicCompletions extends Disposable {
 
 				// cache the entries for the next completion
 				this.cacheScheduler.schedule();
-				if (result.suggestions.length === 0) {
-					result.suggestions.push({
-						label: 'No results found',
-						kind: CompletionItemKind.Text,
-						filterText: `${chatVariableLeader}${pattern}`,
-						insertText: 'No results found',
-						range: range.insert,
-					});
-				}
+
 				return result;
 			}
-		};
-		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, dynamicCompletionsProvider));
+		}));
 
 		this._register(CommandsRegistry.registerCommand(BuiltinDynamicCompletions.addReferenceCommand, (_services, arg) => this.cmdAddReference(arg)));
 		this.queryBuilder = this.instantiationService.createInstance(QueryBuilder);
@@ -506,30 +482,31 @@ class BuiltinDynamicCompletions extends Disposable {
 	}
 
 	private async addFileEntries(pattern: string, widget: IChatWidget, result: CompletionList, info: { insert: Range; replace: Range; varWord: IWordAtPosition | null }, token: CancellationToken) {
-		const makeFileCompletionItem = async (resource: URI): Promise<CompletionItem> => {
+		const makeFileCompletionItem = async (resource: URI): Promise<CompletionItem | undefined> => {
 			const basename = this.labelService.getUriBasenameLabel(resource);
-			const fullName = this.labelService.getUriLabel(resource);
-			const filterText = `${chatVariableLeader}${fullName}`;
-			const insertText = `${chatVariableLeader}${basename} `;
-			// if the model is null then we create a special range which is very very special
-			// and is filled with 42s
-			// this is a special variableId which signifies that we are not setting the range
-			// to full file length over here, since creating the model using
-			// IModelSerivce.createModel('') sets the file content to ''
-			// which was a frequent bug we were noticing when developing
-			const variableId = 'vscode.file.rangeNotSetProperlyFullFile';
-			const range = new Range(42, 42, 42, 42);
+			const insertText = `${chatVariableLeader}${basename}`;
+			let model = this.modelService.getModel(resource);
+			if (!model) {
+				try {
+					const modelReference = await this.textModelService.createModelReference(resource);
+					model = modelReference.object.textEditorModel;
+					modelReference.dispose();
+				} catch (e) {
+					return undefined;
+				}
+			}
+			const range = model.getFullModelRange();
 
 			return {
 				label: { label: basename, description: this.labelService.getUriLabel(resource, { relative: true }) },
-				filterText: filterText,
+				filterText: `${chatVariableLeader}${basename}`,
 				insertText,
 				range: info,
 				kind: CompletionItemKind.File,
 				sortText: '{', // after `z`
 				command: {
 					id: BuiltinDynamicCompletions.addReferenceCommand, title: '', arguments: [new ReferenceArgument(widget, {
-						id: variableId,
+						id: 'vscode.file',
 						range: { startLineNumber: info.replace.startLineNumber, startColumn: info.replace.startColumn, endLineNumber: info.replace.endLineNumber, endColumn: info.replace.startColumn + insertText.length },
 						data: {
 							uri: resource,
@@ -560,8 +537,12 @@ class BuiltinDynamicCompletions extends Disposable {
 			}
 
 			seen.add(item.resource);
-			const newLen = result.suggestions.push(await makeFileCompletionItem(item.resource));
-			if (newLen - len >= 5) {
+			const completionItem = await makeFileCompletionItem(item.resource);
+			if (completionItem) {
+				result.suggestions.push(completionItem);
+			}
+
+			if (result.suggestions.length - len >= 5) {
 				break;
 			}
 		}
@@ -570,11 +551,13 @@ class BuiltinDynamicCompletions extends Disposable {
 		// use file search when having a pattern
 		if (pattern) {
 			for (const match of this.fileEntries) {
-				if (seen.has(match.resource)) {
+				const completionItem = await makeFileCompletionItem(match.resource);
+				if (seen.has(match.resource) || !completionItem) {
 					// already included via history
 					continue;
 				}
-				result.suggestions.push(await makeFileCompletionItem(match.resource));
+
+				result.suggestions.push(completionItem);
 			}
 		}
 	}
@@ -595,9 +578,9 @@ class BuiltinDynamicCompletions extends Disposable {
 			if (uri === undefined || range === undefined) {
 				continue;
 			}
-			// label looks like `$(symbol-type) symbol-name`, but we want to insert `@symbol-name `.
-			// with a space
-			const insertText = `${chatVariableLeader}${label.replace(/^\$\([^)]+\) /, '')} `;
+
+			// label looks like `$(symbol-type) symbol-name`, but we want to insert `@symbol-name`.
+			const insertText = `${chatVariableLeader}${label.replace(/^\$\([^)]+\) /, '')}`;
 			result.suggestions.push({
 				label: pick,
 				filterText: `${chatVariableLeader}${pick.label}`,
@@ -609,10 +592,7 @@ class BuiltinDynamicCompletions extends Disposable {
 					id: BuiltinDynamicCompletions.addReferenceCommand, title: '', arguments: [new ReferenceArgument(widget, {
 						id: 'vscode.code',
 						range: { startLineNumber: info.replace.startLineNumber, startColumn: info.replace.startColumn, endLineNumber: info.replace.endLineNumber, endColumn: info.replace.startColumn + insertText.length },
-						data: {
-							uri,
-							range,
-						}
+						data: { uri, range }
 					})]
 				}
 			});
@@ -679,11 +659,7 @@ export class TriggerSecondaryChatWidgetCompletionAction extends Action2 {
 }
 registerAction2(TriggerSecondaryChatWidgetCompletionAction);
 
-function computeCompletionRanges(model: ITextModel, position: Position, reg: RegExp, onlyOnWordStart = false): {
-	insert: Range;
-	replace: Range;
-	varWord: IWordAtPosition | null;
-} | undefined {
+function computeCompletionRanges(model: ITextModel, position: Position, reg: RegExp, onlyOnWordStart = false): { insert: Range; replace: Range; varWord: IWordAtPosition | null } | undefined {
 	const varWord = getWordAtText(position.column, reg, model.getLineContent(position.lineNumber), 0);
 	if (!varWord && model.getWordUntilPosition(position).word) {
 		// inside a "normal" word
@@ -722,7 +698,7 @@ class VariableCompletions extends Disposable {
 	) {
 		super();
 
-		const chatVariablesProvider = {
+		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
 			_debugDisplayName: 'chatVariables',
 			triggerCharacters: [chatVariableLeader],
 			provideCompletionItems: async (model: ITextModel, position: Position, _context: CompletionContext, _token: CancellationToken) => {
@@ -790,8 +766,7 @@ class VariableCompletions extends Disposable {
 					suggestions: [...variableItems, ...toolItems]
 				};
 			}
-		};
-		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, chatVariablesProvider));
+		}));
 	}
 }
 

@@ -60,11 +60,8 @@ export class AideAgentFloatingWidget extends Disposable {
 		this.widget = this._register(
 			scopedInstantiationService.createInstance(
 				ChatWidget,
-				ChatAgentLocation.Editor,
-				{
-					isPassthrough: true,
-					supportsFileReferences: true // @g-danna don't know if this actually does anything
-				},
+				ChatAgentLocation.Panel,
+				{ isPassthrough: true },
 				{
 					renderInputOnTop: true,
 					renderFollowups: false,

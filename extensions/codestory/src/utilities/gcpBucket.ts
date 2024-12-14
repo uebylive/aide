@@ -2,50 +2,46 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import { Storage } from '@google-cloud/storage';
-import * as path from 'path';
-import * as fs from 'fs';
+
 import axios from 'axios';
+import * as fs from 'fs';
+import * as path from 'path';
 
-// https://storage.googleapis.com/aide-binary/run
+const BUCKET_NAME = 'sidecar-bin';
 
-async function ensureDirectoryExists(filePath: string): Promise<void> {
+function ensureDirectoryExists(filePath: string): void {
 	const parentDir = path.dirname(filePath);
-
-	if (fs.existsSync(parentDir)) {
-		// The parent directory already exists, so we don't need to create it
-		return;
+	try {
+		fs.mkdirSync(parentDir, { recursive: true });
+	} catch (error) {
+		// Only throw if the error is not "directory already exists"
+		if ((error as NodeJS.ErrnoException).code !== 'EEXIST') {
+			throw error;
+		}
 	}
-
-	// Recursively create the parent directory
-	await ensureDirectoryExists(parentDir);
-
-	// Create the directory
-	fs.mkdirSync(parentDir);
 }
 
-export const downloadFromGCPBucket = async (bucketName: string, srcFilename: string, destFilename: string) => {
-	const storage = new Storage();
+export const downloadSidecarZip = async (
+	destination: string,
+	version: string = 'latest'
+) => {
+	ensureDirectoryExists(destination);
 
-	const options = {
-		// Specify the source file
-		source: srcFilename,
-
-		// Specify the destination file
-		destination: destFilename,
-	};
-
-	await ensureDirectoryExists(destFilename);
-
-	// Download the file
-	await storage.bucket(bucketName).file(srcFilename).download(options);
+	const platform = process.platform;
+	const architecture = process.arch;
+	const source = `${version}/${platform}/${architecture}/sidecar.zip`;
+	try {
+		await downloadUsingURL(source, destination);
+	} catch (err) {
+		console.error(err);
+		throw new Error(`Failed to download sidecar`);
+	}
 };
 
-
-export const downloadUsingURL = async (bucketName: string, srcFileName: string, destFileName: string) => {
-	const url = `https://storage.googleapis.com/${bucketName}/${srcFileName}`;
+const downloadUsingURL = async (source: string, destination: string) => {
+	const url = `https://storage.googleapis.com/${BUCKET_NAME}/${source}`;
 	const response = await axios.get(url, { responseType: 'stream' });
-	const writer = fs.createWriteStream(destFileName);
+	const writer = fs.createWriteStream(destination);
 
 	response.data.pipe(writer);
 
@@ -54,18 +50,3 @@ export const downloadUsingURL = async (bucketName: string, srcFileName: string, 
 		writer.on('error', reject);
 	});
 };
-
-// const bucketName = 'your-bucket-name';
-// const srcFilename = 'path/in/bucket/filename.ext';
-// const destFilename = 'local/path/filename.ext';
-
-
-// void (async () => {
-// 	const bucketName = 'aide-binary';
-// 	const srcFilename = 'run';
-// 	await downloadUsingURL(
-// 		bucketName,
-// 		srcFilename,
-// 		'/Users/skcd/Desktop/run',
-// 	);
-// })();

@@ -23,11 +23,12 @@
 }
 
 .aideagent-item-container {
-	padding-block: 12px;
-	padding-inline: 10px;
+	padding: 8px 16px;
 	display: flex;
 	flex-direction: column;
+	gap: 8px;
 	color: var(--vscode-interactive-session-foreground);
+
 	cursor: default;
 	user-select: text;
 	-webkit-user-select: text;
@@ -47,7 +48,7 @@
 .aideagent-item-container .header .user {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	/* gap: 8px; */
 
 	/*
 	Rendering the avatar icon as round makes it a little larger than the .user container.
@@ -71,6 +72,7 @@
 	font-size: 12px;
 	color: var(--vscode-descriptionForeground);
 	overflow: hidden;
+	padding-left: 8px;
 }
 
 .aideagent-item-container .detail-container .detail .agentOrSlashCommandDetected A {
@@ -176,7 +178,7 @@
 	background-color: var(--vscode-chat-list-background);
 }
 
-.aideagent-item-container.interactive-request .header .monaco-toolbar {
+.aideagent-item-container.aideagent-request .header .monaco-toolbar {
 	/* Take the partially-transparent background color override for request rows */
 	background-color: inherit;
 }
@@ -190,17 +192,10 @@
 
 .aideagent-item-container .value {
 	width: 100%;
-	margin-top: 8px;
 }
 
-.aideagent-item-container > .value > :not(:first-child):not(.chat-used-context) {
-	margin-top: 8px;
-}
-
-/* Should handle this one separately */
-/* TODO(@ghostwriternr): Why? */
 .aideagent-item-container > .value .chat-used-context {
-	margin-top: 8px;
+	margin-bottom: 8px;
 }
 
 .aideagent-item-container .value .rendered-markdown blockquote {
@@ -251,6 +246,19 @@
 	overflow: hidden;
 }
 
+/*
+.aideagent-request {
+	border-bottom: 1px solid var(--vscode-chat-requestBorder);
+	border-top: 1px solid var(--vscode-chat-requestBorder);
+}
+*/
+
+.hc-black .aideagent-request,
+.hc-light .aideagent-request {
+	border-left: 3px solid var(--vscode-chat-requestBorder);
+	border-right: 3px solid var(--vscode-chat-requestBorder);
+}
+
 .aideagent-item-container .value {
 	white-space: normal;
 	overflow-wrap: anywhere;
@@ -285,6 +293,12 @@
 	font-size: 14px;
 	font-weight: 600;
 	margin: 16px 0;
+}
+
+#workbench\.panel\.aideAgentPlan .aideagent-item-container .value .rendered-markdown h1,
+#workbench\.panel\.aideAgentPlan .aideagent-item-container .value .rendered-markdown h2,
+#workbench\.panel\.aideAgentPlan .aideagent-item-container .value .rendered-markdown h3 {
+	margin: 0;
 }
 
 .aideagent-item-container.editing-session .value .rendered-markdown [data-code] {
@@ -500,7 +514,6 @@ have to be updated for changes to the rules above, or to support more deeply nes
 }
 
 .interactive-session .chat-input-container {
-	width: 100%;
 	box-sizing: border-box;
 	cursor: text;
 	background-color: var(--vscode-input-background);
@@ -520,7 +533,33 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	display: flex;
 	gap: 4px;
 	align-items: center;
-	width: 100%;
+}
+
+.interactive-session .interactive-input-status-message {
+	font-size: 0.9em;
+	color: var(--vscode-disabledForeground);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding-top: 4px;
+}
+
+.interactive-session .interactive-input-status-message > .model-config > .monaco-button {
+	padding: 0;
+}
+
+.interactive-session .interactive-input-status-message .status-message {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+
+.interactive-session .interactive-input-status-message .status-message .codicon.codicon-circle-filled {
+	font-size: 14px;
+}
+
+.interactive-session .interactive-input-status-message .status-message .codicon.codicon-circle-filled::before {
+	vertical-align: -2px;
 }
 
 .interactive-session .chat-input-container.focused {
@@ -661,7 +700,6 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	padding: 12px 0px;
 	display: flex;
 	flex-direction: column;
-	position: relative;
 }
 
 .interactive-session .interactive-input-part.compact {
@@ -723,7 +761,7 @@ have to be updated for changes to the rules above, or to support more deeply nes
 }
 
 .interactive-session .aideagent-attached-context {
-	padding: 0;
+	padding: 0 0 8px 0;
 	display: flex;
 	gap: 4px;
 	flex-wrap: wrap;
@@ -736,6 +774,10 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	flex-wrap: wrap;
 }
 
+.interactive-session .aideagent-item-container.aideagent-request .aideagent-attached-context {
+	margin-top: -8px;
+}
+
 .interactive-session .aideagent-attached-context .aideagent-attached-context-attachment {
 	padding: 2px;
 	border: 1px solid var(--vscode-chat-requestBorder, var(--vscode-input-background, transparent));
@@ -744,7 +786,7 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	max-width: 100%;
 }
 
-.interactive-session .aideagent-item-container.interactive-request .aideagent-attached-context .aideagent-attached-context-attachment {
+.interactive-session .aideagent-item-container.aideagent-request .aideagent-attached-context .aideagent-attached-context-attachment {
 	padding-right: 6px;
 }
 
@@ -823,7 +865,6 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	margin: 0;
 	border-radius: 2px;
 	padding: 0 4px 0 6px;
-	width: 100%;
 }
 
 .quick-input-widget .interactive-list {
@@ -952,6 +993,7 @@ have to be updated for changes to the rules above, or to support more deeply nes
 .interactive-session .aideagent-attachments-label .monaco-button:hover {
 	background-color: var(--vscode-list-hoverBackground);
 	color: var(--vscode-foreground);
+
 }
 
 .interactive-session .aideagent-used-context-label .monaco-text-button:focus,
@@ -995,16 +1037,7 @@ have to be updated for changes to the rules above, or to support more deeply nes
 
 .aideagent-item-container .chat-command-button {
 	display: flex;
-	margin-bottom: 0px;
-}
-
-.aideagent-item-container .chat-command-group {
-	display: flex;
-	justify-content: end;
-	gap: 10px;
-}
-.aideagent-item-container .chat-command-group .monaco-button.aide-button {
-	width: fit-content;
+	margin-bottom: 16px;
 }
 
 .aideagent-item-container .chat-notification-widget {
@@ -1039,10 +1072,6 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	border: none;
 	padding: 0;
 	color: var(--vscode-textLink-foreground);
-}
-
-.aideagent-item-container.interactive-request {
-	border-block: none;
 }
 
 .aideagent-item-container .aideagent-attachment-icons .icon {

@@ -67,7 +67,7 @@ import { CONTEXT_CHAT_EDIT_APPLIED } from '../common/aideAgentContextKeys.js';
 import { IChatResponseModel, IChatTextEditGroup } from '../common/aideAgentModel.js';
 import { IChatResponseViewModel, isResponseVM } from '../common/aideAgentViewModel.js';
 import { ChatTreeItem } from './aideAgent.js';
-import { IBaseRenderDelegate } from './aideAgentListRenderer.js';
+import { IChatRendererDelegate } from './aideAgentListRenderer.js';
 import { ChatEditorOptions } from './aideAgentOptions.js';
 
 const $ = dom.$;
@@ -159,7 +159,7 @@ export class CodeBlockPart extends Disposable {
 	constructor(
 		private readonly options: ChatEditorOptions,
 		readonly menuId: MenuId,
-		delegate: IBaseRenderDelegate,
+		delegate: IChatRendererDelegate,
 		overflowWidgetsDomNode: HTMLElement | undefined,
 		@IInstantiationService instantiationService: IInstantiationService,
 		@IContextKeyService contextKeyService: IContextKeyService,
@@ -509,7 +509,7 @@ export class CodeCompareBlockPart extends Disposable {
 	constructor(
 		private readonly options: ChatEditorOptions,
 		readonly menuId: MenuId,
-		delegate: IBaseRenderDelegate,
+		delegate: IChatRendererDelegate,
 		overflowWidgetsDomNode: HTMLElement | undefined,
 		@IInstantiationService instantiationService: IInstantiationService,
 		@IContextKeyService contextKeyService: IContextKeyService,

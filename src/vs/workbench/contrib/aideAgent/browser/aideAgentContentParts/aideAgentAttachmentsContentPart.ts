@@ -193,14 +193,10 @@ class CollapsibleListRenderer implements IListRenderer<IChatRequestVariableEntry
 				ariaLabel = range ? localize('chat.fileAttachmentWithRange3', "Attached: {0}, line {1} to line {2}.", friendlyName, range.startLineNumber, range.endLineNumber) : localize('chat.fileAttachment3', "Attached: {0}.", friendlyName);
 			}
 
-			let updatedRange = range;
-			if (range?.startLineNumber === 42 && range.endLineNumber === 42 || element.id === 'vscode.file.rangeNotSetProperlyFullFile') {
-				updatedRange = undefined;
-			}
 			label.setFile(file, {
 				fileKind: FileKind.FILE,
 				hidePath: true,
-				range: updatedRange,
+				range,
 				title: correspondingContentReference?.options?.status?.description
 			});
 			label.element.ariaLabel = ariaLabel;
@@ -215,7 +211,7 @@ class CollapsibleListRenderer implements IListRenderer<IChatRequestVariableEntry
 						{
 							fromUserGesture: true,
 							editorOptions: {
-								selection: updatedRange,
+								selection: range,
 							} as any
 						});
 				}

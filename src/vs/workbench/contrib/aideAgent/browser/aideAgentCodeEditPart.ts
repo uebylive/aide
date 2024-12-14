@@ -2,42 +2,47 @@
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
-import * as dom from '../../../../../base/browser/dom.js';
-import { IListRenderer, IListVirtualDelegate } from '../../../../../base/browser/ui/list/list.js';
-import { Emitter, Event } from '../../../../../base/common/event.js';
-import { Disposable, DisposableStore, IDisposable } from '../../../../../base/common/lifecycle.js';
-import { basename, basenameOrAuthority, dirname } from '../../../../../base/common/resources.js';
-import { localize } from '../../../../../nls.js';
-import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
-import { ILabelService } from '../../../../../platform/label/common/label.js';
-import { WorkbenchList } from '../../../../../platform/list/browser/listService.js';
-import { IOpenerService } from '../../../../../platform/opener/common/opener.js';
-import { IThemeService } from '../../../../../platform/theme/common/themeService.js';
-import { IResourceLabel, ResourceLabels } from '../../../../browser/labels.js';
-import { createFileIconThemableTreeContainerScope } from '../../../files/browser/views/explorerView.js';
-import { IAideAgentCodeEditsItem } from '../../common/aideAgentService.js';
-import { IChatCodeEdits } from '../../common/aideAgentViewModel.js';
-import { IDisposableReference, ResourcePool } from './aideAgentCollections.js';
-import { IChatContentPart, IChatContentPartRenderContext } from './aideAgentContentParts.js';
+import * as dom from '../../../../base/browser/dom.js';
+import { IListRenderer, IListVirtualDelegate } from '../../../../base/browser/ui/list/list.js';
+import { Emitter, Event } from '../../../../base/common/event.js';
+import { Disposable, DisposableStore, IDisposable } from '../../../../base/common/lifecycle.js';
+import { basename, basenameOrAuthority, dirname } from '../../../../base/common/resources.js';
+import { URI } from '../../../../base/common/uri.js';
+import { Range } from '../../../../editor/common/core/range.js';
+import { localize } from '../../../../nls.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { ILabelService } from '../../../../platform/label/common/label.js';
+import { WorkbenchList } from '../../../../platform/list/browser/listService.js';
+import { IOpenerService } from '../../../../platform/opener/common/opener.js';
+import { IThemeService } from '../../../../platform/theme/common/themeService.js';
+import { IResourceLabel, ResourceLabels } from '../../../browser/labels.js';
+import { createFileIconThemableTreeContainerScope } from '../../files/browser/views/explorerView.js';
+import { IDisposableReference, ResourcePool } from './aideAgentContentParts/aideAgentCollections.js';
 const $ = dom.$;
 
-export class AideAgentCodeEditContentPart extends Disposable implements IChatContentPart {
+interface IAideAgentCodeEditsItem {
+	uri: URI;
+	range: Range;
+}
+
+interface IChatCodeEdits {
+	edits: Map<URI, Range[]>;
+}
+
+export class AideAgentCodeEditsContentPart extends Disposable {
 	public readonly domNode: HTMLElement;
 	private list: WorkbenchList<IAideAgentCodeEditsItem>;
 	private readonly _onDidChangeHeight = this._register(new Emitter<void>());
 	public readonly onDidChangeHeight = this._onDidChangeHeight.event;
-	constructor(
-		context: IChatContentPartRenderContext | undefined,
-		codeEdits: IChatCodeEdits,
-		pool: CodeEditsPool,
-	) {
+	constructor(pool: CodeEditsPool) {
 		super();
+
 		const ref = this._register(pool.get());
 		const list = this.list = ref.object;
 		this.domNode = list.getHTMLElement().parentElement!;
-		this.setInput(codeEdits);
 	}
-	private setInput(codeEdits: IChatCodeEdits) {
+
+	setInput(codeEdits: IChatCodeEdits) {
 		const data: IAideAgentCodeEditsItem[] = [];
 		for (const [uri, ranges] of codeEdits.edits) {
 			for (const range of ranges) {
@@ -49,9 +54,7 @@ export class AideAgentCodeEditContentPart extends Disposable implements IChatCon
 		this.list.getHTMLElement().style.height = `${height}px`;
 		this.list.splice(0, this.list.length, data);
 	}
-	hasSameContent(): boolean {
-		return false;
-	}
+
 	addDisposable(disposable: IDisposable): void {
 		this._register(disposable);
 	}
@@ -62,6 +65,7 @@ export class CodeEditsPool extends Disposable {
 	public get inUse(): ReadonlySet<WorkbenchList<IAideAgentCodeEditsItem>> {
 		return this._pool.inUse;
 	}
+
 	constructor(
 		private _onDidChangeVisibility: Event<boolean>,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
@@ -70,6 +74,7 @@ export class CodeEditsPool extends Disposable {
 		super();
 		this._pool = this._register(new ResourcePool(() => this.listFactory()));
 	}
+
 	private listFactory(): WorkbenchList<IAideAgentCodeEditsItem> {
 		const resourceLabels = this._register(this.instantiationService.createInstance(ResourceLabels, { onDidChangeVisibility: this._onDidChangeVisibility }));
 		const container = $('.aideagent-codeedit-list');
@@ -93,6 +98,7 @@ export class CodeEditsPool extends Disposable {
 		);
 		return list;
 	}
+
 	get(): IDisposableReference<WorkbenchList<IAideAgentCodeEditsItem>> {
 		const object = this._pool.get();
 		let stale = false;
@@ -106,19 +112,24 @@ export class CodeEditsPool extends Disposable {
 		};
 	}
 }
+
 class AideAgentCodeEditsListDelegate implements IListVirtualDelegate<IAideAgentCodeEditsItem> {
 	static readonly ITEM_HEIGHT = 22;
+
 	getHeight(element: IAideAgentCodeEditsItem): number {
 		return AideAgentCodeEditsListDelegate.ITEM_HEIGHT;
 	}
+
 	getTemplateId(element: IAideAgentCodeEditsItem): string {
 		return AideAgentCodeEditsListRenderer.TEMPLATE_ID;
 	}
 }
+
 interface IAideAgentCodeEditsListTemplate {
 	templateDisposables: DisposableStore;
 	label: IResourceLabel;
 }
+
 class AideAgentCodeEditsListRenderer implements IListRenderer<IAideAgentCodeEditsItem, IAideAgentCodeEditsListTemplate> {
 	static TEMPLATE_ID = 'aideAgentCodeEditsListTemplate';
 	readonly templateId: string = AideAgentCodeEditsListRenderer.TEMPLATE_ID;

@@ -12,7 +12,7 @@ import { AnswerSplitOnNewLineAccumulatorStreaming, StreamProcessor } from '../..
 import { applyEdits, applyEditsDirectly, } from '../../server/applyEdits';
 import { RecentEditsRetriever } from '../../server/editedFiles';
 import { handleRequest } from '../../server/requestHandler';
-import { EditedCodeStreamingRequest, SideCarAgentEvent, SidecarApplyEditsRequest, SidecarContextEvent, SidecarUndoPlanStep } from '../../server/types';
+import { EditedCodeStreamingRequest, SideCarAgentEvent, SidecarApplyEditsRequest, SidecarContextEvent, SidecarUndoPlanStep, ToolInputPartial } from '../../server/types';
 import { RepoRef, SideCarClient } from '../../sidecar/client';
 import { getUniqueId, getUserId } from '../../utilities/uniqueId';
 import { ProjectContext } from '../../utilities/workspaceContext';
@@ -40,7 +40,6 @@ class AideResponseStreamCollection {
 
 	addResponseStream(responseStreamIdentifier: ResponseStreamIdentifier, responseStream: vscode.AideAgentEventSenderResponse) {
 		this.extensionContext.subscriptions.push(responseStream.token.onCancellationRequested(() => {
-			console.log('responseStream::token_cancelled');
 			// over here we get the stream of events from the cancellation
 			// we need to send it over on the stream as usual so we can work on it
 			// we can send empty access token here since we are not making llm calls
@@ -59,11 +58,16 @@ class AideResponseStreamCollection {
 	removeResponseStream(responseStreamIdentifer: ResponseStreamIdentifier) {
 		this.responseStreamCollection.delete(this.getKey(responseStreamIdentifer));
 	}
+
+	getAllResponseStreams(): vscode.AideAgentEventSenderResponse[] {
+		return Array.from(this.responseStreamCollection.values());
+	}
 }
 
 
 export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	private aideAgent: vscode.AideSessionAgent;
+	private lastThinkingText: Map<string, string> = new Map();
 
 	editorUrl: string | undefined;
 	private iterationEdits = new vscode.WorkspaceEdit();
@@ -135,16 +139,15 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			// can still grab it by listenting to port 0
 			this.requestHandler?.listen(port);
 			const editorUrl = `http://localhost:${port}`;
-			console.log('editorUrl', editorUrl);
 			this.editorUrl = editorUrl;
 		});
 
 		this.aideAgent = vscode.aideAgent.createChatParticipant('aide', {
 			newSession: this.newSession.bind(this),
 			handleEvent: this.handleEvent.bind(this),
-			handleExchangeUserAction: this.handleExchangeUserAction.bind(this),
-			handleSessionUndo: this.handleSessionUndo.bind(this),
-			handleSessionIterationRequest: this.handleSessionIterationRequest.bind(this),
+			// handleExchangeUserAction: this.handleExchangeUserAction.bind(this),
+			// handleSessionUndo: this.handleSessionUndo.bind(this),
+			// handleSessionIterationRequest: this.handleSessionIterationRequest.bind(this),
 		});
 		this.aideAgent.iconPath = vscode.Uri.joinPath(vscode.extensions.getExtension('codestory-ghost.codestoryai')?.extensionUri ?? vscode.Uri.parse(''), 'assets', 'aide-agent.png');
 		this.aideAgent.requester = {
@@ -208,7 +211,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		// well understood but we should have an explicit way to do that
 		const response = await this.aideAgent.initResponse(sessionId);
 		if (response !== undefined) {
-			console.log('newExchangeCreated', sessionId, response.exchangeId);
 			this.responseStreamCollection.addResponseStream({
 				sessionId,
 				exchangeId: response.exchangeId,
@@ -229,7 +231,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			sessionId: request.session_id,
 		});
 
-		console.log('provideEditsStreamed');
 		// This is our uniqueEditId which we are using to tag the edits and make
 		// sure that we can roll-back if required on the undo-stack
 		let uniqueEditId = request.exchange_id;
@@ -243,6 +244,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			};
 		}
 		// send a streamingstate widget over here that we have started editing
+		/*
 		responseStream?.stream.streamingState({
 			exchangeId: request.exchange_id,
 			sessionId: request.session_id,
@@ -252,6 +254,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			loadingLabel: 'generating',
 			message: 'Started editing',
 		});
+		*/
 		const editStreamEvent = request;
 		const fileDocument = editStreamEvent.fs_file_path;
 		if ('Start' === editStreamEvent.event) {
@@ -298,7 +301,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			editsManager.streamProcessor.cleanup();
 
 			await vscode.workspace.save(vscode.Uri.file(editStreamEvent.fs_file_path)); // save files upon stream completion
-			console.log('provideEditsStreamed::finished', editStreamEvent.fs_file_path);
 			// delete this from our map
 			this.editsMap.delete(editStreamEvent.edit_request_id);
 			// incrementing the counter over here
@@ -335,7 +337,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			};
 		}
 		if (!this.openResponseStream) {
-			console.log('returning early over here');
 			return {
 				fs_file_path: request.fs_file_path,
 				success: true,
@@ -361,7 +362,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	handleSessionUndo(sessionId: string, exchangeId: string): void {
 		// TODO(skcd): Handle this properly that we are doing an undo over here
 		this.sidecarClient.handleSessionUndo(sessionId, exchangeId, this.editorUrl!);
-		console.log('handleSessionUndo', sessionId, exchangeId);
 	}
 
 	/**
@@ -372,6 +372,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	 * this also updates the feedback on the sidecar side so we can tell the agent if its
 	 * chagnes were accepted or not
 	 */
+	/*
 	async handleExchangeUserAction(sessionId: string, exchangeId: string, stepIndex: number | undefined, action: vscode.AideSessionExchangeUserAction): Promise<void> {
 		// we ping the sidecar over here telling it about the state of the edits after
 		// the user has reacted to it appropriately
@@ -390,6 +391,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			this.reportAgentEventsToChat(true, responseStream);
 		}
 	}
+	*/
 
 	handleEvent(event: vscode.AideAgentRequest): void {
 		this.eventQueue.push(event);
@@ -424,11 +426,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				mode: event.mode,
 			},
 		});
-		// New flow migration
-		if (event.mode === vscode.AideAgentMode.Chat || event.mode === vscode.AideAgentMode.Edit || event.mode === vscode.AideAgentMode.Plan) {
-			await this.streamResponse(event, event.sessionId, this.editorUrl, token);
-			return;
-		}
+
+		await this.streamResponse(event, event.sessionId, this.editorUrl, token);
 	}
 
 	/**
@@ -444,13 +443,12 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		if (event.mode === vscode.AideAgentMode.Chat) {
 			const responseStream = this.sidecarClient.agentSessionChat(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, workosAccessToken);
 			await this.reportAgentEventsToChat(true, responseStream);
-		}
-		// Now lets try to handle the edit event first
-		// there are 2 kinds of edit events:
-		// - anchored and agentic events
-		// if its anchored, then we have the sscope as selection
-		// if its selection scope then its agentic
-		if (event.mode === vscode.AideAgentMode.Edit) {
+		} else if (event.mode === vscode.AideAgentMode.Edit) {
+			// Now lets try to handle the edit event first
+			// there are 2 kinds of edit events:
+			// - anchored and agentic events
+			// if its anchored, then we have the sscope as selection
+			// if its selection scope then its agentic
 			if (event.scope === vscode.AideAgentScope.Selection) {
 				const responseStream = await this.sidecarClient.agentSessionAnchoredEdit(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, workosAccessToken);
 				await this.reportAgentEventsToChat(true, responseStream);
@@ -459,14 +457,12 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				const responseStream = await this.sidecarClient.agentSessionPlanStep(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, isWholeCodebase, workosAccessToken);
 				await this.reportAgentEventsToChat(true, responseStream);
 			}
-		}
-
-		// For plan generation we have 2 things which can happen:
-		// plan gets generated incrementally or in an instant depending on people using
-		// o1 or not
-		// once we have a step of the plan we should stream it along with the edits of the plan
-		// and keep doing that until we are done completely
-		if (event.mode === vscode.AideAgentMode.Plan) {
+		} else if (event.mode === vscode.AideAgentMode.Plan || event.mode === vscode.AideAgentMode.Agentic) {
+			// For plan generation we have 2 things which can happen:
+			// plan gets generated incrementally or in an instant depending on people using
+			// o1 or not
+			// once we have a step of the plan we should stream it along with the edits of the plan
+			// and keep doing that until we are done completely
 			const responseStream = await this.sidecarClient.agentSessionPlanStep(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, false, workosAccessToken);
 			await this.reportAgentEventsToChat(true, responseStream);
 		}
@@ -480,7 +476,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		editMode: boolean,
 		stream: AsyncIterableIterator<SideCarAgentEvent>,
 	): Promise<void> {
-		// const editsMap = new Map();
 		const asyncIterable = {
 			[Symbol.asyncIterator]: () => stream
 		};
@@ -499,6 +494,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			if ('done' in event) {
 				continue;
 			}
+
 			const sessionId = event.request_id;
 			const exchangeId = event.exchange_id;
 			const responseStream = this.responseStreamCollection.getResponseStream({
@@ -510,77 +506,58 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			}
 
 			if (event.event.FrameworkEvent) {
-				if (event.event.FrameworkEvent.InitialSearchSymbols) {
-					// const initialSearchSymbolInformation = event.event.FrameworkEvent.InitialSearchSymbols.symbols.map((item) => {
-					// 	return {
-					// 		symbolName: item.symbol_name,
-					// 		uri: vscode.Uri.file(item.fs_file_path),
-					// 		isNew: item.is_new,
-					// 		thinking: item.thinking,
-					// 	};
-					// });
-					// response.initialSearchSymbols(initialSearchSymbolInformation);
-				} else if (event.event.FrameworkEvent.RepoMapGenerationStart) {
-					// response.repoMapGeneration(false);
-				} else if (event.event.FrameworkEvent.RepoMapGenerationFinished) {
-					// response.repoMapGeneration(true);
-				} else if (event.event.FrameworkEvent.LongContextSearchStart) {
-					// response.longContextSearch(false);
-				} else if (event.event.FrameworkEvent.LongContextSearchFinished) {
-					// response.longContextSearch(true);
-				} else if (event.event.FrameworkEvent.OpenFile) {
-					// const filePath = event.event.FrameworkEvent.OpenFile.fs_file_path;
-					// if (filePath) {
-					// 	response.reference(vscode.Uri.file(filePath));
-					// }
-				} else if (event.event.FrameworkEvent.CodeIterationFinished) {
-					// response.codeIterationFinished({ edits: iterationEdits });
-				} else if (event.event.FrameworkEvent.ReferenceFound) {
-					// response.referenceFound({ references: event.event.FrameworkEvent.ReferenceFound });
-				} else if (event.event.FrameworkEvent.RelevantReference) {
-					// const ref = event.event.FrameworkEvent.RelevantReference;
-					// response.relevantReference({
-					// 	uri: vscode.Uri.file(ref.fs_file_path),
-					// 	symbolName: ref.symbol_name,
-					// 	reason: ref.reason,
-					// });
-				} else if (event.event.FrameworkEvent.ToolUseDetected) {
-					const toolUseDetectedEvent = event.event.FrameworkEvent.ToolUseDetected;
-					// just send this over as markdown right now for checking if things are working
-					responseStream.stream.markdown(`${toolUseDetectedEvent.thinking}\n${JSON.stringify(toolUseDetectedEvent.tool_use_partial_input)}`);
-
-				} else if (event.event.FrameworkEvent.ReferencesUsed) {
-					const references = event.event.FrameworkEvent.ReferencesUsed.variables;
-					references.forEach((reference) => {
-						// send to the response stream that we have a bunch of references
-						// to look at
-						responseStream.stream.reference2({
-							variableName: reference.name,
-							value: new vscode.Location(vscode.Uri.file(reference.fs_file_path), new vscode.Range(new vscode.Position(reference.start_position.line, reference.start_position.character), new vscode.Position(reference.end_position.line, reference.end_position.character))),
-						});
-					});
-				} else if (event.event.FrameworkEvent.GroupedReferences) {
-					const groupedRefs = event.event.FrameworkEvent.GroupedReferences;
-					const followups: { [key: string]: { symbolName: string; uri: vscode.Uri }[] } = {};
-					for (const [reason, references] of Object.entries(groupedRefs)) {
-						followups[reason] = references.map((ref) => {
-							return {
-								symbolName: ref.symbol_name,
-								uri: vscode.Uri.file(ref.fs_file_path),
-							};
-						});
+				if (event.event.FrameworkEvent.OpenFile) {
+					const filePath = event.event.FrameworkEvent.OpenFile.fs_file_path;
+					if (filePath) {
+						responseStream.stream.reference(vscode.Uri.file(filePath));
 					}
-					// response.followups(followups);
-				} else if (event.event.FrameworkEvent.SearchIteration) {
-					// console.log(event.event.FrameworkEvent.SearchIteration);
-				} else if (event.event.FrameworkEvent.AgenticTopLevelThinking) {
-					// TODO(skcd): The agent thinking event is over here, not streamed
-					// but it can get the job done
-					console.log(event.event.FrameworkEvent.AgenticTopLevelThinking);
-				} else if (event.event.FrameworkEvent.AgenticSymbolLevelThinking) {
-					// TODO(skcd): The agent symbol level thinking is here, not streamed
-					// but we can hook into it for information and context
-					console.log(event.event.FrameworkEvent.AgenticSymbolLevelThinking);
+				} else if (event.event.FrameworkEvent.ToolThinking) {
+					const currentText = event.event.FrameworkEvent.ToolThinking.thinking;
+					const key = `${sessionId}-${exchangeId}`;
+					const lastText = this.lastThinkingText.get(key) || '';
+
+					// Calculate the delta (everything after the last text)
+					const delta = currentText.slice(lastText.length);
+
+					// Only send if there's new content
+					if (delta) {
+						responseStream.stream.markdown(`${delta}\n`);
+					}
+
+					// Update the stored text
+					this.lastThinkingText.set(key, currentText);
+				} else if (event.event.FrameworkEvent.ToolParameterFound) {
+					const toolParameterInput = event.event.FrameworkEvent.ToolParameterFound.tool_parameter_input;
+					const fieldName = toolParameterInput.field_name;
+					if (fieldName === 'fs_file_path' || fieldName === 'directory_path') {
+						responseStream.stream.reference(vscode.Uri.file(toolParameterInput.field_content_delta));
+					} else if (fieldName === 'instruction' || fieldName === 'result' || fieldName === 'question') {
+						responseStream.stream.markdown(`${toolParameterInput.field_content_delta}\n`);
+					} else if (fieldName === 'command') {
+						responseStream.stream.markdown(`Running command: \`${toolParameterInput.field_content_delta}\`\n`);
+					} else if (fieldName === 'regex_pattern') {
+						responseStream.stream.markdown(`\nSearching the codebase: \`${toolParameterInput.field_content_delta}\`\n`);
+					} else if (fieldName === 'file_pattern') {
+						responseStream.stream.markdown(`\nLooking for files: \`${toolParameterInput.field_content_delta}\`\n`);
+					}
+				} else if (event.event.FrameworkEvent.ToolUseDetected) {
+					const toolUsePartialInput = event.event.FrameworkEvent.ToolUseDetected.tool_use_partial_input;
+					if (toolUsePartialInput) {
+						const toolUseKey = Object.keys(toolUsePartialInput)[0] as keyof ToolInputPartial;
+						if (toolUseKey === 'AttemptCompletion') {
+							responseStream.stream.stage({ message: 'Complete' });
+							const openStreams = this.responseStreamCollection.getAllResponseStreams();
+							for (const stream of openStreams) {
+								this.closeAndRemoveResponseStream(sessionId, stream.exchangeId);
+							}
+							return;
+						} else if (toolUseKey === 'OpenFile') {
+							const filePath = toolUsePartialInput.OpenFile.fs_file_path;
+							if (filePath) {
+								responseStream.stream.reference(vscode.Uri.file(filePath));
+							}
+						}
+					}
 				}
 			} else if (event.event.SymbolEvent) {
 				const symbolEvent = event.event.SymbolEvent.event;
@@ -614,7 +591,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					// response.location({ uri, range, name: symbol_identifier.symbol_name, thinking: goToDefinition.thinking });
 					continue;
 				} else if (symbolEventSubStep.Edit) {
-					if (!symbol_identifier.fs_file_path) {
+					if (!symbol_identifier.fs_file_path && !symbol_identifier.symbol_name) {
 						continue;
 					}
 					const editEvent = symbolEventSubStep.Edit;
@@ -622,15 +599,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					// UX handle for code correction tool usage - consider using
 					if (editEvent.CodeCorrectionTool) { }
 
-					// TODO(skcd): We have to show this properly over here since
-					// even with the search and replace blocks we do want to show it
-					// to the user
 					if (editEvent.ThinkingForEdit.delta) {
-						responseStream.stream.thinkingForEdit({
-							exchangeId,
-							sessionId,
-							thinkingDelta: editEvent.ThinkingForEdit.delta
-						});
+						responseStream.stream.markdown(editEvent.ThinkingForEdit.delta);
 					}
 					if (editEvent.RangeSelectionForEdit) {
 						// response.breakdown({
@@ -639,9 +609,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 						// 		name: symbol_identifier.symbol_name,
 						// 	}
 						// });
-					} else if (editEvent.EditCodeStreaming) {
-						// scraped out over here, we do not need to react to this
-						// event anymore
 					}
 				} else if (symbolEventSubStep.Probe) {
 					if (!symbol_identifier.fs_file_path) {
@@ -693,12 +660,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				const sessionId = event.request_id;
 				const exchangeId = event.exchange_id;
 				const responseStream = this.responseStreamCollection.getResponseStream({ sessionId, exchangeId });
-				if (responseStream === undefined) {
-					console.log('responseStreamNotFound::ChatEvent', exchangeId, sessionId);
-				}
 
 				const { delta } = event.event.ChatEvent;
-
 				if (delta !== null) {
 					responseStream?.stream.markdown(delta);
 				}
@@ -713,34 +676,16 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				if (event.event.PlanEvent.PlanStepTitleAdded) {
 					// we still want to send the planInfo over here (we should check
 					// why the rendering is so slow for this... weird reason)
-					responseStream?.stream.planInfo({
-						exchangeId,
-						sessionId,
-						isStale: false,
-						state: 'Started',
-						description: event.event.PlanEvent.PlanStepTitleAdded.title,
-					});
+					responseStream?.stream.stage({ message: 'Planning' });
 					responseStream?.stream.step({
-						description: '',
 						index: event.event.PlanEvent.PlanStepTitleAdded.index,
-						sessionId,
-						exchangeId: event.event.PlanEvent.PlanStepTitleAdded.exchange_id,
-						isLast: false,
-						title: event.event.PlanEvent.PlanStepTitleAdded.title,
-						descriptionDelta: null,
-						files: event.event.PlanEvent.PlanStepTitleAdded.files_to_edit.map((file) => vscode.Uri.file(file)),
+						description: new vscode.MarkdownString(`### ${event.event.PlanEvent.PlanStepTitleAdded.title}`),
 					});
 				}
 				if (event.event.PlanEvent.PlanStepDescriptionUpdate) {
 					responseStream?.stream.step({
-						description: event.event.PlanEvent.PlanStepDescriptionUpdate.description_up_until_now,
 						index: event.event.PlanEvent.PlanStepDescriptionUpdate.index,
-						sessionId,
-						exchangeId: event.event.PlanEvent.PlanStepDescriptionUpdate.exchange_id,
-						isLast: false,
-						title: '',
-						descriptionDelta: `\n${event.event.PlanEvent.PlanStepDescriptionUpdate.delta}`,
-						files: event.event.PlanEvent.PlanStepDescriptionUpdate.files_to_edit.map((file) => vscode.Uri.file(file)),
+						description: `\n${event.event.PlanEvent.PlanStepDescriptionUpdate.delta}`,
 					});
 				}
 			} else if (event.event.ExchangeEvent) {
@@ -751,138 +696,65 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					exchangeId,
 				});
 
-				if (responseStream === undefined) {
-					console.log('resonseStreamNotFound::ExchangeEvent::ExchangeEvent::exchangeId::sessionId', exchangeId, sessionId);
-				}
 				if (event.event.ExchangeEvent.PlansExchangeState) {
 					const editsState = event.event.ExchangeEvent.PlansExchangeState.edits_state;
 					if (editsState === 'Loading') {
-						responseStream?.stream.planInfo({
-							exchangeId,
-							sessionId,
-							isStale: false,
-							state: 'Started',
-						});
+						responseStream?.stream.stage({ message: 'Planning' });
 					} else if (editsState === 'Cancelled') {
-						responseStream?.stream.planInfo({
-							exchangeId,
-							sessionId,
-							isStale: false,
-							state: 'Cancelled',
-						});
+						responseStream?.stream.stage({ message: 'Cancelled' });
 					} else if (editsState === 'MarkedComplete') {
-						responseStream?.stream.planInfo({
-							exchangeId,
-							sessionId,
-							isStale: false,
-							state: 'Complete',
-						});
+						responseStream?.stream.stage({ message: 'Complete' });
+						this.closeAndRemoveResponseStream(sessionId, exchangeId);
+						return;
 					} else if (editsState === 'Accepted') {
-						responseStream?.stream.planInfo({
-							exchangeId,
-							sessionId,
-							isStale: false,
-							state: 'Accepted',
-						});
+						responseStream?.stream.stage({ message: 'Accepted' });
 					}
 					continue;
 				}
 				if (event.event.ExchangeEvent.EditsExchangeState) {
 					const editsState = event.event.ExchangeEvent.EditsExchangeState.edits_state;
-					const files = event.event.ExchangeEvent.EditsExchangeState.files.map((file) => vscode.Uri.file(file));
+					// const files = event.event.ExchangeEvent.EditsExchangeState.files.map((file) => vscode.Uri.file(file));
 					if (editsState === 'Loading') {
-						responseStream?.stream.editsInfo({
-							exchangeId,
-							sessionId,
-							files,
-							isStale: false,
-							state: 'loading',
-						});
+						responseStream?.stream.stage({ message: 'Editing' });
 					} else if (editsState === 'Cancelled') {
-						responseStream?.stream.editsInfo({
-							exchangeId,
-							sessionId,
-							files,
-							isStale: false,
-							state: 'cancelled',
-						});
+						responseStream?.stream.stage({ message: 'Cancelled' });
 					} else if (editsState === 'MarkedComplete') {
-						responseStream?.stream.editsInfo({
-							exchangeId,
-							sessionId,
-							files,
-							isStale: false,
-							state: 'markedComplete',
-						});
+						responseStream?.stream.stage({ message: 'Complete' });
+						this.closeAndRemoveResponseStream(sessionId, exchangeId);
+						return;
 					}
 					continue;
 				}
 				if (event.event.ExchangeEvent.ExecutionState) {
 					const executionState = event.event.ExchangeEvent.ExecutionState;
 					if (executionState === 'Inference') {
-						responseStream?.stream.streamingState({
-							exchangeId,
-							sessionId,
-							files: [],
-							isError: false,
-							state: 'loading',
-							loadingLabel: 'reasoning',
-						});
+						responseStream?.stream.stage({ message: 'Reasoning' });
 					} else if (executionState === 'InReview') {
-						responseStream?.stream.streamingState({
-							exchangeId,
-							sessionId,
-							files: [],
-							isError: false,
-							state: 'waitingFeedback',
-							loadingLabel: 'generating',
-						});
+						responseStream?.stream.stage({ message: 'Review' });
 					} else if (executionState === 'Cancelled') {
-						responseStream?.stream.streamingState({
-							exchangeId,
-							sessionId,
-							files: [],
-							isError: false,
-							state: 'cancelled',
-							loadingLabel: 'generating',
-							message: 'Cancelled',
-						});
+						responseStream?.stream.stage({ message: 'Cancelled' });
 					}
-					continue;
-				}
-				if (event.event.ExchangeEvent.RegeneratePlan) {
-					// This event help us regenerate the plan and set details on the editor layer
-					responseStream?.stream.regeneratePlan({
-						sessionId: event.event.ExchangeEvent.RegeneratePlan.session_id,
-						exchangeId: event.event.ExchangeEvent.RegeneratePlan.exchange_id,
-					});
 					continue;
 				}
 				if (event.event.ExchangeEvent.FinishedExchange) {
-					// Update our streaming state that we are finished
-					responseStream?.stream.streamingState({
-						exchangeId,
-						sessionId,
-						files: [],
-						isError: false,
-						state: 'finished',
-						message: 'Finished',
-					});
-					if (responseStream) {
-						responseStream.stream.close();
-					}
-					// remove the response stream from the collection
-					this.responseStreamCollection.removeResponseStream({
-						sessionId,
-						exchangeId,
-					});
+					this.closeAndRemoveResponseStream(sessionId, exchangeId);
 				}
 			}
 		}
+	}
+
+	private closeAndRemoveResponseStream(sessionId: string, exchangeId: string) {
+		const responseStreamIdentifier: ResponseStreamIdentifier = { sessionId, exchangeId };
+		const responseStream = this.responseStreamCollection.getResponseStream(responseStreamIdentifier);
+		responseStream?.stream.close();
+		this.responseStreamCollection.removeResponseStream(responseStreamIdentifier);
+
+		// Clean up the thinking text tracking
+		const key = `${sessionId}-${exchangeId}`;
+		this.lastThinkingText.delete(key);
 	}
 
 	dispose() {
 		this.aideAgent.dispose();
 	}
 }
-

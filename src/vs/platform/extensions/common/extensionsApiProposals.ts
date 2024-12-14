@@ -350,6 +350,9 @@ const _allApiProposals = {
 	showLocal: {
 		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.showLocal.d.ts',
 	},
+	sidecar: {
+		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.sidecar.d.ts',
+	},
 	speech: {
 		proposal: 'https://raw.githubusercontent.com/microsoft/vscode/main/src/vscode-dts/vscode.proposed.speech.d.ts',
 	},

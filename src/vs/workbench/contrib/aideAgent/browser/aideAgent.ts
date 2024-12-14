@@ -20,7 +20,7 @@ import { IParsedChatRequest } from '../common/aideAgentParserTypes.js';
 import { CHAT_PROVIDER_ID } from '../common/aideAgentParticipantContribTypes.js';
 import { IChatRequestViewModel, IChatResponseViewModel, IChatViewModel, IChatWelcomeMessageViewModel } from '../common/aideAgentViewModel.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
-import { ChatInputPart } from './aideAgentInputPart.js';
+import { IAideAgentPlanStepViewModel } from '../common/aideAgentPlanViewModel.js';
 
 export const IAideAgentWidgetService = createDecorator<IAideAgentWidgetService>('aideAgentWidgetService');
 
@@ -48,22 +48,15 @@ export interface IAideAgentAccessibilityService {
 	acceptResponse(response: IChatResponseViewModel | string | undefined, requestId: number): void;
 }
 
-export enum TreeUser {
-	Chat = 'Chat',
-	ReviewPlan = 'ReviewPlan',
-}
-
-export type ITreeUser = `${TreeUser}`;
-
 export interface IChatCodeBlockInfo {
-	ownerMarkdownPartId: string;
+	readonly ownerMarkdownPartId: string;
 	readonly codeBlockIndex: number;
+	readonly element: ChatTreeItem | IAideAgentPlanStepViewModel;
 	readonly uri: URI | undefined;
 	codemapperUri: URI | undefined;
 	readonly isStreaming: boolean;
 	focus(): void;
 	getContent(): string;
-	readonly element: ChatTreeItem;
 }
 
 export interface IEditPreviewCodeBlockInfo {
@@ -75,17 +68,6 @@ export interface IChatFileTreeInfo {
 	treeDataId: string;
 	treeIndex: number;
 	focus(): void;
-}
-
-export interface IChatPlanStepsInfo {
-	sessionId: string;
-	stepIndex: number;
-	focus(): void;
-	blur(): void;
-	dropStep(): void;
-	implementStep(): void;
-	appendStep(): void;
-	expandStep(): void;
 }
 
 export type ChatTreeItem = IChatRequestViewModel | IChatResponseViewModel | IChatWelcomeMessageViewModel;
@@ -148,17 +130,10 @@ export interface IChatWidget {
 	readonly inputEditor: ICodeEditor;
 	readonly supportsFileReferences: boolean;
 	readonly parsedInput: IParsedChatRequest;
-	readonly runningSessionId: string | undefined;
-	readonly runningExchangeId: string | undefined;
 	lastSelectedAgent: IChatAgentData | undefined;
 	readonly scopedContextKeyService: IContextKeyService;
 	completionContext: IChatWidgetCompletionContext;
-	readonly planningEnabled: boolean;
-	readonly inputPart: ChatInputPart;
-
-	setSavedStep(stepIndex: number): void;
-	setWillBeSavedStep(stepIndex: number): void;
-	setWillBeDroppedStep(stepIndex: number): void;
+	readonly mode: AgentMode;
 
 	getContrib<T extends IChatWidgetContrib>(id: string): T | undefined;
 	reveal(item: ChatTreeItem): void;
@@ -168,7 +143,6 @@ export interface IChatWidget {
 	setInput(query?: string): void;
 	getInput(): string;
 	logInputHistory(): void;
-	acceptIterationInput(query: string, sessionId: string, exchangeId: string): Promise<IChatResponseModel | undefined>;
 	acceptInput(mode: AgentMode, query?: string): Promise<IChatResponseModel | undefined>;
 	acceptInputWithPrefix(prefix: string): void;
 	setInputPlaceholder(placeholder: string): void;
@@ -180,13 +154,12 @@ export interface IChatWidget {
 	getCodeBlockInfosForResponse(response: IChatResponseViewModel): IChatCodeBlockInfo[];
 	getFileTreeInfosForResponse(response: IChatResponseViewModel): IChatFileTreeInfo[];
 	getLastFocusedFileTreeForResponse(response: IChatResponseViewModel): IChatFileTreeInfo | undefined;
-	getPlanStepsInfoForResponse(response: IChatResponseViewModel): IChatPlanStepsInfo[];
-	getLastFocusedPlanStepForResponse(response: IChatResponseViewModel): IChatPlanStepsInfo | undefined;
 	setContext(overwrite: boolean, ...context: IChatRequestVariableEntry[]): void;
 	clear(): void;
 	getViewState(): IChatViewState;
 	transferQueryState(mode: AgentMode, scope: AgentScope): void;
 	togglePlanning(): void;
+	toggleEditMode(): void;
 }
 
 

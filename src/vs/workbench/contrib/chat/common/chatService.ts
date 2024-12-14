@@ -14,7 +14,6 @@ import { ISelection } from '../../../../editor/common/core/selection.js';
 import { Command, Location, TextEdit } from '../../../../editor/common/languages.js';
 import { FileType } from '../../../../platform/files/common/files.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
-import { IChatCheckpointAdded } from '../../aideAgent/common/aideAgentService.js';
 import { IWorkspaceSymbol } from '../../search/common/search.js';
 import { ChatAgentLocation, IChatAgentCommand, IChatAgentData, IChatAgentResult } from './chatAgents.js';
 import { ChatModel, IChatModel, IChatRequestModel, IChatRequestVariableData, IChatRequestVariableEntry, IChatResponseModel, IExportableChatData, ISerializableChatData } from './chatModel.js';
@@ -209,8 +208,7 @@ export type IChatProgress =
 	| IChatTextEdit
 	| IChatMoveMessage
 	| IChatResponseCodeblockUriPart
-	| IChatConfirmation
-	| IChatCheckpointAdded;
+	| IChatConfirmation;
 
 export interface IChatFollowup {
 	kind: 'reply';

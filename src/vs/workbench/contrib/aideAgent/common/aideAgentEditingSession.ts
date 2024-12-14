@@ -12,7 +12,7 @@ import { Position } from '../../../../editor/common/core/position.js';
 import { Range } from '../../../../editor/common/core/range.js';
 import { IDocumentDiff } from '../../../../editor/common/diff/documentDiffProvider.js';
 import { DetailedLineRangeMapping, RangeMapping } from '../../../../editor/common/diff/rangeMapping.js';
-import { IIdentifiedSingleEditOperation, IModelDeltaDecoration, ITextModel, IValidEditOperation, TrackedRangeStickiness } from '../../../../editor/common/model.js';
+import { IIdentifiedSingleEditOperation, ITextModel, IValidEditOperation, TrackedRangeStickiness } from '../../../../editor/common/model.js';
 import { ModelDecorationOptions } from '../../../../editor/common/model/textModel.js';
 import { IEditorWorkerService } from '../../../../editor/common/services/editorWorker.js';
 import { IModelContentChangedEvent } from '../../../../editor/common/textModelEvents.js';
@@ -30,7 +30,7 @@ export type HunkDisplayData = {
 	remove(): void;
 };
 
-export class RawHunk {
+class RawHunk {
 	constructor(
 		readonly original: LineRange,
 		readonly modified: LineRange,
@@ -50,14 +50,6 @@ type RawHunkData = {
 	editState: IChatTextEditGroupState;
 };
 
-export interface IAideAgentEdits {
-	readonly targetUri: string;
-	readonly textModelN: ITextModel;
-	textModel0: ITextModel;
-	hunkData: HunkData;
-	textModelNDecorations?: IModelDeltaDecoration[];
-}
-
 export interface HunkInformation {
 	/**
 	 * The first element [0] is the whole modified range and subsequent elements are word-level changes
@@ -75,12 +67,12 @@ export interface HunkInformation {
 
 export class HunkData {
 
-	static readonly _HUNK_TRACKED_RANGE = ModelDecorationOptions.register({
+	private static readonly _HUNK_TRACKED_RANGE = ModelDecorationOptions.register({
 		description: 'aide-agent-hunk-tracked-range',
 		stickiness: TrackedRangeStickiness.AlwaysGrowsWhenTypingAtEdges
 	});
 
-	static readonly _HUNK_THRESHOLD = 8;
+	private static readonly _HUNK_THRESHOLD = 8;
 
 	private readonly _store = new DisposableStore();
 	private readonly _data = new Map<RawHunk, RawHunkData>();
@@ -131,27 +123,30 @@ export class HunkData {
 		// mirror textModelN changes to textModel0 execept for those that
 		// overlap with a hunk
 
-		type HunkRangePair = { rangeN: Range; range0: Range };
+		type HunkRangePair = { rangeN: Range; range0: Range; markAccepted: () => void };
 		const hunkRanges: HunkRangePair[] = [];
 
 		const ranges0: Range[] = [];
 
-		for (const { textModelNDecorations, textModel0Decorations, state } of this._data.values()) {
+		for (const entry of this._data.values()) {
 
-			if (state === HunkState.Pending) {
+			if (entry.state === HunkState.Pending) {
 				// pending means the hunk's changes aren't "sync'd" yet
-				for (let i = 1; i < textModelNDecorations.length; i++) {
-					const rangeN = this._textModelN.getDecorationRange(textModelNDecorations[i]);
-					const range0 = this._textModel0.getDecorationRange(textModel0Decorations[i]);
+				for (let i = 1; i < entry.textModelNDecorations.length; i++) {
+					const rangeN = this._textModelN.getDecorationRange(entry.textModelNDecorations[i]);
+					const range0 = this._textModel0.getDecorationRange(entry.textModel0Decorations[i]);
 					if (rangeN && range0) {
-						hunkRanges.push({ rangeN, range0 });
+						hunkRanges.push({
+							rangeN, range0,
+							markAccepted: () => entry.state = HunkState.Accepted
+						});
 					}
 				}
 
-			} else if (state === HunkState.Accepted) {
+			} else if (entry.state === HunkState.Accepted) {
 				// accepted means the hunk's changes are also in textModel0
-				for (let i = 1; i < textModel0Decorations.length; i++) {
-					const range = this._textModel0.getDecorationRange(textModel0Decorations[i]);
+				for (let i = 1; i < entry.textModel0Decorations.length; i++) {
+					const range = this._textModel0.getDecorationRange(entry.textModel0Decorations[i]);
 					if (range) {
 						ranges0.push(range);
 					}
@@ -170,16 +165,20 @@ export class HunkData {
 
 			let pendingChangesLen = 0;
 
-			for (const { rangeN, range0 } of hunkRanges) {
-				if (rangeN.getEndPosition().isBefore(Range.getStartPosition(change.range))) {
+			for (const entry of hunkRanges) {
+				if (entry.rangeN.getEndPosition().isBefore(Range.getStartPosition(change.range))) {
 					// pending hunk _before_ this change. When projecting into textModel0 we need to
 					// subtract that. Because diffing is relaxed it might include changes that are not
 					// actual insertions/deletions. Therefore we need to take the length of the original
 					// range into account.
-					pendingChangesLen += this._textModelN.getValueLengthInRange(rangeN);
-					pendingChangesLen -= this._textModel0.getValueLengthInRange(range0);
+					pendingChangesLen += this._textModelN.getValueLengthInRange(entry.rangeN);
+					pendingChangesLen -= this._textModel0.getValueLengthInRange(entry.range0);
 
-				} else if (Range.areIntersectingOrTouching(rangeN, change.range)) {
+				} else if (Range.areIntersectingOrTouching(entry.rangeN, change.range)) {
+					// an edit overlaps with a (pending) hunk. We take this as a signal
+					// to mark the hunk as accepted and to ignore the edit. The range of the hunk
+					// will be up-to-date because of decorations created for them
+					entry.markAccepted();
 					isOverlapping = true;
 					break;
 
@@ -218,66 +217,62 @@ export class HunkData {
 
 		diff ??= await this._editorWorkerService.computeDiff(this._textModel0.uri, this._textModelN.uri, { ignoreTrimWhitespace: false, maxComputationTimeMs: Number.MAX_SAFE_INTEGER, computeMoves: false }, 'advanced');
 
-		if (!diff || diff.changes.length === 0) {
-			// return new HunkData([], session);
-			return;
-		}
+		let mergedChanges: DetailedLineRangeMapping[] = [];
 
-		// merge changes neighboring changes
-		const mergedChanges = [diff.changes[0]];
-		for (let i = 1; i < diff.changes.length; i++) {
-			const lastChange = mergedChanges[mergedChanges.length - 1];
-			const thisChange = diff.changes[i];
-			if (thisChange.modified.startLineNumber - lastChange.modified.endLineNumberExclusive <= HunkData._HUNK_THRESHOLD) {
-				mergedChanges[mergedChanges.length - 1] = new DetailedLineRangeMapping(
-					lastChange.original.join(thisChange.original),
-					lastChange.modified.join(thisChange.modified),
-					(lastChange.innerChanges ?? []).concat(thisChange.innerChanges ?? [])
-				);
-			} else {
-				mergedChanges.push(thisChange);
+		if (diff && diff.changes.length > 0) {
+			// merge changes neighboring changes
+			mergedChanges = [diff.changes[0]];
+			for (let i = 1; i < diff.changes.length; i++) {
+				const lastChange = mergedChanges[mergedChanges.length - 1];
+				const thisChange = diff.changes[i];
+				if (thisChange.modified.startLineNumber - lastChange.modified.endLineNumberExclusive <= HunkData._HUNK_THRESHOLD) {
+					mergedChanges[mergedChanges.length - 1] = new DetailedLineRangeMapping(
+						lastChange.original.join(thisChange.original),
+						lastChange.modified.join(thisChange.modified),
+						(lastChange.innerChanges ?? []).concat(thisChange.innerChanges ?? [])
+					);
+				} else {
+					mergedChanges.push(thisChange);
+				}
 			}
 		}
 
 		const hunks = mergedChanges.map(change => new RawHunk(change.original, change.modified, change.innerChanges ?? []));
+
+		editState.applied = hunks.length;
 
 		this._textModelN.changeDecorations(accessorN => {
 
 			this._textModel0.changeDecorations(accessor0 => {
 
 				// clean up old decorations
-				// this throws if we are writing more code than EOF
-				try {
-					for (const { textModelNDecorations, textModel0Decorations } of this._data.values()) {
-						textModelNDecorations.forEach(accessorN.removeDecoration, accessorN);
-						textModel0Decorations.forEach(accessor0.removeDecoration, accessor0);
+				for (const { textModelNDecorations, textModel0Decorations } of this._data.values()) {
+					textModelNDecorations.forEach(accessorN.removeDecoration, accessorN);
+					textModel0Decorations.forEach(accessor0.removeDecoration, accessor0);
+				}
+
+				this._data.clear();
+
+				// add new decorations
+				for (const hunk of hunks) {
+
+					const textModelNDecorations: string[] = [];
+					const textModel0Decorations: string[] = [];
+
+					textModelNDecorations.push(accessorN.addDecoration(lineRangeAsRange(hunk.modified, this._textModelN), HunkData._HUNK_TRACKED_RANGE));
+					textModel0Decorations.push(accessor0.addDecoration(lineRangeAsRange(hunk.original, this._textModel0), HunkData._HUNK_TRACKED_RANGE));
+
+					for (const change of hunk.changes) {
+						textModelNDecorations.push(accessorN.addDecoration(change.modifiedRange, HunkData._HUNK_TRACKED_RANGE));
+						textModel0Decorations.push(accessor0.addDecoration(change.originalRange, HunkData._HUNK_TRACKED_RANGE));
 					}
 
-					this._data.clear();
-
-					// add new decorations
-					for (const hunk of hunks) {
-
-						const textModelNDecorations: string[] = [];
-						const textModel0Decorations: string[] = [];
-
-						textModelNDecorations.push(accessorN.addDecoration(lineRangeAsRange(hunk.modified, this._textModelN), HunkData._HUNK_TRACKED_RANGE));
-						textModel0Decorations.push(accessor0.addDecoration(lineRangeAsRange(hunk.original, this._textModel0), HunkData._HUNK_TRACKED_RANGE));
-
-						for (const change of hunk.changes) {
-							textModelNDecorations.push(accessorN.addDecoration(change.modifiedRange, HunkData._HUNK_TRACKED_RANGE));
-							textModel0Decorations.push(accessor0.addDecoration(change.originalRange, HunkData._HUNK_TRACKED_RANGE));
-						}
-
-						this._data.set(hunk, {
-							editState,
-							textModelNDecorations,
-							textModel0Decorations,
-							state: HunkState.Pending
-						});
-					}
-				} catch (exception) {
-					console.error(exception);
+					this._data.set(hunk, {
+						editState,
+						textModelNDecorations,
+						textModel0Decorations,
+						state: HunkState.Pending
+					});
 				}
 			});
 		});
@@ -304,7 +299,7 @@ export class HunkData {
 		return edits;
 	}
 
-	discardAll(pushToUndoStack = true): IValidEditOperation[] {
+	discardAll() {
 		const edits: ISingleEditOperation[][] = [];
 		for (const item of this.getInfo()) {
 			if (item.getState() === HunkState.Pending) {
@@ -312,14 +307,10 @@ export class HunkData {
 			}
 		}
 		const undoEdits: IValidEditOperation[][] = [];
-		if (pushToUndoStack) {
-			this._textModelN.pushEditOperations(null, edits.flat(), (_undoEdits) => {
-				undoEdits.push(_undoEdits);
-				return null;
-			});
-		} else {
-			undoEdits.push(this._textModelN.applyEdits(edits.flat(), true));
-		}
+		this._textModelN.pushEditOperations(null, edits.flat(), (_undoEdits) => {
+			undoEdits.push(_undoEdits);
+			return null;
+		});
 		return undoEdits.flat();
 	}
 
@@ -352,6 +343,9 @@ export class HunkData {
 						const edits = this._discardEdits(item);
 						this._textModelN.pushEditOperations(null, edits, () => null);
 						data.state = HunkState.Rejected;
+						if (data.editState.applied > 0) {
+							data.editState.applied -= 1;
+						}
 					}
 				},
 				acceptChanges: () => {
@@ -368,7 +362,6 @@ export class HunkData {
 						}
 						this._textModel0.pushEditOperations(null, edits, () => null);
 						data.state = HunkState.Accepted;
-						data.editState.applied += 1;
 					}
 				}
 			};
@@ -381,8 +374,8 @@ export class HunkData {
 
 function lineRangeAsRange(lineRange: LineRange, model: ITextModel): Range {
 	return lineRange.isEmpty
-		? new Range(lineRange.startLineNumber, 1, lineRange.startLineNumber, Number.MAX_SAFE_INTEGER)
-		: new Range(lineRange.startLineNumber, 1, lineRange.endLineNumberExclusive - 1, Number.MAX_SAFE_INTEGER);
+		? new Range(lineRange.startLineNumber, 1, lineRange.startLineNumber, model.getLineLength(lineRange.startLineNumber))
+		: new Range(lineRange.startLineNumber, 1, lineRange.endLineNumberExclusive - 1, model.getLineLength(lineRange.endLineNumberExclusive - 1));
 }
 
 export function calculateChanges(edits: HunkInformation[]) {

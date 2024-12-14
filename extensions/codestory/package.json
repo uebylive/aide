@@ -26,6 +26,7 @@
     "interactive",
     "mappedEditsProvider",
     "modelSelection",
+    "sidecar",
     "terminalSelection",
     "textSearchProviderNew"
   ],
@@ -95,45 +96,15 @@
       "type": "object",
       "title": "Aide Extension settings",
       "properties": {
-        "aide.resetNotifications": {
-          "type": "boolean",
-          "default": false,
-          "description": "Reset 'Don't show again' notifications"
-        },
-        "aide.activeDirectories": {
-          "type": "string",
-          "default": "",
-          "description": "Set the active directories for Aide to look at as comma separated values of absolute path. For example: /a/b/c , /d/e/f"
-        },
-        "aide.testSuiteRunCommand": {
-          "type": "string",
-          "default": "",
-          "description": "Tell Aide how to run your test suite, for example for jest framework and when using yarn the command will be: `yarn run jest test`"
-        },
-        "codestory.openaiApiKey": {
-          "type": "string",
-          "default": "NOT_SET",
-          "description": "Use a custom api key for OpenAI"
-        },
         "codestory.disableTelemetry": {
           "type": "boolean",
           "default": false,
           "description": "Disable telemetry and logging on the backend"
         },
-        "codestory.disableUseNameLookup": {
+        "codestory.disableUserNameLookup": {
           "type": "boolean",
           "default": false,
           "description": "Disable user name lookup from env"
-        },
-        "aide.systemInstruction": {
-          "type": "string",
-          "default": "",
-          "description": "Set custom instructions for the AI, this can be information about the repository you are working or nuances you want the AI to handle"
-        },
-        "aide.useExactSelection": {
-          "type": "boolean",
-          "default": true,
-          "description": "Uses the exact matching of the selection rather than expanding on it"
         },
         "aide.sidecarURL": {
           "type": "string",
@@ -144,11 +115,6 @@
           "type": "boolean",
           "default": false,
           "description": "If the side-binary is being run on its own, we can set this to true allowing for rapid proto-typing"
-        },
-        "aide.disableIndexing": {
-          "type": "boolean",
-          "default": true,
-          "description": "Disable indexing of the repository"
         },
         "aide.inlineCompletion.triggerMode": {
           "type": "string",
@@ -169,16 +135,6 @@
           "type": "boolean",
           "default": true,
           "description": "Should we allow clip board content to be sent over"
-        },
-        "aide.deepReasoning": {
-          "type": "boolean",
-          "default": false,
-          "description": "Should use deep reasoning before making edits"
-        },
-        "aide.specialToolAgentUseAtYourOwnRisk": {
-          "type": "boolean",
-          "default": false,
-          "description": "Tool use agent, use it at your own risk this is not ready for production yet"
         }
       }
     }
@@ -195,6 +151,7 @@
     "@types/js-levenshtein": "^1.1.3",
     "@types/lodash": "^4.14.202",
     "@types/node": "18.x",
+    "@types/semver": "^7.5.8",
     "@types/uuid": "^9.0.2"
   },
   "dependencies": {
@@ -206,6 +163,7 @@
     "node-fetch": "^3.3.2",
     "openai": "^4.0.1",
     "posthog-node": "^3.1.1",
+    "semver": "^7.6.3",
     "ts-morph": "^19.0.0",
     "web-tree-sitter": "^0.20.8",
     "winston": "^3.10.0",
