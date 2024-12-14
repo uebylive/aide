@@ -664,7 +664,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			modelConfigButton.label = `$(${Codicon.chevronDown.id}) ${settings.models[model].name}`;
 		}));
 		modelConfigButton.onDidClick(() => {
-			this.commandService.executeCommand(ModelSelectionIndicator.SWITCH_SLOW_MODEL_COMMAND_ID);
+			this.commandService.executeCommand(ModelSelectionIndicator.SWITCH_MODEL_COMMAND_ID);
 		});
 
 		// Sidecar status

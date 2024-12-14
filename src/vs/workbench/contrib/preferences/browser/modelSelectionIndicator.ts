@@ -18,7 +18,7 @@ import { IWorkbenchContribution } from '../../../common/contributions.js';
 import { IModelSelectionEditingService } from '../../../services/aiModel/common/aiModelEditing.js';
 import { getEditorModelItems } from '../../../services/preferences/browser/modelSelectionEditorModel.js';
 import { isModelItemConfigComplete } from '../../../services/preferences/common/preferences.js';
-import { IStatusbarEntry, IStatusbarEntryAccessor, IStatusbarService, StatusbarAlignment, StatusbarEntryKind } from '../../../services/statusbar/browser/statusbar.js';
+import { IStatusbarEntry, IStatusbarEntryAccessor, StatusbarEntryKind } from '../../../services/statusbar/browser/statusbar.js';
 import './media/modelSelectionIndicator.css';
 
 export class ModelSelectionIndicator extends Disposable implements IWorkbenchContribution {
@@ -31,7 +31,6 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 		@IQuickInputService private readonly quickInputService: IQuickInputService,
 		@IAIModelSelectionService private readonly aiModelSelectionService: IAIModelSelectionService,
 		@IModelSelectionEditingService private readonly modelSelectionEditingService: IModelSelectionEditingService,
-		@IStatusbarService private readonly statusbarService: IStatusbarService
 	) {
 		super();
 
@@ -109,7 +108,8 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 		if (this.modelSelectionStatusEntry) {
 			this.modelSelectionStatusEntry.update(properties);
 		} else {
-			this.modelSelectionStatusEntry = this.statusbarService.addEntry(properties, 'status.aiModelSelection', StatusbarAlignment.RIGHT, -Number.MAX_VALUE);
+			// TODO(@ghostwriternr): Hide this from the status bar until we start using the model selection
+			// this.modelSelectionStatusEntry = this.statusbarService.addEntry(properties, 'status.aiModelSelection', StatusbarAlignment.RIGHT, -Number.MAX_VALUE);
 		}
 	}
 
