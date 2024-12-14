@@ -17,6 +17,10 @@
 	transition: transform 0.2s ease;
 }
 
+.edit-preview > .aideagent-edit-preview:has(> .code-edits .monaco-list-row) {
+	gap: 8px;
+}
+
 .edit-preview > .aideagent-edit-preview.hidden {
 	display: none;
 	transform: scale(0.9) translateY(calc(-100% + 10px));
@@ -25,6 +29,7 @@
 .edit-preview > .aideagent-edit-preview > .header {
 	display: flex;
 	justify-content: space-between;
+	height: 22px;
 }
 
 .edit-preview > .aideagent-edit-preview > .header > .title {
