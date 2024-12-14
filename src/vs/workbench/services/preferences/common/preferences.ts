@@ -375,7 +375,7 @@ export const isProviderItemConfigComplete = (providerItem: IProviderItem): boole
 	} else if (openAICompatibleProvider.includes(providerItem.type as typeof openAICompatibleProvider[number])) {
 		const { name, apiKey, apiBase } = providerItem as OpenAICompatibleProviderConfig;
 		return !!name && !!apiKey && !!apiBase;
+	} else {
+		return false;
 	}
-
-	return false;
 };

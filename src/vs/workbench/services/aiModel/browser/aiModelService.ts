@@ -64,7 +64,7 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 		const validatedProviders = Object.keys(modelSelection.providers).reduce((untypedAcc, untypedKey) => {
 			const key = untypedKey as ProviderType;
 			const acc = untypedAcc as { [key: string]: ProviderConfig };
-			const provider = modelSelection.providers[key as keyof typeof modelSelection.providers] as ProviderConfig;
+			const provider = modelSelection.providers[key] as ProviderConfig;
 			if (openAICompatibleProvider.includes(key as typeof openAICompatibleProvider[number]) && (provider as OpenAICompatibleProviderConfig).apiBase.length > 0 && (provider as OpenAICompatibleProviderConfig).apiKey.length > 0) {
 				acc[key] = provider;
 			} else if (apiKeyOnlyProviders.includes(key as typeof apiKeyOnlyProviders[number]) && (provider as ApiKeyOnlyProviderConfig).apiKey.length > 0) {
