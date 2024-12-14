@@ -303,6 +303,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 	private hideEditPreviewWidget() {
 		if (this.editPreviewWidget) {
+			this.editPreviewWidget.clear();
 			this.editPreviewWidget.visible = false;
 		}
 	}
@@ -763,6 +764,12 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			if (events.some(e => e?.kind === 'addRequest') && this.visible) {
 				revealLastElement(this.tree);
 				this.focusInput();
+			}
+
+			const activeCodeEditingSession = this.codeEditingService.getExistingCodeEditingSession(model.sessionId);
+			if (this.editPreviewWidget && activeCodeEditingSession) {
+				const edits = activeCodeEditingSession.codeEdits;
+				this.editPreviewWidget?.setCodeEdits(edits);
 			}
 		}));
 		this.viewModelDisposables.add(this.viewModel.onDidDisposeModel(() => {

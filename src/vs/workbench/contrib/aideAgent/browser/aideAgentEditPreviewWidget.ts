@@ -8,9 +8,12 @@ import { Codicon } from '../../../../base/common/codicons.js';
 import { Emitter } from '../../../../base/common/event.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
+import { URI } from '../../../../base/common/uri.js';
+import { Range } from '../../../../editor/common/core/range.js';
 import { MenuWorkbenchToolBar } from '../../../../platform/actions/browser/toolbar.js';
 import { MenuId } from '../../../../platform/actions/common/actions.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
+import { AideAgentCodeEditsContentPart, CodeEditsPool } from './aideAgentCodeEditPart.js';
 import './media/aideAgentEditPreviewWidget.css';
 
 const defaultIconClasses = ThemeIcon.asClassNameArray(Codicon.symbolEvent);
@@ -26,12 +29,19 @@ export class AideAgentEditPreviewWidget extends Disposable {
 					h('div.title@titleText'),
 				]),
 				h('div.actions-toolbar@toolbar'),
-			])
+			]),
+			h('div.code-edits@codeEdits')
 		]
 	);
 
 	private readonly _onDidChangeHeight = this._register(new Emitter<void>());
 	public readonly onDidChangeHeight = this._onDidChangeHeight.event;
+
+	private readonly _onDidChangeVisibility = this._register(new Emitter<boolean>());
+	public readonly onDidChangeVisibility = this._onDidChangeVisibility.event;
+
+	private codeEditsPool: CodeEditsPool;
+	private editsList!: AideAgentCodeEditsContentPart;
 
 	private _visible = false;
 	get visible() {
@@ -52,6 +62,8 @@ export class AideAgentEditPreviewWidget extends Disposable {
 	) {
 		super();
 
+		this.codeEditsPool = this.instantiationService.createInstance(CodeEditsPool, this.onDidChangeVisibility);
+
 		this.visible = false;
 		parent.appendChild(this._elements.root);
 		this.render();
@@ -70,6 +82,12 @@ export class AideAgentEditPreviewWidget extends Disposable {
 				shouldForwardArgs: true
 			}
 		}));
+
+		this.editsList = this.instantiationService.createInstance(
+			AideAgentCodeEditsContentPart,
+			this.codeEditsPool
+		);
+		this._elements.codeEdits.appendChild(this.editsList.domNode);
 	}
 
 	updateProgress(message: string) {
@@ -86,5 +104,15 @@ export class AideAgentEditPreviewWidget extends Disposable {
 
 		const titleElement = this._elements.titleText;
 		titleElement.textContent = message;
+	}
+
+	setCodeEdits(codeEdits: Map<URI, Range[]>) {
+		this.editsList.setInput({ edits: codeEdits });
+		this._onDidChangeHeight.fire();
+	}
+
+	clear() {
+		this.editsList.setInput({ edits: new Map() });
+		this._onDidChangeHeight.fire();
 	}
 }

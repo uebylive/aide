@@ -65,6 +65,21 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 	private readonly _codeEdits = new Map<string, IAideAgentEdits>();
 	private readonly _workingSet = new Set<string>();
 
+	get codeEdits(): Map<URI, Range[]> {
+		const result = new Map<URI, Range[]>();
+
+		for (const [uriString, edits] of this._codeEdits) {
+			const uri = URI.parse(uriString);
+			for (const hunkInfo of edits.hunkData.getInfo()) {
+				if (hunkInfo.getState() === HunkState.Pending && hunkInfo.getRangesN().length > 0) {
+					result.set(uri, [hunkInfo.getRangesN()[0]]);
+				}
+			}
+		}
+
+		return result;
+	}
+
 	constructor(
 		readonly sessionId: string,
 		@IEditorService private readonly editorService: IEditorService,
@@ -205,6 +220,8 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 		if (this.activeEditor?.getModel()?.uri.toString() === resource.toString()) {
 			this.updateDecorations(this.activeEditor, codeEdits);
 		}
+
+		this._onDidChange.fire();
 	}
 
 	private async calculateDiff(textModel0: ITextModel, textModelN: ITextModel) {
@@ -322,6 +339,7 @@ export class AideAgentCodeEditingService extends Disposable implements IAideAgen
 		const editingSession = this.instantiationService.createInstance(AideAgentCodeEditingSession, sessionId);
 		this._register(editingSession.onDidComplete(() => {
 			editingSession.dispose();
+			this._editingSessions.deleteAndDispose(sessionId);
 			this._onDidComplete.fire();
 		}));
 

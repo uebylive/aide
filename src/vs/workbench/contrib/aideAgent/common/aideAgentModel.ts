@@ -497,6 +497,9 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 
 	async applyCodeEdit(codeEdit: IChatCodeEdit) {
 		this._editingSession = this._register(this._aideAgentCodeEditingService.getOrStartCodeEditingSession(this.session.sessionId));
+		this._register(this._editingSession.onDidChange(() => {
+			this._onDidChange.fire();
+		}));
 		this._register(this._editingSession.onDidDispose(() => {
 			this._editingSession = undefined;
 		}));
