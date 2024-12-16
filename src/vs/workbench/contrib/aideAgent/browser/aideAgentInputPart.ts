@@ -605,7 +605,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 
 		const keybinding = this.keybindingService.lookupKeybinding(ToggleEditModeAction.ID);
 		this.modeSwitch = this._register(this.instantiationService.createInstance(Switch, {
-			description: `Edit mode directly applies changes to your code${keybinding ? ` (${keybinding.getLabel()})` : ''}`,
+			description: `Use Chat or Edit modes for quick tasks and Agentic mode for open-ended ones${keybinding ? ` (${keybinding.getLabel()})` : ''}`,
 			options: ['Chat', 'Edit', 'Agentic'],
 			value: 'Edit',
 		}));
