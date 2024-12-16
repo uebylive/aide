@@ -1070,6 +1070,54 @@ export class SideCarClient {
 		}
 	}
 
+	// hitting our midwit agent
+	async *midwitAgent(
+		query: string,
+		sessionId: string,
+		exchangeId: string,
+		editorUrl: string,
+		agentMode: vscode.AideAgentMode,
+		variables: readonly vscode.ChatPromptReference[],
+		workosAccessToken: string,
+	): AsyncIterableIterator<SideCarAgentEvent> {
+		if (agentMode !== vscode.AideAgentMode.Agentic && agentMode !== vscode.AideAgentMode.Plan) {
+			throw new Error('Invalid agent mode');
+		}
+
+		const baseUrl = new URL(this._url);
+		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), workosAccessToken);
+
+		if (agentMode === vscode.AideAgentMode.Agentic) {
+			baseUrl.pathname = '/api/agentic/midwit_agent';
+		} else {
+			baseUrl.pathname = '/api/agentic/agent_session_plan';
+		}
+		const url = baseUrl.toString();
+		const body = {
+			session_id: sessionId,
+			exchange_id: exchangeId,
+			editor_url: editorUrl,
+			problem_statement: query,
+			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query),
+			root_directory: vscode.workspace.rootPath,
+			access_token: workosAccessToken,
+			model_configuration: sideCarModelConfiguration,
+		};
+
+		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
+		for await (const line of asyncIterableResponse) {
+			const lineParts = line.split('data:{');
+			for (const lineSinglePart of lineParts) {
+				const lineSinglePartTrimmed = lineSinglePart.trim();
+				if (lineSinglePartTrimmed === '') {
+					continue;
+				}
+				const conversationMessage = JSON.parse('{' + lineSinglePartTrimmed) as SideCarAgentEvent;
+				yield conversationMessage;
+			}
+		}
+	}
+
 	/**
 	 * Cancels the running request if its not already terminated on the sidecar
 	 */
