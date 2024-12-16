@@ -615,7 +615,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			this.modeSwitch.domNode.style.display = 'none';
 		}
 		this._register(this.modeSwitch.onDidChange((mode) => {
-			this._agentMode.set(mode === 'Edit' ? AgentMode.Edit : AgentMode.Chat);
+			this._agentMode.set(mode);
 		}));
 
 		this.executeToolbar = this._register(this.instantiationService.createInstance(MenuWorkbenchToolBar, toolbarsContainer, this.options.menus.executeToolbar, {
