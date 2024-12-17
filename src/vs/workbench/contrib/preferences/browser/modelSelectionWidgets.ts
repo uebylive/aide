@@ -41,10 +41,11 @@ export class EditModelConfigurationWidget extends Widget {
 	private initialModelItemEntry: IModelItemEntry | null = null;
 	private modelItemEntry: IModelItemEntry | null = null;
 
-	private title!: InputBox;
+	private title!: HTMLElement;
 	private modelName!: InputBox;
 	private fieldsContainer!: HTMLElement;
 	private providerValue!: SelectBox;
+	private modelIdValue!: InputBox;
 	private contextLengthValue!: InputBox;
 	private temperatureValueLabel!: HTMLElement;
 	private temperatureValue!: InputBox;
@@ -90,19 +91,7 @@ export class EditModelConfigurationWidget extends Widget {
 		this._contentContainer = dom.append(this._domNode.domNode, dom.$('.edit-model-widget-content'));
 		const header = dom.append(this._contentContainer, dom.$('.edit-model-widget-header'));
 
-		const titleContainer = dom.append(header, dom.$('.edit-model-widget-title-container'));
-		titleContainer.style.width = '100%';
-		this.title = this._register(new InputBox(titleContainer, this.contextViewService, { inputBoxStyles: { ...defaultInputBoxStyles, inputBackground: undefined, inputBorder: 'transparent' } }));
-		this.title.setPlaceHolder(nls.localize('editModelConfiguration.titlePlaceholder', "Enter an identifier of your choice for this model"));
-		this._register(this.title.onDidChange((e) => {
-			this.updateModelItemEntry({
-				...this.modelItemEntry!,
-				modelItem: {
-					...this.modelItemEntry!.modelItem,
-					key: e
-				}
-			});
-		}));
+		this.title = dom.append(header, dom.$('.message'));
 		const closeIcon = dom.append(header, dom.$(`.close-icon${ThemeIcon.asCSSSelector(editModelWidgetCloseIcon)}}`));
 		closeIcon.title = nls.localize('editModelConfiguration.close', "Close");
 		this._register(dom.addDisposableListener(closeIcon, dom.EventType.CLICK, () => this.hide()));
@@ -132,6 +121,12 @@ export class EditModelConfigurationWidget extends Widget {
 		const providerSelectContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-provider-select-container'));
 		this.providerValue = new SelectBox(<ISelectOptionItem[]>[], 0, this.contextViewService, defaultSelectBoxStyles, { ariaLabel: nls.localize('editModelConfiguration.providerValue', "Provider"), useCustomDrawn: true });
 		this.providerValue.render(providerSelectContainer);
+
+		const modelIdLabelContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-model-id-container'));
+		dom.append(modelIdLabelContainer, dom.$('span', undefined, nls.localize('editModelConfiguration.modelId', "Model ID")));
+		dom.append(modelIdLabelContainer, dom.$('span.subtitle', undefined, modelConfigKeyDescription['modelId']));
+		this.modelIdValue = this._register(new InputBox(this.fieldsContainer, this.contextViewService, { inputBoxStyles: defaultInputBoxStyles }));
+		this.modelIdValue.element.classList.add('edit-model-widget-model-id');
 
 		const contextLengthLabelContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-context-length-label-container'));
 		dom.append(contextLengthLabelContainer, dom.$('span', undefined, nls.localize('editModelConfiguration.contextLength', "Context length")));
@@ -199,7 +194,7 @@ export class EditModelConfigurationWidget extends Widget {
 				this.initialModelItemEntry = defaultModelItemEntry;
 				this.modelItemEntry = defaultModelItemEntry;
 
-				this.title.value = `${defaultModelItemEntry.modelItem.key}`;
+				this.title.textContent = 'Configure model';
 				this.modelName.value = defaultModelItemEntry.modelItem.name;
 
 				const validProviders = providerItems.filter(providerItem => providerItem.name !== 'CodeStory');
@@ -223,7 +218,7 @@ export class EditModelConfigurationWidget extends Widget {
 				this.initialModelItemEntry = entry;
 				this.modelItemEntry = entry;
 
-				this.title.value = `${entry.modelItem.key}`;
+				this.title.textContent = 'Configure model';
 				this.modelName.value = entry.modelItem.name;
 
 				this.registerProviders(providerItems, entry.modelItem.provider.name);
@@ -268,6 +263,17 @@ export class EditModelConfigurationWidget extends Widget {
 
 	private renderProviderConfigFields(entry: IModelItemEntry): void {
 		this.resetFieldItems();
+
+		this.modelIdValue.value = entry.modelItem.key;
+		this._register(this.modelIdValue.onDidChange((e) => {
+			this.updateModelItemEntry({
+				...this.modelItemEntry!,
+				modelItem: {
+					...this.modelItemEntry!.modelItem,
+					key: e
+				}
+			});
+		}));
 
 		this.contextLengthValue.value = entry.modelItem.contextLength.toString();
 		this._register(this.contextLengthValue.onDidChange((e) => {
@@ -316,9 +322,9 @@ export class EditModelConfigurationWidget extends Widget {
 			}));
 		});
 
-		// Move all items with index > 5 between the provider and context length fields
+		// Move all items with index > 7 between the provider and context length fields
 		const gridItems = this.fieldsContainer.querySelectorAll('.edit-model-widget-grid > *');
-		for (let i = 6; i < gridItems.length; i++) {
+		for (let i = 8; i < gridItems.length; i++) {
 			this.fieldsContainer.insertBefore(gridItems[i], gridItems[2]);
 		}
 	}
@@ -347,8 +353,8 @@ export class EditModelConfigurationWidget extends Widget {
 	private updateModelItemEntry(updatedModelItemEntry: IModelItemEntry): void {
 		this.modelItemEntry = updatedModelItemEntry;
 		if (this.modelItemEntry) {
-			const initialModelItem = ModelSelectionEditorModel.getLanguageModelItem(this.initialModelItemEntry!);
-			const updatedModelItem = ModelSelectionEditorModel.getLanguageModelItem(this.modelItemEntry);
+			const initialModelItem = this.initialModelItemEntry!;
+			const updatedModelItem = this.modelItemEntry;
 			if (equals(initialModelItem, updatedModelItem) || !isModelItemConfigComplete(this.modelItemEntry.modelItem)) {
 				this.saveButton.enabled = false;
 			} else {
@@ -370,8 +376,8 @@ export class EditModelConfigurationWidget extends Widget {
 
 	private async save(): Promise<void> {
 		if (this.modelItemEntry) {
-			const initialModelItem = ModelSelectionEditorModel.getLanguageModelItem(this.initialModelItemEntry!);
-			const updatedModelItem = ModelSelectionEditorModel.getLanguageModelItem(this.modelItemEntry);
+			const initialModelItem = this.initialModelItemEntry!;
+			const updatedModelItem = this.modelItemEntry;
 			if (equals(initialModelItem, updatedModelItem)) {
 				return;
 			}
