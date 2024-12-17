@@ -545,7 +545,8 @@ have to be updated for changes to the rules above, or to support more deeply nes
 }
 
 .interactive-session .interactive-input-status-message > .model-config > .monaco-button {
-	padding: 0;
+	padding: 0 4px 0 0;
+	border: 0;
 }
 
 .interactive-session .interactive-input-status-message .status-message {
