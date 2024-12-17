@@ -5,8 +5,8 @@
 
 import { Queue } from '../../../../base/common/async.js';
 import * as json from '../../../../base/common/json.js';
-import { setProperty } from '../../../../base/common/jsonEdit.js';
-import { Edit } from '../../../../base/common/jsonFormatter.js';
+import { removeProperty, setProperty } from '../../../../base/common/jsonEdit.js';
+import { Edit, FormattingOptions } from '../../../../base/common/jsonFormatter.js';
 import { Disposable, IReference } from '../../../../base/common/lifecycle.js';
 import { EditOperation } from '../../../../editor/common/core/editOperation.js';
 import { Range } from '../../../../editor/common/core/range.js';
@@ -29,6 +29,8 @@ export interface IModelSelectionEditingService {
 	readonly _serviceBrand: undefined;
 
 	editModelSelection(type: ModelType, key: string): Promise<void>;
+
+	updateModelConfigurationKey(oldKey: string, newKey: string): Promise<void>;
 
 	addModelConfiguration(modelKey: string, newModelItem: ILanguageModelItem): Promise<void>;
 
@@ -58,6 +60,10 @@ export class ModelSelectionEditingService extends Disposable implements IModelSe
 		return this.queue.queue(() => this.doEditModelSelection(type, key));
 	}
 
+	updateModelConfigurationKey(oldKey: string, newKey: string): Promise<void> {
+		return this.queue.queue(() => this.doUpdateModelConfigurationKey(oldKey, newKey));
+	}
+
 	addModelConfiguration(modelKey: string, newModelItem: ILanguageModelItem): Promise<void> {
 		return this.queue.queue(() => this.doEditModelConfiguration(modelKey, newModelItem, true));
 	}
@@ -85,6 +91,42 @@ export class ModelSelectionEditingService extends Disposable implements IModelSe
 		}
 		try {
 			await this.save();
+		} finally {
+			reference.dispose();
+		}
+	}
+
+	private async doUpdateModelConfigurationKey(oldKey: string, newKey: string): Promise<void> {
+		const reference = await this.resolveAndValidate();
+
+		try {
+			const textModel = reference.object.textEditorModel;
+			const text = textModel.getValue();
+			const { tabSize, insertSpaces } = textModel.getOptions();
+			const eol = textModel.getEOL();
+			const formattingOptions: FormattingOptions = { tabSize, insertSpaces, eol };
+
+			const currentPath: json.JSONPath = ['models', oldKey];
+			const newPath: json.JSONPath = ['models', newKey];
+
+			const existingNode = json.findNodeAtLocation(json.parseTree(text), currentPath);
+			if (!existingNode) {
+				return;
+			}
+			const existingValue = json.getNodeValue(existingNode);
+
+			const removalEdits = removeProperty(text, currentPath, formattingOptions);
+			if (removalEdits.length === 0) {
+				return;
+			}
+
+			this.applyEditsToBuffer(removalEdits[0], textModel);
+			const updatedText = textModel.getValue();
+			const updateEdits = setProperty(updatedText, newPath, existingValue, { tabSize, insertSpaces, eol });
+			if (updateEdits.length > 0) {
+				this.applyEditsToBuffer(updateEdits[0], textModel);
+				await this.save();
+			}
 		} finally {
 			reference.dispose();
 		}
@@ -140,15 +182,26 @@ export class ModelSelectionEditingService extends Disposable implements IModelSe
 	}
 
 	private updateModelConfiguration(modelKey: string, modelItem: ILanguageModelItem, textModel: ITextModel, add: boolean): void {
+		const text = textModel.getValue();
 		const { tabSize, insertSpaces } = textModel.getOptions();
 		const eol = textModel.getEOL();
+		const jsonPath: json.JSONPath = ['models', modelKey];
+
 		if (add) {
-			const edits = setProperty(textModel.getValue(), ['models', modelKey], modelItem, { tabSize, insertSpaces, eol });
+			const edits = setProperty(text, jsonPath, modelItem, { tabSize, insertSpaces, eol });
 			if (edits.length > 0) {
 				this.applyEditsToBuffer(edits[0], textModel);
 			}
 		} else {
-			this.applyEditsToBuffer(setProperty(textModel.getValue(), ['models', modelKey], modelItem, { tabSize, insertSpaces, eol })[0], textModel);
+			const existingNode = json.findNodeAtLocation(json.parseTree(text), jsonPath);
+			if (!existingNode) {
+				return;
+			}
+
+			const edits = setProperty(text, jsonPath, modelItem, { tabSize, insertSpaces, eol });
+			if (edits.length > 0) {
+				this.applyEditsToBuffer(edits[0], textModel);
+			}
 		}
 	}
 

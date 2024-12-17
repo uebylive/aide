@@ -41,6 +41,8 @@ export class EditModelConfigurationWidget extends Widget {
 	private initialModelItemEntry: IModelItemEntry | null = null;
 	private modelItemEntry: IModelItemEntry | null = null;
 
+	private currentMode: 'edit' | 'add' = 'edit';
+
 	private title!: HTMLElement;
 	private modelName!: InputBox;
 	private fieldsContainer!: HTMLElement;
@@ -188,6 +190,7 @@ export class EditModelConfigurationWidget extends Widget {
 		};
 
 		return Promises.withAsyncBody<null>(async (resolve) => {
+			this.currentMode = 'add';
 			if (!this._isVisible) {
 				this._isVisible = true;
 				this._domNode.setDisplay('block');
@@ -212,6 +215,7 @@ export class EditModelConfigurationWidget extends Widget {
 
 	edit(entry: IModelItemEntry, providerItems: IProviderItem[]): Promise<null> {
 		return Promises.withAsyncBody<null>(async (resolve) => {
+			this.currentMode = 'edit';
 			if (!this._isVisible) {
 				this._isVisible = true;
 				this._domNode.setDisplay('block');
@@ -376,21 +380,30 @@ export class EditModelConfigurationWidget extends Widget {
 
 	private async save(): Promise<void> {
 		if (this.modelItemEntry) {
-			const initialModelItem = this.initialModelItemEntry!;
-			const updatedModelItem = this.modelItemEntry;
+			const initialModelItem = this.initialModelItemEntry!.modelItem;
+			const updatedModelItem = this.modelItemEntry.modelItem;
 			if (equals(initialModelItem, updatedModelItem)) {
 				return;
 			}
 
-			await this.modelSelectionEditingService.editModelConfiguration(this.modelItemEntry.modelItem.key, {
-				name: this.modelItemEntry.modelItem.name,
-				contextLength: this.modelItemEntry.modelItem.contextLength,
-				temperature: this.modelItemEntry.modelItem.temperature,
+			const lmItem = {
+				name: updatedModelItem.name,
+				contextLength: updatedModelItem.contextLength,
+				temperature: updatedModelItem.temperature,
 				provider: {
-					type: this.modelItemEntry.modelItem.providerConfig.type,
-					...(this.modelItemEntry.modelItem.providerConfig.type === 'azure-openai' ? { deploymentID: this.modelItemEntry.modelItem.providerConfig.deploymentID } : {})
+					type: updatedModelItem.providerConfig.type,
+					...(updatedModelItem.providerConfig.type === 'azure-openai' ? { deploymentID: updatedModelItem.providerConfig.deploymentID } : {})
 				} as ModelProviderConfig
-			});
+			};
+
+			if (this.currentMode === 'add') {
+				await this.modelSelectionEditingService.addModelConfiguration(updatedModelItem.key, lmItem);
+			} else if (initialModelItem.key !== updatedModelItem.key) {
+				await this.modelSelectionEditingService.updateModelConfigurationKey(initialModelItem.key, updatedModelItem.key);
+				await this.modelSelectionEditingService.editModelConfiguration(updatedModelItem.key, lmItem);
+			} else {
+				await this.modelSelectionEditingService.editModelConfiguration(updatedModelItem.key, lmItem);
+			}
 			this.hide();
 		}
 	}
