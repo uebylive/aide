@@ -72,6 +72,23 @@ export class SideCarClient {
 		this._userId = getUserId();
 	}
 
+	async validateModelConfiguration(config: ReturnType<typeof getSideCarModelConfiguration>): Promise<vscode.ModelConfigValidationResponse> {
+		const baseUrl = new URL(this._url);
+		baseUrl.pathname = '/api/agentic/verify_model_config';
+		const url = baseUrl.toString();
+		const body = {
+			model_configuration: config,
+		};
+		const response = await fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(body),
+		});
+		return response.json();
+	}
+
 	updateModelConfiguration(modelConfiguration: vscode.ModelSelection) {
 		this._modelConfiguration = modelConfiguration;
 		console.log('updated model configuration', this._modelConfiguration);

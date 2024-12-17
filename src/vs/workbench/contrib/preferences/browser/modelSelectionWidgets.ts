@@ -13,9 +13,10 @@ import { Promises } from '../../../../base/common/async.js';
 import { Codicon } from '../../../../base/common/codicons.js';
 import { Emitter } from '../../../../base/common/event.js';
 import { KeyCode } from '../../../../base/common/keyCodes.js';
+import { equals } from '../../../../base/common/objects.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import * as nls from '../../../../nls.js';
-import { ModelProviderConfig, areLanguageModelItemsEqual, areProviderConfigsEqual, humanReadableProviderConfigKey, providersSupportingModel } from '../../../../platform/aiModel/common/aiModels.js';
+import { ModelProviderConfig, ProviderConfig, humanReadableModelConfigKey, humanReadableProviderConfigKey, modelConfigKeyDescription } from '../../../../platform/aiModel/common/aiModels.js';
 import { IContextViewService } from '../../../../platform/contextview/browser/contextView.js';
 import { defaultButtonStyles, defaultInputBoxStyles, defaultSelectBoxStyles } from '../../../../platform/theme/browser/defaultStyles.js';
 import { asCssVariable, editorWidgetForeground, widgetShadow } from '../../../../platform/theme/common/colorRegistry.js';
@@ -25,7 +26,7 @@ import { IThemeService } from '../../../../platform/theme/common/themeService.js
 import { COMMAND_CENTER_BORDER } from '../../../common/theme.js';
 import { IModelSelectionEditingService } from '../../../services/aiModel/common/aiModelEditing.js';
 import { ModelSelectionEditorModel } from '../../../services/preferences/browser/modelSelectionEditorModel.js';
-import { IModelItemEntry, IProviderItem, IProviderItemEntry } from '../../../services/preferences/common/preferences.js';
+import { IModelItemEntry, IProviderItem, IProviderItemEntry, isModelItemConfigComplete, isProviderItemConfigComplete } from '../../../services/preferences/common/preferences.js';
 import './media/modelSelectionWidgets.css';
 
 export const defaultModelIcon = registerIcon('default-model-icon', Codicon.debugBreakpointDataUnverified, nls.localize('defaultModelIcon', 'Icon for the default model.'));
@@ -33,28 +34,30 @@ export const invalidModelConfigIcon = registerIcon('invalid-model-config-icon', 
 export const editModelWidgetCloseIcon = registerIcon('edit-model-widget-close-icon', Codicon.close, nls.localize('edit-model-widget-close-icon', 'Icon for the close button in the edit model widget.'));
 
 export class EditModelConfigurationWidget extends Widget {
-	private static readonly WIDTH = 480;
-	private static readonly HEIGHT = 300;
-
 	private _domNode: FastDomNode<HTMLElement>;
-	private _contentContainer: HTMLElement;
+	private _contentContainer!: HTMLElement;
 
 	private _isVisible: boolean = false;
 	private initialModelItemEntry: IModelItemEntry | null = null;
 	private modelItemEntry: IModelItemEntry | null = null;
 
-	private readonly title: HTMLElement;
-	private readonly modelName: HTMLElement;
-	private readonly fieldsContainer: HTMLElement;
-	private readonly providerValue: SelectBox;
-	private readonly contextLengthValue: InputBox;
-	private readonly temperatureValueLabel: HTMLElement;
-	private readonly temperatureValue: InputBox;
-	private readonly cancelButton: Button;
-	private readonly saveButton: Button;
+	private currentMode: 'edit' | 'add' = 'edit';
+
+	private title!: HTMLElement;
+	private modelName!: InputBox;
+	private fieldsContainer!: HTMLElement;
+	private providerValue!: SelectBox;
+	private modelIdValue!: InputBox;
+	private contextLengthValue!: InputBox;
+	private temperatureValueLabel!: HTMLElement;
+	private temperatureValue!: InputBox;
+	private cancelButton!: Button;
+	private saveButton!: Button;
 
 	private fieldItems: HTMLElement[] = [];
 	private _onHide = this._register(new Emitter<void>());
+
+	private parentDimension: dom.Dimension | null = null;
 
 	constructor(
 		parent: HTMLElement | null,
@@ -67,8 +70,6 @@ export class EditModelConfigurationWidget extends Widget {
 		this._domNode = createFastDomNode(document.createElement('div'));
 		this._domNode.setDisplay('none');
 		this._domNode.setClassName('edit-model-widget');
-		this._domNode.setWidth(EditModelConfigurationWidget.WIDTH);
-		this._domNode.setHeight(EditModelConfigurationWidget.HEIGHT);
 		this.onkeydown(this._domNode.domNode, (e) => {
 			if (e.equals(KeyCode.Escape)) {
 				this.hide();
@@ -77,6 +78,18 @@ export class EditModelConfigurationWidget extends Widget {
 			}
 		});
 
+		this.render();
+		this.updateStyles();
+		this._register(this._themeService.onDidColorThemeChange(() => {
+			this.updateStyles();
+		}));
+
+		if (parent) {
+			dom.append(parent, this._domNode.domNode);
+		}
+	}
+
+	private render() {
 		this._contentContainer = dom.append(this._domNode.domNode, dom.$('.edit-model-widget-content'));
 		const header = dom.append(this._contentContainer, dom.$('.edit-model-widget-header'));
 
@@ -88,26 +101,44 @@ export class EditModelConfigurationWidget extends Widget {
 		const body = dom.append(this._contentContainer, dom.$('.edit-model-widget-body'));
 		const modelNameContainer = dom.append(body, dom.$('.edit-model-widget-model-name-container'));
 		dom.append(modelNameContainer, dom.$(`.model-icon${ThemeIcon.asCSSSelector(defaultModelIcon)}}`));
-		this.modelName = dom.append(modelNameContainer, dom.$('.edit-model-widget-model-name'));
+		this.modelName = this._register(new InputBox(modelNameContainer, this.contextViewService, { inputBoxStyles: { ...defaultInputBoxStyles, inputBackground: undefined, inputBorder: 'transparent' } }));
+		this._register(this.modelName.onDidChange((e) => {
+			this.updateModelItemEntry({
+				...this.modelItemEntry!,
+				modelItem: {
+					...this.modelItemEntry!.modelItem,
+					name: e
+				}
+			});
+		}));
+		this.modelName.setPlaceHolder(nls.localize('editModelConfiguration.modelNamePlaceholder', "Enter a human-readable name for the model"));
+		this.modelName.element.style.width = '100%';
+		this.modelName.element.classList.add('edit-model-widget-model-name');
 
 		this.fieldsContainer = dom.append(body, dom.$('.edit-model-widget-grid'));
 
 		const providerLabelContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-provider-label-container'));
 		dom.append(providerLabelContainer, dom.$('span', undefined, nls.localize('editModelConfiguration.provider', "Provider")));
-		dom.append(providerLabelContainer, dom.$('span.subtitle', undefined, nls.localize('editModelConfiguration.providerKey', "provider")));
+		dom.append(providerLabelContainer, dom.$('span.subtitle', undefined, modelConfigKeyDescription['provider']));
 		const providerSelectContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-provider-select-container'));
 		this.providerValue = new SelectBox(<ISelectOptionItem[]>[], 0, this.contextViewService, defaultSelectBoxStyles, { ariaLabel: nls.localize('editModelConfiguration.providerValue', "Provider"), useCustomDrawn: true });
 		this.providerValue.render(providerSelectContainer);
 
+		const modelIdLabelContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-model-id-container'));
+		dom.append(modelIdLabelContainer, dom.$('span', undefined, nls.localize('editModelConfiguration.modelId', "Model ID")));
+		dom.append(modelIdLabelContainer, dom.$('span.subtitle', undefined, modelConfigKeyDescription['modelId']));
+		this.modelIdValue = this._register(new InputBox(this.fieldsContainer, this.contextViewService, { inputBoxStyles: defaultInputBoxStyles }));
+		this.modelIdValue.element.classList.add('edit-model-widget-model-id');
+
 		const contextLengthLabelContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-context-length-label-container'));
 		dom.append(contextLengthLabelContainer, dom.$('span', undefined, nls.localize('editModelConfiguration.contextLength', "Context length")));
-		dom.append(contextLengthLabelContainer, dom.$('span.subtitle', undefined, nls.localize('editModelConfiguration.contextLengthKey', "contextLength")));
+		dom.append(contextLengthLabelContainer, dom.$('span.subtitle', undefined, modelConfigKeyDescription['contextLength']));
 		this.contextLengthValue = this._register(new InputBox(this.fieldsContainer, this.contextViewService, { inputBoxStyles: defaultInputBoxStyles, type: 'number' }));
 		this.contextLengthValue.element.classList.add('edit-model-widget-context-length');
 
 		const temperatureLabelContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-temperature-label-container'));
 		dom.append(temperatureLabelContainer, dom.$('span', undefined, nls.localize('editModelConfiguration.temperature', "Temperature")));
-		dom.append(temperatureLabelContainer, dom.$('span.subtitle', undefined, nls.localize('editModelConfiguration.temperatureKey', "temperature")));
+		dom.append(temperatureLabelContainer, dom.$('span.subtitle', undefined, modelConfigKeyDescription['temperature']));
 		const temperatureValueContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-temperature-container'));
 		this.temperatureValueLabel = dom.append(temperatureValueContainer, dom.$('span'));
 		this.temperatureValueLabel.style.textAlign = 'right';
@@ -135,14 +166,7 @@ export class EditModelConfigurationWidget extends Widget {
 		this.saveButton.enabled = false;
 		this._register(this.saveButton.onDidClick(async () => await this.save()));
 
-		this.updateStyles();
-		this._register(this._themeService.onDidColorThemeChange(() => {
-			this.updateStyles();
-		}));
-
-		if (parent) {
-			dom.append(parent, this._domNode.domNode);
-		}
+		this.layout();
 	}
 
 	private updateStyles(): void {
@@ -153,39 +177,33 @@ export class EditModelConfigurationWidget extends Widget {
 			? 'blur(20px) saturate(190%) contrast(70%) brightness(80%)' : 'blur(25px) saturate(190%) contrast(50%) brightness(130%)';
 	}
 
-	edit(entry: IModelItemEntry, providerItems: IProviderItem[]): Promise<null> {
+	add(providerItems: IProviderItem[]): Promise<null> {
+		const defaultModelItemEntry: IModelItemEntry = {
+			modelItem: {
+				key: '',
+				name: '',
+				contextLength: 128000,
+				temperature: 0.2,
+				providerConfig: { type: 'open-router' },
+				provider: providerItems.find(providerItem => providerItem.name === 'Open Router')!
+			}
+		};
+
 		return Promises.withAsyncBody<null>(async (resolve) => {
+			this.currentMode = 'add';
 			if (!this._isVisible) {
 				this._isVisible = true;
 				this._domNode.setDisplay('block');
-				this.initialModelItemEntry = entry;
-				this.modelItemEntry = entry;
+				this.initialModelItemEntry = defaultModelItemEntry;
+				this.modelItemEntry = defaultModelItemEntry;
 
-				this.title.textContent = `Edit ${entry.modelItem.key}`;
-				this.modelName.textContent = entry.modelItem.name;
+				this.title.textContent = 'Configure model';
+				this.modelName.value = defaultModelItemEntry.modelItem.name;
 
-				const supportedProviders = providersSupportingModel(entry.modelItem.key);
-				const validProviders = providerItems.filter(providerItem => supportedProviders.includes(providerItem.type));
-				this.providerValue.setOptions(validProviders.map(providerItem => ({ text: providerItem.name })));
-				this.providerValue.select(validProviders.findIndex(provider => provider.name === entry.modelItem.provider.name));
-				this._register(this.providerValue.onDidSelect((e) => {
-					const provider = validProviders[e.index];
-					this.updateModelItemEntry({
-						...this.modelItemEntry!,
-						modelItem: {
-							...this.modelItemEntry!.modelItem,
-							provider: provider,
-							providerConfig: {
-								type: provider.type,
-								...(provider.type === 'azure-openai' ? { deploymentID: '' } : {})
-							} as ModelProviderConfig
-						}
-					});
-					this.renderProviderConfigFields(this.modelItemEntry!);
-				}));
+				const validProviders = providerItems.filter(providerItem => providerItem.name !== 'CodeStory');
+				this.registerProviders(validProviders, 'Open Router');
 
-				this.renderProviderConfigFields(entry);
-
+				this.renderProviderConfigFields(defaultModelItemEntry);
 				this.focus();
 			}
 			const disposable = this._onHide.event(() => {
@@ -195,8 +213,71 @@ export class EditModelConfigurationWidget extends Widget {
 		});
 	}
 
+	edit(entry: IModelItemEntry, providerItems: IProviderItem[]): Promise<null> {
+		return Promises.withAsyncBody<null>(async (resolve) => {
+			this.currentMode = 'edit';
+			if (!this._isVisible) {
+				this._isVisible = true;
+				this._domNode.setDisplay('block');
+				this.initialModelItemEntry = entry;
+				this.modelItemEntry = entry;
+
+				this.title.textContent = 'Configure model';
+				this.modelName.value = entry.modelItem.name;
+
+				this.registerProviders(providerItems, entry.modelItem.provider.name);
+
+				this.renderProviderConfigFields(entry);
+				this.focus();
+			}
+			const disposable = this._onHide.event(() => {
+				disposable.dispose();
+				resolve(null);
+			});
+		});
+	}
+
+	private registerProviders(providers: IProviderItem[], defaultProviderName: ProviderConfig['name']): void {
+		this.providerValue.setOptions(providers.map(providerItem => {
+			const isProviderConfigComplete = isProviderItemConfigComplete(providerItem);
+			return {
+				text: providerItem.name,
+				decoratorRight: isProviderConfigComplete ? '' : 'Not configured',
+				isDisabled: !isProviderConfigComplete
+			};
+		}));
+		this.providerValue.select(providers.findIndex(provider => provider.name === defaultProviderName));
+		this._register(this.providerValue.onDidSelect((e) => {
+			const provider = providers[e.index];
+			this.updateModelItemEntry({
+				...this.modelItemEntry!,
+				modelItem: {
+					...this.modelItemEntry!.modelItem,
+					provider: provider,
+					providerConfig: {
+						type: provider.type,
+						...(provider.type === 'azure-openai' ? { deploymentID: '' } : {})
+					} as ModelProviderConfig
+				}
+			});
+
+			this.renderProviderConfigFields(this.modelItemEntry!);
+		}));
+	}
+
 	private renderProviderConfigFields(entry: IModelItemEntry): void {
 		this.resetFieldItems();
+
+		this.modelIdValue.value = entry.modelItem.key;
+		this._register(this.modelIdValue.onDidChange((e) => {
+			this.updateModelItemEntry({
+				...this.modelItemEntry!,
+				modelItem: {
+					...this.modelItemEntry!.modelItem,
+					key: e
+				}
+			});
+		}));
 
 		this.contextLengthValue.value = entry.modelItem.contextLength.toString();
 		this._register(this.contextLengthValue.onDidChange((e) => {
@@ -225,13 +306,13 @@ export class EditModelConfigurationWidget extends Widget {
 		Object.keys(entry.modelItem.providerConfig).filter(key => key !== 'type').forEach(key => {
 			const fieldLabelContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-field-label-container'));
 			this.fieldItems.push(fieldLabelContainer);
-			dom.append(fieldLabelContainer, dom.$('span', undefined, humanReadableProviderConfigKey[key] ?? key));
-			dom.append(fieldLabelContainer, dom.$('span.subtitle', undefined, key));
+			dom.append(fieldLabelContainer, dom.$('span', undefined, humanReadableModelConfigKey[key] ?? key));
+			dom.append(fieldLabelContainer, dom.$('span.subtitle', undefined, modelConfigKeyDescription[key] ?? key));
 			const fieldValueContainer = dom.append(this.fieldsContainer, dom.$('.edit-model-widget-field-value-container'));
 			this.fieldItems.push(fieldValueContainer);
 			const fieldValue = new InputBox(fieldValueContainer, this.contextViewService, { inputBoxStyles: defaultInputBoxStyles });
 			fieldValue.element.classList.add('edit-model-widget-field-value');
-			fieldValue.value = entry.modelItem.providerConfig[key as keyof ModelProviderConfig].toString();
+			fieldValue.value = entry.modelItem.providerConfig[key as keyof ModelProviderConfig]?.toString() ?? '';
 			this._register(fieldValue.onDidChange((e) => {
 				this.updateModelItemEntry({
 					modelItem: {
@@ -245,15 +326,11 @@ export class EditModelConfigurationWidget extends Widget {
 			}));
 		});
 
-		const newRows = Object.keys(entry.modelItem.providerConfig).filter(key => key !== 'type').length;
-		this._domNode.setHeight(EditModelConfigurationWidget.HEIGHT + newRows * 48);
-
-		// Move all items with index > 5 between the provider and context length fields
+		// Move all items with index > 7 between the provider and context length fields
 		const gridItems = this.fieldsContainer.querySelectorAll('.edit-model-widget-grid > *');
-		for (let i = 6; i < gridItems.length; i++) {
+		for (let i = 8; i < gridItems.length; i++) {
 			this.fieldsContainer.insertBefore(gridItems[i], gridItems[2]);
 		}
-
 	}
 
 	private resetFieldItems(): void {
@@ -264,20 +341,25 @@ export class EditModelConfigurationWidget extends Widget {
 		this.fieldItems = [];
 	}
 
-	layout(layout: dom.Dimension): void {
-		const top = Math.round((layout.height - EditModelConfigurationWidget.HEIGHT) / 3);
+	layout(dimensions?: dom.Dimension | null): void {
+		const parentDimensions = this.parentDimension = dimensions ?? this.parentDimension;
+		if (!parentDimensions) {
+			return;
+		}
+
+		const top = Math.round((parentDimensions.height - this._domNode.domNode.offsetHeight) / 3);
 		this._domNode.setTop(top);
 
-		const left = Math.round((layout.width - EditModelConfigurationWidget.WIDTH) / 2);
+		const left = Math.round((parentDimensions.width - this._domNode.domNode.offsetWidth) / 2);
 		this._domNode.setLeft(left);
 	}
 
 	private updateModelItemEntry(updatedModelItemEntry: IModelItemEntry): void {
 		this.modelItemEntry = updatedModelItemEntry;
 		if (this.modelItemEntry) {
-			const initialModelItem = ModelSelectionEditorModel.getLanguageModelItem(this.initialModelItemEntry!);
-			const updatedModelItem = ModelSelectionEditorModel.getLanguageModelItem(this.modelItemEntry);
-			if (areLanguageModelItemsEqual(initialModelItem, updatedModelItem)) {
+			const initialModelItem = this.initialModelItemEntry!;
+			const updatedModelItem = this.modelItemEntry;
+			if (equals(initialModelItem, updatedModelItem) || !isModelItemConfigComplete(this.modelItemEntry.modelItem)) {
 				this.saveButton.enabled = false;
 			} else {
 				this.saveButton.enabled = true;
@@ -298,21 +380,30 @@ export class EditModelConfigurationWidget extends Widget {
 
 	private async save(): Promise<void> {
 		if (this.modelItemEntry) {
-			const initialModelItem = ModelSelectionEditorModel.getLanguageModelItem(this.initialModelItemEntry!);
-			const updatedModelItem = ModelSelectionEditorModel.getLanguageModelItem(this.modelItemEntry);
-			if (areLanguageModelItemsEqual(initialModelItem, updatedModelItem)) {
+			const initialModelItem = this.initialModelItemEntry!.modelItem;
+			const updatedModelItem = this.modelItemEntry.modelItem;
+			if (equals(initialModelItem, updatedModelItem)) {
 				return;
 			}
 
-			await this.modelSelectionEditingService.editModelConfiguration(this.modelItemEntry.modelItem.key, {
-				name: this.modelItemEntry.modelItem.name,
-				contextLength: this.modelItemEntry.modelItem.contextLength,
-				temperature: this.modelItemEntry.modelItem.temperature,
+			const lmItem = {
+				name: updatedModelItem.name,
+				contextLength: updatedModelItem.contextLength,
+				temperature: updatedModelItem.temperature,
 				provider: {
-					type: this.modelItemEntry.modelItem.providerConfig.type,
-					...(this.modelItemEntry.modelItem.providerConfig.type === 'azure-openai' ? { deploymentID: this.modelItemEntry.modelItem.providerConfig.deploymentID } : {})
+					type: updatedModelItem.providerConfig.type,
+					...(updatedModelItem.providerConfig.type === 'azure-openai' ? { deploymentID: updatedModelItem.providerConfig.deploymentID } : {})
 				} as ModelProviderConfig
-			});
+			};
+
+			if (this.currentMode === 'add') {
+				await this.modelSelectionEditingService.addModelConfiguration(updatedModelItem.key, lmItem);
+			} else if (initialModelItem.key !== updatedModelItem.key) {
+				await this.modelSelectionEditingService.updateModelConfigurationKey(initialModelItem.key, updatedModelItem.key);
+				await this.modelSelectionEditingService.editModelConfiguration(updatedModelItem.key, lmItem);
+			} else {
+				await this.modelSelectionEditingService.editModelConfiguration(updatedModelItem.key, lmItem);
+			}
 			this.hide();
 		}
 	}
@@ -386,9 +477,9 @@ export class EditProviderConfigurationWidget extends Widget {
 
 		this.saveButton = this._register(new Button(footerContainer, {
 			...defaultButtonStyles,
-			title: nls.localize('editModelConfiguration.save', "Save")
+			title: nls.localize('editProviderConfiguration.save', "Save")
 		}));
-		this.saveButton.label = nls.localize('editModelConfiguration.save', "Save");
+		this.saveButton.label = nls.localize('editProviderConfiguration.save', "Save");
 		this.saveButton.enabled = false;
 		this._register(this.saveButton.onDidClick(async () => await this.save()));
 
@@ -463,7 +554,7 @@ export class EditProviderConfigurationWidget extends Widget {
 		if (this.providerItemEntry) {
 			const initialProviderConfig = ModelSelectionEditorModel.getProviderConfig(this.initialProviderItemEntry!);
 			const updatedProviderConfig = ModelSelectionEditorModel.getProviderConfig(updatedProviderItemEntry as IProviderItemEntry);
-			if (areProviderConfigsEqual(initialProviderConfig, updatedProviderConfig)) {
+			if (equals(initialProviderConfig, updatedProviderConfig)) {
 				this.saveButton.enabled = false;
 			} else {
 				this.saveButton.enabled = true;
@@ -489,7 +580,7 @@ export class EditProviderConfigurationWidget extends Widget {
 		if (this.providerItemEntry) {
 			const initialProviderConfig = ModelSelectionEditorModel.getProviderConfig(this.initialProviderItemEntry!);
 			const updatedProviderConfig = ModelSelectionEditorModel.getProviderConfig(this.providerItemEntry as IProviderItemEntry);
-			if (areProviderConfigsEqual(initialProviderConfig, updatedProviderConfig)) {
+			if (equals(initialProviderConfig, updatedProviderConfig)) {
 				return;
 			}
 

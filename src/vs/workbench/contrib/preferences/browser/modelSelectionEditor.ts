@@ -5,25 +5,23 @@
 
 import * as DOM from '../../../../base/browser/dom.js';
 import { ActionBar } from '../../../../base/browser/ui/actionbar/actionbar.js';
+import { Button } from '../../../../base/browser/ui/button/button.js';
 import { HighlightedLabel } from '../../../../base/browser/ui/highlightedlabel/highlightedLabel.js';
-import { ISelectOptionItem, SelectBox } from '../../../../base/browser/ui/selectBox/selectBox.js';
 import { ITableRenderer, ITableVirtualDelegate } from '../../../../base/browser/ui/table/table.js';
 import { IAction } from '../../../../base/common/actions.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import { localize } from '../../../../nls.js';
-import { IAIModelSelectionService, ModelProviderConfig, ProviderType, humanReadableModelConfigKey, humanReadableProviderConfigKey, isDefaultProviderConfig, providerTypeValues } from '../../../../platform/aiModel/common/aiModels.js';
-import { IContextViewService } from '../../../../platform/contextview/browser/contextView.js';
+import { IAIModelSelectionService, ModelProviderConfig, ProviderType, humanReadableModelConfigKey, humanReadableProviderConfigKey, providerTypeValues } from '../../../../platform/aiModel/common/aiModels.js';
 import { IEditorOptions } from '../../../../platform/editor/common/editor.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { WorkbenchTable } from '../../../../platform/list/browser/listService.js';
 import { IStorageService } from '../../../../platform/storage/common/storage.js';
 import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
-import { defaultSelectBoxStyles } from '../../../../platform/theme/browser/defaultStyles.js';
+import { defaultButtonStyles } from '../../../../platform/theme/browser/defaultStyles.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { EditorPane } from '../../../browser/parts/editor/editorPane.js';
 import { IEditorOpenContext } from '../../../common/editor.js';
-import { IModelSelectionEditingService } from '../../../services/aiModel/common/aiModelEditing.js';
 import { IEditorGroup } from '../../../services/editor/common/editorGroupsService.js';
 import { ModelSelectionEditorInput } from '../../../services/preferences/browser/modelSelectionEditorInput.js';
 import { ModelSelectionEditorModel } from '../../../services/preferences/browser/modelSelectionEditorModel.js';
@@ -39,20 +37,19 @@ export class ModelSelectionEditor extends EditorPane {
 
 	private modelSelectionEditorModel: ModelSelectionEditorModel | null = null;
 
-	private headerContainer!: HTMLElement;
 	private modelsTableContainer!: HTMLElement;
 	private providersTableTitle!: HTMLElement;
 	private providersTableContainer!: HTMLElement;
 
-	private fastModelSelect!: SelectBox;
-	private slowModelSelect!: SelectBox;
 	private modelsTable!: WorkbenchTable<IModelItemEntry>;
 	private providersTable!: WorkbenchTable<IProviderItemEntry>;
 
 	private modelConfigurationOverlayContainer!: HTMLElement;
 	private editModelConfigurationWidget!: EditModelConfigurationWidget;
+	private newModelButtonContainer!: HTMLElement;
 	private providerConfigurationOverlayContainer!: HTMLElement;
 	private editProviderConfigurationWidget!: EditProviderConfigurationWidget;
+	private newProviderButtonContainer!: HTMLElement;
 
 	private modelTableEntries: IModelItemEntry[] = [];
 	private providerTableEntries: IProviderItemEntry[] = [];
@@ -65,9 +62,7 @@ export class ModelSelectionEditor extends EditorPane {
 		@IThemeService themeService: IThemeService,
 		@IStorageService storageService: IStorageService,
 		@IAIModelSelectionService private readonly aiModelSelectionService: IAIModelSelectionService,
-		@IModelSelectionEditingService private readonly modelSelectionEditingService: IModelSelectionEditingService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@IContextViewService private readonly contextViewService: IContextViewService,
 	) {
 		super(ModelSelectionEditor.ID, group, telemetryService, themeService, storageService);
 
@@ -80,7 +75,6 @@ export class ModelSelectionEditor extends EditorPane {
 		const modelSelectionEditorElement = DOM.append(parent, $('div', { class: 'model-selection-editor' }));
 
 		this.createOverlayContainers(modelSelectionEditorElement);
-		this.crateHeader(modelSelectionEditorElement);
 		this.createBody(modelSelectionEditorElement);
 	}
 
@@ -101,6 +95,7 @@ export class ModelSelectionEditor extends EditorPane {
 	private showOverlayContainer(type: 'model' | 'provider') {
 		if (type === 'model') {
 			this.modelConfigurationOverlayContainer.style.display = 'block';
+			this.editModelConfigurationWidget.layout(this.dimension);
 		} else if (type === 'provider') {
 			this.providerConfigurationOverlayContainer.style.display = 'block';
 		}
@@ -114,26 +109,6 @@ export class ModelSelectionEditor extends EditorPane {
 		}
 	}
 
-	private crateHeader(parent: HTMLElement): void {
-		this.headerContainer = DOM.append(parent, $('.model-selection-header'));
-
-		const fastModelContainer = DOM.append(this.headerContainer, $('.model-select-dropdown'));
-		DOM.append(fastModelContainer, $('span', undefined, 'Copilot Model'));
-		this.fastModelSelect = new SelectBox(<ISelectOptionItem[]>[], 0, this.contextViewService, defaultSelectBoxStyles, { ariaLabel: localize('fastModel', 'Copilot model'), useCustomDrawn: true });
-		this.fastModelSelect.render(fastModelContainer);
-		this._register(this.fastModelSelect.onDidSelect((e) => {
-			this.setFastModel(e.selected);
-		}));
-
-		const slowModelContainer = DOM.append(this.headerContainer, $('.model-select-dropdown'));
-		DOM.append(slowModelContainer, $('span', undefined, 'Chat Model'));
-		this.slowModelSelect = new SelectBox(<ISelectOptionItem[]>[], 0, this.contextViewService, defaultSelectBoxStyles, { ariaLabel: localize('slowModel', 'Chat Model'), useCustomDrawn: true });
-		this.slowModelSelect.render(slowModelContainer);
-		this._register(this.slowModelSelect.onDidSelect((e) => {
-			this.setSlowModel(e.selected);
-		}));
-	}
-
 	private createBody(parent: HTMLElement): void {
 		const bodyContainer = DOM.append(parent, $('div', { class: 'model-selection-body' }));
 		this.createModelsTable(bodyContainer);
@@ -141,7 +116,10 @@ export class ModelSelectionEditor extends EditorPane {
 	}
 
 	private createModelsTable(parent: HTMLElement): void {
-		DOM.append(parent, $('h2', { class: 'table-header' }, 'Models'));
+		const modelsHeader = DOM.append(parent, $('div.models-header'));
+		DOM.append(modelsHeader, $('h2', { class: 'table-header' }, 'Models'));
+		const subtitle = DOM.append(modelsHeader, $('span'));
+		subtitle.textContent = 'Configure the provider to be used by your model of choice';
 		this.modelsTableContainer = DOM.append(parent, $('div', { class: 'table-container' }));
 		this.modelsTable = this._register(this.instantiationService.createInstance(WorkbenchTable,
 			'ModelSelectionEditor',
@@ -155,7 +133,7 @@ export class ModelSelectionEditor extends EditorPane {
 					minimumWidth: 40,
 					maximumWidth: 40,
 					templateId: ModelActionsColumnRenderer.TEMPLATE_ID,
-					project(row: IModelItemEntry): IModelItemEntry { return row; },
+					project(row: IModelItemEntry): IModelItemEntry { return row; }
 				},
 				{
 					label: localize('name', "Name"),
@@ -165,25 +143,25 @@ export class ModelSelectionEditor extends EditorPane {
 					project(row: IModelItemEntry): IModelItemEntry { return row; }
 				},
 				{
-					label: localize('configuration', "Configuration"),
+					label: localize('provider', "Provider"),
 					tooltip: '',
-					weight: 0.5,
-					templateId: ModelConfigurationColumnRenderer.TEMPLATE_ID,
+					weight: 0.4,
+					templateId: ModelProvidersColumnRenderer.TEMPLATE_ID,
 					project(row: IModelItemEntry): IModelItemEntry { return row; }
 				},
 				{
-					label: localize('provider', "Provider"),
+					label: localize('configuration', "Configuration"),
 					tooltip: '',
-					weight: 0.2,
-					templateId: ModelProvidersColumnRenderer.TEMPLATE_ID,
+					weight: 0.3,
+					templateId: ModelConfigurationColumnRenderer.TEMPLATE_ID,
 					project(row: IModelItemEntry): IModelItemEntry { return row; }
 				}
 			],
 			[
 				this.instantiationService.createInstance(ModelActionsColumnRenderer, this),
 				this.instantiationService.createInstance(ModelsColumnRenderer),
-				this.instantiationService.createInstance(ModelConfigurationColumnRenderer),
-				this.instantiationService.createInstance(ModelProvidersColumnRenderer)
+				this.instantiationService.createInstance(ModelProvidersColumnRenderer),
+				this.instantiationService.createInstance(ModelConfigurationColumnRenderer)
 			],
 			{
 				identityProvider: { getId: (e: IModelItemEntry) => e.modelItem.key },
@@ -195,6 +173,13 @@ export class ModelSelectionEditor extends EditorPane {
 				transformOptimization: false,
 			}
 		)) as WorkbenchTable<IModelItemEntry>;
+
+		const newModelButtonContainer = this.newModelButtonContainer = DOM.append(parent, $('div.new-model-button-container'));
+		const newModelButton = this._register(this.instantiationService.createInstance(Button, newModelButtonContainer, { ...defaultButtonStyles, secondary: true }));
+		newModelButton.label = localize('newModel', "New Model");
+		this._register(newModelButton.onDidClick(() => {
+			this.addModel();
+		}));
 
 		this._register(this.modelsTable.onMouseOver(e => {
 			if (e.element?.modelItem.provider) {
@@ -224,7 +209,11 @@ export class ModelSelectionEditor extends EditorPane {
 	}
 
 	private createProvidersTable(parent: HTMLElement): void {
-		this.providersTableTitle = DOM.append(parent, $('h2', { class: 'table-header' }, 'Providers'));
+		const providersHeader = DOM.append(parent, $('div.models-header'));
+		this.providersTableTitle = DOM.append(providersHeader, $('h2', { class: 'table-header' }, 'Providers'));
+		const subtitle = DOM.append(providersHeader, $('span'));
+		subtitle.textContent = 'Configure custom API keys for your provider of choice';
+
 		this.providersTableContainer = DOM.append(parent, $('div', { class: 'table-container' }));
 		this.providersTable = this._register(this.instantiationService.createInstance(WorkbenchTable,
 			'ModelSelectionEditor',
@@ -271,6 +260,8 @@ export class ModelSelectionEditor extends EditorPane {
 			}
 		)) as WorkbenchTable<IProviderItemEntry>;
 
+		this.newProviderButtonContainer = DOM.append(parent, $('div.new-provider-button-container'));
+
 		this._register(this.providersTable.onDidOpen((e) => {
 			if (e.browserEvent?.defaultPrevented) {
 				return;
@@ -299,13 +290,6 @@ export class ModelSelectionEditor extends EditorPane {
 	private renderModels(): void {
 		if (this.modelSelectionEditorModel) {
 			const modelItems = this.modelSelectionEditorModel.modelItems;
-
-			const validModelItems = modelItems.filter(model => isModelItemConfigComplete(model.modelItem));
-			this.fastModelSelect.setOptions(validModelItems.map(items => ({ text: items.modelItem.name }) as ISelectOptionItem));
-			this.fastModelSelect.select(validModelItems.findIndex(items => items.modelItem.key === this.modelSelectionEditorModel?.fastModel.modelItem.key));
-			this.slowModelSelect.setOptions(validModelItems.map(tems => ({ text: tems.modelItem.name }) as ISelectOptionItem));
-			this.slowModelSelect.select(validModelItems.findIndex(items => items.modelItem.key === this.modelSelectionEditorModel?.slowModel.modelItem.key));
-
 			this.modelTableEntries = modelItems;
 			this.modelsTable.splice(0, this.modelsTable.length, this.modelTableEntries);
 		}
@@ -331,31 +315,15 @@ export class ModelSelectionEditor extends EditorPane {
 		const paddingBottom = 64;
 		const spacing = 24;
 
-		const tableContainerHeight = (this.dimension.height - marginHeight - DOM.getDomNodePagePosition(this.headerContainer).height - paddingTop - paddingBottom - spacing) / 2;
-		this.modelsTable.layout(tableContainerHeight);
-		this.modelsTableContainer.style.height = `${tableContainerHeight}px`;
+		const tableContainerHeight = (this.dimension.height - marginHeight - paddingTop - paddingBottom - spacing) / 2;
+		const newModelButtonContainerHeight = this.newModelButtonContainer.offsetHeight;
+		this.modelsTable.layout(tableContainerHeight - newModelButtonContainerHeight);
+		this.modelsTableContainer.style.height = `${tableContainerHeight - newModelButtonContainerHeight}px`;
 
 		this.providersTableTitle.style.marginTop = `${spacing}px`;
-		this.providersTable.layout(tableContainerHeight);
-		this.providersTableContainer.style.height = `${tableContainerHeight}px`;
-	}
-
-	// Note: This is indeed the model name and not key. For some reason, SelectBox does not support setting a value.
-	private async setSlowModel(modelName: string): Promise<void> {
-		const modelKey = this.modelSelectionEditorModel?.modelItems.find(model => model.modelItem.name === modelName)?.modelItem.key;
-		if (!modelKey) {
-			return;
-		}
-		await this.modelSelectionEditingService.editModelSelection('slowModel', modelKey);
-	}
-
-	// Note: This is indeed the model name and not key. For some reason, SelectBox does not support setting a value.
-	private async setFastModel(modelName: string): Promise<void> {
-		const modelKey = this.modelSelectionEditorModel?.modelItems.find(model => model.modelItem.name === modelName)?.modelItem.key;
-		if (!modelKey) {
-			return;
-		}
-		await this.modelSelectionEditingService.editModelSelection('fastModel', modelKey);
+		const newProviderButtonContainerHeight = this.newProviderButtonContainer.offsetHeight;
+		this.providersTable.layout(tableContainerHeight - newProviderButtonContainerHeight);
+		this.providersTableContainer.style.height = `${tableContainerHeight - newProviderButtonContainerHeight}px`;
 	}
 
 	override async setInput(input: ModelSelectionEditorInput, options: IEditorOptions | undefined, context: IEditorOpenContext, token: CancellationToken): Promise<void> {
@@ -385,6 +353,19 @@ export class ModelSelectionEditor extends EditorPane {
 	get activeProviderEntry(): IProviderItemEntry | null {
 		const focusedElement = this.providersTable.getFocusedElements()[0];
 		return focusedElement ? <IProviderItemEntry>focusedElement : null;
+	}
+
+	private async addModel(): Promise<void> {
+		this.showOverlayContainer('model');
+		try {
+			await this.editModelConfigurationWidget.add(
+				this.modelSelectionEditorModel?.providerItems.map(item => item.providerItem) ?? []
+			);
+		} catch (error) {
+			console.error(error);
+		} finally {
+			this.hideOverlayContainer('model');
+		}
 	}
 
 	async editModel(modelItemEntry: IModelItemEntry): Promise<void> {
@@ -583,6 +564,7 @@ interface IModelProviderColumnTemplateData {
 	modelProviderColumn: HTMLElement;
 	providerLabelContainer: HTMLElement;
 	providerLabel: HighlightedLabel;
+	providerModelId: HTMLElement;
 }
 
 class ModelProvidersColumnRenderer implements ITableRenderer<IModelItemEntry, IModelProviderColumnTemplateData> {
@@ -594,7 +576,8 @@ class ModelProvidersColumnRenderer implements ITableRenderer<IModelItemEntry, IM
 		const modelProviderColumn = DOM.append(container, $('.model-provider'));
 		const providerLabelContainer = DOM.append(modelProviderColumn, $('.model-provider-label'));
 		const providerLabel = new HighlightedLabel(providerLabelContainer);
-		return { modelProviderColumn, providerLabelContainer, providerLabel };
+		const providerModelId = DOM.append(container, $('span'));
+		return { modelProviderColumn, providerLabelContainer, providerLabel, providerModelId };
 	}
 
 	renderElement(modelItemEntry: IModelItemEntry, index: number, templateData: IModelProviderColumnTemplateData): void {
@@ -604,6 +587,7 @@ class ModelProvidersColumnRenderer implements ITableRenderer<IModelItemEntry, IM
 		if (modelItem.provider) {
 			templateData.providerLabelContainer.classList.remove('hide');
 			templateData.providerLabel.set(modelItem.provider.name, []);
+			templateData.providerModelId.innerText = modelItem.key;
 		} else {
 			templateData.providerLabelContainer.classList.add('hide');
 			templateData.providerLabel.set(undefined);
@@ -644,7 +628,7 @@ class ModelConfigurationColumnRenderer implements ITableRenderer<IModelItemEntry
 						.forEach(providerConfigKey => {
 							const providerConfigValue = modelItem.providerConfig[providerConfigKey as keyof ModelProviderConfig];
 							DOM.append(configItem, $('span.provider-config-key', undefined, `${humanReadableModelConfigKey[providerConfigKey]}: `));
-							DOM.append(configItem, $(`span.provider-config-value${providerConfigValue.length > 0 ? '' : '.incomplete'}`, undefined, `${providerConfigValue.length > 0 ? providerConfigValue : 'Not set'}`));
+							DOM.append(configItem, $(`span.provider-config-value${(providerConfigValue ?? '').length > 0 ? '' : '.incomplete'}`, undefined, `${(providerConfigValue ?? '').length > 0 ? providerConfigValue : 'Not set'}`));
 						});
 				} else {
 					DOM.append(configItem, $('span.provider-config-key', undefined, `${humanReadableModelConfigKey[key]}: `));
@@ -668,10 +652,6 @@ class ModelConfigurationColumnRenderer implements ITableRenderer<IModelItemEntry
 	private getEmptyConfigurationMessage(modelItem: IModelItem): { message: string; complete: boolean } {
 		if (!modelItem.provider) {
 			return { message: localize('noProvider', "No provider selected"), complete: false };
-		}
-
-		if (isDefaultProviderConfig(modelItem.provider.type, modelItem.provider)) {
-			return { message: localize('defaultConfig', "Default configuration"), complete: true };
 		}
 
 		const incompleteFields = Object.keys(modelItem.providerConfig).filter(
@@ -812,6 +792,9 @@ class ProviderConfigColumnRenderer implements ITableRenderer<IProviderItemEntry,
 			const emptyConfigMessage = this.getEmptyConfigurationMessage(providerItem.type);
 			const className = emptyConfigMessage.complete ? 'provider-config-complete' : 'provider-config-incomplete';
 			DOM.append(configItem, $(`span.${className}`, undefined, emptyConfigMessage.message));
+			if (providerItem.type === 'codestory') {
+				configItem.classList.add('special');
+			}
 		}
 	}
 
@@ -824,8 +807,10 @@ class ProviderConfigColumnRenderer implements ITableRenderer<IProviderItemEntry,
 	private getEmptyConfigurationMessage(providerType: ProviderType): { message: string; complete: boolean } {
 		if (providerType === 'azure-openai' || providerType === 'openai-default' || providerType === 'togetherai' || providerType === 'openai-compatible' || providerType === 'anthropic' || providerType === 'fireworkai' || providerType === 'geminipro' || providerType === 'open-router') {
 			return { message: 'Configuration incomplete', complete: false };
-		} else if (providerType === 'codestory' || providerType === 'ollama') {
+		} else if (providerType === 'ollama') {
 			return { message: 'No configuration required', complete: true };
+		} else if (providerType === 'codestory') {
+			return { message: 'Pre-packaged with Aide', complete: true };
 		}
 		return { message: 'No configuration options', complete: true };
 	}

@@ -605,7 +605,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 
 		const keybinding = this.keybindingService.lookupKeybinding(ToggleEditModeAction.ID);
 		this.modeSwitch = this._register(this.instantiationService.createInstance(Switch, {
-			description: `Edit mode directly applies changes to your code${keybinding ? ` (${keybinding.getLabel()})` : ''}`,
+			description: `Use Chat or Edit modes for quick tasks and Agentic mode for open-ended ones${keybinding ? ` (${keybinding.getLabel()})` : ''}`,
 			options: ['Chat', 'Edit', 'Agentic'],
 			value: 'Edit',
 		}));
@@ -664,7 +664,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			modelConfigButton.label = `$(${Codicon.chevronDown.id}) ${settings.models[model].name}`;
 		}));
 		modelConfigButton.onDidClick(() => {
-			this.commandService.executeCommand(ModelSelectionIndicator.SWITCH_SLOW_MODEL_COMMAND_ID);
+			this.commandService.executeCommand(ModelSelectionIndicator.SWITCH_MODEL_COMMAND_ID);
 		});
 
 		// Sidecar status

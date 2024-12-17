@@ -4,15 +4,16 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { RunOnceScheduler } from '../../../../base/common/async.js';
+import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
 import { parse } from '../../../../base/common/json.js';
 import { IJSONSchema } from '../../../../base/common/jsonSchema.js';
-import { Disposable, DisposableStore } from '../../../../base/common/lifecycle.js';
+import { Disposable, DisposableStore, IDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
 import * as objects from '../../../../base/common/objects.js';
 import { dirname } from '../../../../base/common/resources.js';
 import { Mutable } from '../../../../base/common/types.js';
 import * as nls from '../../../../nls.js';
-import { defaultModelSelectionSettings, IAIModelSelectionService, ILanguageModelItem, IModelProviders, IModelSelectionSettings, isModelSelectionSettings, ProviderConfig, ProviderType } from '../../../../platform/aiModel/common/aiModels.js';
+import { ApiKeyOnlyProviderConfig, apiKeyOnlyProviders, defaultModelSelectionSettings, IAIModelSelectionService, ILanguageModelItem, IModelProviders, IModelSelectionSettings, IModelSelectionValidationResponse, isModelSelectionSettings, ModelConfigValidator, noConfigurationProviders, openAICompatibleProvider, OpenAICompatibleProviderConfig, ProviderConfig, ProviderType } from '../../../../platform/aiModel/common/aiModels.js';
 import { FileOperation, IFileService } from '../../../../platform/files/common/files.js';
 import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
 import { Extensions, IJSONContributionRegistry } from '../../../../platform/jsonschemas/common/jsonContributionRegistry.js';
@@ -25,6 +26,7 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 	_serviceBrand: undefined;
 
 	private modelSelection: ModelSelection;
+	private modelConfigValidator: ModelConfigValidator | undefined;
 
 	private readonly _onDidChangeModelSelection: Emitter<IModelSelectionSettings> = this._register(new Emitter<IModelSelectionSettings>());
 	public readonly onDidChangeModelSelection: Event<IModelSelectionSettings> = this._onDidChangeModelSelection.event;
@@ -62,12 +64,12 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 		const validatedProviders = Object.keys(modelSelection.providers).reduce((untypedAcc, untypedKey) => {
 			const key = untypedKey as ProviderType;
 			const acc = untypedAcc as { [key: string]: ProviderConfig };
-			const provider = modelSelection.providers[key as keyof typeof modelSelection.providers] as ProviderConfig;
-			if ((provider.name === 'Azure OpenAI' || provider.name === 'OpenAI Compatible' || provider.name === 'GeminiPro') && (provider.apiBase.length > 0 && provider.apiKey.length > 0)) {
+			const provider = modelSelection.providers[key] as ProviderConfig;
+			if (openAICompatibleProvider.includes(key as typeof openAICompatibleProvider[number]) && (provider as OpenAICompatibleProviderConfig).apiBase.length > 0 && (provider as OpenAICompatibleProviderConfig).apiKey.length > 0) {
 				acc[key] = provider;
-			} else if ((provider.name === 'OpenAI' || provider.name === 'Together AI' || provider.name === 'OpenAI Compatible' || provider.name === 'Anthropic' || provider.name === 'Firework AI' || provider.name === 'Open Router') && (provider.apiKey?.length ?? 0) > 0) {
+			} else if (apiKeyOnlyProviders.includes(key as typeof apiKeyOnlyProviders[number]) && (provider as ApiKeyOnlyProviderConfig).apiKey.length > 0) {
 				acc[key] = provider;
-			} else if (provider.name === 'CodeStory' || provider.name === 'Ollama') {
+			} else if (noConfigurationProviders.includes(key as typeof noConfigurationProviders[number])) {
 				acc[key] = provider;
 			}
 			return acc as IModelProviders;
@@ -117,6 +119,20 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 			modelSelectionSettings = untypedModelSelectionSettings as IModelSelectionSettings;
 		});
 		return modelSelectionSettings;
+	}
+
+	registerModelConfigValidator(validator: ModelConfigValidator): IDisposable {
+		this.modelConfigValidator = validator;
+		return toDisposable(() => {
+			this.modelConfigValidator = undefined;
+		});
+	}
+
+	validateModelConfiguration(data: IModelSelectionSettings, token: CancellationToken): Promise<IModelSelectionValidationResponse> {
+		if (!this.modelConfigValidator) {
+			return Promise.resolve({ valid: false, error: 'Unable to validate model configuration. This is likely an issue at our end. Please let us know!' });
+		}
+		return this.modelConfigValidator(data, token);
 	}
 }
 
@@ -381,7 +397,7 @@ class ModelSelectionJsonSchema {
 						'type': 'object',
 						'properties': {
 							'name': {
-								'enum': ['Firework AI'],
+								'enum': ['Fireworks AI'],
 								'description': nls.localize('modelSelection.json.fireworkaiProvider.name', 'Name of the provider')
 							},
 							'apiKey': {

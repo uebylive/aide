@@ -26,6 +26,8 @@
 	display: flex;
 	justify-content: space-between;
 	line-height: 22px;
+	align-items: center;
+	gap: 8px;
 }
 
 .edit-model-widget-content .edit-model-widget-header .message {
@@ -65,9 +67,7 @@
 	margin: 6px 0 24px 0;
 }
 
-.edit-model-widget-content .edit-model-widget-body .edit-model-widget-model-name {
-	display: block;
-	padding-left: 4px;
+.edit-model-widget-content .edit-model-widget-body .edit-model-widget-model-name input.input {
 	font-size: 1.17em;
 	font-weight: bold;
 }
@@ -76,7 +76,7 @@
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	align-items: center;
-	gap: 16px;
+	gap: 16px 48px;
 }
 
 .edit-model-widget-content .edit-model-widget-body .edit-model-widget-grid .subtitle {
@@ -106,12 +106,12 @@
 	width: 200px;
 }
 
-.edit-model-widget-grid .monaco-inputbox input[type=number]::-webkit-inner-spin-button {
+.edit-model-widget-grid .monaco-inputbox input[type="number"]::-webkit-inner-spin-button {
 	/* Hide arrow button that shows in type=number fields */
 	-webkit-appearance: none !important;
 }
 
-.edit-model-widget-grid .monaco-inputbox input[type=number] {
+.edit-model-widget-grid .monaco-inputbox input[type="number"] {
 	/* Hide arrow button that shows in type=number fields */
 	-moz-appearance: textfield !important;
 	appearance: textfield !important;

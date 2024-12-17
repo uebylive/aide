@@ -30,7 +30,7 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 	constructor(
 		@IQuickInputService private readonly quickInputService: IQuickInputService,
 		@IAIModelSelectionService private readonly aiModelSelectionService: IAIModelSelectionService,
-		@IModelSelectionEditingService private readonly modelSelectionEditingService: IModelSelectionEditingService
+		@IModelSelectionEditingService private readonly modelSelectionEditingService: IModelSelectionEditingService,
 	) {
 		super();
 
@@ -46,6 +46,7 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 		const category = { value: nls.localize('modelSelection.category', "Model Selection"), original: 'Model Selection' };
 
 		const that = this;
+		/*
 		registerAction2(class extends Action2 {
 			constructor() {
 				super({
@@ -61,13 +62,14 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 			}
 			run = () => that.showModelSwitcher();
 		});
+		*/
 
 		registerAction2(class extends Action2 {
 			constructor() {
 				super({
-					id: ModelSelectionIndicator.SWITCH_SLOW_MODEL_COMMAND_ID,
+					id: ModelSelectionIndicator.SWITCH_MODEL_COMMAND_ID,
 					category,
-					title: nls.localize2('modelSelection.switch.slow', "Switch Slow Model"),
+					title: nls.localize2('modelSelection.switch.slow', "Switch Model"),
 					f1: true,
 					keybinding: {
 						weight: KeybindingWeight.WorkbenchContrib,
@@ -85,9 +87,8 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 		let text = '';
 		let kind: StatusbarEntryKind = 'remote';
 		if (isModelItemConfigComplete(editorModelItems.fastModel) && isModelItemConfigComplete(editorModelItems.slowModel)) {
-			const fastModel = editorModelItems.fastModel.name;
 			const slowModel = editorModelItems.slowModel.name;
-			text = `$(debug-breakpoint-data-unverified) ${fastModel} / ${slowModel}`;
+			text = `$(debug-breakpoint-data-unverified) ${slowModel}`;
 		} else {
 			text = `$(error) Corrupt model configuration`;
 			kind = 'error';
@@ -112,6 +113,7 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 		}
 	}
 
+	/*
 	private showModelSwitcher(): void {
 		const quickPick = this.quickInputService.createQuickPick();
 		quickPick.placeholder = nls.localize('modelSelectionPicker.placeholder', "Select model type");
@@ -145,6 +147,7 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 
 		quickPick.show();
 	}
+	*/
 
 	private async showModelPicker(type: 'fastModel' | 'slowModel'): Promise<void> {
 		const computeItems = async (): Promise<QuickPickItem[]> => {
@@ -194,11 +197,13 @@ export class ModelSelectionIndicator extends Disposable implements IWorkbenchCon
 
 		const disposables = new DisposableStore();
 		const quickPick = disposables.add(this.quickInputService.createQuickPick({ useSeparators: true }));
-		quickPick.placeholder = `Select ${type.replace('Model', '')} model`;
-		quickPick.title = `Select ${type.replace('Model', '')} model`;
+		// quickPick.placeholder = `Select ${type.replace('Model', '')} model`;
+		// quickPick.title = `Select ${type.replace('Model', '')} model`;
+		quickPick.placeholder = `Select model`;
+		quickPick.title = `Select model`;
 		quickPick.items = await computeItems();
-		quickPick.step = 2;
-		quickPick.totalSteps = 2;
+		// quickPick.step = 2;
+		// quickPick.totalSteps = 2;
 		quickPick.sortByLabel = false;
 		quickPick.canSelectMany = false;
 		disposables.add(quickPick.onDidAccept(async () => {

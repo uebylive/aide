@@ -1578,6 +1578,10 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			onDidChangeConfiguration(listener, thisArgs?, disposables?) {
 				checkProposedApiEnabled(extension, 'modelSelection');
 				return extHostModelSelection.onModelSelectionChange(listener, thisArgs, disposables);
+			},
+			registerModelConfigurationValidator(validator: vscode.ModelConfigurationValidatorProvider) {
+				checkProposedApiEnabled(extension, 'modelSelection');
+				return extHostModelSelection.registerModelConfigurationValidator(validator);
 			}
 		};
 

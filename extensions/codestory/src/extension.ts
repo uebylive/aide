@@ -16,6 +16,7 @@ import postHogClient from './posthog/client';
 import { AideQuickFix } from './quickActions/fix';
 import { RecentEditsRetriever } from './server/editedFiles';
 import { RepoRef, RepoRefBackend, SideCarClient } from './sidecar/client';
+import { getSideCarModelConfiguration } from './sidecar/types';
 import { loadOrSaveToStorage } from './storage/types';
 import { copySettings } from './utilities/copySettings';
 import { killProcessOnPort } from './utilities/killPort';
@@ -119,6 +120,12 @@ export async function activate(context: vscode.ExtensionContext) {
 	// setup the callback for the model configuration
 	vscode.modelSelection.onDidChangeConfiguration((config) => {
 		sidecarClient.updateModelConfiguration(config);
+	});
+	vscode.modelSelection.registerModelConfigurationValidator({
+		provideModelConfigValidation(config) {
+			const sidecarModelConfig = getSideCarModelConfiguration(config);
+			return sidecarClient.validateModelConfiguration(sidecarModelConfig);
+		},
 	});
 
 	// register the inline code completion provider

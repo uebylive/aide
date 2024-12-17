@@ -11,7 +11,7 @@ import { ResolvedKeybinding } from '../../../../base/common/keybindings.js';
 import { URI } from '../../../../base/common/uri.js';
 import { IRange } from '../../../../editor/common/core/range.js';
 import { IEditorContribution } from '../../../../editor/common/editorCommon.js';
-import { ModelProviderConfig, ProviderType, ProviderConfig, AzureOpenAIProviderConfig, OpenAIProviderConfig, OpenAICompatibleProviderConfig, AnthropicProviderConfig, FireworkAIProviderConfig, GeminiProProviderConfig, OpenRouterAIProviderConfig } from '../../../../platform/aiModel/common/aiModels.js';
+import { ApiKeyOnlyProviderConfig, apiKeyOnlyProviders, ModelProviderConfig, NoConfigurationProviderConfig, noConfigurationProviders, openAICompatibleProvider, OpenAICompatibleProviderConfig, ProviderConfig, ProviderType } from '../../../../platform/aiModel/common/aiModels.js';
 import { ConfigurationTarget } from '../../../../platform/configuration/common/configuration.js';
 import { ConfigurationDefaultValueSource, ConfigurationScope, EditPresentationTypes, IExtensionInfo } from '../../../../platform/configuration/common/configurationRegistry.js';
 import { IEditorOptions } from '../../../../platform/editor/common/editor.js';
@@ -352,8 +352,8 @@ export interface IModelItem {
 }
 
 export const isModelItemConfigComplete = (modelItem: IModelItem): boolean => {
-	const { name, contextLength, temperature, provider, providerConfig } = modelItem;
-	return !!name && !!contextLength && !!temperature
+	const { key, name, contextLength, temperature, provider, providerConfig } = modelItem;
+	return !!key && !!name && !!contextLength && !!temperature
 		&& isProviderItemConfigComplete(provider)
 		&& providerConfig.type === provider.type
 		&& (providerConfig.type === 'azure-openai' ? !!providerConfig.deploymentID : true);
@@ -366,43 +366,16 @@ export interface IProviderItemEntry {
 export type IProviderItem = { type: ProviderType } & ProviderConfig;
 
 export const isProviderItemConfigComplete = (providerItem: IProviderItem): boolean => {
-	switch (providerItem.type) {
-		case 'codestory': {
-			return true;
-		}
-		case 'azure-openai': {
-			const { name, apiKey, apiBase } = providerItem as AzureOpenAIProviderConfig;
-			return !!name && !!apiKey && !!apiBase;
-		}
-		case 'openai-default': {
-			const { name, apiKey } = providerItem as OpenAIProviderConfig;
-			return !!name && !!apiKey;
-		}
-		case 'togetherai': {
-			const { name, apiKey } = providerItem as OpenAIProviderConfig;
-			return !!name && !!apiKey;
-		}
-		case 'openai-compatible': {
-			const { name, apiKey, apiBase } = providerItem as OpenAICompatibleProviderConfig;
-			return !!name && !!apiKey && !!apiBase;
-		}
-		case 'ollama':
-			return true;
-		case 'anthropic': {
-			const { name, apiKey } = providerItem as AnthropicProviderConfig;
-			return !!name && !!apiKey;
-		}
-		case 'fireworkai': {
-			const { name, apiKey } = providerItem as FireworkAIProviderConfig;
-			return !!name && !!apiKey;
-		}
-		case 'geminipro': {
-			const { name, apiKey, apiBase } = providerItem as GeminiProProviderConfig;
-			return !!name && !!apiKey && !!apiBase;
-		}
-		case 'open-router': {
-			const { name, apiKey } = providerItem as OpenRouterAIProviderConfig;
-			return !!name && !!apiKey;
-		}
+	if (noConfigurationProviders.includes(providerItem.type as typeof noConfigurationProviders[number])) {
+		const { name } = providerItem as NoConfigurationProviderConfig;
+		return !!name;
+	} else if (apiKeyOnlyProviders.includes(providerItem.type as typeof apiKeyOnlyProviders[number])) {
+		const { name, apiKey } = providerItem as ApiKeyOnlyProviderConfig;
+		return !!name && !!apiKey;
+	} else if (openAICompatibleProvider.includes(providerItem.type as typeof openAICompatibleProvider[number])) {
+		const { name, apiKey, apiBase } = providerItem as OpenAICompatibleProviderConfig;
+		return !!name && !!apiKey && !!apiBase;
+	} else {
+		return false;
 	}
 };

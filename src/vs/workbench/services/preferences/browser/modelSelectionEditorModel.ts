@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { AzureOpenAIProviderConfig, IAIModelSelectionService, ILanguageModelItem, IModelProviders, IModelSelectionSettings, OpenAICompatibleProviderConfig, ProviderConfig, ProviderConfigsWithAPIKey, ProviderType } from '../../../../platform/aiModel/common/aiModels.js';
+import { ApiKeyOnlyProviderConfig, apiKeyOnlyProviders, IAIModelSelectionService, IModelProviders, IModelSelectionSettings, openAICompatibleProvider, OpenAICompatibleProviderConfig, ProviderConfig, ProviderType } from '../../../../platform/aiModel/common/aiModels.js';
 import { EditorModel } from '../../../common/editor/editorModel.js';
 import { IModelItem, IModelItemEntry, IProviderItem, IProviderItemEntry } from '../common/preferences.js';
 
@@ -40,21 +40,11 @@ export class ModelSelectionEditorModel extends EditorModel {
 		return this._providerItems.map(provider => ({ providerItem: provider }));
 	}
 
-	static getLanguageModelItem(modelItem: IModelItemEntry): ILanguageModelItem {
-		return {
-			name: modelItem.modelItem.name,
-			contextLength: modelItem.modelItem.contextLength,
-			temperature: modelItem.modelItem.temperature,
-			provider: modelItem.modelItem.providerConfig
-		};
-	}
-
 	static getProviderConfig(providerItem: IProviderItemEntry): ProviderConfig {
 		return {
 			name: providerItem.providerItem.name,
-			...(providerItem.providerItem.type !== 'ollama' && providerItem.providerItem.type !== 'codestory' ? { apiKey: (providerItem.providerItem as ProviderConfigsWithAPIKey).apiKey } : {}),
-			...(providerItem.providerItem.type === 'azure-openai' ? { apiBase: (providerItem.providerItem as AzureOpenAIProviderConfig).apiBase } : {}),
-			...(providerItem.providerItem.type === 'openai-compatible' ? { apiBase: (providerItem.providerItem as OpenAICompatibleProviderConfig).apiBase } : {}),
+			...(apiKeyOnlyProviders.includes(providerItem.providerItem.type as typeof apiKeyOnlyProviders[number]) ? { apiKey: (providerItem.providerItem as ApiKeyOnlyProviderConfig).apiKey } : {}),
+			...(openAICompatibleProvider.includes(providerItem.providerItem.type as typeof openAICompatibleProvider[number]) ? { apiBase: (providerItem.providerItem as OpenAICompatibleProviderConfig).apiBase } : {}),
 		} as ProviderConfig;
 	}
 

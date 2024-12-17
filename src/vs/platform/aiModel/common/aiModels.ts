@@ -3,13 +3,24 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { CancellationToken } from '../../../base/common/cancellation.js';
 import { Event } from '../../../base/common/event.js';
+import { IDisposable } from '../../../base/common/lifecycle.js';
 import { createDecorator } from '../../instantiation/common/instantiation.js';
 
 export const humanReadableModelConfigKey: Record<string, string> = {
 	'contextLength': 'Context Length',
 	'temperature': 'Temperature',
-	'deploymentID': 'Deployment ID'
+	'deploymentID': 'Deployment ID',
+	'modelId': 'Model ID'
+};
+
+export const modelConfigKeyDescription: Record<string, string> = {
+	'provider': 'The provider you wish to use for this model',
+	'contextLength': 'Maximum context length supported by the model',
+	'temperature': 'The temperature setting for the model',
+	'deploymentID': 'Deployment ID specified by the provider',
+	'modelId': 'Unique identifier for the model as per provider\'s API'
 };
 
 export const humanReadableProviderConfigKey: Record<string, string> = {
@@ -17,8 +28,11 @@ export const humanReadableProviderConfigKey: Record<string, string> = {
 	'apiBase': 'Base URL'
 };
 
-export type ProviderType = 'codestory' | 'openai-default' | 'azure-openai' | 'togetherai' | 'ollama' | 'openai-compatible' | 'anthropic' | 'fireworkai' | 'geminipro' | 'open-router';
-export const providerTypeValues: ProviderType[] = ['codestory', 'openai-default', 'azure-openai', 'togetherai', 'ollama', 'openai-compatible', 'anthropic', 'fireworkai', 'geminipro', 'open-router'];
+export const noConfigurationProviders = ['codestory', 'ollama'] as const;
+export const apiKeyOnlyProviders = ['openai-default', 'togetherai', 'anthropic', 'fireworkai', 'geminipro', 'open-router', 'azure-openai'] as const;
+export const openAICompatibleProvider = ['openai-compatible'] as const;
+export const providerTypeValues = [...noConfigurationProviders, ...apiKeyOnlyProviders, ...openAICompatibleProvider] as const;
+export type ProviderType = typeof providerTypeValues[number];
 
 export interface AzureOpenAIModelProviderConfig {
 	readonly type: 'azure-openai';
@@ -52,72 +66,32 @@ export function isLanguageModelItem(obj: any): obj is ILanguageModelItem {
 		&& ('provider' in obj ? isModelProviderConfig(obj['provider']) : true);
 }
 
-export interface CodeStoryProviderConfig {
-	readonly name: 'CodeStory';
+export interface NoConfigurationProviderConfig {
+	readonly name: string;
 }
 
-export interface OpenAIProviderConfig {
-	readonly name: 'OpenAI';
-	readonly apiKey?: string;
-}
-
-export interface BaseOpenAICompatibleProviderConfig {
+export interface ApiKeyOnlyProviderConfig extends NoConfigurationProviderConfig {
 	readonly apiKey: string;
+}
+
+export interface OpenAICompatibleProviderConfig extends ApiKeyOnlyProviderConfig {
 	readonly apiBase: string;
 }
 
-export interface OpenAICompatibleProviderConfig extends BaseOpenAICompatibleProviderConfig {
-	readonly name: 'OpenAI Compatible';
-}
+export type ProviderConfig = NoConfigurationProviderConfig | ApiKeyOnlyProviderConfig | OpenAICompatibleProviderConfig;
 
-export interface AzureOpenAIProviderConfig extends BaseOpenAICompatibleProviderConfig {
-	readonly name: 'Azure OpenAI';
-}
-
-export interface TogetherAIProviderConfig {
-	readonly name: 'Together AI';
-	readonly apiKey: string;
-}
-
-export interface OllamaProviderConfig {
-	readonly name: 'Ollama';
-}
-
-export interface AnthropicProviderConfig {
-	readonly name: 'Anthropic';
-	readonly apiKey: string;
-}
-
-export interface FireworkAIProviderConfig {
-	readonly name: 'Firework AI';
-	readonly apiKey: string;
-}
-
-export interface OpenRouterAIProviderConfig {
-	readonly name: 'Open Router';
-	readonly apiKey: string;
-}
-
-export interface GeminiProProviderConfig {
-	readonly name: 'GeminiPro';
-	readonly apiKey: string;
-	readonly apiBase: string;
-}
-
-export type ProviderConfig = CodeStoryProviderConfig | OpenAIProviderConfig | AzureOpenAIProviderConfig | TogetherAIProviderConfig | OpenAICompatibleProviderConfig | OllamaProviderConfig | AnthropicProviderConfig | FireworkAIProviderConfig | GeminiProProviderConfig | OpenRouterAIProviderConfig;
-export type ProviderConfigsWithAPIKey = Exclude<ProviderConfig, CodeStoryProviderConfig | OllamaProviderConfig>;
-
-export type IModelProviders =
-	{ 'codestory': CodeStoryProviderConfig }
-	| { 'openai-default': OpenAIProviderConfig }
-	| { 'azure-openai': AzureOpenAIProviderConfig }
-	| { 'togetherai': TogetherAIProviderConfig }
-	| { 'openai-compatible': OpenAICompatibleProviderConfig }
-	| { 'ollama': OllamaProviderConfig }
-	| { 'anthropic': AnthropicProviderConfig }
-	| { 'fireworkai': FireworkAIProviderConfig }
-	| { 'geminipro': GeminiProProviderConfig }
-	| { 'open-router': OpenRouterAIProviderConfig };
+export type IModelProviders = {
+	'codestory': NoConfigurationProviderConfig;
+	'ollama': NoConfigurationProviderConfig;
+	'openai-default': ApiKeyOnlyProviderConfig;
+	'azure-openai': ApiKeyOnlyProviderConfig;
+	'togetherai': ApiKeyOnlyProviderConfig;
+	'anthropic': ApiKeyOnlyProviderConfig;
+	'fireworkai': ApiKeyOnlyProviderConfig;
+	'geminipro': ApiKeyOnlyProviderConfig;
+	'open-router': ApiKeyOnlyProviderConfig;
+	'openai-compatible': OpenAICompatibleProviderConfig;
+};
 
 export function isModelProviderItem(obj: any): obj is IModelProviders {
 	return obj && typeof obj === 'object'
@@ -147,6 +121,9 @@ export interface IAIModelSelectionService {
 
 	onDidChangeModelSelection: Event<IModelSelectionSettings>;
 
+	registerModelConfigValidator(validator: (data: IModelSelectionSettings, token: CancellationToken) => Promise<IModelSelectionValidationResponse>): IDisposable;
+	validateModelConfiguration(data: IModelSelectionSettings, token: CancellationToken): Promise<IModelSelectionValidationResponse>;
+
 	getDefaultModelSelectionContent(): string;
 	getModelSelectionSettings(): Promise<IModelSelectionSettings>;
 	getValidatedModelSelectionSettings(): Promise<IModelSelectionSettings>;
@@ -154,144 +131,8 @@ export interface IAIModelSelectionService {
 
 export const defaultModelSelectionSettings: IModelSelectionSettings = {
 	slowModel: 'ClaudeSonnet',
-	fastModel: 'DeepSeekCoder33BInstruct',
+	fastModel: 'ClaudeHaiku',
 	models: {
-		'o1-mini': {
-			name: 'o1-mini reasoning',
-			contextLength: 128000,
-			temperature: 0.2,
-			provider: {
-				type: 'openai-default'
-			}
-		},
-		'o1-preview': {
-			name: 'o1-preview reasoning',
-			contextLength: 128000,
-			temperature: 0.2,
-			provider: {
-				type: 'openai-default'
-			}
-		},
-		'Gpt4': {
-			name: 'GPT-4',
-			contextLength: 8192,
-			temperature: 0.2,
-			provider: {
-				type: 'codestory'
-			}
-		},
-		'GPT3_5_16k': {
-			name: 'GPT-3.5 Turbo 16k',
-			contextLength: 16385,
-			temperature: 0.2,
-			provider: {
-				type: 'codestory'
-			}
-		},
-		'Gpt4Turbo': {
-			name: 'GPT-4 Turbo',
-			contextLength: 128000,
-			temperature: 0.2,
-			provider: {
-				type: 'openai-default'
-			}
-		},
-		'Gpt4_32k': {
-			name: 'GPT-4 32k',
-			contextLength: 32768,
-			temperature: 0.2,
-			provider: {
-				type: 'openai-default'
-			}
-		},
-		'Gpt4O': {
-			name: 'Gpt4-o',
-			contextLength: 128000,
-			temperature: 0.2,
-			provider: {
-				type: 'openai-default'
-			}
-		},
-		'GPT3_5': {
-			name: 'GPT-3.5 Turbo',
-			contextLength: 4096,
-			temperature: 0.2,
-			provider: {
-				type: 'openai-default'
-			}
-		},
-		'Mixtral': {
-			name: 'Mixtral',
-			contextLength: 32000,
-			temperature: 0.2,
-			provider: {
-				type: 'togetherai'
-			}
-		},
-		'MistralInstruct': {
-			name: 'Mistral 7B Instruct',
-			contextLength: 8000,
-			temperature: 0.2,
-			provider: {
-				type: 'togetherai'
-			}
-		},
-		'CodeLlama13BInstruct': {
-			name: 'CodeLlama 13B Instruct',
-			contextLength: 16384,
-			temperature: 0.2,
-			provider: {
-				type: 'togetherai'
-			}
-		},
-		'CodeLlama7BInstruct': {
-			name: 'CodeLlama 7B Instruct',
-			contextLength: 16384,
-			temperature: 0.2,
-			provider: {
-				type: 'codestory'
-			}
-		},
-		'DeepSeekCoder33BInstruct': {
-			name: 'DeepSeekCoder 33B Instruct',
-			contextLength: 16384,
-			temperature: 0.2,
-			provider: {
-				type: 'codestory'
-			}
-		},
-		'DeepSeekCoder1.3BInstruct': {
-			name: 'DeepSeekCoder 1.3B Instruct',
-			contextLength: 16384,
-			temperature: 0.2,
-			provider: {
-				type: 'ollama'
-			}
-		},
-		'DeepSeekCoderV2': {
-			name: 'DeepSeekCoder V2',
-			contextLength: 128000,
-			temperature: 0.2,
-			provider: {
-				type: 'open-router'
-			}
-		},
-		'DeepSeekCoder6BInstruct': {
-			name: 'DeepSeekCoder 6B Instruct',
-			contextLength: 16384,
-			temperature: 0.2,
-			provider: {
-				type: 'ollama'
-			}
-		},
-		'ClaudeOpus': {
-			name: 'Claude Opus',
-			contextLength: 200000,
-			temperature: 0.2,
-			provider: {
-				type: 'anthropic'
-			}
-		},
 		'ClaudeSonnet': {
 			name: 'Claude Sonnet',
 			contextLength: 200000,
@@ -308,30 +149,73 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 				type: 'codestory'
 			}
 		},
-		'GeminiPro1.5': {
-			name: 'Gemini Pro 1.5',
+		'gpt-4o': {
+			name: 'GPT-4o',
+			contextLength: 128000,
+			temperature: 0.2,
+			provider: {
+				type: 'openai-default'
+			}
+		},
+		'o1-mini': {
+			name: 'o1-mini',
+			contextLength: 128000,
+			temperature: 0.2,
+			provider: {
+				type: 'openai-default'
+			}
+		},
+		'o1-preview': {
+			name: 'o1-preview',
+			contextLength: 128000,
+			temperature: 0.2,
+			provider: {
+				type: 'openai-default'
+			}
+		},
+		'gemini-1.5-pro': {
+			name: 'Gemini 1.5 Pro',
 			contextLength: 1000000,
 			temperature: 0.2,
 			provider: {
 				type: 'geminipro',
 			}
 		},
+		'qwen/qwen-2.5-coder-32b-instruct': {
+			name: 'Qwen2.5 Coder 32B Instruct',
+			contextLength: 32768,
+			temperature: 0.2,
+			provider: {
+				type: 'open-router',
+			}
+		},
+		'deepseek/deepseek-chat': {
+			name: 'DeepSeek V2.5',
+			contextLength: 65536,
+			temperature: 0.2,
+			provider: {
+				type: 'open-router',
+			}
+		}
 	},
 	providers: {
 		'codestory': {
 			name: 'CodeStory'
 		},
+		'anthropic': {
+			name: 'Anthropic',
+			apiKey: '',
+		},
 		'openai-default': {
 			name: 'OpenAI',
 			apiKey: '',
 		},
-		'azure-openai': {
-			name: 'Azure OpenAI',
-			apiBase: '',
+		'geminipro': {
+			name: 'Gemini',
 			apiKey: '',
 		},
-		'togetherai': {
-			name: 'Together AI',
+		'open-router': {
+			name: 'Open Router',
 			apiKey: '',
 		},
 		'openai-compatible': {
@@ -342,78 +226,24 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 		'ollama': {
 			name: 'Ollama'
 		},
-		'anthropic': {
-			name: 'Anthropic',
+		'azure-openai': {
+			name: 'Azure OpenAI',
+			apiKey: '',
+		},
+		'togetherai': {
+			name: 'Together AI',
 			apiKey: '',
 		},
 		'fireworkai': {
-			name: 'Firework AI',
-			apiKey: '',
-		},
-		'geminipro': {
-			name: 'GeminiPro',
-			apiBase: '',
-			apiKey: '',
-		},
-		'open-router': {
-			name: 'Open Router',
+			name: 'Fireworks AI',
 			apiKey: '',
 		},
 	}
-};
+} as const;
 
-export const supportedModels: Record<ProviderType, string[]> = {
-	'codestory': ['Gpt4', 'GPT3_5_16k', 'CodeLlama7BInstruct', 'ClaudeHaiku', 'ClaudeSonnet', 'DeepSeekCoder33BInstruct', 'Gpt4Turbo'],
-	'openai-default': ['Gpt4Turbo', 'Gpt4_32k', 'Gpt4', 'GPT3_5_16k', 'GPT3_5', 'Gpt4O', 'o1-preview', 'o1-mini'],
-	'azure-openai': ['Gpt4Turbo', 'Gpt4_32k', 'Gpt4', 'GPT3_5_16k', 'GPT3_5'],
-	'togetherai': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'CodeLlama7BInstruct', 'DeepSeekCoder33BInstruct'],
-	'openai-compatible': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'CodeLlama7BInstruct', 'DeepSeekCoder1.3BInstruct', 'DeepSeekCoder6BInstruct', 'DeepSeekCoder33BInstruct', 'DeepSeekCoderV2'],
-	'ollama': ['Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'DeepSeekCoder1.3BInstruct', 'DeepSeekCoder6BInstruct', 'DeepSeekCoder33BInstruct', 'DeepSeekCoderV2'],
-	'anthropic': ['ClaudeOpus', 'ClaudeSonnet', 'ClaudeHaiku'],
-	'fireworkai': ['CodeLlama13BInstruct'],
-	'geminipro': ['GeminiPro1.5'],
-	'open-router': ['Gpt4', 'Gpt4O', 'GPT3_5_16k', 'CodeLlama7BInstruct', 'ClaudeHaiku', 'ClaudeSonnet', 'ClaudeOpus', 'DeepSeekCoder33BInstruct', 'Gpt4Turbo', 'Mixtral', 'MistralInstruct', 'CodeLlama13BInstruct', 'DeepSeekCoder1.3BInstruct', 'DeepSeekCoder6BInstruct', 'ClaudeOpus', 'GeminiPro1.5', 'DeepSeekCoderV2'],
-};
+export interface IModelSelectionValidationResponse {
+	readonly valid: boolean;
+	readonly error?: string;
+}
 
-export const providersSupportingModel = (model: string): ProviderType[] => {
-	return Object.keys(supportedModels)
-		.filter(provider => supportedModels[provider as ProviderType].includes(model)) as ProviderType[];
-};
-
-export const areLanguageModelItemsEqual = (a: ILanguageModelItem, b: ILanguageModelItem) => {
-	return a.name === b.name
-		&& a.contextLength === b.contextLength
-		&& a.temperature === b.temperature
-		&& a.provider.type === b.provider.type
-		&& (a.provider.type === 'azure-openai'
-			? (a.provider as AzureOpenAIModelProviderConfig).deploymentID === (b.provider as AzureOpenAIModelProviderConfig).deploymentID
-			: true
-		);
-};
-
-
-export const isDefaultProviderConfig = (key: ProviderType, config: ProviderConfig) => {
-	const defaultConfig = defaultModelSelectionSettings.providers[key as keyof IModelProviders] as ProviderConfig;
-	return defaultConfig
-		&& defaultConfig.name === config.name
-		&& (defaultConfig.name === 'OpenAI' || defaultConfig.name === 'Together AI' || defaultConfig.name === 'Azure OpenAI' || defaultConfig.name === 'OpenAI Compatible' || defaultConfig.name === 'Anthropic' || defaultConfig.name === 'Firework AI' || defaultConfig.name === 'GeminiPro' || defaultConfig.name === 'Open Router'
-			? (defaultConfig).apiKey === (config as ProviderConfigsWithAPIKey).apiKey
-			: true
-		)
-		&& (defaultConfig.name === 'Azure OpenAI' || defaultConfig.name === 'OpenAI Compatible' || defaultConfig.name === 'GeminiPro'
-			? defaultConfig.apiBase === (config as BaseOpenAICompatibleProviderConfig).apiBase
-			: true
-		);
-};
-
-export const areProviderConfigsEqual = (a: ProviderConfig, b: ProviderConfig) => {
-	return a.name === b.name
-		&& (a.name === 'OpenAI' || a.name === 'Together AI' || a.name === 'Azure OpenAI' || a.name === 'OpenAI Compatible' || a.name === 'Anthropic' || a.name === 'Firework AI' || a.name === 'GeminiPro' || a.name === 'Open Router'
-			? (a as ProviderConfigsWithAPIKey).apiKey === (b as ProviderConfigsWithAPIKey).apiKey
-			: true
-		)
-		&& (a.name === 'Azure OpenAI' || a.name === 'OpenAI Compatible' || a.name === 'GeminiPro'
-			? (a as BaseOpenAICompatibleProviderConfig).apiBase === (b as BaseOpenAICompatibleProviderConfig).apiBase
-			: true
-		);
-};
+export type ModelConfigValidator = (data: IModelSelectionSettings, token: CancellationToken) => Promise<IModelSelectionValidationResponse>;

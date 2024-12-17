@@ -1250,7 +1250,7 @@ class PreferencesActionsContribution extends Disposable implements IWorkbenchCon
 			constructor() {
 				super({
 					id,
-					title: { value: nls.localize('openModelSelection', "Open model selection options"), original: 'Open model selection options' },
+					title: { value: nls.localize('openModelSelection', "Model selection options"), original: 'Model selection options' },
 					category,
 					icon: preferencesOpenSettingsIcon,
 					keybinding: {
