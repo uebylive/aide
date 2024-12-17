@@ -352,8 +352,8 @@ export interface IModelItem {
 }
 
 export const isModelItemConfigComplete = (modelItem: IModelItem): boolean => {
-	const { name, contextLength, temperature, provider, providerConfig } = modelItem;
-	return !!name && !!contextLength && !!temperature
+	const { key, name, contextLength, temperature, provider, providerConfig } = modelItem;
+	return !!key && !!name && !!contextLength && !!temperature
 		&& isProviderItemConfigComplete(provider)
 		&& providerConfig.type === provider.type
 		&& (providerConfig.type === 'azure-openai' ? !!providerConfig.deploymentID : true);

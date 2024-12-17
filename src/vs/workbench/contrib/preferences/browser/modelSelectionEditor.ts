@@ -587,9 +587,7 @@ class ModelProvidersColumnRenderer implements ITableRenderer<IModelItemEntry, IM
 		if (modelItem.provider) {
 			templateData.providerLabelContainer.classList.remove('hide');
 			templateData.providerLabel.set(modelItem.provider.name, []);
-			if ('modelId' in modelItem.providerConfig && modelItem.providerConfig.modelId) {
-				templateData.providerModelId.innerText = modelItem.providerConfig.modelId;
-			}
+			templateData.providerModelId.innerText = modelItem.key;
 		} else {
 			templateData.providerLabelContainer.classList.add('hide');
 			templateData.providerLabel.set(undefined);
@@ -626,11 +624,11 @@ class ModelConfigurationColumnRenderer implements ITableRenderer<IModelItemEntry
 				const configItem = DOM.append(templateData.modelConfigurationContainer, $('.provider-config-item'));
 				if (key === 'providerConfig') {
 					Object.keys(modelItem.providerConfig)
-						.filter(providerConfigKey => providerConfigKey !== 'type' && providerConfigKey !== 'modelId' && (modelItem.providerConfig.type !== 'azure-openai' || providerConfigKey !== 'deploymentID'))
+						.filter(providerConfigKey => providerConfigKey !== 'type' && (modelItem.providerConfig.type !== 'azure-openai' || providerConfigKey !== 'deploymentID'))
 						.forEach(providerConfigKey => {
 							const providerConfigValue = modelItem.providerConfig[providerConfigKey as keyof ModelProviderConfig];
 							DOM.append(configItem, $('span.provider-config-key', undefined, `${humanReadableModelConfigKey[providerConfigKey]}: `));
-							DOM.append(configItem, $(`span.provider-config-value${providerConfigValue.length > 0 ? '' : '.incomplete'}`, undefined, `${providerConfigValue.length > 0 ? providerConfigValue : 'Not set'}`));
+							DOM.append(configItem, $(`span.provider-config-value${(providerConfigValue ?? '').length > 0 ? '' : '.incomplete'}`, undefined, `${(providerConfigValue ?? '').length > 0 ? providerConfigValue : 'Not set'}`));
 						});
 				} else {
 					DOM.append(configItem, $('span.provider-config-key', undefined, `${humanReadableModelConfigKey[key]}: `));

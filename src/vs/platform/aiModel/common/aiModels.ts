@@ -41,7 +41,6 @@ export interface AzureOpenAIModelProviderConfig {
 
 export interface GenericModelProviderConfig {
 	readonly type: Exclude<ProviderType, 'azure-openai'>;
-	readonly modelId?: string;
 }
 
 export type ModelProviderConfig = AzureOpenAIModelProviderConfig | GenericModelProviderConfig;
@@ -150,13 +149,12 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 				type: 'codestory'
 			}
 		},
-		'Gpt4O': {
+		'gpt-4o': {
 			name: 'GPT-4o',
 			contextLength: 128000,
 			temperature: 0.2,
 			provider: {
-				type: 'openai-default',
-				modelId: 'gpt-4o'
+				type: 'openai-default'
 			}
 		},
 		'o1-mini': {
@@ -164,8 +162,7 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			contextLength: 128000,
 			temperature: 0.2,
 			provider: {
-				type: 'openai-default',
-				modelId: 'o1-mini'
+				type: 'openai-default'
 			}
 		},
 		'o1-preview': {
@@ -173,35 +170,31 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			contextLength: 128000,
 			temperature: 0.2,
 			provider: {
-				type: 'openai-default',
-				modelId: 'o1-preview'
+				type: 'openai-default'
 			}
 		},
-		'GeminiPro1.5': {
+		'gemini-1.5-pro': {
 			name: 'Gemini 1.5 Pro',
 			contextLength: 1000000,
 			temperature: 0.2,
 			provider: {
 				type: 'geminipro',
-				modelId: 'gemini-1.5-pro'
 			}
 		},
-		'Qwen2.5Coder': {
+		'qwen/qwen-2.5-coder-32b-instruct': {
 			name: 'Qwen2.5 Coder 32B Instruct',
 			contextLength: 32768,
 			temperature: 0.2,
 			provider: {
 				type: 'open-router',
-				modelId: 'qwen/qwen-2.5-coder-32b-instruct'
 			}
 		},
-		'Deepseek2.5': {
+		'deepseek/deepseek-chat': {
 			name: 'DeepSeek V2.5',
 			contextLength: 65536,
 			temperature: 0.2,
 			provider: {
 				type: 'open-router',
-				modelId: 'deepseek/deepseek-chat'
 			}
 		}
 	},

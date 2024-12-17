@@ -26,7 +26,7 @@ import { IThemeService } from '../../../../platform/theme/common/themeService.js
 import { COMMAND_CENTER_BORDER } from '../../../common/theme.js';
 import { IModelSelectionEditingService } from '../../../services/aiModel/common/aiModelEditing.js';
 import { ModelSelectionEditorModel } from '../../../services/preferences/browser/modelSelectionEditorModel.js';
-import { IModelItemEntry, IProviderItem, IProviderItemEntry } from '../../../services/preferences/common/preferences.js';
+import { IModelItemEntry, IProviderItem, IProviderItemEntry, isModelItemConfigComplete, isProviderItemConfigComplete } from '../../../services/preferences/common/preferences.js';
 import './media/modelSelectionWidgets.css';
 
 export const defaultModelIcon = registerIcon('default-model-icon', Codicon.debugBreakpointDataUnverified, nls.localize('defaultModelIcon', 'Icon for the default model.'));
@@ -239,7 +239,14 @@ export class EditModelConfigurationWidget extends Widget {
 	}
 
 	private registerProviders(providers: IProviderItem[], defaultProviderName: ProviderConfig['name']): void {
-		this.providerValue.setOptions(providers.map(providerItem => ({ text: providerItem.name })));
+		this.providerValue.setOptions(providers.map(providerItem => {
+			const isProviderConfigComplete = isProviderItemConfigComplete(providerItem);
+			return {
+				text: providerItem.name,
+				decoratorRight: isProviderConfigComplete ? '' : 'Not configured',
+				isDisabled: !isProviderConfigComplete
+			};
+		}));
 		this.providerValue.select(providers.findIndex(provider => provider.name === defaultProviderName));
 		this._register(this.providerValue.onDidSelect((e) => {
 			const provider = providers[e.index];
@@ -295,7 +302,7 @@ export class EditModelConfigurationWidget extends Widget {
 			this.fieldItems.push(fieldValueContainer);
 			const fieldValue = new InputBox(fieldValueContainer, this.contextViewService, { inputBoxStyles: defaultInputBoxStyles });
 			fieldValue.element.classList.add('edit-model-widget-field-value');
-			fieldValue.value = entry.modelItem.providerConfig[key as keyof ModelProviderConfig].toString();
+			fieldValue.value = entry.modelItem.providerConfig[key as keyof ModelProviderConfig]?.toString() ?? '';
 			this._register(fieldValue.onDidChange((e) => {
 				this.updateModelItemEntry({
 					modelItem: {
@@ -342,7 +349,7 @@ export class EditModelConfigurationWidget extends Widget {
 		if (this.modelItemEntry) {
 			const initialModelItem = ModelSelectionEditorModel.getLanguageModelItem(this.initialModelItemEntry!);
 			const updatedModelItem = ModelSelectionEditorModel.getLanguageModelItem(this.modelItemEntry);
-			if (equals(initialModelItem, updatedModelItem)) {
+			if (equals(initialModelItem, updatedModelItem) || !isModelItemConfigComplete(this.modelItemEntry.modelItem)) {
 				this.saveButton.enabled = false;
 			} else {
 				this.saveButton.enabled = true;
@@ -451,9 +458,9 @@ export class EditProviderConfigurationWidget extends Widget {
 
 		this.saveButton = this._register(new Button(footerContainer, {
 			...defaultButtonStyles,
-			title: nls.localize('editModelConfiguration.save', "Save")
+			title: nls.localize('editProviderConfiguration.save', "Save")
 		}));
-		this.saveButton.label = nls.localize('editModelConfiguration.save', "Save");
+		this.saveButton.label = nls.localize('editProviderConfiguration.save', "Save");
 		this.saveButton.enabled = false;
 		this._register(this.saveButton.onDidClick(async () => await this.save()));
 
