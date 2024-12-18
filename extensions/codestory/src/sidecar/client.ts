@@ -50,7 +50,12 @@ export class RepoRef {
 	}
 
 	getRepresentation(): string {
-		return `${this._backend}/${this._path}`;
+		const value = `${this._backend}/${this._path}`;
+		if (this._path === '') {
+			// we return the base path over here in case nothing is open in aide
+			return `${this._backend}/${path.parse(process.cwd()).root}`;
+		}
+		return value;
 	}
 
 	getPath(): string {
@@ -1063,7 +1068,7 @@ export class SideCarClient {
 			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query),
 			agent_mode: agentMode.toString(),
 			repo_ref: repoRef.getRepresentation(),
-			root_directory: vscode.workspace.rootPath,
+			root_directory: vscode.workspace.rootPath ?? '',
 			project_labels: projectLabels,
 			codebase_search: codebaseSearch,
 			access_token: workosAccessToken,
@@ -1116,7 +1121,7 @@ export class SideCarClient {
 			editor_url: editorUrl,
 			problem_statement: query,
 			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query),
-			root_directory: vscode.workspace.rootPath,
+			root_directory: vscode.workspace.rootPath ?? '',
 			access_token: workosAccessToken,
 			model_configuration: sideCarModelConfiguration,
 		};
@@ -1423,7 +1428,7 @@ export class SideCarClient {
 			agent_mode: agentMode.toString(),
 			repo_ref: repoRef.getRepresentation(),
 			project_labels: projectLabels,
-			root_directory: vscode.workspace.rootPath,
+			root_directory: vscode.workspace.rootPath ?? '',
 			codebase_search: false,
 			access_token: workosAccessToken,
 			model_configuration: sideCarModelConfiguration,
@@ -1582,7 +1587,7 @@ export class SideCarClient {
 			request_id: threadId,
 			user_context: await newConvertVSCodeVariableToSidecar(variables),
 			active_window_data: activeWindowDataForProbing,
-			root_directory: vscode.workspace.rootPath,
+			root_directory: vscode.workspace.rootPath ?? '',
 			codebase_search: codebaseSearch,
 			anchor_editing: isAnchorEditing,
 			enable_import_nodes: false,
