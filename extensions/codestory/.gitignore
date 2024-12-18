@@ -1,9 +1,14 @@
 out
 dist
-!src/devtools/react/dist
+src/devtools/react/dist
 node_modules
 .vscode-test/
 *.vsix
+
+# Ignore built files
+media/*.js
+media/codicon.css
+media/codicon.ttf
 
 # MacOS
 ## General

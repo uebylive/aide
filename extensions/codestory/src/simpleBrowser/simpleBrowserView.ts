@@ -5,8 +5,7 @@
 
 import * as vscode from 'vscode';
 import { Disposable } from './dispose';
-import { getNonce } from '../../utilities/getNonce';
-import path from 'path';
+import { getNonce } from '../utilities/getNonce';
 import crypto from 'crypto';
 
 function generateId() {
@@ -25,7 +24,6 @@ const enabledHosts = new Set<string>([
 ]);
 
 const protocols = ['http', 'https'];
-const simpleBrowserPreviewPath = path.join('out', 'simpleBrowser');
 
 export class SimpleBrowserView extends Disposable {
 
@@ -34,7 +32,7 @@ export class SimpleBrowserView extends Disposable {
 
 	private static getWebviewLocalResourceRoots(extensionUri: vscode.Uri): readonly vscode.Uri[] {
 		return [
-			vscode.Uri.joinPath(extensionUri, simpleBrowserPreviewPath)
+			vscode.Uri.joinPath(extensionUri, 'media')
 		];
 	}
 
@@ -118,9 +116,9 @@ export class SimpleBrowserView extends Disposable {
 	}
 
 	private getHtml(url: string) {
-		const mainJs = this.extensionResourceUrl(simpleBrowserPreviewPath, 'preview', 'index.js');
-		const mainCss = this.extensionResourceUrl(simpleBrowserPreviewPath, 'preview', 'main.css');
-		const codiconsUri = this.extensionResourceUrl(simpleBrowserPreviewPath, 'browser', 'media', 'codicon.css');
+		const mainJs = this.extensionResourceUrl('media', 'index.js');
+		const mainCss = this.extensionResourceUrl('media', 'index.css');
+		const codiconsUri = this.extensionResourceUrl('media', 'codicon.css');
 
 		const webview = this._webviewPanel.webview;
 		const nonce = getNonce();

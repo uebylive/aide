@@ -140,11 +140,11 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
-    "build-preview": "node ./esbuild-preview",
     "compile": "gulp compile-extension:codestory && npm run build-preview",
-    "compile-web": "npx webpack-cli --config extension-browser.webpack.config --mode none && npm run build-preview",
-    "watch": "gulp watch-extension:codestory",
+    "watch": "npm run build-preview && gulp watch-extension:codestory",
+    "vscode:prepublish": "npm run compile && npm run build-preview",
+    "build-preview": "node ./esbuild-preview",
+    "compile-web": "npx webpack-cli --config extension-browser.webpack.config --mode none",
     "watch-web": "npx webpack-cli --config extension-browser.webpack.config --mode none --watch --info-verbosity verbose"
   },
   "devDependencies": {
@@ -156,8 +156,7 @@
     "@types/semver": "^7.5.8",
     "@types/uuid": "^9.0.2",
     "css-loader": "^7.1.2",
-    "style-loader": "^4.0.0",
-    "@vscode/codicons": "^0.0.36"
+    "style-loader": "^4.0.0"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.0.1",

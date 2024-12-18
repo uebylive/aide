@@ -28,7 +28,7 @@ import { getUniqueId } from './utilities/uniqueId';
 import { ProjectContext } from './utilities/workspaceContext';
 import { findPortPosition } from './utilities/port';
 import { ReactDevtoolsManager } from './devtools/react/DevtoolsManager';
-import { SimpleBrowserManager } from './simpleBrowser/browser/simpleBrowserManager';
+import { SimpleBrowserManager } from './simpleBrowser/simpleBrowserManager';
 
 export let SIDECAR_CLIENT: SideCarClient | null = null;
 

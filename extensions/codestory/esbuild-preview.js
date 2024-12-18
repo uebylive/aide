@@ -6,13 +6,12 @@
 const path = require('path');
 const fs = require('fs');
 
-const srcDir = path.join(__dirname, 'src', 'simpleBrowser', 'preview');
-const outDir = path.join(__dirname, 'out', 'simpleBrowser', 'preview');
+const srcDir = path.join(__dirname, 'preview-src');
+const outDir = path.join(__dirname, 'media');
 
 require('../esbuild-webview-common').run({
 	entryPoints: {
 		'index': path.join(srcDir, 'index.ts'),
-		'codicon': path.join(__dirname, 'node_modules', '@vscode', 'codicons', 'dist', 'codicon.css'),
 	},
 	srcDir,
 	outdir: outDir,
@@ -20,18 +19,5 @@ require('../esbuild-webview-common').run({
 		loader: {
 			'.ttf': 'dataurl',
 		}
-	}
+	},
 }, process.argv);
-
-
-// The build hash is available in the metafile
-const buildHash = result.metafile.hash;
-
-// You can write it to a file or use it directly
-const hashContent = `export const ESBUILD_HASH = "${buildHash}";`;
-
-// Write to a file or use it as needed
-fs.writeFileSync(
-	path.join(options.outdir, 'build-hash.js'),
-	hashContent
-);
