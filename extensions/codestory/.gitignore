@@ -1,5 +1,6 @@
 out
 dist
+!src/devtools/react/dist
 node_modules
 .vscode-test/
 *.vsix

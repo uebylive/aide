@@ -30,6 +30,7 @@ import { IEditorGroupsService } from '../../../../services/editor/common/editorG
 import { ACTIVE_GROUP, IEditorService } from '../../../../services/editor/common/editorService.js';
 import { IViewsService } from '../../../../services/views/common/viewsService.js';
 import { AgentMode } from '../../common/aideAgentModel.js';
+import { ICommandService } from '../../../../../platform/commands/common/commands.js';
 
 export interface IChatViewTitleActionContext {
 	chatView: ChatViewPane;
@@ -234,10 +235,34 @@ class OpenChatEditorAction extends Action2 {
 	}
 }
 
+class OpenSimpleBrowserAction extends Action2 {
+	constructor() {
+		super({
+			id: 'workbench.action.aideAgent.openSimpleBrowser',
+			title: localize2('interactiveSession.openSimpleBrowser.label', "Open browser to inspect devtools"),
+			precondition: CONTEXT_CHAT_ENABLED,
+			category: CHAT_CATEGORY,
+			icon: Codicon.browser,
+			menu: {
+				id: MenuId.ViewTitle,
+				when: ContextKeyExpr.equals('view', CHAT_VIEW_ID),
+				group: 'navigation',
+				order: 3
+			}
+		});
+	}
+
+	async run(accessor: ServicesAccessor) {
+		const commandsService = accessor.get(ICommandService);
+		commandsService.executeCommand('codestory.show-simple-browser');
+	}
+}
+
 export function registerChatActions() {
 	registerAction2(OpenChatGlobalAction);
 	registerAction2(ChatHistoryAction);
 	registerAction2(OpenChatEditorAction);
+	registerAction2(OpenSimpleBrowserAction);
 
 	registerAction2(class ClearChatInputHistoryAction extends Action2 {
 		constructor() {

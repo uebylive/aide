@@ -3,32 +3,32 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 class CompletionProviderConfig {
-  /**
-   * Should be called before `InlineCompletionItemProvider` instance is created, so that the singleton
-   * with resolved values is ready for downstream use.
-   */
-  public async init(): Promise<void> {
-  }
+	/**
+	 * Should be called before `InlineCompletionItemProvider` instance is created, so that the singleton
+	 * with resolved values is ready for downstream use.
+	 */
+	public async init(): Promise<void> {
+	}
 
-  public get dynamicMultilineCompletions(): boolean {
-    return true;
-  }
+	public get dynamicMultilineCompletions(): boolean {
+		return true;
+	}
 
-  public get hotStreak(): boolean {
-    return true;
-  }
+	public get hotStreak(): boolean {
+		return true;
+	}
 
-  public get fastPath(): boolean {
-    return true;
-  }
+	public get fastPath(): boolean {
+		return true;
+	}
 
-  public get contextStrategy(): ContextStrategy {
-    return 'sidecar';
-  }
+	public get contextStrategy(): ContextStrategy {
+		return 'sidecar';
+	}
 }
 
 export type ContextStrategy =
-  | 'sidecar';
+	| 'sidecar';
 
 /**
  * A singleton store for completion provider configuration values which allows us to

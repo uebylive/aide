@@ -26,8 +26,13 @@ import { restartSidecarBinary, setupSidecar } from './utilities/setupSidecarBina
 import { sidecarURL, sidecarUseSelfRun } from './utilities/sidecarUrl';
 import { getUniqueId } from './utilities/uniqueId';
 import { ProjectContext } from './utilities/workspaceContext';
+import { findPortPosition } from './utilities/port';
+import { ReactDevtoolsManager } from './devtools/react/DevtoolsManager';
+import { SimpleBrowserManager } from './simpleBrowser/browser/simpleBrowserManager';
 
 export let SIDECAR_CLIENT: SideCarClient | null = null;
+
+const showBrowserCommand = 'codestory.show-simple-browser';
 
 export async function activate(context: vscode.ExtensionContext) {
 	const session = await vscode.csAuthentication.getSession();
@@ -260,6 +265,47 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// shouldn't all listeners have this?
 	context.subscriptions.push(diagnosticsListener);
+
+
+	// Contains bindings to react devtools headless frontend
+	const reactDevtoolsManager = new ReactDevtoolsManager();
+
+
+
+
+	const simpleBrowserManager = new SimpleBrowserManager(context.extensionUri);
+	context.subscriptions.push(simpleBrowserManager);
+	// Open simple browser command
+	context.subscriptions.push(vscode.commands.registerCommand(showBrowserCommand, async (url?: string) => {
+
+		const prefilledUrl = 'http://localhost:3000';
+		const portPosition = findPortPosition(prefilledUrl);
+
+		if (!url) {
+			url = await vscode.window.showInputBox({
+				placeHolder: vscode.l10n.t("https://localhost:3000"),
+				value: prefilledUrl,
+				valueSelection: portPosition ? [portPosition.start, portPosition.end] : undefined,
+				prompt: vscode.l10n.t("Insert the url of your dev server")
+			});
+		}
+
+		if (url) {
+			try {
+				const parsedUrl = new URL(url);
+				if (reactDevtoolsManager.status === 'server-connected') {
+					const proxyedPort = await reactDevtoolsManager.proxy(Number(parsedUrl.port));
+					const proxyedUrl = new URL(parsedUrl);
+					proxyedUrl.port = proxyedPort.toString();
+					simpleBrowserManager.show(proxyedUrl.href);
+				} else {
+					console.error('Devtools are not ready');
+				}
+			} catch (err) {
+				vscode.window.showErrorMessage('The URL you provided is not valid');
+			}
+		}
+	}));
 }
 
 export async function deactivate() {

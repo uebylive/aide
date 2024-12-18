@@ -20,7 +20,7 @@ const copyrightHeaderLines = [
 	' *--------------------------------------------------------------------------------------------*/',
 ];
 
-function hygiene(some, linting = true) {
+function hygiene(some, linting = true, fix = false) {
 	const gulpeslint = require('gulp-eslint');
 	const gulpstylelint = require('./stylelint');
 	const formatter = require('./lib/formatter');
@@ -52,16 +52,15 @@ function hygiene(some, linting = true) {
 				skipNext = false;
 				return;
 			}
-			// If unicode is allowed in comments, trim the comment from the line
 			if (allowInComments) {
-				if (line.match(/\s+(\*)/)) { // Naive multi-line comment check
+				if (line.match(/\s+(\*)/)) {
 					line = '';
 				} else {
 					const index = line.indexOf('\/\/');
 					line = index === -1 ? line : line.substring(0, index);
 				}
 			}
-			// Please do not add symbols that resemble ASCII letters!
+
 			const m = /([^\t\n\r\x20-\x7E⊃⊇✔︎✓🎯⚠️🛑🔴🚗🚙🚕🎉✨❗⇧⌥⌘×÷¦⋯…↑↓￫→←↔⟷·•●◆▼⟪⟫┌└├⏎↩√φ]+)/g.exec(line);
 			if (m) {
 				console.error(
@@ -84,7 +83,7 @@ function hygiene(some, linting = true) {
 			} else if (/^[\t]*[^\s]/.test(line)) {
 				// good indent
 			} else if (/^[\t]* \*/.test(line)) {
-				// block comment using an extra space
+				// block comment line using an extra space
 			} else {
 				console.error(
 					file.relative + '(' + (i + 1) + ',1): Bad whitespace indentation'
@@ -98,7 +97,6 @@ function hygiene(some, linting = true) {
 
 	const copyrights = es.through(function (file) {
 		const lines = file.__lines;
-
 		for (let i = 0; i < copyrightHeaderLines.length; i++) {
 			if (lines[i] !== copyrightHeaderLines[i]) {
 				console.error(file.relative + ': Missing or bad copyright statement');
@@ -106,7 +104,6 @@ function hygiene(some, linting = true) {
 				break;
 			}
 		}
-
 		this.emit('data', file);
 	});
 
@@ -117,13 +114,20 @@ function hygiene(some, linting = true) {
 
 			const original = rawInput.replace(/\r\n/gm, '\n');
 			const formatted = rawOutput.replace(/\r\n/gm, '\n');
+
 			if (original !== formatted) {
-				console.error(
-					`File not formatted. Run the 'Format Document' command to fix it:`,
-					file.relative
-				);
-				errorCount++;
+				if (fix) {
+					// If fixing is enabled, write the corrected output directly
+					fs.writeFileSync(file.path, rawOutput, 'utf8');
+				} else {
+					console.error(
+						`File not formatted. Run the 'Format Document' command to fix it:`,
+						file.relative
+					);
+					errorCount++;
+				}
 			}
+
 			cb(null, file);
 		} catch (err) {
 			cb(err);
@@ -131,11 +135,10 @@ function hygiene(some, linting = true) {
 	});
 
 	let input;
-
 	if (Array.isArray(some) || typeof some === 'string' || !some) {
 		const options = { base: '.', follow: true, allowEmpty: true };
 		if (some) {
-			input = vfs.src(some, options).pipe(filter(all)); // split this up to not unnecessarily filter all a second time
+			input = vfs.src(some, options).pipe(filter(all));
 		} else {
 			input = vfs.src(all, options);
 		}
@@ -148,7 +151,7 @@ function hygiene(some, linting = true) {
 	const yarnLockFilter = filter(['**', '!**/yarn.lock']);
 	const unicodeFilterStream = filter(unicodeFilter, { restore: true });
 
-	const result = input
+	const baseStream = input
 		.pipe(filter((f) => !f.stat.isDirectory()))
 		.pipe(snapshotFilter)
 		.pipe(yarnLockFilter)
@@ -164,35 +167,45 @@ function hygiene(some, linting = true) {
 		.pipe(copyrights);
 
 	const streams = [
-		result.pipe(filter(tsFormattingFilter)).pipe(formatting)
+		baseStream.pipe(filter(tsFormattingFilter)).pipe(formatting)
 	];
 
 	if (linting) {
+		// ESLint with fix support
 		streams.push(
-			result
+			baseStream
 				.pipe(filter(eslintFilter))
-				.pipe(
-					gulpeslint({
-						configFile: '.eslintrc.json'
-					})
-				)
+				.pipe(gulpeslint({
+					configFile: '.eslintrc.json',
+					fix: fix // enable fixing if requested
+				}))
 				.pipe(gulpeslint.formatEach('compact'))
-				.pipe(
-					gulpeslint.results((results) => {
-						errorCount += results.warningCount;
-						errorCount += results.errorCount;
-					})
-				)
+				.pipe(gulpeslint.results((results) => {
+					errorCount += results.warningCount;
+					errorCount += results.errorCount;
+				}))
+				// After ESLint fixes, write them to disk if any fixes were made
+				.pipe(es.map(function (file, cb) {
+					if (file.eslint && file.eslint.fixed) {
+						fs.writeFileSync(file.path, file.contents, 'utf8');
+					}
+					cb(null, file);
+				}))
 		);
+
+		// Stylelint doesn't automatically fix by default here, but if needed, you can add fix logic:
+		// If gulpstylelint supports fix, add `fix: fix` and then a similar write step.
 		streams.push(
-			result.pipe(filter(stylelintFilter)).pipe(gulpstylelint(((message, isError) => {
-				if (isError) {
-					console.error(message);
-					errorCount++;
-				} else {
-					console.warn(message);
-				}
-			})))
+			baseStream
+				.pipe(filter(stylelintFilter))
+				.pipe(gulpstylelint((message, isError) => {
+					if (isError) {
+						console.error(message);
+						errorCount++;
+					} else {
+						console.warn(message);
+					}
+				}))
 		);
 	}
 
@@ -211,9 +224,7 @@ function hygiene(some, linting = true) {
 				if (errorCount > 0) {
 					this.emit(
 						'error',
-						'Hygiene failed with ' +
-						errorCount +
-						` errors. Check 'build / gulpfile.hygiene.js'.`
+						`Hygiene failed with ${errorCount} errors. Check 'build / gulpfile.hygiene.js'.`
 					);
 				} else {
 					this.emit('end');
@@ -224,6 +235,7 @@ function hygiene(some, linting = true) {
 }
 
 module.exports.hygiene = hygiene;
+
 
 function createGitIndexVinyls(paths) {
 	const cp = require('child_process');
