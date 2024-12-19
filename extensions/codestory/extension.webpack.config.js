@@ -16,6 +16,10 @@ module.exports = withDefaults({
 			'request': require.resolve('node-fetch')
 		}
 	},
+	externals: {
+		bufferutil: 'commonjs bufferutil',
+		'utf-8-validate': 'commonjs utf-8-validate',
+	},
 	entry: {
 		extension: './src/extension.ts'
 	}
