@@ -12,7 +12,7 @@ import { IAction } from '../../../../base/common/actions.js';
 import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import { localize } from '../../../../nls.js';
-import { IAIModelSelectionService, ModelProviderConfig, ProviderType, humanReadableModelConfigKey, humanReadableProviderConfigKey, providerTypeValues } from '../../../../platform/aiModel/common/aiModels.js';
+import { IAIModelSelectionService, ILanguageModelItem, ModelProviderConfig, ProviderType, defaultModelSelectionSettings, humanReadableModelConfigKey, humanReadableProviderConfigKey, providerTypeValues } from '../../../../platform/aiModel/common/aiModels.js';
 import { IEditorOptions } from '../../../../platform/editor/common/editor.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { WorkbenchTable } from '../../../../platform/list/browser/listService.js';
@@ -31,6 +31,10 @@ import { EditModelConfigurationWidget, EditProviderConfigurationWidget, defaultM
 import { settingsEditIcon } from './preferencesIcons.js';
 
 const $ = DOM.$;
+
+function checkIfDefaultModel(defaultModels: Record<string, ILanguageModelItem>, modelItem: IModelItem): boolean {
+	return new Set(Object.keys(defaultModels)).has(modelItem.key);
+}
 
 export class ModelSelectionEditor extends EditorPane {
 	static readonly ID: string = 'workbench.editor.modelSelectionEditor';
@@ -200,7 +204,7 @@ export class ModelSelectionEditor extends EditorPane {
 				return;
 			}
 			const activeModelEntry = this.activeModelEntry;
-			if (activeModelEntry) {
+			if (activeModelEntry && !checkIfDefaultModel(defaultModelSelectionSettings.models, activeModelEntry.modelItem)) {
 				this.editModel(activeModelEntry);
 			}
 		}));
@@ -493,8 +497,10 @@ class ModelActionsColumnRenderer implements ITableRenderer<IModelItemEntry, IMod
 	renderElement(modelSelectionItemEntry: IModelItemEntry, index: number, templateData: IModelActionsColumnTemplateData, height: number | undefined): void {
 		templateData.actionBar.clear();
 		const actions: IAction[] = [];
-		actions.push(this.createEditAction(modelSelectionItemEntry));
-		templateData.actionBar.push(actions, { icon: true });
+		if (!checkIfDefaultModel(defaultModelSelectionSettings.models, modelSelectionItemEntry.modelItem)) {
+			actions.push(this.createEditAction(modelSelectionItemEntry));
+			templateData.actionBar.push(actions, { icon: true });
+		}
 	}
 
 	private createEditAction(modelSelectionItemEntry: IModelItemEntry): IAction {

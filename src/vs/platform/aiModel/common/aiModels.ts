@@ -129,6 +129,7 @@ export interface IAIModelSelectionService {
 	getValidatedModelSelectionSettings(): Promise<IModelSelectionSettings>;
 }
 
+// default settings
 export const defaultModelSelectionSettings: IModelSelectionSettings = {
 	slowModel: 'ClaudeSonnet',
 	fastModel: 'ClaudeHaiku',

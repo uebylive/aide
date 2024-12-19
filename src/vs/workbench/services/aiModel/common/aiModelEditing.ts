@@ -194,6 +194,7 @@ export class ModelSelectionEditingService extends Disposable implements IModelSe
 			}
 		} else {
 			const existingNode = json.findNodeAtLocation(json.parseTree(text), jsonPath);
+			// cannot find existing node here
 			if (!existingNode) {
 				return;
 			}
