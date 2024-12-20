@@ -760,7 +760,8 @@ export class ChatWidget extends Disposable implements IChatWidget {
 				return;
 			}
 
-			this.requestInProgress.set(this.viewModel.requestInProgress);
+			const isRequestInProgress = this.viewModel.requestInProgress;
+			this.requestInProgress.set(isRequestInProgress);
 
 			this.onDidChangeItems();
 			if (events.some(e => e?.kind === 'addRequest') && this.visible) {
@@ -908,6 +909,9 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			if ('isPassthrough' in this.viewContext && this.viewContext.isPassthrough) {
 				agentScope = AgentScope.Selection;
 			}
+
+			this.requestInProgress.set(true);
+
 			// scope here is dicated by how the command is run, not on the internal state
 			// of the inputPart which was based on a selector before
 			const result = await this.chatService.sendRequest(this.viewModel.sessionId, input, {
@@ -934,8 +938,12 @@ export class ChatWidget extends Disposable implements IChatWidget {
 							this.input.setValue(question, false);
 						}
 					}
+				}).catch(() => {
+					this.requestInProgress.set(false);
 				});
 				return result.responseCreatedPromise;
+			} else {
+				this.requestInProgress.set(false);
 			}
 		}
 		return undefined;

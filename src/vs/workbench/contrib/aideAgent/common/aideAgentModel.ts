@@ -845,8 +845,16 @@ export class ChatModel extends Disposable implements IChatModel {
 	}
 
 	get requestInProgress(): boolean {
-		const lastExchange = this._exchanges[this._exchanges.length - 1];
-		return !!lastExchange && 'response' in lastExchange && !lastExchange.isComplete;
+		if (this._exchanges.length === 0) {
+			return false;
+		} else {
+			const lastExchange = this._exchanges.at(-1);
+			if (isResponseModel(lastExchange)) {
+				return !lastExchange.isComplete;
+			} else {
+				return true;
+			}
+		}
 	}
 
 	get hasRequests(): boolean {
