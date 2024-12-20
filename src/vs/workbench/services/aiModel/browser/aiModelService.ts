@@ -59,6 +59,12 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 		return this.modelSelection.modelSelection!;
 	}
 
+	async checkIfModelIdIsTaken(modelId: string): Promise<[boolean, takenModel: ILanguageModelItem]> {
+		const modelSelection = await this.getModelSelectionSettings();
+		const takenModel = modelSelection.models[modelId];
+		return [takenModel !== undefined, takenModel];
+	}
+
 	async getValidatedModelSelectionSettings(): Promise<IModelSelectionSettings> {
 		const modelSelection = await this.getModelSelectionSettings();
 		const validatedProviders = Object.keys(modelSelection.providers).reduce((untypedAcc, untypedKey) => {
@@ -134,6 +140,10 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 		}
 		return this.modelConfigValidator(data, token);
 	}
+}
+
+export function checkIfDefaultModel(modelKey: string): boolean {
+	return new Set(Object.keys(defaultModelSelectionSettings.models)).has(modelKey);
 }
 
 class ModelSelection extends Disposable {

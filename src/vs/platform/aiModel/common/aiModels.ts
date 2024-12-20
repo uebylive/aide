@@ -123,7 +123,7 @@ export interface IAIModelSelectionService {
 
 	registerModelConfigValidator(validator: (data: IModelSelectionSettings, token: CancellationToken) => Promise<IModelSelectionValidationResponse>): IDisposable;
 	validateModelConfiguration(data: IModelSelectionSettings, token: CancellationToken): Promise<IModelSelectionValidationResponse>;
-
+	checkIfModelIdIsTaken(modelId: string): Promise<[boolean, takenModel: ILanguageModelItem]>;
 	getDefaultModelSelectionContent(): string;
 	getModelSelectionSettings(): Promise<IModelSelectionSettings>;
 	getValidatedModelSelectionSettings(): Promise<IModelSelectionSettings>;
@@ -241,6 +241,7 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 		},
 	}
 } as const;
+
 
 export interface IModelSelectionValidationResponse {
 	readonly valid: boolean;
