@@ -922,40 +922,40 @@ export class ChatWidget extends Disposable implements IChatWidget {
 				this.requestInProgress.set(false);
 				const errorMessage = localize('editModelConfiguration.modelConfigError', "There is an issue with your \`modelSelection.json\`: \"{0}\"", configValidation.error || 'Invalid configuration');
 				this.notificationService.warn(errorMessage);
-			}
-
-			// scope here is dicated by how the command is run, not on the internal state
-			// of the inputPart which was based on a selector before
-			const result = await this.chatService.sendRequest(this.viewModel.sessionId, input, {
-				agentMode,
-				agentScope,
-				userSelectedModelId: this.inputPart.currentLanguageModel,
-				location: this.location,
-				locationData: this._location.resolveData?.(),
-				parserContext: { selectedAgent: this._lastSelectedAgent },
-				attachedContext: [...this.inputPart.attachedContext.values()]
-			});
-
-			if (result) {
-				this.inputPart.acceptInput(isUserQuery);
-				this._onDidSubmitAgent.fire({ agent: result.agent, slashCommand: result.slashCommand });
-				result.responseCompletePromise.then(() => {
-					const responses = this.viewModel?.getItems().filter(isResponseVM);
-					const lastResponse = responses?.[responses.length - 1];
-					this.chatAccessibilityService.acceptResponse(lastResponse, requestId);
-					if (lastResponse?.result?.nextQuestion) {
-						const { prompt, participant, command } = lastResponse.result.nextQuestion;
-						const question = formatChatQuestion(this.chatAgentService, this.location, prompt, participant, command);
-						if (question) {
-							this.input.setValue(question, false);
-						}
-					}
-				}).catch(() => {
-					this.requestInProgress.set(false);
-				});
-				return result.responseCreatedPromise;
 			} else {
-				this.requestInProgress.set(false);
+				// scope here is dicated by how the command is run, not on the internal state
+				// of the inputPart which was based on a selector before
+				const result = await this.chatService.sendRequest(this.viewModel.sessionId, input, {
+					agentMode,
+					agentScope,
+					userSelectedModelId: this.inputPart.currentLanguageModel,
+					location: this.location,
+					locationData: this._location.resolveData?.(),
+					parserContext: { selectedAgent: this._lastSelectedAgent },
+					attachedContext: [...this.inputPart.attachedContext.values()]
+				});
+
+				if (result) {
+					this.inputPart.acceptInput(isUserQuery);
+					this._onDidSubmitAgent.fire({ agent: result.agent, slashCommand: result.slashCommand });
+					result.responseCompletePromise.then(() => {
+						const responses = this.viewModel?.getItems().filter(isResponseVM);
+						const lastResponse = responses?.[responses.length - 1];
+						this.chatAccessibilityService.acceptResponse(lastResponse, requestId);
+						if (lastResponse?.result?.nextQuestion) {
+							const { prompt, participant, command } = lastResponse.result.nextQuestion;
+							const question = formatChatQuestion(this.chatAgentService, this.location, prompt, participant, command);
+							if (question) {
+								this.input.setValue(question, false);
+							}
+						}
+					}).catch(() => {
+						this.requestInProgress.set(false);
+					});
+					return result.responseCreatedPromise;
+				} else {
+					this.requestInProgress.set(false);
+				}
 			}
 		}
 		return undefined;
