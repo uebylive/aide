@@ -260,7 +260,7 @@ export interface IPreferencesService {
 	openGlobalKeybindingSettings(textual: boolean, options?: IKeybindingsEditorOptions): Promise<void>;
 	openDefaultKeybindingsFile(): Promise<IEditorPane | undefined>;
 	openModelSelectionSettings(textual: boolean): Promise<void>;
-	OpenDefaultModelSelectionFile(): Promise<IEditorPane | undefined>;
+	openDefaultModelSelectionFile(): Promise<IEditorPane | undefined>;
 	openLanguageSpecificSettings(languageId: string, options?: IOpenSettingsOptions): Promise<IEditorPane | undefined>;
 	getEditableSettingsURI(configurationTarget: ConfigurationTarget, resource?: URI): Promise<URI | null>;
 	getSetting(settingId: string): ISetting | undefined;

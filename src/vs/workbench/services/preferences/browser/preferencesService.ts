@@ -134,7 +134,7 @@ export class PreferencesService extends Disposable implements IPreferencesServic
 	}
 
 	hasDefaultSettingsContent(uri: URI): boolean {
-		return this.isDefaultSettingsResource(uri) || isEqual(uri, this.defaultSettingsRawResource) || isEqual(uri, this.defaultKeybindingsResource);
+		return this.isDefaultSettingsResource(uri) || isEqual(uri, this.defaultSettingsRawResource) || isEqual(uri, this.defaultKeybindingsResource) || isEqual(uri, this.defaultModelSelectionsResource);
 	}
 
 	getDefaultSettingsContent(uri: URI): string | undefined {
@@ -377,7 +377,7 @@ export class PreferencesService extends Disposable implements IPreferencesServic
 		return this.editorService.openEditor({ resource: this.defaultKeybindingsResource, label: nls.localize('defaultKeybindings', "Default Keybindings") });
 	}
 
-	OpenDefaultModelSelectionFile(): Promise<IEditorPane | undefined> {
+	openDefaultModelSelectionFile(): Promise<IEditorPane | undefined> {
 		return this.editorService.openEditor({ resource: this.defaultModelSelectionsResource, label: nls.localize('defaultModelSelections', "Default Model Selection") });
 	}
 
