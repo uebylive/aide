@@ -580,7 +580,7 @@ export type IdentifierNodeType = {
 // 		}
 // 	]
 // }
-export async function getSideCarModelConfiguration(modelSelection: ModelSelection, workosAccessToken: string | undefined = undefined) {
+export async function getSideCarModelConfiguration(modelSelection: ModelSelection, workosAccessToken: string) {
 	const slowModel = modelSelection.slowModel;
 	const fastModel = modelSelection.fastModel;
 	const models = modelSelection.models;
@@ -611,7 +611,7 @@ export async function getSideCarModelConfiguration(modelSelection: ModelSelectio
 }
 
 // The various types are present in aiModels.ts
-function getProviderConfiguration(type: string, value: ModelProviderConfiguration, workosAccessToken: string | undefined) {
+function getProviderConfiguration(type: string, value: ModelProviderConfiguration, workosAccessToken: string) {
 	if (type === 'openai-default') {
 		return {
 			'OpenAI': {

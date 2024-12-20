@@ -10,14 +10,16 @@ import { InputBox } from '../../../../base/browser/ui/inputbox/inputBox.js';
 import { ISelectOptionItem, SelectBox } from '../../../../base/browser/ui/selectBox/selectBox.js';
 import { Widget } from '../../../../base/browser/ui/widget.js';
 import { Promises } from '../../../../base/common/async.js';
+import { CancellationTokenSource } from '../../../../base/common/cancellation.js';
 import { Codicon } from '../../../../base/common/codicons.js';
 import { Emitter } from '../../../../base/common/event.js';
 import { KeyCode } from '../../../../base/common/keyCodes.js';
 import { equals } from '../../../../base/common/objects.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import * as nls from '../../../../nls.js';
-import { IAIModelSelectionService, ILanguageModelItem, ModelProviderConfig, ProviderConfig, defaultModelSelectionSettings, humanReadableModelConfigKey, humanReadableProviderConfigKey, modelConfigKeyDescription } from '../../../../platform/aiModel/common/aiModels.js';
+import { IAIModelSelectionService, ModelProviderConfig, ProviderConfig, defaultModelSelectionSettings, humanReadableModelConfigKey, humanReadableProviderConfigKey, modelConfigKeyDescription } from '../../../../platform/aiModel/common/aiModels.js';
 import { IContextViewService } from '../../../../platform/contextview/browser/contextView.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { defaultButtonStyles, defaultInputBoxStyles, defaultSelectBoxStyles } from '../../../../platform/theme/browser/defaultStyles.js';
 import { asCssVariable, editorWidgetForeground, widgetShadow } from '../../../../platform/theme/common/colorRegistry.js';
 import { registerIcon } from '../../../../platform/theme/common/iconRegistry.js';
@@ -66,7 +68,8 @@ export class EditModelConfigurationWidget extends Widget {
 		@IContextViewService private readonly contextViewService: IContextViewService,
 		@IThemeService private readonly _themeService: IThemeService,
 		@IModelSelectionEditingService private readonly modelSelectionEditingService: IModelSelectionEditingService,
-		@IAIModelSelectionService private readonly aiModelSelectionService: IAIModelSelectionService
+		@IAIModelSelectionService private readonly aiModelSelectionService: IAIModelSelectionService,
+		@IInstantiationService private readonly instantiationService: IInstantiationService
 	) {
 		super();
 
@@ -172,22 +175,6 @@ export class EditModelConfigurationWidget extends Widget {
 		this._register(this.saveButton.onDidClick(async () => await this.save()));
 
 		this.layout();
-	}
-
-	private showIncompleteConfigurationMessage() {
-		this.messageArea.textContent = nls.localize('editModelConfiguration.incompleteConfiguration', "The configuration is incomplete. Please complete the configuration.");
-	}
-
-	private showIncompleteProviderConfigurationMessage(provider: IProviderItem) {
-		this.messageArea.textContent = nls.localize('editModelConfiguration.incompleteProviderConfiguration', "The provider configuration for {0} is incomplete. Please complete the provider configuration.", provider.name);
-	}
-
-	private showCantEditDefaultModelMessage(takenModel: ILanguageModelItem) {
-		this.messageArea.textContent = nls.localize('editModelConfiguration.cantEditDefaultModel', "You can't edit a default model. Please use \"{0}\" as provided in the model list.", takenModel.name);
-	}
-
-	private showModelIdTakenMessage(takenModel: ILanguageModelItem) {
-		this.messageArea.textContent = nls.localize('editModelConfiguration.modelIdTaken', "The model id is already taken, refer to the existing model \"{0}\" to edit it.", takenModel.name);
 	}
 
 	private updateStyles(): void {
@@ -396,35 +383,51 @@ export class EditModelConfigurationWidget extends Widget {
 		this._domNode.setDisplay('none');
 		this.resetFieldItems();
 		this._isVisible = false;
+		this.saveButton.enabled = true;
 		this._onHide.fire();
 	}
 
 	private async save(): Promise<void> {
+		this.saveButton.enabled = false;
 		if (this.modelItemEntry) {
 			const initialModelItem = this.initialModelItemEntry!.modelItem;
 			const updatedModelItem = this.modelItemEntry.modelItem;
 
 			const isProviderComplete = isProviderItemConfigComplete(this.modelItemEntry.modelItem.provider);
 			if (!isProviderComplete) {
-				this.showIncompleteProviderConfigurationMessage(this.modelItemEntry.modelItem.provider);
+				this.messageArea.textContent = nls.localize('editModelConfiguration.incompleteProviderConfiguration', "The provider configuration for {0} is incomplete. Please complete the provider configuration.", this.modelItemEntry.modelItem.provider.name);
+				this.saveButton.enabled = true;
 				return;
 			}
 
 			const isComplete = isModelItemConfigComplete(this.modelItemEntry.modelItem);
 			if (!isComplete) {
-				this.showIncompleteConfigurationMessage();
+				this.messageArea.textContent = nls.localize('editModelConfiguration.incompleteConfiguration', "The configuration is incomplete. Please complete the configuration.");
+				this.saveButton.enabled = true;
 				return;
 			}
 			const isDefaultModelId = checkIfDefaultModel(this.modelItemEntry.modelItem.key);
 			if (isDefaultModelId) {
 				const takenDefaultModel = defaultModelSelectionSettings.models[this.modelItemEntry.modelItem.key];
-				this.showCantEditDefaultModelMessage(takenDefaultModel);
+				this.messageArea.textContent = nls.localize('editModelConfiguration.cantEditDefaultModel', "You can't edit a default model. Please use \"{0}\" as provided in the model list.", takenDefaultModel.name);
+				this.saveButton.enabled = true;
 				return;
 			}
 
 			const [isModelIdTaken, takenModel] = await this.aiModelSelectionService.checkIfModelIdIsTaken(this.modelItemEntry.modelItem.key);
-			if (isModelIdTaken) {
-				this.showModelIdTakenMessage(takenModel);
+
+			if (isModelIdTaken && takenModel.name !== initialModelItem.name) {
+				this.messageArea.textContent = nls.localize('editModelConfiguration.modelIdTaken', "The model id is already taken, refer to the existing model \"{0}\" to edit it.", takenModel.name);
+				this.saveButton.enabled = true;
+				return;
+			}
+			const modelSelectionSettings = await this.aiModelSelectionService.getValidatedModelSelectionSettings();
+			const cancellationTokenSource = this._register(this.instantiationService.createInstance(CancellationTokenSource));
+			const configValidation = await this.aiModelSelectionService.validateModelConfiguration(modelSelectionSettings, cancellationTokenSource.token);
+
+			if (!configValidation.valid) {
+				this.messageArea.textContent = nls.localize('editModelConfiguration.modelConfigError', "There is an issue with your \`modelSelection.json\`: \"{0}\"", configValidation.error || 'Invalid configuration');
+				this.saveButton.enabled = true;
 				return;
 			}
 
@@ -450,6 +453,7 @@ export class EditModelConfigurationWidget extends Widget {
 			} else {
 				await this.modelSelectionEditingService.editModelConfiguration(updatedModelItem.key, lmItem);
 			}
+			this.saveButton.enabled = true;
 			this.hide();
 		}
 	}

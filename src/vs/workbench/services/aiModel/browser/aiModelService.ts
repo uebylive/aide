@@ -103,6 +103,7 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 		(['slowModel', 'fastModel'] as const).forEach(modelType => {
 			const chosenModelKey = modelSelection[modelType];
 			if (!mutableSettings.models[chosenModelKey]) {
+				console.warn(`Invalid model selection setting for ${modelType}: ${chosenModelKey}. Falling back to default.`);
 				// Fallback to default
 				const defaultKey = defaultModelSelectionSettings[modelType];
 				const defaultModel = defaultModelSelectionSettings.models[defaultKey] as ILanguageModelItem;
