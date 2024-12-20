@@ -118,10 +118,13 @@ export function isModelSelectionSettings(obj: any): obj is IModelSelectionSettin
 export const IAIModelSelectionService = createDecorator<IAIModelSelectionService>('aiModelSelectionService');
 export interface IAIModelSelectionService {
 	readonly _serviceBrand: undefined;
-
 	onDidChangeModelSelection: Event<IModelSelectionSettings>;
-
 	registerModelConfigValidator(validator: (data: IModelSelectionSettings, token: CancellationToken) => Promise<IModelSelectionValidationResponse>): IDisposable;
+	/**
+	 * Sends a request to sidecar using the model configuration's `slowModel`. Pings the provider of the indicated `slowModel` to see if it's valid.
+	 * @param data IModelSelectionSettings
+	 * @param token CancellationToken
+	 */
 	validateModelConfiguration(data: IModelSelectionSettings, token: CancellationToken): Promise<IModelSelectionValidationResponse>;
 	checkIfModelIdIsTaken(modelId: string): Promise<[boolean, takenModel: ILanguageModelItem]>;
 	getDefaultModelSelectionContent(): string;

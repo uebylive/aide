@@ -393,28 +393,28 @@ export class EditModelConfigurationWidget extends Widget {
 			const initialModelItem = this.initialModelItemEntry!.modelItem;
 			const updatedModelItem = this.modelItemEntry.modelItem;
 
-			const isProviderComplete = isProviderItemConfigComplete(this.modelItemEntry.modelItem.provider);
+			const isProviderComplete = isProviderItemConfigComplete(updatedModelItem.provider);
 			if (!isProviderComplete) {
-				this.messageArea.textContent = nls.localize('editModelConfiguration.incompleteProviderConfiguration', "The provider configuration for {0} is incomplete. Please complete the provider configuration.", this.modelItemEntry.modelItem.provider.name);
+				this.messageArea.textContent = nls.localize('editModelConfiguration.incompleteProviderConfiguration', "The provider configuration for {0} is incomplete. Please complete the provider configuration.", updatedModelItem.provider.name);
 				this.saveButton.enabled = true;
 				return;
 			}
 
-			const isComplete = isModelItemConfigComplete(this.modelItemEntry.modelItem);
+			const isComplete = isModelItemConfigComplete(updatedModelItem);
 			if (!isComplete) {
 				this.messageArea.textContent = nls.localize('editModelConfiguration.incompleteConfiguration', "The configuration is incomplete. Please complete the configuration.");
 				this.saveButton.enabled = true;
 				return;
 			}
-			const isDefaultModelId = checkIfDefaultModel(this.modelItemEntry.modelItem.key);
+			const isDefaultModelId = checkIfDefaultModel(updatedModelItem.key);
 			if (isDefaultModelId) {
-				const takenDefaultModel = defaultModelSelectionSettings.models[this.modelItemEntry.modelItem.key];
+				const takenDefaultModel = defaultModelSelectionSettings.models[updatedModelItem.key];
 				this.messageArea.textContent = nls.localize('editModelConfiguration.cantEditDefaultModel', "You can't edit a default model. Please use \"{0}\" as provided in the model list.", takenDefaultModel.name);
 				this.saveButton.enabled = true;
 				return;
 			}
 
-			const [isModelIdTaken, takenModel] = await this.aiModelSelectionService.checkIfModelIdIsTaken(this.modelItemEntry.modelItem.key);
+			const [isModelIdTaken, takenModel] = await this.aiModelSelectionService.checkIfModelIdIsTaken(updatedModelItem.key);
 
 			if (isModelIdTaken && takenModel.name !== initialModelItem.name) {
 				this.messageArea.textContent = nls.localize('editModelConfiguration.modelIdTaken', "The model id is already taken, refer to the existing model \"{0}\" to edit it.", takenModel.name);
@@ -423,7 +423,14 @@ export class EditModelConfigurationWidget extends Widget {
 			}
 			const modelSelectionSettings = await this.aiModelSelectionService.getValidatedModelSelectionSettings();
 			const cancellationTokenSource = this._register(this.instantiationService.createInstance(CancellationTokenSource));
+
+			const previousSlowModel = modelSelectionSettings.slowModel;
+			// Temporarily set as active model
+			await this.modelSelectionEditingService.editModelSelection('slowModel', updatedModelItem.key);
+			// Check if it's valid
 			const configValidation = await this.aiModelSelectionService.validateModelConfiguration(modelSelectionSettings, cancellationTokenSource.token);
+			// Reset the previous slow model
+			await this.modelSelectionEditingService.editModelSelection('slowModel', previousSlowModel);
 
 			if (!configValidation.valid) {
 				this.messageArea.textContent = nls.localize('editModelConfiguration.modelConfigError', "There is an issue with your \`modelSelection.json\`: \"{0}\"", configValidation.error || 'Invalid configuration');
@@ -453,6 +460,10 @@ export class EditModelConfigurationWidget extends Widget {
 			} else {
 				await this.modelSelectionEditingService.editModelConfiguration(updatedModelItem.key, lmItem);
 			}
+			// Set new edited model as active one if all goes well
+			// Temporarily set as active model
+			await this.modelSelectionEditingService.editModelSelection('slowModel', updatedModelItem.key);
+
 			this.saveButton.enabled = true;
 			this.hide();
 		}
