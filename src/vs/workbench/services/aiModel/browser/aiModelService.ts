@@ -11,9 +11,8 @@ import { IJSONSchema } from '../../../../base/common/jsonSchema.js';
 import { Disposable, DisposableStore, IDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
 import * as objects from '../../../../base/common/objects.js';
 import { dirname } from '../../../../base/common/resources.js';
-import { Mutable } from '../../../../base/common/types.js';
 import * as nls from '../../../../nls.js';
-import { ApiKeyOnlyProviderConfig, apiKeyOnlyProviders, defaultModelSelectionSettings, IAIModelSelectionService, ILanguageModelItem, IModelProviders, IModelSelectionSettings, IModelSelectionValidationResponse, isModelSelectionSettings, ModelConfigValidator, noConfigurationProviders, openAICompatibleProvider, OpenAICompatibleProviderConfig, ProviderConfig, ProviderType } from '../../../../platform/aiModel/common/aiModels.js';
+import { ApiKeyOnlyProviderConfig, apiKeyOnlyProviders, defaultModelSelectionSettings, IAIModelSelectionService, ILanguageModelItem, IModelSelectionSettings, IModelSelectionValidationResponse, isModelSelectionSettings, ModelConfigValidator, noConfigurationProviders, openAICompatibleProvider, OpenAICompatibleProviderConfig, ProviderConfig } from '../../../../platform/aiModel/common/aiModels.js';
 import { FileOperation, IFileService } from '../../../../platform/files/common/files.js';
 import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
 import { Extensions, IJSONContributionRegistry } from '../../../../platform/jsonschemas/common/jsonContributionRegistry.js';
@@ -21,6 +20,18 @@ import { ILogService } from '../../../../platform/log/common/log.js';
 import { Registry } from '../../../../platform/registry/common/platform.js';
 import { IUriIdentityService } from '../../../../platform/uriIdentity/common/uriIdentity.js';
 import { IUserDataProfileService } from '../../userDataProfile/common/userDataProfile.js';
+
+export const allowedProviders = new Set([
+	'codestory',
+	'openai-default',
+	'togetherai',
+	'openai-compatible',
+	'ollama',
+	'anthropic',
+	'fireworkai',
+	'geminipro',
+	'open-router'
+]);
 
 export class AIModelsService extends Disposable implements IAIModelSelectionService {
 	_serviceBrand: undefined;
@@ -67,65 +78,125 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 
 	async getValidatedModelSelectionSettings(): Promise<IModelSelectionSettings> {
 		const modelSelection = await this.getModelSelectionSettings();
-		const validatedProviders = Object.keys(modelSelection.providers).reduce((untypedAcc, untypedKey) => {
-			const key = untypedKey as ProviderType;
-			const acc = untypedAcc as { [key: string]: ProviderConfig };
-			const provider = modelSelection.providers[key] as ProviderConfig;
-			if (openAICompatibleProvider.includes(key as typeof openAICompatibleProvider[number]) && (provider as OpenAICompatibleProviderConfig).apiBase.length > 0 && (provider as OpenAICompatibleProviderConfig).apiKey.length > 0) {
-				acc[key] = provider;
-			} else if (apiKeyOnlyProviders.includes(key as typeof apiKeyOnlyProviders[number]) && (provider as ApiKeyOnlyProviderConfig).apiKey.length > 0) {
-				acc[key] = provider;
-			} else if (noConfigurationProviders.includes(key as typeof noConfigurationProviders[number])) {
-				acc[key] = provider;
-			}
-			return acc as IModelProviders;
-		}, {} as IModelProviders);
-		const validatedModels = Object.keys(modelSelection.models).reduce((untypedAcc, key) => {
-			const untypedValidatedProviders = validatedProviders as { [key: string]: ProviderConfig };
-			const model = modelSelection.models[key];
-			const acc = untypedAcc as { [key: string]: ILanguageModelItem };
-			if (model.name.length > 0
-				&& model.contextLength > 0
-				&& model.temperature >= 0 && model.temperature <= 2
-				&& model.provider
-				&& untypedValidatedProviders[model.provider.type]) {
-				if (model.provider.type === 'azure-openai' && model.provider.deploymentID.length > 0) {
-					acc[key] = model;
-				} else if (model.provider.type === 'codestory'
-					|| model.provider.type === 'openai-default'
-					|| model.provider.type === 'togetherai'
-					|| model.provider.type === 'openai-compatible'
-					|| model.provider.type === 'ollama'
-					|| model.provider.type === 'anthropic'
-					|| model.provider.type === 'fireworkai'
-					|| model.provider.type === 'geminipro'
-					|| model.provider.type === 'open-router') {
-					acc[key] = model;
-				}
-			}
-			return acc;
-		}, {} as Record<string, ILanguageModelItem>);
-		// TODO(ghostwriternr): Handle this better once we start charging our users.
-		let modelSelectionSettings = {
+
+		// Validate providers
+		const validatedProviders = this.validateProviders(modelSelection.providers);
+
+		// Validate models and check for duplicates
+		const validatedModels = this.validateModels(modelSelection.models, validatedProviders);
+
+		// Create a mutable copy of the selection settings,
+		// since we need to adjust them if defaults are required.
+		const mutableSettings: {
+			slowModel: string;
+			fastModel: string;
+			models: Record<string, ILanguageModelItem>;
+			providers: Record<string, ProviderConfig>;
+		} = {
 			slowModel: modelSelection.slowModel,
 			fastModel: modelSelection.fastModel,
-			models: validatedModels,
-			providers: validatedProviders
-		} as IModelSelectionSettings;
-		['slowModel', 'fastModel'].forEach(untypedModelType => {
-			const untypedModelSelectionSettings = modelSelectionSettings as Mutable<Omit<IModelSelectionSettings, 'providers'>> & { ['providers']: { [key: string]: ProviderConfig } };
-			const modelType = untypedModelType as 'slowModel' | 'fastModel';
-			if (!validatedModels[modelSelection[modelType]]) {
-				untypedModelSelectionSettings[modelType] = defaultModelSelectionSettings[modelType];
-				const matchingDefaultModel = defaultModelSelectionSettings.models[defaultModelSelectionSettings[modelType] as keyof typeof defaultModelSelectionSettings.models] as ILanguageModelItem;
-				const matchingDefaultProvider = defaultModelSelectionSettings.providers[defaultModelSelectionSettings[modelType] as keyof typeof defaultModelSelectionSettings.providers] as ProviderConfig;
-				untypedModelSelectionSettings.models[modelSelectionSettings[modelType] as keyof typeof modelSelectionSettings.models] = matchingDefaultModel;
-				untypedModelSelectionSettings.providers[modelSelectionSettings[modelType]] = matchingDefaultProvider;
+			models: { ...validatedModels },
+			providers: { ...validatedProviders }
+		};
+
+		// Ensure slowModel and fastModel are valid or fallback to defaults
+		(['slowModel', 'fastModel'] as const).forEach(modelType => {
+			const chosenModelKey = modelSelection[modelType];
+			if (!mutableSettings.models[chosenModelKey]) {
+				// Fallback to default
+				const defaultKey = defaultModelSelectionSettings[modelType];
+				const defaultModel = defaultModelSelectionSettings.models[defaultKey] as ILanguageModelItem;
+				const defaultProvider = defaultModelSelectionSettings.providers[defaultModel.provider.type] as ProviderConfig;
+
+				mutableSettings[modelType] = defaultKey;
+				mutableSettings.models[defaultKey] = defaultModel;
+				mutableSettings.providers[defaultKey] = defaultProvider;
 			}
-			modelSelectionSettings = untypedModelSelectionSettings as IModelSelectionSettings;
 		});
-		return modelSelectionSettings;
+
+		// Now cast back to the desired return type (assuming it's compatible)
+		return {
+			slowModel: mutableSettings.slowModel,
+			fastModel: mutableSettings.fastModel,
+			models: mutableSettings.models,
+			providers: mutableSettings.providers
+		} as IModelSelectionSettings;
 	}
+
+	/** Validate and filter providers based on their required configurations. */
+	private validateProviders(providers: Record<string, ProviderConfig>): Record<string, ProviderConfig> {
+		const validated: Record<string, ProviderConfig> = {};
+		for (const [key, provider] of Object.entries(providers)) {
+			if (this.isValidOpenAICompatibleProvider(key, provider)) {
+				validated[key] = provider;
+			} else if (this.isValidApiKeyOnlyProvider(key, provider)) {
+				validated[key] = provider;
+			} else if (this.isNoConfigurationProvider(key)) {
+				validated[key] = provider;
+			}
+		}
+		return validated;
+	}
+
+	/** Validate and filter models. Check duplicates and ensure each model references a valid provider. */
+	private validateModels(
+		models: Record<string, ILanguageModelItem>,
+		validatedProviders: Record<string, ProviderConfig>
+	): Record<string, ILanguageModelItem> {
+		const result: Record<string, ILanguageModelItem> = {};
+		for (const [key, model] of Object.entries(models)) {
+			if (result[key]) {
+				// Duplicate detected; log a warning and keep the first one.
+				console.warn(`Duplicate model key detected: "${key}". Ignoring subsequent entries.`);
+				continue;
+			}
+			if (this.isValidModel(model, validatedProviders)) {
+				result[key] = model;
+			}
+		}
+		return result;
+	}
+
+	/** Check if a provider key and config is valid for openAI-compatible providers. */
+	private isValidOpenAICompatibleProvider(key: string, provider: ProviderConfig): provider is OpenAICompatibleProviderConfig {
+		return openAICompatibleProvider.includes(key as typeof openAICompatibleProvider[number])
+			&& typeof (provider as OpenAICompatibleProviderConfig).apiBase === 'string'
+			&& (provider as OpenAICompatibleProviderConfig).apiBase.length > 0
+			&& typeof (provider as OpenAICompatibleProviderConfig).apiKey === 'string'
+			&& (provider as OpenAICompatibleProviderConfig).apiKey.length > 0;
+	}
+
+	/** Check if a provider key and config is valid for apiKey-only providers. */
+	private isValidApiKeyOnlyProvider(key: string, provider: ProviderConfig): provider is ApiKeyOnlyProviderConfig {
+		return apiKeyOnlyProviders.includes(key as typeof apiKeyOnlyProviders[number])
+			&& typeof (provider as ApiKeyOnlyProviderConfig).apiKey === 'string'
+			&& (provider as ApiKeyOnlyProviderConfig).apiKey.length > 0;
+	}
+
+	/** Check if a provider requires no configuration. */
+	private isNoConfigurationProvider(key: string): boolean {
+		return noConfigurationProviders.includes(key as typeof noConfigurationProviders[number]);
+	}
+
+	/** Validate a single model against required constraints and ensure its provider is validated. */
+	private isValidModel(model: ILanguageModelItem, validatedProviders: Record<string, ProviderConfig>): boolean {
+		// Basic checks
+		const baseChecks = model.name.length > 0
+			&& model.contextLength > 0
+			&& model.temperature >= 0 && model.temperature <= 2
+			&& model.provider
+			&& validatedProviders[model.provider.type];
+
+		if (!baseChecks) { return false; }
+
+		// Additional check for azure-openai
+		if (model.provider.type === 'azure-openai') {
+			return typeof model.provider.deploymentID === 'string' && model.provider.deploymentID.length > 0;
+		}
+		// For other supported provider types, no extra conditions:
+		return allowedProviders.has(model.provider.type);
+	}
+
 
 	registerModelConfigValidator(validator: ModelConfigValidator): IDisposable {
 		this.modelConfigValidator = validator;
