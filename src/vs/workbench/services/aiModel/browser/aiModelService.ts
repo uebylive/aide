@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { RunOnceScheduler } from '../../../../base/common/async.js';
-import { CancellationToken } from '../../../../base/common/cancellation.js';
+import { CancellationToken, CancellationTokenSource } from '../../../../base/common/cancellation.js';
 import { Emitter, Event } from '../../../../base/common/event.js';
 import { parse } from '../../../../base/common/json.js';
 import { IJSONSchema } from '../../../../base/common/jsonSchema.js';
@@ -15,6 +15,7 @@ import * as nls from '../../../../nls.js';
 import { ApiKeyOnlyProviderConfig, apiKeyOnlyProviders, defaultModelSelectionSettings, IAIModelSelectionService, ILanguageModelItem, IModelSelectionSettings, IModelSelectionValidationResponse, isModelSelectionSettings, ModelConfigValidator, noConfigurationProviders, openAICompatibleProvider, OpenAICompatibleProviderConfig, ProviderConfig } from '../../../../platform/aiModel/common/aiModels.js';
 import { FileOperation, IFileService } from '../../../../platform/files/common/files.js';
 import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { Extensions, IJSONContributionRegistry } from '../../../../platform/jsonschemas/common/jsonContributionRegistry.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { Registry } from '../../../../platform/registry/common/platform.js';
@@ -38,6 +39,12 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 
 	private modelSelection: ModelSelection;
 	private modelConfigValidator: ModelConfigValidator | undefined;
+	private didValidateCurrentModelSelection = false;
+	private _isCurrentModelSelectionValid: IModelSelectionValidationResponse = { valid: false };
+
+	get isCurrentModelSelectionValid() {
+		return this._isCurrentModelSelectionValid;
+	}
 
 	private readonly _onDidChangeModelSelection: Emitter<IModelSelectionSettings> = this._register(new Emitter<IModelSelectionSettings>());
 	public readonly onDidChangeModelSelection: Event<IModelSelectionSettings> = this._onDidChangeModelSelection.event;
@@ -47,15 +54,29 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 		@IUriIdentityService uriIdentityService: IUriIdentityService,
 		@IFileService fileService: IFileService,
 		@ILogService logService: ILogService,
+		@IInstantiationService private readonly instantiationService: IInstantiationService
 	) {
 		super();
 
 		new ModelSelectionJsonSchema();
 		this.modelSelection = this._register(new ModelSelection(userDataProfileService, uriIdentityService, fileService, logService));
 		this._register(this.modelSelection.onDidChange((modelSelection) => {
+			this.didValidateCurrentModelSelection = false;
 			this._onDidChangeModelSelection.fire(modelSelection);
 		}));
 		this.modelSelection.initialize();
+	}
+
+	public async validateCurrentModelSelection() {
+		if (this.didValidateCurrentModelSelection) {
+			return this._isCurrentModelSelectionValid;
+		} else {
+			const modelSelectionSettings = await this.getValidatedModelSelectionSettings();
+			const cancellationTokenSource = this._register(this.instantiationService.createInstance(CancellationTokenSource));
+			const configValidation = await this.validateModelConfiguration(modelSelectionSettings, cancellationTokenSource.token);
+			this.didValidateCurrentModelSelection = true;
+			return this._isCurrentModelSelectionValid = configValidation;
+		}
 	}
 
 	public getDefaultModelSelectionContent(): string {

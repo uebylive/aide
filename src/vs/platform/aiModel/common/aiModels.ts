@@ -126,6 +126,7 @@ export interface IAIModelSelectionService {
 	 * @param token CancellationToken
 	 */
 	validateModelConfiguration(data: IModelSelectionSettings, token: CancellationToken): Promise<IModelSelectionValidationResponse>;
+	validateCurrentModelSelection(): Promise<IModelSelectionValidationResponse>;
 	checkIfModelIdIsTaken(modelId: string): Promise<[boolean, takenModel: ILanguageModelItem]>;
 	getDefaultModelSelectionContent(): string;
 	getModelSelectionSettings(): Promise<IModelSelectionSettings>;
