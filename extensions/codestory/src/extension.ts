@@ -176,6 +176,10 @@ export async function activate(context: vscode.ExtensionContext) {
 	});
 	*/
 
+	// Gets access to all the events the editor is throwing our way
+	const csEventHandler = new CSEventHandler(context);
+	context.subscriptions.push(csEventHandler);
+
 	// Register the quick action providers
 	const aideQuickFix = new AideQuickFix();
 	vscode.languages.registerCodeActionsProvider('*', aideQuickFix);
@@ -190,10 +194,10 @@ export async function activate(context: vscode.ExtensionContext) {
 		currentRepo,
 		projectContext,
 		sidecarClient,
+		csEventHandler,
 		recentEditsRetriever,
 		context,
 	);
-	const editorUrl = agentSessionProvider.editorUrl;
 	context.subscriptions.push(agentSessionProvider);
 
 	// When the selection changes in the editor we should trigger an event
@@ -242,10 +246,6 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
-	// Gets access to all the events the editor is throwing our way
-	const csEventHandler = new CSEventHandler(context, editorUrl);
-	context.subscriptions.push(csEventHandler);
-
 	vscode.window.onDidChangeActiveTextEditor(async (editor) => {
 		if (editor) {
 			const activeDocument = editor.document;
@@ -266,12 +266,8 @@ export async function activate(context: vscode.ExtensionContext) {
 	// shouldn't all listeners have this?
 	context.subscriptions.push(diagnosticsListener);
 
-
 	// Contains bindings to react devtools headless frontend
 	const reactDevtoolsManager = new ReactDevtoolsManager();
-
-
-
 
 	const simpleBrowserManager = new SimpleBrowserManager(context.extensionUri);
 	context.subscriptions.push(simpleBrowserManager);
