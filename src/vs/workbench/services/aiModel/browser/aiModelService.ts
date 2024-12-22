@@ -227,11 +227,22 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 		});
 	}
 
+	async alwaysValidConfiguration(): Promise<IModelSelectionValidationResponse> {
+		return {
+			valid: true,
+			error: undefined,
+		};
+	}
+
 	validateModelConfiguration(data: IModelSelectionSettings, token: CancellationToken): Promise<IModelSelectionValidationResponse> {
-		if (!this.modelConfigValidator) {
-			return Promise.resolve({ valid: false, error: 'Unable to validate model configuration. This is likely an issue at our end. Please let us know!' });
-		}
-		return this.modelConfigValidator(data, token);
+		// if (!this.modelConfigValidator) {
+		// 	return Promise.resolve({ valid: false, error: 'Unable to validate model configuration. This is likely an issue at our end. Please let us know!' });
+		// }
+		// return this.modelConfigValidator(data, token);
+		// TODO(codestory): How did we ever feel comfortable throwing error at people's face
+		// thats really bad... and this is part of the login initialisation
+		// reverting this, please never let system failures block users from using the product
+		return this.alwaysValidConfiguration();
 	}
 }
 
