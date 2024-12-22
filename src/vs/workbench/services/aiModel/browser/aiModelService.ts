@@ -235,6 +235,9 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 	}
 
 	validateModelConfiguration(data: IModelSelectionSettings, token: CancellationToken): Promise<IModelSelectionValidationResponse> {
+		if (!this.modelConfigValidator) {
+			console.error('Unable to validate model configuration. Please let us know if you see this!');
+		}
 		// if (!this.modelConfigValidator) {
 		// 	return Promise.resolve({ valid: false, error: 'Unable to validate model configuration. This is likely an issue at our end. Please let us know!' });
 		// }
