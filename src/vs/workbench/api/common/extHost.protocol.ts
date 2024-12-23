@@ -178,6 +178,7 @@ export interface MainThreadAuthenticationShape extends IDisposable {
 
 export interface MainThreadCSAuthenticationShape extends IDisposable {
 	$getSession(): Promise<CSAuthenticationSession | undefined>;
+	$refreshSession(): Promise<CSAuthenticationSession | undefined>;
 }
 
 export interface MainThreadSecretStateShape extends IDisposable {

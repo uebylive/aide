@@ -328,6 +328,9 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			getSession() {
 				return extHostCSAuthentication.getSession();
 			},
+			refreshSession() {
+				return extHostCSAuthentication.refreshSession();
+			}
 		};
 
 		// namespace: commands

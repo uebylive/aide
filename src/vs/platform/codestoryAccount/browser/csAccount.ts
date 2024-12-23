@@ -11,7 +11,8 @@ import { ThemeIcon } from '../../../base/common/themables.js';
 import { IContextKey, IContextKeyService } from '../../contextkey/common/contextkey.js';
 import { IInstantiationService } from '../../instantiation/common/instantiation.js';
 import { ILayoutService } from '../../layout/browser/layoutService.js';
-import { INotificationService } from '../../notification/common/notification.js';
+import { INotificationService, Severity } from '../../notification/common/notification.js';
+import { IOpenerService } from '../../opener/common/opener.js';
 import { IStorageService, StorageScope, StorageTarget } from '../../storage/common/storage.js';
 import { defaultButtonStyles } from '../../theme/browser/defaultStyles.js';
 import { CSAuthenticationSession, ICSAccountService, ICSAuthenticationService } from '../common/csAccount.js';
@@ -36,6 +37,7 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 		@ILayoutService private readonly layoutService: ILayoutService,
 		@INotificationService private readonly notificationService: INotificationService,
 		@IStorageService private readonly storageService: IStorageService,
+		@IOpenerService private readonly openerService: IOpenerService
 	) {
 		super();
 
@@ -82,9 +84,23 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 				});
 			}
 
-			// Increment the usage count
-			this.storageService.store(STORAGE_KEY, count + 1, StorageScope.PROFILE, StorageTarget.MACHINE);
-			return true; // User is authenticated and not on the waitlist
+			// Check if the user has a valid subscription
+			const subscription = csAuthSession.subscription;
+			if (subscription.status === 'free' || subscription.status === 'active') {
+				this.storageService.store(STORAGE_KEY, count + 1, StorageScope.PROFILE, StorageTarget.MACHINE);
+				return true;
+			} else {
+				this.notificationService.prompt(
+					Severity.Error,
+					'Your need a valid subscription to continue using Aide. Please visit the billing portal to update your subscription.',
+					[{
+						label: 'Open Billing Portal', run: async () => {
+							await this.openerService.open('http://localhost:3000/account');
+						}
+					}]
+				);
+				return false; // User is not on the trial period
+			}
 		} catch (error) {
 			// Handle any errors that occurred during the authentication
 			console.error('Error during refresh:', error);

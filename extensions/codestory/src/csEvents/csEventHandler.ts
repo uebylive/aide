@@ -128,6 +128,11 @@ export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable 
 			);
 
 			if (response.ok) {
+				const data = await response.json();
+				if (data['status'] !== session.subscription.status) {
+					vscode.csAuthentication.refreshSession();
+				}
+
 				return true;
 			} else if (response.status === 401) {
 				await vscode.commands.executeCommand('codestory.refreshTokens');

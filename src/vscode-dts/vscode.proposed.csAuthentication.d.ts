@@ -8,6 +8,17 @@ declare module 'vscode' {
 		email: string;
 	}
 
+	type SubscriptionStatus =
+		| 'free'
+		| 'pending_activation'
+		| 'active'
+		| 'cancelled';
+
+	interface SubscriptionResponse {
+		status: SubscriptionStatus;
+		subscriptionEnding?: number;
+	}
+
 	export interface CSAuthenticationSession {
 		/**
 		 * The access token.
@@ -18,9 +29,15 @@ declare module 'vscode' {
 		 * The authenticated user.
 		 */
 		readonly account: AuthenticatedCSUser;
+
+		/**
+		 * The subscription information.
+		 */
+		readonly subscription: SubscriptionResponse;
 	}
 
 	export namespace csAuthentication {
 		export function getSession(): Thenable<CSAuthenticationSession | undefined>;
+		export function refreshSession(): Thenable<CSAuthenticationSession | undefined>;
 	}
 }
