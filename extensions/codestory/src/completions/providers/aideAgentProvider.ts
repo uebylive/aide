@@ -17,6 +17,7 @@ import { RepoRef, SideCarClient } from '../../sidecar/client';
 import { getUniqueId, getUserId } from '../../utilities/uniqueId';
 import { ProjectContext } from '../../utilities/workspaceContext';
 import postHogClient from '../../posthog/client';
+import { createFileIfNotExists } from '../../server/createFile';
 
 /**
  * Stores the necessary identifiers required for identifying a response stream
@@ -258,7 +259,20 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		const editStreamEvent = request;
 		const fileDocument = editStreamEvent.fs_file_path;
 		if ('Start' === editStreamEvent.event) {
-			const document = await vscode.workspace.openTextDocument(fileDocument);
+			let document;
+			try {
+				document = await vscode.workspace.openTextDocument(fileDocument);
+			} catch (exception) {
+				// we might have an error here if the document does not exist on the disk
+				// so we should create it at the very least and then try to open it
+				const fileCreation = await createFileIfNotExists(vscode.Uri.file(fileDocument));
+				if (fileCreation.success) {
+					// yay all good
+					document = await vscode.workspace.openTextDocument(fileDocument);
+				} else {
+					vscode.window.showErrorMessage(`File creation at ${fileDocument} failed, please tell the devs!`);
+				}
+			}
 			if (document === undefined || document === null) {
 				return {
 					fs_file_path: '',
