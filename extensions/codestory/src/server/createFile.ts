@@ -16,7 +16,7 @@ export async function createFileResponse(request: SidecarCreateFileRequest): Pro
 	return result;
 }
 
-async function createFileIfNotExists(uri: vscode.Uri): Promise<SidecarCreateFilResponse> {
+export async function createFileIfNotExists(uri: vscode.Uri): Promise<SidecarCreateFilResponse> {
 	try {
 		await vscode.workspace.fs.stat(uri);
 		return {
