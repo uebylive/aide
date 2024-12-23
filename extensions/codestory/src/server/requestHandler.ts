@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 import * as http from 'http';
 import { SidecarApplyEditsRequest, LSPDiagnostics, SidecarGoToDefinitionRequest, SidecarGoToImplementationRequest, SidecarGoToReferencesRequest, SidecarOpenFileToolRequest, LSPQuickFixInvocationRequest, SidecarQuickFixRequest, SidecarSymbolSearchRequest, SidecarInlayHintsRequest, SidecarGetOutlineNodesRequest, SidecarOutlineNodesWithContentRequest, EditedCodeStreamingRequest, SidecarRecentEditsRetrieverRequest, SidecarRecentEditsRetrieverResponse, SidecarCreateFileRequest, LSPFileDiagnostics, SidecarGetPreviousWordRangeRequest, SidecarDiagnosticsResponse, SidecarCreateNewExchangeRequest, SidecarUndoPlanStep, SidecarExecuteTerminalCommandRequest } from './types';
-import { Position, Range } from 'vscode';
+import { Position, Range, workspace } from 'vscode';
 import { getDiagnosticsFromEditor, getEnrichedDiagnostics, getFileDiagnosticsFromEditor, getFullWorkspaceDiagnostics, getHoverInformation } from './diagnostics';
 import { openFileEditor } from './openFile';
 import { goToDefinition } from './goToDefinition';
@@ -225,7 +225,8 @@ export function handleRequest(
 			} else if (req.method === 'POST' && req.url === '/execute_terminal_command') {
 				const body = await readRequestBody(req);
 				const request: SidecarExecuteTerminalCommandRequest = JSON.parse(body);
-				const response = await executeTerminalCommand(request.command, process.cwd());
+				// always pass in the workspace over here not the process.cwd which would be wrong
+				const response = await executeTerminalCommand(request.command, workspace.rootPath ?? '');
 				res.writeHead(200, { 'Content-Type': 'application/json' });
 				res.end(JSON.stringify({ output: response }));
 			} else {
