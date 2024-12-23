@@ -62,19 +62,11 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 		}
 	}
 
-	async ensureAuthenticated(): Promise<boolean> {
-		// For first 50 calls, return true without authenticating
+	async ensureAuthorized(): Promise<boolean> {
 		const count = this.storageService.getNumber(STORAGE_KEY, StorageScope.PROFILE, 0);
-		if (count < 50) {
-			this.storageService.store(STORAGE_KEY, count + 1, StorageScope.PROFILE, StorageTarget.MACHINE);
-			return true;
-		}
-
 		try {
 			let csAuthSession = await this.csAuthenticationService.getSession();
 			if (!csAuthSession) {
-				// Notify the user that they need to authenticate
-				this.notificationService.info('You have used up your 50 unauthenticated requests. Please log in for unlimited requests.');
 				// Show the account card
 				this.toggle();
 				// Wait for the user to authenticate
@@ -88,10 +80,6 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 						disposable.dispose();
 					});
 				});
-			}
-			if ((csAuthSession?.waitlistPosition ?? 0) > 0) {
-				this.csAuthenticationService.notifyWaitlistPosition(csAuthSession.waitlistPosition);
-				return false; // User is on the waitlist
 			}
 
 			// Increment the usage count

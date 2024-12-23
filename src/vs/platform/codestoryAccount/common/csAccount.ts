@@ -12,6 +12,7 @@ export interface CSAuthenticationSession {
 	refreshToken: string;
 	account: CSUser;
 	waitlistPosition: number;
+	subscription: SubscriptionResponse;
 }
 
 export type CSUser = {
@@ -35,12 +36,40 @@ export type CSUserProfileResponse = {
 	waitlistPosition: number;
 };
 
+export type SubscriptionStatus =
+	| 'free'
+	| 'pending_activation'
+	| 'active'
+	| 'cancelled';
+type InvoiceStatus =
+	| 'active'
+	| 'canceled'
+	| 'incomplete'
+	| 'incomplete_expired'
+	| 'past_due'
+	| 'paused'
+	| 'trialing'
+	| 'unpaid';
+export type CurrentUsage = {
+	freeUsage: number;
+	overageUsage: number;
+	estimatedUsage: number;
+	breakdown: Record<string, number>;
+};
+export type SubscriptionResponse = {
+	status: SubscriptionStatus;
+	usage: CurrentUsage;
+	invoiceStatus?: InvoiceStatus;
+	subscriptionEnding?: number;
+	billingPortal?: string;
+};
+
 export const ICSAccountService = createDecorator<ICSAccountService>('csAccountService');
 export interface ICSAccountService {
 	readonly _serviceBrand: undefined;
 
 	toggle(): void;
-	ensureAuthenticated(): Promise<boolean>;
+	ensureAuthorized(): Promise<boolean>;
 }
 
 export const ICSAuthenticationService = createDecorator<ICSAuthenticationService>('csAuthenticationService');
@@ -52,6 +81,4 @@ export interface ICSAuthenticationService {
 	deleteSession(sessionId: string): Promise<void>;
 	refreshTokens(): Promise<void>;
 	getSession(): Promise<CSAuthenticationSession | undefined>;
-
-	notifyWaitlistPosition(position?: number): void;
 }

@@ -505,7 +505,7 @@ export class ChatService extends Disposable implements IAideAgentService {
 		const agent = parsedRequest.parts.find((r): r is ChatRequestAgentPart => r instanceof ChatRequestAgentPart)?.agent ?? defaultAgent;
 		const agentSlashCommandPart = parsedRequest.parts.find((r): r is ChatRequestAgentSubcommandPart => r instanceof ChatRequestAgentSubcommandPart);
 
-		await this.csAccountService.ensureAuthenticated();
+		await this.csAccountService.ensureAuthorized();
 
 		// This method is only returning whether the request was accepted - don't block on the actual request
 		return {
