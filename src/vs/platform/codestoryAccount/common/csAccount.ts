@@ -61,7 +61,6 @@ export type SubscriptionResponse = {
 	usage: CurrentUsage;
 	invoiceStatus?: InvoiceStatus;
 	subscriptionEnding?: number;
-	billingPortal?: string;
 };
 
 export const ICSAccountService = createDecorator<ICSAccountService>('csAccountService');

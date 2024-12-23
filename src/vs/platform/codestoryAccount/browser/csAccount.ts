@@ -92,12 +92,22 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 			} else {
 				this.notificationService.prompt(
 					Severity.Error,
-					'Your need a valid subscription to continue using Aide. Please visit the billing portal to update your subscription.',
-					[{
-						label: 'Open Billing Portal', run: async () => {
-							await this.openerService.open('http://localhost:3000/account');
+					'You need a valid subscription to continue using Aide. Please visit the account page to update your subscription.',
+					[
+						{
+							label: 'Open Billing Portal',
+							keepOpen: true,
+							run: async () => {
+								await this.openerService.open('http://localhost:3000/account');
+							},
+						},
+						{
+							label: 'Refresh',
+							run: async () => {
+								await this.csAuthenticationService.refreshTokens();
+							}
 						}
-					}]
+					]
 				);
 				return false; // User is not on the trial period
 			}
