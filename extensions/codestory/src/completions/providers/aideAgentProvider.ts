@@ -78,6 +78,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	private openResponseStream: vscode.AideAgentResponseStream | undefined;
 	private processingEvents: Map<string, boolean> = new Map();
 	private responseStreamCollection: AideResponseStreamCollection;
+	private recentEditsRetriever: RecentEditsRetriever;
 	// private sessionId: string | undefined;
 	// this is a hack to test the theory that we can keep snapshots and make
 	// that work
@@ -132,6 +133,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				this.undoToCheckpoint.bind(this),
 			)
 		);
+		this.recentEditsRetriever = recentEditsRetriever;
 		this.getNextOpenPort().then((port) => {
 			if (port === null) {
 				throw new Error('Could not find an open port');
@@ -267,6 +269,9 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				// so we should create it at the very least and then try to open it
 				const fileCreation = await createFileIfNotExists(vscode.Uri.file(fileDocument));
 				if (fileCreation.success) {
+					this.recentEditsRetriever.onDidCreateFiles({
+						files: [vscode.Uri.file(fileDocument)]
+					});
 					// yay all good
 					document = await vscode.workspace.openTextDocument(fileDocument);
 				} else {
