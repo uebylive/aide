@@ -25,4 +25,8 @@ export class ExtHostCSAuthentication implements ExtHostCSAuthenticationShape {
 	async getSession(): Promise<vscode.CSAuthenticationSession | undefined> {
 		return this._proxy.$getSession();
 	}
+
+	async refreshSession(): Promise<vscode.CSAuthenticationSession | undefined> {
+		return this._proxy.$refreshSession();
+	}
 }

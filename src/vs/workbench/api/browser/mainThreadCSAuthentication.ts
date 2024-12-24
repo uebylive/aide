@@ -18,6 +18,11 @@ export class MainThreadCSAuthentication extends Disposable implements MainThread
 	}
 
 	$getSession(): Promise<CSAuthenticationSession | undefined> {
-		return Promise.resolve(this._csAccountService.getSession());
+		return this._csAccountService.getSession();
+	}
+
+	async $refreshSession(): Promise<CSAuthenticationSession | undefined> {
+		await this._csAccountService.refreshTokens();
+		return this._csAccountService.getSession();
 	}
 }

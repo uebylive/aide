@@ -7,8 +7,9 @@ import * as vscode from 'vscode';
 import { getSymbolNavigationActionTypeLabel } from '../utilities/stringifyEvent';
 import { SidecarContextEvent, SidecarRequestRange } from '../server/types';
 
+type AideChatRequestType = 'ChatRequest' | 'AgenticRequest';
 type UsageRequest = {
-	type: 'InlineCompletion' | 'ChatRequest' | 'InlineCodeEdit' | 'AgenticCodeEdit';
+	type: AideChatRequestType | 'AgenticCodeEdit';
 	units: number;
 	timestamp: Date;
 };
@@ -23,7 +24,7 @@ export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable 
 	// The current recording session which the user is going through over here
 	private _currentSession: SidecarContextEvent[];
 
-	constructor(private readonly _context: vscode.ExtensionContext, _editorUrl: string | undefined) {
+	constructor(private readonly _context: vscode.ExtensionContext) {
 		this._disposable = vscode.csevents.registerCSEventHandler(this);
 		this._currentSession = [];
 
@@ -76,6 +77,16 @@ export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable 
 		this.sendUsageEvents(persistedEvents);
 	}
 
+	async handleNewRequest(type: AideChatRequestType): Promise<void> {
+		const usageRequest: UsageRequest = { type, units: 1, timestamp: new Date() };
+
+		const persistedEvents = this._context.globalState.get<UsageRequest[]>(USAGE_EVENTS_KEY, []);
+		persistedEvents.push(usageRequest);
+		this._context.globalState.update(USAGE_EVENTS_KEY, persistedEvents);
+
+		this.sendUsageEvents(persistedEvents);
+	}
+
 	private async sendUsageEvents(events: UsageRequest[]): Promise<void> {
 		await this.sendUsageEventsWithRetry(events, 0);
 	}
@@ -117,6 +128,11 @@ export class CSEventHandler implements vscode.CSEventHandler, vscode.Disposable 
 			);
 
 			if (response.ok) {
+				const data = await response.json();
+				if (data['status'] !== session.subscription.status) {
+					vscode.csAuthentication.refreshSession();
+				}
+
 				return true;
 			} else if (response.status === 401) {
 				await vscode.commands.executeCommand('codestory.refreshTokens');

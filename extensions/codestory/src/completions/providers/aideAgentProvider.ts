@@ -3,21 +3,22 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import * as os from 'os';
 import * as http from 'http';
 import * as net from 'net';
+import * as os from 'os';
 import * as vscode from 'vscode';
 
 import { AnswerSplitOnNewLineAccumulatorStreaming, StreamProcessor } from '../../chatState/convertStreamToMessage';
+import { CSEventHandler } from '../../csEvents/csEventHandler';
+import postHogClient from '../../posthog/client';
 import { applyEdits, applyEditsDirectly, } from '../../server/applyEdits';
+import { createFileIfNotExists } from '../../server/createFile';
 import { RecentEditsRetriever } from '../../server/editedFiles';
 import { handleRequest } from '../../server/requestHandler';
 import { EditedCodeStreamingRequest, SideCarAgentEvent, SidecarApplyEditsRequest, SidecarContextEvent, SidecarUndoPlanStep, ToolInputPartial } from '../../server/types';
 import { RepoRef, SideCarClient } from '../../sidecar/client';
 import { getUniqueId, getUserId } from '../../utilities/uniqueId';
 import { ProjectContext } from '../../utilities/workspaceContext';
-import postHogClient from '../../posthog/client';
-import { createFileIfNotExists } from '../../server/createFile';
 
 /**
  * Stores the necessary identifiers required for identifying a response stream
@@ -121,6 +122,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		private currentRepoRef: RepoRef,
 		private projectContext: ProjectContext,
 		private sidecarClient: SideCarClient,
+		private csEventHandler: CSEventHandler,
 		recentEditsRetriever: RecentEditsRetriever,
 		extensionContext: vscode.ExtensionContext,
 	) {
@@ -485,6 +487,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			const responseStream = await this.sidecarClient.agentSessionPlanStep(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, false, workosAccessToken);
 			await this.reportAgentEventsToChat(true, responseStream);
 		}
+
+		this.csEventHandler.handleNewRequest(event.mode === vscode.AideAgentMode.Agentic ? 'AgenticRequest' : 'ChatRequest');
 	}
 
 	/**

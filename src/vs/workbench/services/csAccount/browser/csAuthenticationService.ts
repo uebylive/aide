@@ -9,7 +9,7 @@ import { Emitter, Event } from '../../../../base/common/event.js';
 import Severity from '../../../../base/common/severity.js';
 import { URI } from '../../../../base/common/uri.js';
 import { generateUuid } from '../../../../base/common/uuid.js';
-import { CSAuthenticationSession, CSUserProfileResponse, EncodedCSTokenData, ICSAuthenticationService } from '../../../../platform/codestoryAccount/common/csAccount.js';
+import { CSAuthenticationSession, CSUserProfileResponse, EncodedCSTokenData, ICSAuthenticationService, SubscriptionResponse } from '../../../../platform/codestoryAccount/common/csAccount.js';
 import { CommandsRegistry } from '../../../../platform/commands/common/commands.js';
 import { IEnvironmentService } from '../../../../platform/environment/common/environment.js';
 import { InstantiationType, registerSingleton } from '../../../../platform/instantiation/common/extensions.js';
@@ -19,6 +19,13 @@ import { IProgressService, ProgressLocation } from '../../../../platform/progres
 import { ISecretStorageService } from '../../../../platform/secrets/common/secrets.js';
 import { IThemeService, Themable } from '../../../../platform/theme/common/themeService.js';
 import { IURLService } from '../../../../platform/url/common/url.js';
+
+class CSAuthenticationError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = 'CSAuthenticationError';
+	}
+}
 
 const SESSION_SECRET_KEY = 'codestory.auth.session';
 
@@ -94,26 +101,9 @@ export class CSAuthenticationService extends Themable implements ICSAuthenticati
 				await this.deleteSession();
 				throw new Error(`Failed to authenticate with CodeStory. Please try logging in again.`);
 			}
+
 			const data = (await response.json()) as EncodedCSTokenData;
-			const resp = await fetch(
-				`${this._subscriptionsAPIBase}/v1/users/me`,
-				{
-					headers: {
-						'Content-Type': 'application/json',
-						Authorization: `Bearer ${data.access_token}`,
-					},
-				},
-			);
-			const text = await resp.text();
-			const userProfile = JSON.parse(text) as CSUserProfileResponse;
-			const newSession: CSAuthenticationSession = {
-				id: this._session.id,
-				accessToken: data.access_token,
-				refreshToken: data.refresh_token,
-				account: userProfile.user,
-				waitlistPosition: userProfile.waitlistPosition,
-			};
-			await this.setSession(newSession);
+			await this.getSessionData(this._session.id, data);
 		} catch (e: any) {
 			return;
 		}
@@ -126,22 +116,9 @@ export class CSAuthenticationService extends Themable implements ICSAuthenticati
 				throw new Error(`CodeStory login failure`);
 			}
 
-			const userInfo = (await this.getUserInfo(encodedTokenData));
-			const { user, access_token, refresh_token, waitlistPosition } = userInfo;
-			if (waitlistPosition > 0) {
-				this.notifyWaitlistPosition(waitlistPosition);
-			}
-
-			const session: CSAuthenticationSession = {
-				id: generateUuid(),
-				accessToken: access_token,
-				refreshToken: refresh_token,
-				account: user,
-				waitlistPosition,
-			};
+			const tokens = (await this.parseTokens(encodedTokenData));
+			const session = await this.getSessionData(generateUuid(), tokens);
 			this._onDidAuthenticate.fire(session);
-			await this.setSession(session);
-
 			return session;
 		} catch (e) {
 			throw e;
@@ -271,66 +248,94 @@ export class CSAuthenticationService extends Themable implements ICSAuthenticati
 
 	async getSession(): Promise<CSAuthenticationSession | undefined> {
 		const rawSession = await this.secretStorageService.get(SESSION_SECRET_KEY);
-		const session = rawSession ? JSON.parse(rawSession) : undefined;
-		if (session) {
-			try {
-				const resp = await this.getUser(session.accessToken);
-				if (resp.ok) {
-					return session;
-				} else if (resp.status === 401) {
-					await this.refreshTokens();
-					const rawSession = await this.secretStorageService.get(SESSION_SECRET_KEY);
-					return rawSession ? JSON.parse(rawSession) : undefined;
-				} else {
-					return undefined;
-				}
-			} catch (e) {
-				return undefined;
-			}
+		const session: CSAuthenticationSession | undefined = rawSession ? JSON.parse(rawSession) : undefined;
+		if (!session) {
+			return undefined;
+		} else if (session.account) {
+			return session;
 		}
-		return session;
+
+		const currentTokens: EncodedCSTokenData = {
+			access_token: session.accessToken,
+			refresh_token: session.refreshToken,
+		};
+
+		try {
+			const sessionData = await this.getSessionData(session.id, currentTokens);
+			return sessionData;
+		} catch (e) {
+			if (e instanceof CSAuthenticationError) {
+				await this.refreshTokens();
+				const rawSession = await this.secretStorageService.get(SESSION_SECRET_KEY);
+				return rawSession ? JSON.parse(rawSession) : undefined;
+			}
+
+			return undefined;
+		}
 	}
 
-	/**
-	 * Get the user info from WorkOS
-	 * @param encodedTokenData
-	 * @returns
-	 **/
-	private async getUserInfo(encodedTokenData: string) {
+	private async parseTokens(encodedTokenData: string) {
 		// Reverse the base64 encoding
 		const tokenData = decodeBase64(encodedTokenData);
 		const tokens = JSON.parse(tokenData.toString()) as EncodedCSTokenData;
-
-		const user = await this.getUser(tokens.access_token);
-		const text = await user.text();
-		const data = JSON.parse(text) as CSUserProfileResponse;
-
-		return { ...data, ...tokens };
+		return tokens;
 	}
 
-	private async getUser(accessToken: string): Promise<Response> {
-		return fetch(
-			`${this._subscriptionsAPIBase}/v1/users/me`,
-			{
-				headers: {
-					'Content-Type': 'application/json',
-					Authorization: `Bearer ${accessToken}`,
-				},
-			},
-		);
-	}
+	private async getSessionData(
+		sessionId: string,
+		tokens: EncodedCSTokenData
+	): Promise<CSAuthenticationSession> {
+		try {
+			const [userResponse, subscriptionResponse] = await Promise.all([
+				fetch(
+					`${this._subscriptionsAPIBase}/v1/users/me`,
+					{
+						headers: {
+							'Content-Type': 'application/json',
+							Authorization: `Bearer ${tokens.access_token}`,
+						},
+					},
+				),
+				fetch(
+					`${this._subscriptionsAPIBase}/v1/subscriptions`,
+					{
+						headers: {
+							'Content-Type': 'application/json',
+							Authorization: `Bearer ${tokens.access_token}`,
+						},
+					},
+				),
+			]);
 
-	notifyWaitlistPosition(position?: number) {
-		this.notificationService.notify(
-			{
-				severity: Severity.Error,
-				message: `You are currently on the CodeStory waitlist ${position ? `at position ${position}` : ''}.
-Having a waitlist is currently the best way for us to sustainably manage the growth of our platform and resolving issues
-with a smaller group of users before opening up to more users. We will send you an email soon as we are ready for you!
-In the meantime, you can continue using the editor just like VSCode as they are fully compatible with each other.`,
-				priority: NotificationPriority.URGENT,
+			if (userResponse.status === 401 || subscriptionResponse.status === 401) {
+				throw new CSAuthenticationError('Authentication token expired or invalid');
 			}
-		);
+
+			if (!userResponse.ok || !subscriptionResponse.ok) {
+				throw new Error('Failed to fetch user data');
+			}
+
+			const userProfile = await userResponse.json() as CSUserProfileResponse;
+			const subscriptionData = await subscriptionResponse.json() as SubscriptionResponse;
+
+			const session: CSAuthenticationSession = {
+				id: sessionId,
+				accessToken: tokens.access_token,
+				refreshToken: tokens.refresh_token,
+				account: userProfile.user,
+				waitlistPosition: userProfile.waitlistPosition,
+				subscription: subscriptionData,
+			};
+
+			await this.setSession(session);
+			return session;
+		} catch (e) {
+			if (e instanceof CSAuthenticationError) {
+				throw e;
+			}
+
+			throw new Error('Failed to fetch user data');
+		}
 	}
 }
 
