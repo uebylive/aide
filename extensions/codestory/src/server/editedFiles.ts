@@ -45,12 +45,13 @@ export class RecentEditsRetriever implements vscode.Disposable {
 		private readonly maxAgeMs: number,
 		readonly workspace: Pick<
 			typeof vscode.workspace,
-			'onDidChangeTextDocument' | 'onDidRenameFiles' | 'onDidDeleteFiles'
+			'onDidChangeTextDocument' | 'onDidRenameFiles' | 'onDidDeleteFiles' | 'onDidCreateFiles'
 		> = vscode.workspace
 	) {
 		this.disposables.push(workspace.onDidChangeTextDocument(this.onDidChangeTextDocument.bind(this)));
 		this.disposables.push(workspace.onDidRenameFiles(this.onDidRenameFiles.bind(this)));
 		this.disposables.push(workspace.onDidDeleteFiles(this.onDidDeleteFiles.bind(this)));
+		this.disposables.push(workspace.onDidCreateFiles(this.onDidCreateFiles.bind(this)));
 	}
 
 	public async retrieveSidecar(request: SidecarRecentEditsRetrieverRequest): Promise<SidecarRecentEditsRetrieverResponse> {
@@ -199,6 +200,26 @@ export class RecentEditsRetriever implements vscode.Disposable {
 				this.trackedDocuments.set(file.newUri.toString(), trackedDocument);
 				this.trackedDocuments.delete(file.oldUri.toString());
 			}
+		}
+	}
+
+	/**
+	 * This is exposed to the agentProvider as well since the fs.write does not
+	 * expose this properly
+	 */
+	onDidCreateFiles(event: vscode.FileCreateEvent): void {
+		for (const uri of event.files) {
+			const shouldTrack = this.shouldTrackFile(uri);
+			if (!shouldTrack) {
+				continue;
+			}
+			const trackedDocument: TrackedDocument = {
+				content: '',
+				languageId: '',
+				uri,
+				changes: [],
+			};
+			this.trackedDocuments.set(uri.toString(), trackedDocument);
 		}
 	}
 
