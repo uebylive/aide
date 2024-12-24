@@ -10,20 +10,23 @@ import { InputBox } from '../../../../base/browser/ui/inputbox/inputBox.js';
 import { ISelectOptionItem, SelectBox } from '../../../../base/browser/ui/selectBox/selectBox.js';
 import { Widget } from '../../../../base/browser/ui/widget.js';
 import { Promises } from '../../../../base/common/async.js';
+import { CancellationTokenSource } from '../../../../base/common/cancellation.js';
 import { Codicon } from '../../../../base/common/codicons.js';
 import { Emitter } from '../../../../base/common/event.js';
 import { KeyCode } from '../../../../base/common/keyCodes.js';
 import { equals } from '../../../../base/common/objects.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import * as nls from '../../../../nls.js';
-import { ModelProviderConfig, ProviderConfig, humanReadableModelConfigKey, humanReadableProviderConfigKey, modelConfigKeyDescription } from '../../../../platform/aiModel/common/aiModels.js';
+import { IAIModelSelectionService, ModelProviderConfig, ProviderConfig, defaultModelSelectionSettings, humanReadableModelConfigKey, humanReadableProviderConfigKey, modelConfigKeyDescription } from '../../../../platform/aiModel/common/aiModels.js';
 import { IContextViewService } from '../../../../platform/contextview/browser/contextView.js';
+import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { defaultButtonStyles, defaultInputBoxStyles, defaultSelectBoxStyles } from '../../../../platform/theme/browser/defaultStyles.js';
 import { asCssVariable, editorWidgetForeground, widgetShadow } from '../../../../platform/theme/common/colorRegistry.js';
 import { registerIcon } from '../../../../platform/theme/common/iconRegistry.js';
 import { isDark } from '../../../../platform/theme/common/theme.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { COMMAND_CENTER_BORDER } from '../../../common/theme.js';
+import { checkIfDefaultModel } from '../../../services/aiModel/browser/aiModelService.js';
 import { IModelSelectionEditingService } from '../../../services/aiModel/common/aiModelEditing.js';
 import { ModelSelectionEditorModel } from '../../../services/preferences/browser/modelSelectionEditorModel.js';
 import { IModelItemEntry, IProviderItem, IProviderItemEntry, isModelItemConfigComplete, isProviderItemConfigComplete } from '../../../services/preferences/common/preferences.js';
@@ -53,6 +56,7 @@ export class EditModelConfigurationWidget extends Widget {
 	private temperatureValue!: InputBox;
 	private cancelButton!: Button;
 	private saveButton!: Button;
+	private messageArea!: HTMLElement;
 
 	private fieldItems: HTMLElement[] = [];
 	private _onHide = this._register(new Emitter<void>());
@@ -63,7 +67,9 @@ export class EditModelConfigurationWidget extends Widget {
 		parent: HTMLElement | null,
 		@IContextViewService private readonly contextViewService: IContextViewService,
 		@IThemeService private readonly _themeService: IThemeService,
-		@IModelSelectionEditingService private readonly modelSelectionEditingService: IModelSelectionEditingService
+		@IModelSelectionEditingService private readonly modelSelectionEditingService: IModelSelectionEditingService,
+		@IAIModelSelectionService private readonly aiModelSelectionService: IAIModelSelectionService,
+		@IInstantiationService private readonly instantiationService: IInstantiationService
 	) {
 		super();
 
@@ -148,6 +154,9 @@ export class EditModelConfigurationWidget extends Widget {
 		this.temperatureValue.inputElement.max = '2';
 		this.temperatureValue.inputElement.step = '0.1';
 
+		// Validation messages aside
+		this.messageArea = dom.append(this._contentContainer, dom.$('aside.validation-messages-aside'));
+
 		// Add save and cancel buttons
 		const footerContainer = dom.append(this._contentContainer, dom.$('.edit-model-widget-footer'));
 		this.cancelButton = this._register(new Button(footerContainer, {
@@ -163,7 +172,6 @@ export class EditModelConfigurationWidget extends Widget {
 			title: nls.localize('editModelConfiguration.save', "Save")
 		}));
 		this.saveButton.label = nls.localize('editModelConfiguration.save', "Save");
-		this.saveButton.enabled = false;
 		this._register(this.saveButton.onDidClick(async () => await this.save()));
 
 		this.layout();
@@ -359,7 +367,7 @@ export class EditModelConfigurationWidget extends Widget {
 		if (this.modelItemEntry) {
 			const initialModelItem = this.initialModelItemEntry!;
 			const updatedModelItem = this.modelItemEntry;
-			if (equals(initialModelItem, updatedModelItem) || !isModelItemConfigComplete(this.modelItemEntry.modelItem)) {
+			if (equals(initialModelItem, updatedModelItem)) {
 				this.saveButton.enabled = false;
 			} else {
 				this.saveButton.enabled = true;
@@ -375,15 +383,63 @@ export class EditModelConfigurationWidget extends Widget {
 		this._domNode.setDisplay('none');
 		this.resetFieldItems();
 		this._isVisible = false;
+		this.saveButton.enabled = true;
 		this._onHide.fire();
 	}
 
 	private async save(): Promise<void> {
+		this.saveButton.enabled = false;
 		if (this.modelItemEntry) {
 			const initialModelItem = this.initialModelItemEntry!.modelItem;
 			const updatedModelItem = this.modelItemEntry.modelItem;
-			if (equals(initialModelItem, updatedModelItem)) {
+
+			const isProviderComplete = isProviderItemConfigComplete(updatedModelItem.provider);
+			if (!isProviderComplete) {
+				this.messageArea.textContent = nls.localize('editModelConfiguration.incompleteProviderConfiguration', "The provider configuration for {0} is incomplete. Please complete the provider configuration.", updatedModelItem.provider.name);
+				this.saveButton.enabled = true;
 				return;
+			}
+
+			const isComplete = isModelItemConfigComplete(updatedModelItem);
+			if (!isComplete) {
+				this.messageArea.textContent = nls.localize('editModelConfiguration.incompleteConfiguration', "The configuration is incomplete. Please complete the configuration.");
+				this.saveButton.enabled = true;
+				return;
+			}
+			const isDefaultModelId = checkIfDefaultModel(updatedModelItem.key);
+			if (isDefaultModelId) {
+				const takenDefaultModel = defaultModelSelectionSettings.models[updatedModelItem.key];
+				this.messageArea.textContent = nls.localize('editModelConfiguration.cantEditDefaultModel', "You can't edit a default model. Please use \"{0}\" as provided in the model list.", takenDefaultModel.name);
+				this.saveButton.enabled = true;
+				return;
+			}
+
+			const [isModelIdTaken, takenModel] = await this.aiModelSelectionService.checkIfModelIdIsTaken(updatedModelItem.key);
+
+			if (isModelIdTaken && takenModel.name !== initialModelItem.name) {
+				this.messageArea.textContent = nls.localize('editModelConfiguration.modelIdTaken', "The model id is already taken, refer to the existing model \"{0}\" to edit it.", takenModel.name);
+				this.saveButton.enabled = true;
+				return;
+			}
+			const modelSelectionSettings = await this.aiModelSelectionService.getValidatedModelSelectionSettings();
+			const cancellationTokenSource = this._register(this.instantiationService.createInstance(CancellationTokenSource));
+
+			const previousSlowModel = modelSelectionSettings.slowModel;
+			// Temporarily set as active model
+			await this.modelSelectionEditingService.editModelSelection('slowModel', updatedModelItem.key);
+			// Check if it's valid
+			const configValidation = await this.aiModelSelectionService.validateModelConfiguration(modelSelectionSettings, cancellationTokenSource.token);
+			// Reset the previous slow model
+			await this.modelSelectionEditingService.editModelSelection('slowModel', previousSlowModel);
+
+			if (!configValidation.valid) {
+				this.messageArea.textContent = nls.localize('editModelConfiguration.modelConfigError', "There is an issue with your \`modelSelection.json\`: \"{0}\"", configValidation.error || 'Invalid configuration');
+				this.saveButton.enabled = true;
+				return;
+			}
+
+			if (equals(initialModelItem, updatedModelItem)) {
+				return this.hide();
 			}
 
 			const lmItem = {
@@ -404,6 +460,11 @@ export class EditModelConfigurationWidget extends Widget {
 			} else {
 				await this.modelSelectionEditingService.editModelConfiguration(updatedModelItem.key, lmItem);
 			}
+			// Set new edited model as active one if all goes well
+			// Temporarily set as active model
+			await this.modelSelectionEditingService.editModelSelection('slowModel', updatedModelItem.key);
+
+			this.saveButton.enabled = true;
 			this.hide();
 		}
 	}

@@ -260,7 +260,7 @@ export interface IPreferencesService {
 	openGlobalKeybindingSettings(textual: boolean, options?: IKeybindingsEditorOptions): Promise<void>;
 	openDefaultKeybindingsFile(): Promise<IEditorPane | undefined>;
 	openModelSelectionSettings(textual: boolean): Promise<void>;
-	OpenDefaultModelSelectionFile(): Promise<IEditorPane | undefined>;
+	openDefaultModelSelectionFile(): Promise<IEditorPane | undefined>;
 	openLanguageSpecificSettings(languageId: string, options?: IOpenSettingsOptions): Promise<IEditorPane | undefined>;
 	getEditableSettingsURI(configurationTarget: ConfigurationTarget, resource?: URI): Promise<URI | null>;
 	getSetting(settingId: string): ISetting | undefined;
@@ -353,10 +353,11 @@ export interface IModelItem {
 
 export const isModelItemConfigComplete = (modelItem: IModelItem): boolean => {
 	const { key, name, contextLength, temperature, provider, providerConfig } = modelItem;
-	return !!key && !!name && !!contextLength && !!temperature
+	const isComplete = !!key && !!name && !!contextLength && !!temperature
 		&& isProviderItemConfigComplete(provider)
 		&& providerConfig.type === provider.type
 		&& (providerConfig.type === 'azure-openai' ? !!providerConfig.deploymentID : true);
+	return isComplete;
 };
 
 export interface IProviderItemEntry {

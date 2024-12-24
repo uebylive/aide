@@ -1288,7 +1288,7 @@ class PreferencesActionsContribution extends Disposable implements IWorkbenchCon
 				});
 			}
 			run(accessor: ServicesAccessor) {
-				return accessor.get(IPreferencesService).OpenDefaultModelSelectionFile();
+				return accessor.get(IPreferencesService).openDefaultModelSelectionFile();
 			}
 		});
 		registerAction2(class extends Action2 {

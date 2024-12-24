@@ -165,6 +165,11 @@
 	outline-offset: 0.125rem;
 }
 
+/* Validation messages aside */
+.edit-model-widget-content .validation-messages-aside {
+	margin-top: 24px;
+}
+
 /* Footer */
 .edit-model-widget-content .edit-model-widget-footer {
 	display: flex;

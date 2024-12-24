@@ -127,8 +127,12 @@ export async function activate(context: vscode.ExtensionContext) {
 		sidecarClient.updateModelConfiguration(config);
 	});
 	vscode.modelSelection.registerModelConfigurationValidator({
-		provideModelConfigValidation(config) {
-			const sidecarModelConfig = getSideCarModelConfiguration(config);
+		async provideModelConfigValidation(config) {
+			if (!session) {
+				return { valid: false, error: 'You must be logged in' };
+			}
+
+			const sidecarModelConfig = await getSideCarModelConfiguration(config, session.accessToken);
 			return sidecarClient.validateModelConfiguration(sidecarModelConfig);
 		},
 	});
@@ -186,7 +190,7 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// add the recent edits retriver to the subscriptions
 	// so we can grab the recent edits very quickly
-	const recentEditsRetriever = new RecentEditsRetriever(300 * 1000, vscode.workspace);
+	const recentEditsRetriever = new RecentEditsRetriever(30 * 1000, vscode.workspace);
 	context.subscriptions.push(recentEditsRetriever);
 
 	// Register the agent session provider

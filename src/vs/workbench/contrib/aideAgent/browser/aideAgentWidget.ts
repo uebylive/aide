@@ -15,7 +15,9 @@ import { isDefined } from '../../../../base/common/types.js';
 import { URI } from '../../../../base/common/uri.js';
 import { ICodeEditor } from '../../../../editor/browser/editorBrowser.js';
 import { ICodeEditorService } from '../../../../editor/browser/services/codeEditorService.js';
+import { localize } from '../../../../nls.js';
 import { MenuId } from '../../../../platform/actions/common/actions.js';
+import { IAIModelSelectionService } from '../../../../platform/aiModel/common/aiModels.js';
 import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { IContextMenuService } from '../../../../platform/contextview/browser/contextView.js';
 import { ITextResourceEditorInput } from '../../../../platform/editor/common/editor.js';
@@ -23,6 +25,7 @@ import { IInstantiationService } from '../../../../platform/instantiation/common
 import { ServiceCollection } from '../../../../platform/instantiation/common/serviceCollection.js';
 import { WorkbenchObjectTree } from '../../../../platform/list/browser/listService.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
+import { INotificationService } from '../../../../platform/notification/common/notification.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgentCommand, IChatAgentData } from '../common/aideAgentAgents.js';
@@ -214,6 +217,8 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		@ILogService private readonly logService: ILogService,
 		@IThemeService private readonly themeService: IThemeService,
 		@IViewsService private readonly viewsService: IViewsService,
+		@IAIModelSelectionService private readonly modelSelectionService: IAIModelSelectionService,
+		@INotificationService private readonly notificationService: INotificationService,
 	) {
 		super();
 
@@ -760,7 +765,8 @@ export class ChatWidget extends Disposable implements IChatWidget {
 				return;
 			}
 
-			this.requestInProgress.set(this.viewModel.requestInProgress);
+			const isRequestInProgress = this.viewModel.requestInProgress;
+			this.requestInProgress.set(isRequestInProgress);
 
 			this.onDidChangeItems();
 			if (events.some(e => e?.kind === 'addRequest') && this.visible) {
@@ -908,34 +914,48 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			if ('isPassthrough' in this.viewContext && this.viewContext.isPassthrough) {
 				agentScope = AgentScope.Selection;
 			}
-			// scope here is dicated by how the command is run, not on the internal state
-			// of the inputPart which was based on a selector before
-			const result = await this.chatService.sendRequest(this.viewModel.sessionId, input, {
-				agentMode,
-				agentScope,
-				userSelectedModelId: this.inputPart.currentLanguageModel,
-				location: this.location,
-				locationData: this._location.resolveData?.(),
-				parserContext: { selectedAgent: this._lastSelectedAgent },
-				attachedContext: [...this.inputPart.attachedContext.values()]
-			});
 
-			if (result) {
-				this.inputPart.acceptInput(isUserQuery);
-				this._onDidSubmitAgent.fire({ agent: result.agent, slashCommand: result.slashCommand });
-				result.responseCompletePromise.then(() => {
-					const responses = this.viewModel?.getItems().filter(isResponseVM);
-					const lastResponse = responses?.[responses.length - 1];
-					this.chatAccessibilityService.acceptResponse(lastResponse, requestId);
-					if (lastResponse?.result?.nextQuestion) {
-						const { prompt, participant, command } = lastResponse.result.nextQuestion;
-						const question = formatChatQuestion(this.chatAgentService, this.location, prompt, participant, command);
-						if (question) {
-							this.input.setValue(question, false);
-						}
-					}
+			this.requestInProgress.set(true);
+
+			const configValidation = await this.modelSelectionService.validateCurrentModelSelection();
+			if (!configValidation.valid) {
+				this.requestInProgress.set(false);
+				const errorMessage = localize('editModelConfiguration.modelConfigError', "There is an issue with your \`modelSelection.json\`: \"{0}\"", configValidation.error || 'Invalid configuration');
+				this.notificationService.warn(errorMessage);
+			} else {
+				// scope here is dicated by how the command is run, not on the internal state
+				// of the inputPart which was based on a selector before
+				const result = await this.chatService.sendRequest(this.viewModel.sessionId, input, {
+					agentMode,
+					agentScope,
+					userSelectedModelId: this.inputPart.currentLanguageModel,
+					location: this.location,
+					locationData: this._location.resolveData?.(),
+					parserContext: { selectedAgent: this._lastSelectedAgent },
+					attachedContext: [...this.inputPart.attachedContext.values()]
 				});
-				return result.responseCreatedPromise;
+
+				if (result) {
+					this.inputPart.acceptInput(isUserQuery);
+					this._onDidSubmitAgent.fire({ agent: result.agent, slashCommand: result.slashCommand });
+					result.responseCompletePromise.then(() => {
+						const responses = this.viewModel?.getItems().filter(isResponseVM);
+						const lastResponse = responses?.[responses.length - 1];
+						this.chatAccessibilityService.acceptResponse(lastResponse, requestId);
+						if (lastResponse?.result?.nextQuestion) {
+							const { prompt, participant, command } = lastResponse.result.nextQuestion;
+							const question = formatChatQuestion(this.chatAgentService, this.location, prompt, participant, command);
+							if (question) {
+								this.input.setValue(question, false);
+							}
+						}
+					}).catch(() => {
+						this.requestInProgress.set(false);
+					});
+					return result.responseCreatedPromise;
+				} else {
+					this.requestInProgress.set(false);
+				}
 			}
 		}
 		return undefined;

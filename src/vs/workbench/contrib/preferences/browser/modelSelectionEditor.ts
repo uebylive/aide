@@ -22,6 +22,7 @@ import { defaultButtonStyles } from '../../../../platform/theme/browser/defaultS
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
 import { EditorPane } from '../../../browser/parts/editor/editorPane.js';
 import { IEditorOpenContext } from '../../../common/editor.js';
+import { checkIfDefaultModel } from '../../../services/aiModel/browser/aiModelService.js';
 import { IEditorGroup } from '../../../services/editor/common/editorGroupsService.js';
 import { ModelSelectionEditorInput } from '../../../services/preferences/browser/modelSelectionEditorInput.js';
 import { ModelSelectionEditorModel } from '../../../services/preferences/browser/modelSelectionEditorModel.js';
@@ -200,7 +201,7 @@ export class ModelSelectionEditor extends EditorPane {
 				return;
 			}
 			const activeModelEntry = this.activeModelEntry;
-			if (activeModelEntry) {
+			if (activeModelEntry && !checkIfDefaultModel(activeModelEntry.modelItem.key)) {
 				this.editModel(activeModelEntry);
 			}
 		}));
@@ -493,8 +494,10 @@ class ModelActionsColumnRenderer implements ITableRenderer<IModelItemEntry, IMod
 	renderElement(modelSelectionItemEntry: IModelItemEntry, index: number, templateData: IModelActionsColumnTemplateData, height: number | undefined): void {
 		templateData.actionBar.clear();
 		const actions: IAction[] = [];
-		actions.push(this.createEditAction(modelSelectionItemEntry));
-		templateData.actionBar.push(actions, { icon: true });
+		if (!checkIfDefaultModel(modelSelectionItemEntry.modelItem.key)) {
+			actions.push(this.createEditAction(modelSelectionItemEntry));
+			templateData.actionBar.push(actions, { icon: true });
+		}
 	}
 
 	private createEditAction(modelSelectionItemEntry: IModelItemEntry): IAction {

@@ -77,21 +77,30 @@ export class SideCarClient {
 		this._userId = getUserId();
 	}
 
-	async validateModelConfiguration(config: ReturnType<typeof getSideCarModelConfiguration>): Promise<vscode.ModelConfigValidationResponse> {
+	async validateModelConfiguration(config: Awaited<ReturnType<typeof getSideCarModelConfiguration>>): Promise<vscode.ModelConfigValidationResponse> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agentic/verify_model_config';
 		const url = baseUrl.toString();
 		const body = {
 			model_configuration: config,
 		};
-		const response = await fetch(url, {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify(body),
-		});
-		return response.json();
+		try {
+			const response = await fetch(url, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(body),
+			});
+			if (!response.ok) {
+				return { valid: false, error: (await response.text()) };
+			} else {
+				return response.json();
+			}
+		} catch (err) {
+			console.error(err);
+			return { valid: false };
+		}
 	}
 
 	updateModelConfiguration(modelConfiguration: vscode.ModelSelection) {
@@ -162,7 +171,7 @@ export class SideCarClient {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/in_editor/answer';
 		const url = baseUrl.toString();
-		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
+		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), ''); // Make typescript happy while keeping dead code
 		const finalContext = {
 			...context,
 			modelConfig: sideCarModelConfiguration,
@@ -211,7 +220,7 @@ export class SideCarClient {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/file/edit_file';
 		const url = baseUrl.toString();
-		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
+		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), ''); // Make typescript happy while keeping dead code
 		const body = {
 			file_path: filePath,
 			file_content: fileContent,
@@ -446,7 +455,7 @@ export class SideCarClient {
 		baseUrl.pathname = '/api/agent/followup_chat';
 		const url = baseUrl.toString();
 		const activeWindowData = getCurrentActiveWindow();
-		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
+		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), ''); // Make typescript happy while keeping dead code
 		const userContext = await convertVSCodeVariableToSidecarHackingForPlan(variables, query);
 		// starts the plan timer at this point if we are at plan generation step
 		if (userContext.is_plan_generation) {
@@ -578,7 +587,7 @@ export class SideCarClient {
 		const baseUrl = new URL(this._url);
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(
 			await vscode.modelSelection.getConfiguration()
-		);
+			, ''); // Make typescript happy while keeping dead code
 		// console.log('sidecar.model_configuration');
 		// console.log(JSON.stringify(sideCarModelConfiguration));
 		baseUrl.pathname = '/api/inline_completion/inline_completion';
@@ -711,7 +720,7 @@ export class SideCarClient {
 		const baseUrl = new URL(this._url);
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(
 			await vscode.modelSelection.getConfiguration()
-		);
+			, ''); // Make typescript happy while keeping dead code
 		baseUrl.pathname = '/api/inline_completion/inline_completion';
 
 		const body = {
@@ -894,14 +903,14 @@ export class SideCarClient {
 		}
 	}
 
-	async * inlineCompletion(
+	async *inlineCompletion(
 		completionRequest: CompletionRequest,
 		_signal: AbortSignal,
 	): AsyncIterable<CompletionResponse> {
 		const baseUrl = new URL(this._url);
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(
 			await vscode.modelSelection.getConfiguration()
-		);
+			, ''); // Make typescript happy while keeping dead code
 		baseUrl.pathname = '/api/inline_completion/inline_completion';
 
 		const body = {
@@ -1192,7 +1201,7 @@ export class SideCarClient {
 			return textDocument.document.uri.fsPath;
 		});
 		const currentShell = detectDefaultShell();
-		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
+		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), ''); // Make Typescript happy while keeping dead code
 		baseUrl.pathname = '/api/agentic/agent_session_edit_agentic';
 		const url = baseUrl.toString();
 		const body = {
@@ -1366,7 +1375,7 @@ export class SideCarClient {
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
 		baseUrl.pathname = '/api/agentic/user_feedback_on_exchange';
-		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
+		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), ''); // Make Typescript happy while keeping dead code
 		const url = baseUrl.toString();
 		const body = {
 			session_id: sessionId,
@@ -1475,7 +1484,7 @@ export class SideCarClient {
 				language: activeWindowData.language,
 			};
 		}
-		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration());
+		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), ''); // Make typescript happy while keeping dead code
 		const body: ProbeAgentBody = {
 			query,
 			editor_url: editorUrl,
