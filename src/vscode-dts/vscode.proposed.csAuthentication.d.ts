@@ -12,6 +12,7 @@ declare module 'vscode' {
 		| 'free'
 		| 'pending_activation'
 		| 'active'
+		| 'pending_cancellation'
 		| 'cancelled';
 
 	interface SubscriptionResponse {

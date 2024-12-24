@@ -15,7 +15,7 @@ import { INotificationService, Severity } from '../../notification/common/notifi
 import { IOpenerService } from '../../opener/common/opener.js';
 import { IStorageService, StorageScope, StorageTarget } from '../../storage/common/storage.js';
 import { defaultButtonStyles } from '../../theme/browser/defaultStyles.js';
-import { CSAuthenticationSession, ICSAccountService, ICSAuthenticationService } from '../common/csAccount.js';
+import { CSAuthenticationSession, ICSAccountService, ICSAuthenticationService, statusAllowsAccess } from '../common/csAccount.js';
 import { CS_ACCOUNT_CARD_VISIBLE } from '../common/csAccountContextKeys.js';
 import './media/csAccount.css';
 
@@ -86,7 +86,7 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 
 			// Check if the user has a valid subscription
 			const subscription = csAuthSession.subscription;
-			if (subscription.status === 'free' || subscription.status === 'active') {
+			if (statusAllowsAccess(subscription.status)) {
 				this.storageService.store(STORAGE_KEY, count + 1, StorageScope.PROFILE, StorageTarget.MACHINE);
 				return true;
 			} else {

@@ -40,6 +40,7 @@ export type SubscriptionStatus =
 	| 'free'
 	| 'pending_activation'
 	| 'active'
+	| 'pending_cancellation'
 	| 'cancelled';
 type InvoiceStatus =
 	| 'active'
@@ -61,6 +62,10 @@ export type SubscriptionResponse = {
 	usage: CurrentUsage;
 	invoiceStatus?: InvoiceStatus;
 	subscriptionEnding?: number;
+};
+
+export const statusAllowsAccess = (status: SubscriptionStatus): boolean => {
+	return status === 'free' || status === 'active' || status === 'pending_cancellation';
 };
 
 export const ICSAccountService = createDecorator<ICSAccountService>('csAccountService');
