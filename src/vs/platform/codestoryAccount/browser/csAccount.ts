@@ -9,6 +9,7 @@ import { Codicon } from '../../../base/common/codicons.js';
 import { Disposable } from '../../../base/common/lifecycle.js';
 import { ThemeIcon } from '../../../base/common/themables.js';
 import { IContextKey, IContextKeyService } from '../../contextkey/common/contextkey.js';
+import { IEnvironmentService } from '../../environment/common/environment.js';
 import { IInstantiationService } from '../../instantiation/common/instantiation.js';
 import { ILayoutService } from '../../layout/browser/layoutService.js';
 import { INotificationService, Severity } from '../../notification/common/notification.js';
@@ -30,9 +31,12 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 	private isVisible: IContextKey<boolean>;
 	private csAccountCard: HTMLElement | undefined;
 
+	private _websiteBase: string | null = null;
+
 	constructor(
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@ICSAuthenticationService private readonly csAuthenticationService: ICSAuthenticationService,
+		@IEnvironmentService private readonly environmentService: IEnvironmentService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@ILayoutService private readonly layoutService: ILayoutService,
 		@INotificationService private readonly notificationService: INotificationService,
@@ -40,6 +44,13 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 		@IOpenerService private readonly openerService: IOpenerService
 	) {
 		super();
+
+		const isDevelopment = !this.environmentService.isBuilt || this.environmentService.isExtensionDevelopment;
+		if (isDevelopment) {
+			this._websiteBase = 'https://staging.aide.dev';
+		} else {
+			this._websiteBase = 'https://aide.dev';
+		}
 
 		this.isVisible = CS_ACCOUNT_CARD_VISIBLE.bindTo(this.contextKeyService);
 		this.refresh();
@@ -98,7 +109,7 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 							label: 'Open Billing Portal',
 							keepOpen: true,
 							run: async () => {
-								await this.openerService.open('http://localhost:3000/account');
+								await this.openerService.open(`${this._websiteBase}/account`);
 							},
 						},
 						{
