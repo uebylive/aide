@@ -1426,6 +1426,7 @@ export class SideCarClient {
 		});
 		const currentShell = detectDefaultShell();
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), workosAccessToken);
+		const userContext = await convertVSCodeVariableToSidecarHackingForPlan(variables, query);
 		baseUrl.pathname = '/api/agentic/agent_session_chat';
 		const url = baseUrl.toString();
 		const body = {
@@ -1433,7 +1434,7 @@ export class SideCarClient {
 			exchange_id: exchangeId,
 			editor_url: editorUrl,
 			query,
-			user_context: await convertVSCodeVariableToSidecarHackingForPlan(variables, query),
+			user_context: userContext,
 			agent_mode: agentMode.toString(),
 			repo_ref: repoRef.getRepresentation(),
 			project_labels: projectLabels,

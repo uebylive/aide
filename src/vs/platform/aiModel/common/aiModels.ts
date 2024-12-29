@@ -195,11 +195,27 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			}
 		},
 		'deepseek/deepseek-chat': {
-			name: 'DeepSeek V2.5',
+			name: 'DeepSeek V3',
 			contextLength: 65536,
 			temperature: 0.2,
 			provider: {
 				type: 'open-router',
+			}
+		},
+		'gemini-2.0-flash-exp': {
+			name: 'Gemini 2.0 Flash Exp',
+			contextLength: 1000000,
+			temperature: 0.2,
+			provider: {
+				type: 'geminipro',
+			}
+		},
+		'gemini-2.0-flash-thinking-exp-1219': {
+			name: 'Gemini 2.0 Flash Thinking Experimental',
+			contextLength: 32000,
+			temperature: 0.2,
+			provider: {
+				type: 'geminipro',
 			}
 		}
 	},
