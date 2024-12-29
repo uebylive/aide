@@ -22,11 +22,9 @@ import { IQuickInputButton, IQuickInputService, IQuickPickItem, IQuickPickSepara
 import { IEditorGroupsService } from '../../../../services/editor/common/editorGroupsService.js';
 import { ACTIVE_GROUP, IEditorService } from '../../../../services/editor/common/editorService.js';
 import { IViewsService } from '../../../../services/views/common/viewsService.js';
-import { ChatAgentLocation } from '../../common/aideAgentAgents.js';
 import { CONTEXT_CHAT_ENABLED, CONTEXT_CHAT_INPUT_CURSOR_AT_TOP, CONTEXT_CHAT_PANEL_PARTICIPANT_REGISTERED, CONTEXT_IN_CHAT_INPUT, CONTEXT_IN_CHAT_SESSION } from '../../common/aideAgentContextKeys.js';
 import { AgentMode } from '../../common/aideAgentModel.js';
 import { IAideAgentService, IChatDetail } from '../../common/aideAgentService.js';
-import { IAideAgentVariablesService } from '../../common/aideAgentVariables.js';
 import { IChatRequestViewModel, IChatResponseViewModel, isRequestVM } from '../../common/aideAgentViewModel.js';
 import { IAideAgentWidgetHistoryService } from '../../common/aideAgentWidgetHistoryService.js';
 import { ChatViewId, IAideAgentWidgetService, showChatView } from '../aideAgent.js';
@@ -93,7 +91,6 @@ class OpenChatGlobalAction extends Action2 {
 		opts = typeof opts === 'string' ? { query: opts } : opts;
 
 		const chatService = accessor.get(IAideAgentService);
-		const chatVariablesService = accessor.get(IAideAgentVariablesService);
 		const viewsService = accessor.get(IViewsService);
 
 		const chatWidget = await showChatView(viewsService);
@@ -115,6 +112,7 @@ class OpenChatGlobalAction extends Action2 {
 				chatWidget.acceptInput(AgentMode.Chat, opts.query);
 			}
 		}
+		/* TODO(@ghostwriternr): Implement variable attachment if/when we bring in attachmentModel
 		if (opts?.variableIds && opts.variableIds.length > 0) {
 			const actualVariables = chatVariablesService.getVariables(ChatAgentLocation.Panel);
 			for (const actualVariable of actualVariables) {
@@ -130,6 +128,7 @@ class OpenChatGlobalAction extends Action2 {
 				}
 			}
 		}
+		*/
 
 		chatWidget.focusInput();
 	}
