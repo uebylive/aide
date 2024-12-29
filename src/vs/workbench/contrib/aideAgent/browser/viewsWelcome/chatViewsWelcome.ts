@@ -11,7 +11,7 @@ import { ContextKeyExpression } from '../../../../../platform/contextkey/common/
 import { Registry } from '../../../../../platform/registry/common/platform.js';
 
 export const enum ChatViewsWelcomeExtensions {
-	ChatViewsWelcomeRegistry = 'workbench.registry.chat.viewsWelcome',
+	ChatViewsWelcomeRegistry = 'workbench.registry.aideAgent.viewsWelcome',
 }
 
 export interface IChatViewsWelcomeDescriptor {

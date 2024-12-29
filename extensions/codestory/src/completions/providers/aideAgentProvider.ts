@@ -166,8 +166,8 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		this.aideAgent.welcomeMessageProvider = {
 			provideWelcomeMessage: async () => ({
 				icon: new vscode.ThemeIcon('comment-discussion'),
-				title: 'I\'m **Aide**, your personal coding assistant!',
-				message: new vscode.MarkdownString('I can find, understand, explain, debug or write code for you.'),
+				title: 'Assistant',
+				message: new vscode.MarkdownString('Hi, I\'m **Aide**, your personal coding assistant! I can find, understand, explain, debug or write code for you.'),
 			})
 		};
 	}

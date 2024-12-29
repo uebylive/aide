@@ -46,13 +46,10 @@ import { ChatListDelegate, ChatListItemRenderer, IChatRendererDelegate } from '.
 import { ChatEditorOptions } from './aideAgentOptions.js';
 import { invokePlanView } from './aideAgentPlan.js';
 import './media/aideAgent.css';
+import './media/aideAgentViewWelcome.css';
 import { ChatViewWelcomePart } from './viewsWelcome/chatViewWelcomeController.js';
 
 const $ = dom.$;
-
-function revealLastElement(list: WorkbenchObjectTree<any>) {
-	list.scrollTop = list.scrollHeight - list.renderHeight;
-}
 
 export type IChatInputState = Record<string, any>;
 export interface IChatViewState {
@@ -395,7 +392,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		// Do initial render
 		if (this.viewModel) {
 			this.onDidChangeItems();
-			revealLastElement(this.tree);
+			this.scrollToEnd();
 		}
 
 		this.contribs = ChatWidget.CONTRIBS.map(contrib => {
@@ -406,6 +403,13 @@ export class ChatWidget extends Disposable implements IChatWidget {
 				return undefined;
 			}
 		}).filter(isDefined);
+	}
+
+	private scrollToEnd() {
+		if (this.lastItem) {
+			const offset = Math.max(this.lastItem.currentRenderedHeight ?? 0, 1e6);
+			this.tree.reveal(this.lastItem, offset);
+		}
 	}
 
 	getContrib<T extends IChatWidgetContrib>(id: string): T | undefined {
@@ -669,7 +673,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			if (lastElementWasVisible) {
 				dom.scheduleAtNextAnimationFrame(dom.getWindow(this.listContainer), () => {
 					// Can't set scrollTop during this event listener, the list might overwrite the change
-					revealLastElement(this.tree);
+					this.scrollToEnd();
 				}, 0);
 			}
 		}
@@ -790,7 +794,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 			this.onDidChangeItems();
 			if (events.some(e => e?.kind === 'addRequest') && this.visible) {
-				revealLastElement(this.tree);
+				this.scrollToEnd();
 				this.focusInput();
 			}
 
@@ -832,7 +836,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 		if (this.tree) {
 			this.onDidChangeItems();
-			revealLastElement(this.tree);
+			this.scrollToEnd();
 		}
 		this.updateChatInputContext();
 	}
@@ -1053,16 +1057,22 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 		this.inputPart.layout(height, width);
 		const inputPartHeight = this.inputPart.inputPartHeight;
-		const lastElementVisible = this.tree.scrollTop + this.tree.renderHeight >= this.tree.scrollHeight;
+		const lastElementVisible = this.tree.scrollTop + this.tree.renderHeight >= this.tree.scrollHeight - 2;
 		const editPreviewWidgetHeight = this.editPreviewContainer.offsetHeight;
 
-		const listHeight = height - inputPartHeight - editPreviewWidgetHeight;
+		const listHeight = Math.max(0, height - inputPartHeight - editPreviewWidgetHeight);
 
 		this.tree.layout(listHeight, width);
 		this.tree.getHTMLElement().style.height = `${listHeight}px`;
+
+		// Push the welcome message down so it doesn't change position when followups appear
+		this.welcomeMessageContainer.style.height = `${listHeight}px`;
 		this.renderer.layout(width);
-		if (lastElementVisible) {
-			revealLastElement(this.tree);
+
+		const lastItem = this.viewModel?.getItems().at(-1);
+		const lastResponseIsRendering = isResponseVM(lastItem) && lastItem.renderData;
+		if (lastElementVisible && (!lastResponseIsRendering)) {
+			this.scrollToEnd();
 		}
 
 		this.listContainer.style.height = `${listHeight}px`;
@@ -1166,7 +1176,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 		if (needsRerender || !listHeight) {
 			// TODO: figure out a better place to reveal the last element
-			revealLastElement(this.tree);
+			this.scrollToEnd();
 		}
 	}
 
