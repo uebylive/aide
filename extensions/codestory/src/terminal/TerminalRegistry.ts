@@ -20,7 +20,7 @@ export class TerminalRegistry {
 	static createTerminal(cwd?: string | vscode.Uri | undefined): TerminalInfo {
 		const terminal = vscode.window.createTerminal({
 			cwd,
-			name: 'SOTA-Sidecar',
+			name: 'Sidecar',
 			iconPath: new vscode.ThemeIcon('octoface'),
 		});
 		const newInfo: TerminalInfo = {

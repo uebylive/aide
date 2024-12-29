@@ -674,10 +674,11 @@ function getProviderConfiguration(type: string, value: ModelProviderConfiguratio
 		};
 	}
 	if (type === 'geminipro') {
+		// gemini pro now points to google-ai-studio which is what everyone is
+		// used to
 		return {
-			'GeminiPro': {
+			'GoogleAIStudio': {
 				'api_key': value.apiKey,
-				'api_base': value.apiBase,
 			}
 		};
 	}
