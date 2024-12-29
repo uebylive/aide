@@ -509,8 +509,8 @@ export enum LLMType {
 	ClaudeHaiku,
 	PPLXSonnetSmall,
 	CohereRerankV3,
-	GeminiPro,
-	GeminiProFlash
+	GoogleAIStudio,
+	GoogleAIStudioFlash
 }
 
 export enum LLMProvider {
@@ -521,7 +521,7 @@ export enum LLMProvider {
 	OpenAICompatible,
 	Anthropic,
 	FireworksAI,
-	GeminiPro,
+	GoogleAIStudio,
 	OpenRouter,
 }
 
@@ -726,7 +726,7 @@ function getModelProviderConfiguration(providerConfiguration: ProviderSpecificCo
 		return 'FireworksAI';
 	}
 	if (providerConfiguration.type === 'geminipro') {
-		return 'GeminiPro';
+		return 'GoogleAIStudio';
 	}
 	if (providerConfiguration.type === 'open-router') {
 		return 'OpenRouter';
