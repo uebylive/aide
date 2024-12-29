@@ -1508,9 +1508,9 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 				checkProposedApiEnabled(extension, 'aideAgent');
 				return extHostAideAgentAgents2.createChatAgent(extension, id, resolver);
 			},
-			registerChatParticipantDetectionProvider(provider: vscode.ChatParticipantDetectionProvider) {
+			registerChatParticipantDetectionProvider(provider: vscode.AideAgentParticipantDetectionProvider) {
 				checkProposedApiEnabled(extension, 'aideAgent');
-				return extHostAideAgentAgents2.registerChatParticipantDetectionProvider(provider);
+				return extHostAideAgentAgents2.registerChatParticipantDetectionProvider(extension, provider);
 			},
 			registerChatVariableResolver(id: string, name: string, userDescription: string, modelDescription: string | undefined, isSlow: boolean | undefined, resolver: vscode.ChatVariableResolver, fullName?: string, icon?: vscode.ThemeIcon) {
 				checkProposedApiEnabled(extension, 'aideAgent');

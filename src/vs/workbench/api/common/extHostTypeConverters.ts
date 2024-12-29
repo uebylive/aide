@@ -38,7 +38,7 @@ import { DEFAULT_EDITOR_ASSOCIATION, SaveReason } from '../../common/editor.js';
 import { IViewBadge } from '../../common/views.js';
 import { IChatAgentRequest as IAideAgentRequest } from '../../contrib/aideAgent/common/aideAgentAgents.js';
 import { AgentMode, AgentScope } from '../../contrib/aideAgent/common/aideAgentModel.js';
-import { IAideAgentPlanStep, IAideAgentProgressStage, IChatEndResponse } from '../../contrib/aideAgent/common/aideAgentService.js';
+import { IAideAgentPlanStep, IAideAgentProgressStage, IChatEndResponse, IChatContentInlineReference as IAideAgentContentInlineReference } from '../../contrib/aideAgent/common/aideAgentService.js';
 import { SidecarRunningStatus } from '../../contrib/aideAgent/common/sidecarService.js';
 import { ChatAgentLocation, IChatAgentRequest, IChatAgentResult } from '../../contrib/chat/common/chatAgents.js';
 import { IChatRequestVariableEntry } from '../../contrib/chat/common/chatModel.js';
@@ -3088,15 +3088,18 @@ export namespace AideAgentPromptReference {
 
 export namespace AideAgentRequest {
 	export function to(request: IAideAgentRequest, location2: vscode.ChatRequestEditorData | vscode.ChatRequestNotebookData | undefined): vscode.AideAgentRequest {
-		const chatAgentRequest = ChatAgentRequest.to(request, location2);
 		const variableReferences = request.variables.variables.filter(v => !v.isTool);
 		return {
-			...chatAgentRequest,
 			exchangeId: request.requestId,
 			sessionId: request.sessionId,
 			mode: AideAgentMode.to(request.mode),
 			scope: AideAgentScope.to(request.scope),
-			references: variableReferences.map(AideAgentPromptReference.to)
+			prompt: request.message,
+			command: request.command,
+			attempt: request.attempt ?? 0,
+			references: variableReferences.map(AideAgentPromptReference.to),
+			location: ChatLocation.to(request.location),
+			location2,
 		};
 	}
 }
@@ -3135,6 +3138,36 @@ export namespace AideAgentResponsePart {
 
 	export function toContent(part: extHostProtocol.IAideAgentContentProgressDto, commandsConverter: CommandsConverter): vscode.ChatResponseMarkdownPart | vscode.ChatResponseFileTreePart | vscode.ChatResponseAnchorPart | vscode.ChatResponseCommandButtonPart | undefined {
 		return ChatResponsePart.toContent(part as extHostProtocol.IChatContentProgressDto, commandsConverter);
+	}
+}
+
+export namespace AideAgentResponseAnchorPart {
+	export function from(part: vscode.ChatResponseAnchorPart): Dto<IAideAgentContentInlineReference> {
+		// Work around type-narrowing confusion between vscode.Uri and URI
+		const isUri = (thing: unknown): thing is vscode.Uri => URI.isUri(thing);
+		const isSymbolInformation = (thing: object): thing is vscode.SymbolInformation => 'name' in thing;
+
+		return {
+			kind: 'inlineReference',
+			name: part.title,
+			inlineReference: isUri(part.value)
+				? part.value
+				: isSymbolInformation(part.value)
+					? WorkspaceSymbol.from(part.value)
+					: Location.from(part.value)
+		};
+	}
+
+	export function to(part: Dto<IAideAgentContentInlineReference>): vscode.ChatResponseAnchorPart {
+		const value = revive<IAideAgentContentInlineReference>(part);
+		return new types.ChatResponseAnchorPart(
+			URI.isUri(value.inlineReference)
+				? value.inlineReference
+				: 'location' in value.inlineReference
+					? WorkspaceSymbol.to(value.inlineReference) as vscode.SymbolInformation
+					: Location.to(value.inlineReference),
+			part.name
+		);
 	}
 }
 

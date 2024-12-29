@@ -7,8 +7,7 @@ import * as dom from '../../../../base/browser/dom.js';
 import { Button } from '../../../../base/browser/ui/button/button.js';
 import { getDefaultHoverDelegate } from '../../../../base/browser/ui/hover/hoverDelegateFactory.js';
 import { toErrorMessage } from '../../../../base/common/errorMessage.js';
-import { Disposable, DisposableStore, IDisposable } from '../../../../base/common/lifecycle.js';
-import { revive } from '../../../../base/common/marshalling.js';
+import { DisposableStore, IDisposable } from '../../../../base/common/lifecycle.js';
 import { URI } from '../../../../base/common/uri.js';
 import { IHoverService } from '../../../../platform/hover/browser/hover.js';
 import { IInstantiationService, ServicesAccessor } from '../../../../platform/instantiation/common/instantiation.js';
@@ -16,15 +15,16 @@ import { IKeybindingService } from '../../../../platform/keybinding/common/keybi
 import { ILabelService } from '../../../../platform/label/common/label.js';
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { asCssVariable } from '../../../../platform/theme/common/colorUtils.js';
-import { ContentRefData, contentRefUrl } from '../common/annotations.js';
-import { getFullyQualifiedId, IChatAgentCommand, IChatAgentData, IAideAgentAgentNameService, IAideAgentAgentService } from '../common/aideAgentAgents.js';
+import { IChatMarkdownAnchorService } from '../../chat/browser/chatContentParts/chatMarkdownAnchorService.js';
+import { InlineAnchorWidget } from '../../chat/browser/chatInlineAnchorWidget.js';
+import { getFullyQualifiedId, IAideAgentAgentNameService, IAideAgentAgentService, IChatAgentCommand, IChatAgentData } from '../common/aideAgentAgents.js';
 import { chatSlashCommandBackground, chatSlashCommandForeground } from '../common/aideAgentColors.js';
 import { chatAgentLeader, ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestDynamicVariablePart, ChatRequestSlashCommandPart, ChatRequestTextPart, ChatRequestToolPart, ChatRequestVariablePart, chatSubcommandLeader, IParsedChatRequest, IParsedChatRequestPart } from '../common/aideAgentParserTypes.js';
-import { IAideAgentService } from '../common/aideAgentService.js';
+import { IAideAgentService, IChatMarkdownContent } from '../common/aideAgentService.js';
 import { IAideAgentVariablesService } from '../common/aideAgentVariables.js';
+import { contentRefUrl } from '../common/annotations.js';
 import { IAideAgentLMToolsService } from '../common/languageModelToolsService.js';
 import { IAideAgentWidgetService } from './aideAgent.js';
-import { InlineAnchorWidget } from './aideAgentInlineAnchorWidget.js';
 import './media/aideAgentInlineAnchorWidget.css';
 
 /** For rendering slash commands, variables */
@@ -68,11 +68,11 @@ interface ISlashCommandWidgetArgs {
 	command: string;
 }
 
-interface IDecorationWidgetArgs {
+export interface IDecorationWidgetArgs {
 	title?: string;
 }
 
-export class ChatMarkdownDecorationsRenderer extends Disposable {
+export class ChatMarkdownDecorationsRenderer {
 
 	constructor(
 		@IKeybindingService private readonly keybindingService: IKeybindingService,
@@ -85,9 +85,8 @@ export class ChatMarkdownDecorationsRenderer extends Disposable {
 		@IAideAgentVariablesService private readonly chatVariablesService: IAideAgentVariablesService,
 		@ILabelService private readonly labelService: ILabelService,
 		@IAideAgentLMToolsService private readonly toolsService: IAideAgentLMToolsService,
-	) {
-		super();
-	}
+		@IChatMarkdownAnchorService private readonly chatMarkdownAnchorService: IChatMarkdownAnchorService,
+	) { }
 
 	convertParsedRequestToMarkdown(parsedRequest: IParsedChatRequest): string {
 		let result = '';
@@ -120,7 +119,7 @@ export class ChatMarkdownDecorationsRenderer extends Disposable {
 		return `[${text}](${decorationRefUrl}?${encodeURIComponent(JSON.stringify(args))})`;
 	}
 
-	walkTreeAndAnnotateReferenceLinks(element: HTMLElement): IDisposable {
+	walkTreeAndAnnotateReferenceLinks(content: IChatMarkdownContent, element: HTMLElement): IDisposable {
 		const store = new DisposableStore();
 		element.querySelectorAll('a').forEach(a => {
 			const href = a.getAttribute('data-href');
@@ -161,7 +160,7 @@ export class ChatMarkdownDecorationsRenderer extends Disposable {
 						this.renderResourceWidget(a.textContent!, args, store),
 						a);
 				} else if (href.startsWith(contentRefUrl)) {
-					this.renderFileWidget(href, a, store);
+					this.renderFileWidget(content, href, a, store);
 				} else if (href.startsWith('command:')) {
 					this.injectKeybindingHint(a, href, this.keybindingService);
 				}
@@ -189,7 +188,12 @@ export class ChatMarkdownDecorationsRenderer extends Disposable {
 					return;
 				}
 
-				this.chatService.sendRequest(widget.viewModel!.sessionId, agent.metadata.sampleRequest ?? '', { location: widget.location, agentId: agent.id });
+				this.chatService.sendRequest(widget.viewModel!.sessionId, agent.metadata.sampleRequest ?? '',
+					{
+						location: widget.location,
+						agentId: agent.id,
+						userSelectedModelId: widget.input.currentLanguageModel
+					});
 			}));
 		} else {
 			container = this.renderResourceWidget(nameWithLeader, undefined, store);
@@ -214,29 +218,29 @@ export class ChatMarkdownDecorationsRenderer extends Disposable {
 			}
 
 			const command = agent.slashCommands.find(c => c.name === args.command);
-			this.chatService.sendRequest(widget.viewModel!.sessionId, command?.sampleRequest ?? '', { location: widget.location, agentId: agent.id, slashCommand: args.command });
+			this.chatService.sendRequest(widget.viewModel!.sessionId, command?.sampleRequest ?? '', {
+				location: widget.location,
+				agentId: agent.id,
+				slashCommand: args.command,
+				userSelectedModelId: widget.input.currentLanguageModel
+			});
 		}));
 
 		return container;
 	}
 
-	private renderFileWidget(href: string, a: HTMLAnchorElement, store: DisposableStore): void {
+	private renderFileWidget(content: IChatMarkdownContent, href: string, a: HTMLAnchorElement, store: DisposableStore): void {
 		// TODO this can be a nicer FileLabel widget with an icon. Do a simple link for now.
 		const fullUri = URI.parse(href);
-		let data: ContentRefData;
-		try {
-			data = revive(JSON.parse(fullUri.fragment));
-		} catch (err) {
-			this.logService.error('Invalid chat widget render data JSON', toErrorMessage(err));
+
+		const data = content.inlineReferences?.[fullUri.path.slice(1)];
+		if (!data) {
+			this.logService.error('Invalid chat widget render data JSON');
 			return;
 		}
 
-		if (data.kind !== 'symbol' && !URI.isUri(data.uri)) {
-			this.logService.error(`Invalid chat widget render data: ${fullUri.fragment}`);
-			return;
-		}
-
-		store.add(this.instantiationService.createInstance(InlineAnchorWidget, a, data));
+		const inlineAnchor = store.add(this.instantiationService.createInstance(InlineAnchorWidget, a, data));
+		this.chatMarkdownAnchorService.register(inlineAnchor);
 	}
 
 	private renderResourceWidget(name: string, args: IDecorationWidgetArgs | undefined, store: DisposableStore): HTMLElement {

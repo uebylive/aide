@@ -52,6 +52,7 @@ import { EditSessionIdentityMatch } from '../../../platform/workspace/common/edi
 import { WorkspaceTrustRequestOptions } from '../../../platform/workspace/common/workspaceTrust.js';
 import { SaveReason } from '../../common/editor.js';
 import { IRevealOptions, ITreeItem, IViewBadge } from '../../common/views.js';
+import { ChatAgentLocation as AideAgentLocation } from '../../contrib/aideAgent/common/aideAgentAgents.js';
 import { IChatProgressResponseContent as IAideAgentProgressResponseContent } from '../../contrib/aideAgent/common/aideAgentModel.js';
 import { IAideAgentPlanStep, IAideAgentProgressStage, IChatCodeEdit, IChatEndResponse } from '../../contrib/aideAgent/common/aideAgentService.js';
 import { SidecarDownloadStatus, SidecarRunningStatus } from '../../contrib/aideAgent/common/sidecarService.js';
@@ -1440,12 +1441,18 @@ export type IChatProgressDto =
 ///////////////////////// END CHAT /////////////////////////
 
 ///////////////////////// START AIDE /////////////////////////
-export interface ExtHostAideAgentAgentsShape extends ExtHostChatAgentsShape2 {
+export interface ExtHostAideAgentAgentsShape {
 	$invokeAgent(handle: number, request: Dto<IChatAgentRequest>, context: { history: IAideAgentAgentHistoryEntryDto[] }, token: CancellationToken): Promise<IChatAgentResult | undefined>;
 	$provideFollowups(request: Dto<IChatAgentRequest>, handle: number, result: IChatAgentResult, context: { history: IAideAgentAgentHistoryEntryDto[] }, token: CancellationToken): Promise<IChatFollowup[]>;
+	$acceptFeedback(handle: number, result: IChatAgentResult, voteAction: IChatVoteAction): void;
+	$acceptAction(handle: number, result: IChatAgentResult, action: IChatUserActionEvent): void;
+	$invokeCompletionProvider(handle: number, query: string, token: CancellationToken): Promise<IChatAgentCompletionItem[]>;
+	$provideWelcomeMessage(handle: number, token: CancellationToken): Promise<IChatWelcomeMessageContent | undefined>;
 	$provideChatTitle(handle: number, context: IAideAgentAgentHistoryEntryDto[], token: CancellationToken): Promise<string | undefined>;
-	$detectChatParticipant(handle: number, request: Dto<IChatAgentRequest>, context: { history: IAideAgentAgentHistoryEntryDto[] }, options: { participants: IChatParticipantMetadata[]; location: ChatAgentLocation }, token: CancellationToken): Promise<IChatParticipantDetectionResult | null | undefined>;
+	$detectChatParticipant(handle: number, request: Dto<IChatAgentRequest>, context: { history: IAideAgentAgentHistoryEntryDto[] }, options: { participants: IChatParticipantMetadata[]; location: AideAgentLocation }, token: CancellationToken): Promise<IChatParticipantDetectionResult | null | undefined>;
+	$provideSampleQuestions(handle: number, location: AideAgentLocation, token: CancellationToken): Promise<IChatFollowup[] | undefined>;
 	$initSession(handle: number, sessionId: string): void;
+	$releaseSession(sessionId: string): void;
 }
 
 export type IChatCodeEditDto = Pick<IChatCodeEdit, 'kind'> & { edits: IWorkspaceEditDto };
@@ -1462,9 +1469,18 @@ export type IAideAgentAgentHistoryEntryDto = Omit<IChatAgentHistoryEntryDto, 're
 	response: ReadonlyArray<IAideAgentContentProgressDto>;
 };
 
-export interface MainThreadAideAgentAgentsShape2 extends MainThreadChatAgentsShape2 {
+export interface MainThreadAideAgentAgentsShape2 {
+	$registerAgent(handle: number, extension: ExtensionIdentifier, id: string, metadata: IExtensionChatAgentMetadata, dynamicProps: IDynamicChatAgentProps | undefined): void;
+	$registerChatParticipantDetectionProvider(handle: number): void;
+	$unregisterChatParticipantDetectionProvider(handle: number): void;
+	$registerAgentCompletionsProvider(handle: number, id: string, triggerCharacters: string[]): void;
+	$unregisterAgentCompletionsProvider(handle: number, id: string): void;
+	$updateAgent(handle: number, metadataUpdate: IExtensionChatAgentMetadata): void;
+	$unregisterAgent(handle: number): void;
 	$initResponse(sessionId: string): Promise<{ responseId: string; token: CancellationToken }>;
 	$handleProgressChunk(responseId: string, chunk: IAideAgentProgressDto, handle?: number): Promise<number | void>;
+	$handleAnchorResolve(requestId: string, handle: string, anchor: Dto<IChatContentInlineReference>): void;
+	$transferActiveChatSession(toWorkspace: UriComponents): void;
 	// The cancellation token over here is broken bad, since we are on the server
 	// side, the RPC layer cannot pass us the cancellation token properly
 	// we get this but DO NOT USE IT

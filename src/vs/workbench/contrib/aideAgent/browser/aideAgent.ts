@@ -11,16 +11,19 @@ import { localize } from '../../../../nls.js';
 import { MenuId } from '../../../../platform/actions/common/actions.js';
 import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
-import { ChatViewPane } from './aideAgentViewPane.js';
-import { IChatViewState, IChatWidgetCompletionContext, IChatWidgetContrib } from './aideAgentWidget.js';
-import { ICodeBlockActionContext } from './codeBlockPart.js';
+import { IViewDescriptorService, ViewContainerLocation } from '../../../common/views.js';
+import { IWorkbenchLayoutService, Parts } from '../../../services/layout/browser/layoutService.js';
+import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { ChatAgentLocation, IChatAgentCommand, IChatAgentData } from '../common/aideAgentAgents.js';
 import { AgentMode, AgentScope, IChatRequestVariableEntry, IChatResponseModel } from '../common/aideAgentModel.js';
 import { IParsedChatRequest } from '../common/aideAgentParserTypes.js';
 import { CHAT_PROVIDER_ID } from '../common/aideAgentParticipantContribTypes.js';
-import { IChatRequestViewModel, IChatResponseViewModel, IChatViewModel, IChatWelcomeMessageViewModel } from '../common/aideAgentViewModel.js';
-import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { IAideAgentPlanStepViewModel } from '../common/aideAgentPlanViewModel.js';
+import { IChatRequestViewModel, IChatResponseViewModel, IChatViewModel } from '../common/aideAgentViewModel.js';
+import { ChatInputPart } from './aideAgentInputPart.js';
+import { ChatViewPane } from './aideAgentViewPane.js';
+import { IChatViewState, IChatWidgetCompletionContext, IChatWidgetContrib } from './aideAgentWidget.js';
+import { ICodeBlockActionContext } from './codeBlockPart.js';
 
 export const IAideAgentWidgetService = createDecorator<IAideAgentWidgetService>('aideAgentWidgetService');
 
@@ -38,7 +41,20 @@ export interface IAideAgentWidgetService {
 }
 
 export async function showChatView(viewsService: IViewsService): Promise<IChatWidget | undefined> {
-	return (await viewsService.openView<ChatViewPane>(CHAT_VIEW_ID))?.widget;
+	return (await viewsService.openView<ChatViewPane>(ChatViewId))?.widget;
+}
+
+export function ensureSideBarChatViewSize(width: number, viewDescriptorService: IViewDescriptorService, layoutService: IWorkbenchLayoutService): void {
+	const location = viewDescriptorService.getViewLocationById(ChatViewId);
+	if (location === ViewContainerLocation.Panel) {
+		return; // panel is typically very wide
+	}
+
+	const viewPart = location === ViewContainerLocation.Sidebar ? Parts.SIDEBAR_PART : Parts.AUXILIARYBAR_PART;
+	const partSize = layoutService.getSize(viewPart);
+	if (partSize.width < width) {
+		layoutService.setSize(viewPart, { width: width, height: partSize.height });
+	}
 }
 
 export const IAideAgentAccessibilityService = createDecorator<IAideAgentAccessibilityService>('aideAgentAccessibilityService');
@@ -70,7 +86,7 @@ export interface IChatFileTreeInfo {
 	focus(): void;
 }
 
-export type ChatTreeItem = IChatRequestViewModel | IChatResponseViewModel | IChatWelcomeMessageViewModel;
+export type ChatTreeItem = IChatRequestViewModel | IChatResponseViewModel;
 
 export interface IChatListItemRendererOptions {
 	readonly renderStyle?: 'default' | 'compact' | 'minimal';
@@ -132,6 +148,7 @@ export interface IChatWidget {
 	readonly parsedInput: IParsedChatRequest;
 	lastSelectedAgent: IChatAgentData | undefined;
 	readonly scopedContextKeyService: IContextKeyService;
+	readonly input: ChatInputPart;
 	completionContext: IChatWidgetCompletionContext;
 	readonly mode: AgentMode;
 
@@ -176,4 +193,4 @@ export interface IAideAgentCodeBlockContextProviderService {
 
 export const GeneratingPhrase = localize('generating', "Generating");
 
-export const CHAT_VIEW_ID = `workbench.panel.chat.view.${CHAT_PROVIDER_ID}`;
+export const ChatViewId = `workbench.panel.chat.view.${CHAT_PROVIDER_ID}`;

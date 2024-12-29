@@ -70,7 +70,7 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 	) {
 		super();
 
-		this.renderer = this._register(this.instantiationService.createInstance(ChatMarkdownRenderer, undefined));
+		this.renderer = this.instantiationService.createInstance(ChatMarkdownRenderer, undefined);
 		this._editorPool = this._register(this.instantiationService.createInstance(EditorPool, editorOptions, delegate, overflowWidgetsDomNode));
 	}
 
@@ -272,7 +272,8 @@ export class AideAgentPlanListRenderer extends Disposable implements ITreeRender
 		const element = context.element;
 		const fillInIncompleteTokens = !element.isComplete;
 		const codeBlockStartIndex = context.preceedingContentParts.reduce((acc, part) => acc + (part instanceof AideAgentPlanMarkdownContentPart ? part.codeblocks.length : 0), 0);
-		const markdownPart = this.instantiationService.createInstance(AideAgentPlanMarkdownContentPart, markdown, context, this._editorPool, fillInIncompleteTokens, codeBlockStartIndex, this.renderer, this._currentLayoutWidth, this.codeBlockModelCollection);
+		// TODO(@ghostwriternr): This conversion to markdownContent kind is a bit unnecessary, but it's simple.
+		const markdownPart = this.instantiationService.createInstance(AideAgentPlanMarkdownContentPart, { content: markdown, kind: 'markdownContent' }, context, this._editorPool, fillInIncompleteTokens, codeBlockStartIndex, this.renderer, this._currentLayoutWidth, this.codeBlockModelCollection);
 		const markdownPartId = markdownPart.id;
 		markdownPart.addDisposable(markdownPart.onDidChangeHeight(() => {
 			markdownPart.layout(this._currentLayoutWidth);

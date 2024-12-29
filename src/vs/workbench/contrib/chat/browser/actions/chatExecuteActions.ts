@@ -351,7 +351,7 @@ export class CancelAction extends Action2 {
 				group: 'navigation',
 			},
 			keybinding: {
-				when: CONTEXT_IN_CHAT_INPUT,
+				when: ChatContextKeys.inChatInput,
 				weight: KeybindingWeight.WorkbenchContrib,
 				primary: KeyMod.CtrlCmd | KeyCode.Escape,
 				win: { primary: KeyMod.Alt | KeyCode.Backspace },

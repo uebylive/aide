@@ -5,6 +5,7 @@
 
 import { CancellationToken } from '../../../../base/common/cancellation.js';
 import { DisposableStore } from '../../../../base/common/lifecycle.js';
+import { MarshalledId } from '../../../../base/common/marshallingIds.js';
 import { IDimension } from '../../../../editor/common/core/dimension.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
@@ -24,11 +25,11 @@ import { Memento } from '../../../common/memento.js';
 import { SIDE_BAR_FOREGROUND } from '../../../common/theme.js';
 import { IViewDescriptorService } from '../../../common/views.js';
 import { PinnedContextWidget } from '../../pinnedContext/browser/pinnedContextWidget.js';
+import { IChatViewTitleActionContext } from '../common/aideAgentActions.js';
 import { ChatAgentLocation, IAideAgentAgentService } from '../common/aideAgentAgents.js';
 import { ChatModelInitState, IChatModel } from '../common/aideAgentModel.js';
 import { CHAT_PROVIDER_ID } from '../common/aideAgentParticipantContribTypes.js';
 import { IAideAgentService } from '../common/aideAgentService.js';
-import { IChatViewTitleActionContext } from './actions/aideAgentActions.js';
 import { ChatWidget, IChatViewState } from './aideAgentWidget.js';
 
 interface IViewPaneState extends IChatViewState {
@@ -107,13 +108,14 @@ export class ChatViewPane extends ViewPane {
 		}));
 	}
 
-	override getActionsContext(): IChatViewTitleActionContext {
-		return {
-			chatView: this
-		};
+	override getActionsContext(): IChatViewTitleActionContext | undefined {
+		return this.widget?.viewModel ? {
+			sessionId: this.widget.viewModel.sessionId,
+			$mid: MarshalledId.AideAgentViewContext
+		} : undefined;
 	}
 
-	private updateModel(model?: IChatModel | undefined): void {
+	private updateModel(model?: IChatModel | undefined, viewState?: IChatViewState): void {
 		this.modelDisposables.clear();
 
 		model = model ?? (this.chatService.transferredSessionData?.sessionId
@@ -123,8 +125,15 @@ export class ChatViewPane extends ViewPane {
 			throw new Error('Could not start chat session');
 		}
 
-		this._widget.setModel(model, { ...this.viewState });
+		if (viewState) {
+			this.updateViewState(viewState);
+		}
+
 		this.viewState.sessionId = model.sessionId;
+		this._widget.setModel(model, { ...this.viewState });
+
+		// Update the toolbar context with new sessionId
+		this.updateActions();
 	}
 
 	override shouldShowWelcome(): boolean {
@@ -201,13 +210,13 @@ export class ChatViewPane extends ViewPane {
 		this.updateModel(undefined);
 	}
 
-	loadSession(sessionId: string): void {
+	loadSession(sessionId: string, viewState?: IChatViewState): void {
 		if (this.widget.viewModel) {
 			this.chatService.clearSession(this.widget.viewModel.sessionId);
 		}
 
 		const newModel = this.chatService.getOrRestoreSession(sessionId);
-		this.updateModel(newModel);
+		this.updateModel(newModel, viewState);
 	}
 
 	focusInput(): void {
@@ -240,9 +249,11 @@ export class ChatViewPane extends ViewPane {
 		super.saveState();
 	}
 
-	private updateViewState(): void {
-		const widgetViewState = this._widget.getViewState();
-		this.viewState.inputValue = widgetViewState.inputValue;
-		this.viewState.inputState = widgetViewState.inputState;
+	private updateViewState(viewState?: IChatViewState): void {
+		const newViewState = viewState ?? this._widget.getViewState();
+		for (const [key, value] of Object.entries(newViewState)) {
+			// Assign all props to the memento so they get saved
+			(this.viewState as any)[key] = value;
+		}
 	}
 }

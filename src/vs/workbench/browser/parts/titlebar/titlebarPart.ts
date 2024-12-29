@@ -696,9 +696,8 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 
 			// --- Codestory Account Actions
 			if (this.codestoryAccountMenu) {
-				createAndFillInActionBarActions(
-					this.codestoryAccountMenu,
-					{},
+				fillInActionBarActions(
+					this.codestoryAccountMenu.getActions(),
 					csAccountActions,
 					() => true,
 				);
