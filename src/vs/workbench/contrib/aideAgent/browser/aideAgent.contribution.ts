@@ -35,7 +35,7 @@ import { IAideAgentLMStatsService, LanguageModelStatsService } from '../common/l
 import { IAideAgentLMToolsService, LanguageModelToolsService } from '../common/languageModelToolsService.js';
 import { ISidecarService, SidecarService } from '../common/sidecarService.js';
 import { LanguageModelToolsExtensionPointHandler } from '../common/tools/languageModelToolsContribution.js';
-import { ChatAccessibilityHelp } from './actions/aideAgentAccessibilityHelp.js';
+import { PanelChatAccessibilityHelp } from './actions/aideAgentAccessibilityHelp.js';
 import { registerChatActions } from './actions/aideAgentActions.js';
 import { ACTION_ID_NEW_CHAT, registerNewChatActions } from './actions/aideAgentClearActions.js';
 import { registerChatCodeBlockActions, registerChatCodeCompareBlockActions } from './actions/aideAgentCodeblockActions.js';
@@ -53,7 +53,7 @@ import { AideAgentCodeEditingService } from './aideAgentCodeEditingService.js';
 import { ChatEditor, IChatEditorOptions } from './aideAgentEditor.js';
 import { ChatEditorInput, ChatEditorInputSerializer } from './aideAgentEditorInput.js';
 import { AideAgentFloatingWidgetService, IAideAgentFloatingWidgetService } from './aideAgentFloatingWidgetService.js';
-import { ChatGettingStartedContribution } from './aideAgentGettingStarted.js';
+import { ChatGettingStartedContribution } from './actions/aideAgentGettingStarted.js';
 import { agentSlashCommandToMarkdown, agentToMarkdown } from './aideAgentMarkdownDecorationsRenderer.js';
 import { ChatCompatibilityNotifier, ChatExtensionPointHandler } from './aideAgentParticipantContributions.js';
 import { ChatResponseAccessibleView } from './aideAgentResponseAccessibleView.js';
@@ -167,7 +167,7 @@ class ChatResolverContribution extends Disposable {
 }
 
 AccessibleViewRegistry.register(new ChatResponseAccessibleView());
-AccessibleViewRegistry.register(new ChatAccessibilityHelp());
+AccessibleViewRegistry.register(new PanelChatAccessibilityHelp());
 
 class ChatSlashStaticSlashCommandsContribution extends Disposable {
 

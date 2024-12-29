@@ -40,12 +40,20 @@ declare module 'vscode' {
 		| AideAgentCodeReference
 		| (Omit<ChatPromptReference, 'id'> & { id: string });
 
-	export interface AideAgentRequest extends ChatRequest {
+	export interface AideAgentRequest {
 		readonly exchangeId: string;
 		readonly sessionId: string;
 		readonly mode: AideAgentMode;
 		readonly scope: AideAgentScope;
+		readonly prompt: string;
+		readonly command: string | undefined;
 		readonly references: readonly AideAgentPromptReference[];
+		readonly attempt: number;
+		/**
+		 * @deprecated
+		 */
+		readonly location: ChatLocation;
+		readonly location2: ChatRequestEditorData | ChatRequestNotebookData | undefined;
 	}
 
 	export class ChatResponseCodeEditPart {
@@ -98,9 +106,13 @@ declare module 'vscode' {
 		readonly initResponse: AideSessionEventSender;
 	}
 
+	export interface AideAgentParticipantDetectionProvider {
+		provideParticipantDetection(chatRequest: AideAgentRequest, context: ChatContext, options: { participants?: ChatParticipantMetadata[]; location: ChatLocation }, token: CancellationToken): ProviderResult<ChatParticipantDetectionResult>;
+	}
+
 	export namespace aideAgent {
 		export function createChatParticipant(id: string, resolver: AideSessionParticipant): AideSessionAgent;
-		export function registerChatParticipantDetectionProvider(participantDetectionProvider: ChatParticipantDetectionProvider): Disposable;
+		export function registerChatParticipantDetectionProvider(participantDetectionProvider: AideAgentParticipantDetectionProvider): Disposable;
 		export function registerChatVariableResolver(id: string, name: string, userDescription: string, modelDescription: string | undefined, isSlow: boolean | undefined, resolver: ChatVariableResolver, fullName?: string, icon?: ThemeIcon): Disposable;
 		export function registerMappedEditsProvider2(provider: MappedEditsProvider2): Disposable;
 	}

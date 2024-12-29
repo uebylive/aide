@@ -27,9 +27,10 @@ import { AddDynamicVariableAction, IAddDynamicVariableContext } from '../../cont
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgentHistoryEntry, IChatAgentImplementation, IChatAgentRequest } from '../../contrib/aideAgent/common/aideAgentAgents.js';
 import { ChatRequestAgentPart } from '../../contrib/aideAgent/common/aideAgentParserTypes.js';
 import { ChatRequestParser } from '../../contrib/aideAgent/common/aideAgentRequestParser.js';
-import { IAideAgentService, IChatContentReference, IChatFollowup, IChatProgress, IChatTask, IChatWarningMessage } from '../../contrib/aideAgent/common/aideAgentService.js';
+import { IAideAgentService, IChatContentInlineReference, IChatContentReference, IChatFollowup, IChatProgress, IChatTask, IChatWarningMessage } from '../../contrib/aideAgent/common/aideAgentService.js';
 import { IExtHostContext, extHostNamedCustomer } from '../../services/extensions/common/extHostCustomers.js';
 import { IExtensionService } from '../../services/extensions/common/extensions.js';
+import { Dto } from '../../services/extensions/common/proxyIdentifier.js';
 import { ExtHostAideAgentAgentsShape, ExtHostContext, IAideAgentProgressDto, IChatParticipantMetadata, IDynamicChatAgentProps, IExtensionChatAgentMetadata, MainContext, MainThreadAideAgentAgentsShape2 } from '../common/extHost.protocol.js';
 
 interface AgentData {
@@ -85,6 +86,8 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadAideA
 	private _responsePartHandlePool = 0;
 	private readonly _activeTasks = new Map<string, IChatTask>();
 
+	private readonly _unresolvedAnchors = new Map</* requestId */string, Map</* id */ string, IChatContentInlineReference>>();
+
 	constructor(
 		extHostContext: IExtHostContext,
 		@IAideAgentAgentService private readonly _chatAgentService: IAideAgentAgentService,
@@ -133,7 +136,8 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadAideA
 		this._chatService.transferChatSession({ sessionId, inputValue }, URI.revive(toWorkspace));
 	}
 
-	$registerAgent(handle: number, extension: ExtensionIdentifier, id: string, metadata: IExtensionChatAgentMetadata, dynamicProps: IDynamicChatAgentProps | undefined): void {
+	async $registerAgent(handle: number, extension: ExtensionIdentifier, id: string, metadata: IExtensionChatAgentMetadata, dynamicProps: IDynamicChatAgentProps | undefined): Promise<void> {
+		await this._extensionService.whenInstalledExtensionsRegistered();
 		const staticAgentRegistration = this._chatAgentService.getAgent(id);
 		if (!staticAgentRegistration && !dynamicProps) {
 			if (this._chatAgentService.getAgentsByName(id).length) {
@@ -159,8 +163,8 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadAideA
 
 				return this._proxy.$provideFollowups(request, handle, result, { history }, token);
 			},
-			provideWelcomeMessage: (location: ChatAgentLocation, token: CancellationToken) => {
-				return this._proxy.$provideWelcomeMessage(handle, location, token);
+			provideWelcomeMessage: (token: CancellationToken) => {
+				return this._proxy.$provideWelcomeMessage(handle, token);
 			},
 			provideChatTitle: (history, token) => {
 				return this._proxy.$provideChatTitle(handle, history, token);
@@ -186,7 +190,7 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadAideA
 					metadata: revive(metadata),
 					slashCommands: [],
 					disambiguation: [],
-					locations: [ChatAgentLocation.Panel] // TODO all dynamic participants are panel only?
+					locations: [ChatAgentLocation.Panel], // TODO all dynamic participants are panel only?
 				},
 				impl);
 		} else {
@@ -201,7 +205,8 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadAideA
 		});
 	}
 
-	$updateAgent(handle: number, metadataUpdate: IExtensionChatAgentMetadata): void {
+	async $updateAgent(handle: number, metadataUpdate: IExtensionChatAgentMetadata): Promise<void> {
+		await this._extensionService.whenInstalledExtensionsRegistered();
 		const data = this._agents.get(handle);
 		if (!data) {
 			this._logService.error(`MainThreadChatAgents2#$updateAgent: No agent with handle ${handle} registered`);
@@ -248,7 +253,28 @@ export class MainThreadChatAgents2 extends Disposable implements MainThreadAideA
 					return;
 			}
 		}
+
+		if (revivedProgress.kind === 'inlineReference' && revivedProgress.resolveId) {
+			if (!this._unresolvedAnchors.has(responseId)) {
+				this._unresolvedAnchors.set(responseId, new Map());
+			}
+			this._unresolvedAnchors.get(responseId)?.set(revivedProgress.resolveId, revivedProgress);
+		}
+
 		this._pendingProgress.get(responseId)?.(revivedProgress);
+	}
+
+	$handleAnchorResolve(requestId: string, handle: string, resolveAnchor: Dto<IChatContentInlineReference> | undefined): void {
+		const anchor = this._unresolvedAnchors.get(requestId)?.get(handle);
+		if (!anchor) {
+			return;
+		}
+
+		this._unresolvedAnchors.get(requestId)?.delete(handle);
+		if (resolveAnchor) {
+			const revivedAnchor = revive(resolveAnchor) as IChatContentInlineReference;
+			anchor.inlineReference = revivedAnchor.inlineReference;
+		}
 	}
 
 	$registerAgentCompletionsProvider(handle: number, id: string, triggerCharacters: string[]): void {

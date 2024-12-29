@@ -12,13 +12,12 @@ import { Action2, MenuId, registerAction2 } from '../../../../../platform/action
 import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
 import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
 import { ActiveEditorContext } from '../../../../common/contextkeys.js';
-import { CHAT_CATEGORY, isChatViewTitleActionContext } from './aideAgentActions.js';
-import { clearChatEditor } from './aideAgentClear.js';
-import { CHAT_VIEW_ID, IAideAgentWidgetService } from '../aideAgent.js';
+import { isChatViewTitleActionContext } from '../../common/aideAgentActions.js';
+import { CONTEXT_CHAT_ENABLED, CONTEXT_IN_CHAT_SESSION } from '../../common/aideAgentContextKeys.js';
+import { ChatViewId, IAideAgentWidgetService } from '../aideAgent.js';
 import { ChatEditorInput } from '../aideAgentEditorInput.js';
-import { ChatViewPane } from '../aideAgentViewPane.js';
-import { CONTEXT_IN_CHAT_SESSION, CONTEXT_CHAT_ENABLED } from '../../common/aideAgentContextKeys.js';
-import { IViewsService } from '../../../../services/views/common/viewsService.js';
+import { CHAT_CATEGORY } from './aideAgentActions.js';
+import { clearChatEditor } from './aideAgentClear.js';
 
 export const ACTION_ID_NEW_CHAT = `workbench.action.aideAgent.newChat`;
 
@@ -68,9 +67,9 @@ export function registerNewChatActions() {
 				},
 				{
 					id: MenuId.ViewTitle,
-					when: ContextKeyExpr.equals('view', CHAT_VIEW_ID),
+					when: ContextKeyExpr.equals('view', ChatViewId),
 					group: 'navigation',
-					order: 1
+					order: -1
 				}]
 			});
 		}
@@ -78,22 +77,16 @@ export function registerNewChatActions() {
 		async run(accessor: ServicesAccessor, ...args: any[]) {
 			const context = args[0];
 			const accessibilitySignalService = accessor.get(IAccessibilitySignalService);
+			const widgetService = accessor.get(IAideAgentWidgetService);
+
+			let widget = widgetService.lastFocusedWidget;
+
 			if (isChatViewTitleActionContext(context)) {
 				// Is running in the Chat view title
-				announceChatCleared(accessibilitySignalService);
-				context.chatView.widget.clear();
-				context.chatView.widget.focusInput();
-			} else {
-				// Is running from f1 or keybinding
-				const widgetService = accessor.get(IAideAgentWidgetService);
-				const viewsService = accessor.get(IViewsService);
+				widget = widgetService.getWidgetBySessionId(context.sessionId);
+			}
 
-				let widget = widgetService.lastFocusedWidget;
-				if (!widget) {
-					const chatView = await viewsService.openView(CHAT_VIEW_ID) as ChatViewPane;
-					widget = chatView.widget;
-				}
-
+			if (widget) {
 				announceChatCleared(accessibilitySignalService);
 				widget.clear();
 				widget.focusInput();

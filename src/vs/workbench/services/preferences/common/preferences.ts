@@ -39,7 +39,8 @@ export enum SettingValueType {
 	Object = 'object',
 	BooleanObject = 'boolean-object',
 	LanguageTag = 'language-tag',
-	ExtensionToggle = 'extension-toggle'
+	ExtensionToggle = 'extension-toggle',
+	ComplexObject = 'complex-object',
 }
 
 export interface ISettingsGroup {
@@ -211,6 +212,7 @@ export interface ISettingsEditorOptions extends IEditorOptions {
 export interface IOpenSettingsOptions extends ISettingsEditorOptions {
 	jsonEditor?: boolean;
 	openToSide?: boolean;
+	groupId?: number;
 }
 
 export function validateSettingsEditorOptions(options: ISettingsEditorOptions): ISettingsEditorOptions {
@@ -232,6 +234,10 @@ export interface IKeybindingsEditorOptions extends IEditorOptions {
 }
 
 export interface IModelSelectionEditorModel<T> extends IPreferencesEditorModel<T> {
+}
+
+export interface IOpenKeybindingsEditorOptions extends IKeybindingsEditorOptions {
+	groupId?: number;
 }
 
 export const IPreferencesService = createDecorator<IPreferencesService>('preferencesService');
@@ -257,7 +263,7 @@ export interface IPreferencesService {
 	openRemoteSettings(options?: IOpenSettingsOptions): Promise<IEditorPane | undefined>;
 	openWorkspaceSettings(options?: IOpenSettingsOptions): Promise<IEditorPane | undefined>;
 	openFolderSettings(options: IOpenSettingsOptions & { folderUri: IOpenSettingsOptions['folderUri'] }): Promise<IEditorPane | undefined>;
-	openGlobalKeybindingSettings(textual: boolean, options?: IKeybindingsEditorOptions): Promise<void>;
+	openGlobalKeybindingSettings(textual: boolean, options?: IOpenKeybindingsEditorOptions): Promise<void>;
 	openDefaultKeybindingsFile(): Promise<IEditorPane | undefined>;
 	openModelSelectionSettings(textual: boolean): Promise<void>;
 	openDefaultModelSelectionFile(): Promise<IEditorPane | undefined>;

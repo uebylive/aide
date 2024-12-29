@@ -5,6 +5,7 @@
 
 import { coalesce, isNonEmptyArray } from '../../../../base/common/arrays.js';
 import { Codicon } from '../../../../base/common/codicons.js';
+import { toErrorMessage } from '../../../../base/common/errorMessage.js';
 import { DisposableMap, DisposableStore, IDisposable, toDisposable } from '../../../../base/common/lifecycle.js';
 import * as strings from '../../../../base/common/strings.js';
 import { localize, localize2 } from '../../../../nls.js';
@@ -23,9 +24,9 @@ import * as extensionsRegistry from '../../../services/extensions/common/extensi
 import { showExtensionsWithIdsCommandId } from '../../extensions/browser/extensionsActions.js';
 import { IExtensionsWorkbenchService } from '../../extensions/common/extensions.js';
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgentData } from '../common/aideAgentAgents.js';
-import { CONTEXT_CHAT_IS_PLAN_VISIBLE, CONTEXT_CHAT_EXTENSION_INVALID, CONTEXT_CHAT_PANEL_PARTICIPANT_REGISTERED } from '../common/aideAgentContextKeys.js';
+import { CONTEXT_CHAT_EXTENSION_INVALID, CONTEXT_CHAT_IS_PLAN_VISIBLE, CONTEXT_CHAT_PANEL_PARTICIPANT_REGISTERED } from '../common/aideAgentContextKeys.js';
 import { IRawChatParticipantContribution } from '../common/aideAgentParticipantContribTypes.js';
-import { CHAT_VIEW_ID } from './aideAgent.js';
+import { ChatViewId } from './aideAgent.js';
 import { AIDE_AGENT_PLAN_VIEW_PANE_ID } from './aideAgentPlan.js';
 import { AideAgentPlanViewPane } from './aideAgentPlanViewPane.js';
 import { CHAT_SIDEBAR_PANEL_ID, ChatViewPane } from './aideAgentViewPane.js';
@@ -228,7 +229,7 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 						continue;
 					}
 
-					if ((providerDescriptor.defaultImplicitVariables || providerDescriptor.locations || providerDescriptor.supportsModelPicker) && !isProposedApiEnabled(extension.description, 'chatParticipantAdditions')) {
+					if (providerDescriptor.locations && !isProposedApiEnabled(extension.description, 'chatParticipantAdditions')) {
 						this.logService.error(`Extension '${extension.description.identifier.value}' CANNOT use API proposal: chatParticipantAdditions.`);
 						continue;
 					}
@@ -238,60 +239,51 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 						continue;
 					}
 
-					const participantsAndCommandsDisambiguation: {
+					const participantsDisambiguation: {
 						category: string;
 						description: string;
 						examples: string[];
 					}[] = [];
 
-					if (isProposedApiEnabled(extension.description, 'contribChatParticipantDetection')) {
-						if (providerDescriptor.disambiguation?.length) {
-							participantsAndCommandsDisambiguation.push(...providerDescriptor.disambiguation.map((d) => ({
-								...d, category: d.category ?? d.categoryName
-							})));
-						}
-						if (providerDescriptor.commands) {
-							for (const command of providerDescriptor.commands) {
-								if (command.disambiguation?.length) {
-									participantsAndCommandsDisambiguation.push(...command.disambiguation.map((d) => ({
-										...d, category: d.category ?? d.categoryName
-									})));
-								}
-							}
-						}
+					if (providerDescriptor.disambiguation?.length) {
+						participantsDisambiguation.push(...providerDescriptor.disambiguation.map((d) => ({
+							...d, category: d.category ?? d.categoryName
+						})));
 					}
 
-					const store = new DisposableStore();
-					store.add(this._chatAgentService.registerAgent(
-						providerDescriptor.id,
-						{
-							extensionId: extension.description.identifier,
-							publisherDisplayName: extension.description.publisherDisplayName ?? extension.description.publisher, // May not be present in OSS
-							extensionPublisherId: extension.description.publisher,
-							extensionDisplayName: extension.description.displayName ?? extension.description.name,
-							id: providerDescriptor.id,
-							description: providerDescriptor.description,
-							supportsModelPicker: providerDescriptor.supportsModelPicker,
-							when: providerDescriptor.when,
-							metadata: {
-								isSticky: providerDescriptor.isSticky,
-								sampleRequest: providerDescriptor.sampleRequest,
-							},
-							name: providerDescriptor.name,
-							fullName: providerDescriptor.fullName,
-							isDefault: providerDescriptor.isDefault,
-							locations: isNonEmptyArray(providerDescriptor.locations) ?
-								providerDescriptor.locations.map(ChatAgentLocation.fromRaw) :
-								[ChatAgentLocation.Panel],
-							slashCommands: providerDescriptor.commands ?? [],
-							disambiguation: coalesce(participantsAndCommandsDisambiguation.flat()),
-							supportsToolReferences: providerDescriptor.supportsToolReferences,
-						} satisfies IChatAgentData));
+					try {
+						const store = new DisposableStore();
+						store.add(this._chatAgentService.registerAgent(
+							providerDescriptor.id,
+							{
+								extensionId: extension.description.identifier,
+								publisherDisplayName: extension.description.publisherDisplayName ?? extension.description.publisher, // May not be present in OSS
+								extensionPublisherId: extension.description.publisher,
+								extensionDisplayName: extension.description.displayName ?? extension.description.name,
+								id: providerDescriptor.id,
+								description: providerDescriptor.description,
+								when: providerDescriptor.when,
+								metadata: {
+									isSticky: providerDescriptor.isSticky,
+									sampleRequest: providerDescriptor.sampleRequest,
+								},
+								name: providerDescriptor.name,
+								fullName: providerDescriptor.fullName,
+								isDefault: providerDescriptor.isDefault,
+								locations: isNonEmptyArray(providerDescriptor.locations) ?
+									providerDescriptor.locations.map(ChatAgentLocation.fromRaw) :
+									[ChatAgentLocation.Panel],
+								slashCommands: providerDescriptor.commands ?? [],
+								disambiguation: coalesce(participantsDisambiguation.flat()),
+							} satisfies IChatAgentData));
 
-					this._participantRegistrationDisposables.set(
-						getParticipantKey(extension.description.identifier, providerDescriptor.id),
-						store
-					);
+						this._participantRegistrationDisposables.set(
+							getParticipantKey(extension.description.identifier, providerDescriptor.id),
+							store
+						);
+					} catch (e) {
+						this.logService.error(`Failed to register participant ${providerDescriptor.id}: ${toErrorMessage(e, true)}`);
+					}
 				}
 			}
 
@@ -307,7 +299,7 @@ export class ChatExtensionPointHandler implements IWorkbenchContribution {
 		// Register View. Name must be hardcoded because we want to show it even when the extension fails to load due to an API version incompatibility.
 		const name = 'Assistant';
 		const viewDescriptor: IViewDescriptor[] = [{
-			id: CHAT_VIEW_ID,
+			id: ChatViewId,
 			containerIcon: this._viewContainer.icon,
 			containerTitle: this._viewContainer.title.value,
 			singleViewPaneContainerTitle: this._viewContainer.title.value,
@@ -369,7 +361,7 @@ export class ChatCompatibilityNotifier implements IWorkbenchContribution {
 				const commandButton = `[${showExtensionLabel}](command:${showExtensionsWithIdsCommandId}?${encodeURIComponent(JSON.stringify([['GitHub.copilot-chat']]))})`;
 				const versionMessage = `GitHub Copilot Chat version: ${chat.version}`;
 				const viewsRegistry = Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry);
-				viewsRegistry.registerViewWelcomeContent(CHAT_VIEW_ID, {
+				viewsRegistry.registerViewWelcomeContent(ChatViewId, {
 					content: [mainMessage, commandButton, versionMessage].join('\n\n'),
 					when: CONTEXT_CHAT_EXTENSION_INVALID,
 				});

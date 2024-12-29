@@ -5,7 +5,6 @@
 
 import * as dom from '../../../../../base/browser/dom.js';
 import { Emitter } from '../../../../../base/common/event.js';
-import { IMarkdownString } from '../../../../../base/common/htmlContent.js';
 import { Disposable, IDisposable } from '../../../../../base/common/lifecycle.js';
 import { equalsIgnoreCase } from '../../../../../base/common/strings.js';
 import { URI } from '../../../../../base/common/uri.js';
@@ -15,6 +14,7 @@ import { IResolvedTextEditorModel, ITextModelService } from '../../../../../edit
 import { IContextKeyService } from '../../../../../platform/contextkey/common/contextkey.js';
 import { IInstantiationService } from '../../../../../platform/instantiation/common/instantiation.js';
 import { IAideAgentPlanStepViewModel, isAideAgentPlanStepVM } from '../../common/aideAgentPlanViewModel.js';
+import { IChatMarkdownContent } from '../../common/aideAgentService.js';
 import { IChatRendererContent } from '../../common/aideAgentViewModel.js';
 import { IMarkdownVulnerability } from '../../common/annotations.js';
 import { CodeBlockModelCollection } from '../../common/codeBlockModelCollection.js';
@@ -39,7 +39,7 @@ export class AideAgentPlanMarkdownContentPart extends Disposable implements IAid
 	public readonly codeblocks: IChatCodeBlockInfo[] = [];
 
 	constructor(
-		private readonly markdown: IMarkdownString,
+		private readonly markdown: IChatMarkdownContent,
 		context: IAideAgentPlanContentPartRenderContext,
 		private readonly editorPool: EditorPool,
 		fillInIncompleteTokens = false,
@@ -54,12 +54,11 @@ export class AideAgentPlanMarkdownContentPart extends Disposable implements IAid
 		super();
 
 		const element = context.element;
-		const markdownDecorationsRenderer = instantiationService.createInstance(ChatMarkdownDecorationsRenderer);
 
 		// We release editors in order so that it's more likely that the same editor will be assigned if this element is re-rendered right away, like it often is during progressive rendering
 		const orderedDisposablesList: IDisposable[] = [];
 		let codeBlockIndex = codeBlockStartIndex;
-		const result = this._register(renderer.render(markdown, {
+		const result = this._register(renderer.render(markdown.content, {
 			fillInIncompleteTokens,
 			codeBlockRendererSync: (languageId, text) => {
 				const index = codeBlockIndex++;
@@ -119,7 +118,9 @@ export class AideAgentPlanMarkdownContentPart extends Disposable implements IAid
 			asyncRenderCallback: () => this._onDidChangeHeight.fire(),
 		}));
 
-		this._register(markdownDecorationsRenderer.walkTreeAndAnnotateReferenceLinks(result.element));
+
+		const markdownDecorationsRenderer = instantiationService.createInstance(ChatMarkdownDecorationsRenderer);
+		this._register(markdownDecorationsRenderer.walkTreeAndAnnotateReferenceLinks(markdown, result.element));
 
 		orderedDisposablesList.reverse().forEach(d => this._register(d));
 		this.domNode = result.element;
@@ -141,7 +142,7 @@ export class AideAgentPlanMarkdownContentPart extends Disposable implements IAid
 	}
 
 	hasSameContent(other: IChatRendererContent, followingContent: IChatRendererContent[], element: IAideAgentPlanStepViewModel): boolean {
-		return other.kind === 'planStep' && other.description.value === this.markdown.value;
+		return other.kind === 'planStep' && other.description.value === this.markdown.content.value;
 	}
 
 	layout(width: number): void {

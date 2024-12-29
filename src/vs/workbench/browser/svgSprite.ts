@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { sanitize } from '../../base/browser/dompurify/dompurify.js';
+import dompurify from '../../base/browser/dompurify/dompurify.js';
 import { Disposable } from '../../base/common/lifecycle.js';
 import { AppResourcePath, FileAccess } from '../../base/common/network.js';
 import { IFileService } from '../../platform/files/common/files.js';
@@ -28,7 +28,7 @@ export class SvgSpriteService extends Disposable implements ISVGSpriteService {
 			const fileUri = FileAccess.asFileUri(href);
 			const file = await this.fileService.readFile(fileUri);
 			const content = file.value.toString();
-			const sanitizedContent = sanitize(content, { RETURN_TRUSTED_TYPE: true });
+			const sanitizedContent = dompurify.sanitize(content, { RETURN_TRUSTED_TYPE: true });
 			const xmlDoc = new DOMParser().parseFromString(sanitizedContent as unknown as string, 'image/svg+xml');
 			const svg = xmlDoc.querySelector('svg');
 

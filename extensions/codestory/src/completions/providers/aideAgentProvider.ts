@@ -164,11 +164,11 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		this.responseStreamCollection = new AideResponseStreamCollection(extensionContext, sidecarClient, this);
 		this.aideAgent.supportIssueReporting = false;
 		this.aideAgent.welcomeMessageProvider = {
-			provideWelcomeMessage: async () => {
-				return [
-					'Hi, I\'m **Aide**, your personal coding assistant! I can find, understand, explain, debug or write code for you.',
-				];
-			}
+			provideWelcomeMessage: async () => ({
+				icon: new vscode.ThemeIcon('comment-discussion'),
+				title: 'Assistant',
+				message: new vscode.MarkdownString('Hi, I\'m **Aide**, your personal coding assistant! I can find, understand, explain, debug or write code for you.'),
+			})
 		};
 	}
 

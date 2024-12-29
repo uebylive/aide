@@ -763,7 +763,6 @@ class UserDataProfileExportState extends UserDataProfileImportExportState {
 			name: profile.name,
 			location: profile.location,
 			isDefault: profile.isDefault,
-			shortName: profile.shortName,
 			icon: profile.icon,
 			globalStorageHome: profile.globalStorageHome,
 			settingsResource: profile.settingsResource.with({ scheme: USER_DATA_PROFILE_EXPORT_SCHEME }),

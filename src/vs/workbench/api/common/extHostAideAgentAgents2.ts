@@ -9,15 +9,17 @@ import { raceCancellation } from '../../../base/common/async.js';
 import { CancellationToken, CancellationTokenSource } from '../../../base/common/cancellation.js';
 import { toErrorMessage } from '../../../base/common/errorMessage.js';
 import { Emitter } from '../../../base/common/event.js';
-import { IMarkdownString } from '../../../base/common/htmlContent.js';
 import { Iterable } from '../../../base/common/iterator.js';
 import { Disposable, DisposableMap, DisposableStore, toDisposable } from '../../../base/common/lifecycle.js';
 import { revive } from '../../../base/common/marshalling.js';
+import { ThemeIcon } from '../../../base/common/themables.js';
 import { assertType } from '../../../base/common/types.js';
 import { URI } from '../../../base/common/uri.js';
+import { generateUuid } from '../../../base/common/uuid.js';
 import { ExtensionIdentifier, IExtensionDescription } from '../../../platform/extensions/common/extensions.js';
 import { ILogService } from '../../../platform/log/common/log.js';
-import { ChatAgentLocation, IChatAgentRequest, IChatAgentResult } from '../../contrib/aideAgent/common/aideAgentAgents.js';
+import { isChatViewTitleActionContext } from '../../contrib/aideAgent/common/aideAgentActions.js';
+import { ChatAgentLocation, IChatAgentRequest, IChatAgentResult, IChatWelcomeMessageContent } from '../../contrib/aideAgent/common/aideAgentAgents.js';
 import { ChatAgentVoteDirection, IChatFollowup, IChatResponseErrorDetails, IChatUserActionEvent, IChatVoteAction } from '../../contrib/aideAgent/common/aideAgentService.js';
 import { checkProposedApiEnabled, isProposedApiEnabled } from '../../services/extensions/common/extensions.js';
 import { Dto } from '../../services/extensions/common/proxyIdentifier.js';
@@ -82,7 +84,7 @@ class AideAgentResponseStream {
 				}
 			};
 
-			this._apiObject = {
+			this._apiObject = Object.freeze<vscode.AideAgentResponseStream>({
 				markdown(value) {
 					throwIfDone(this.markdown);
 					const part = new extHostTypes.ChatResponseMarkdownPart(value);
@@ -115,9 +117,7 @@ class AideAgentResponseStream {
 				anchor(value, title?: string) {
 					throwIfDone(this.anchor);
 					const part = new extHostTypes.ChatResponseAnchorPart(value, title);
-					const dto = typeConvert.ChatResponseAnchorPart.from(part);
-					_report(dto);
-					return this;
+					return this.push(part);
 				},
 				button(value) {
 					throwIfDone(this.anchor);
@@ -241,12 +241,32 @@ class AideAgentResponseStream {
 						part instanceof extHostTypes.ChatResponseWarningPart ||
 						part instanceof extHostTypes.ChatResponseConfirmationPart ||
 						part instanceof extHostTypes.ChatResponseCodeCitationPart ||
-						part instanceof extHostTypes.ChatResponseMovePart
+						part instanceof extHostTypes.ChatResponseMovePart ||
+						part instanceof extHostTypes.ChatResponseProgressPart2
 					) { }
 
 					if (part instanceof extHostTypes.ChatResponseReferencePart) {
 						// Ensure variable reference values get fixed up
 						this.reference2(part.value, part.iconPath, part.options);
+					} else if (part instanceof extHostTypes.ChatResponseProgressPart2) {
+						const dto = part.task ? typeConvert.ChatTask.from(part) : typeConvert.ChatResponseProgressPart.from(part);
+						_report(dto, part.task);
+					} else if (part instanceof extHostTypes.ChatResponseAnchorPart) {
+						const dto = typeConvert.AideAgentResponseAnchorPart.from(part);
+
+						if (part.resolve) {
+							dto.resolveId = generateUuid();
+
+							const cts = new CancellationTokenSource();
+							part.resolve(cts.token)
+								.then(() => {
+									const resolvedDto = typeConvert.AideAgentResponseAnchorPart.from(part);
+									that._proxy.$handleAnchorResolve(that._responseId, dto.resolveId!, resolvedDto);
+								})
+								.then(() => cts.dispose(), () => cts.dispose());
+							that._sessionDisposables.add(toDisposable(() => cts.dispose(true)));
+						}
+						_report(dto);
 					} else {
 						const dto = typeConvert.AideAgentResponsePart.from(part, that._commandsConverter, that._sessionDisposables);
 						_report(dto);
@@ -259,7 +279,7 @@ class AideAgentResponseStream {
 					_report(dto);
 					that.close();
 				}
-			};
+			});
 		}
 
 		return this._apiObject;
@@ -273,7 +293,7 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 	private readonly _proxy: MainThreadAideAgentAgentsShape2;
 
 	private static _participantDetectionProviderIdPool = 0;
-	private readonly _participantDetectionProviders = new Map<number, vscode.ChatParticipantDetectionProvider>();
+	private readonly _participantDetectionProviders = new Map<number, ExtHostParticipantDetector>();
 
 	private readonly _sessionDisposables: DisposableMap<string, DisposableStore> = this._register(new DisposableMap());
 	private readonly _completionDisposables: DisposableMap<number, DisposableStore> = this._register(new DisposableMap());
@@ -286,6 +306,17 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 	) {
 		super();
 		this._proxy = mainContext.getProxy(MainContext.MainThreadAideAgentAgents2);
+
+		_commands.registerArgumentProcessor({
+			processArgument: (arg) => {
+				// Don't send this argument to extension commands
+				if (isChatViewTitleActionContext(arg)) {
+					return null;
+				}
+
+				return arg;
+			}
+		});
 	}
 
 	transferActiveChat(newWorkspace: vscode.Uri): void {
@@ -294,7 +325,6 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 
 	createChatAgent(extension: IExtensionDescription, id: string, handler: vscode.AideSessionParticipant): vscode.AideSessionAgent {
 		const handle = ExtHostAideAgentAgents2._idPool++;
-		this._proxy.$registerAgent(handle, extension.identifier, id, {}, undefined);
 		const agent = new ExtHostChatAgent(
 			extension, id, this._proxy, handle,
 			// Preserve the correct 'this' context
@@ -303,12 +333,13 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 		);
 		this._agents.set(handle, agent);
 
+		this._proxy.$registerAgent(handle, extension.identifier, id, {}, undefined);
 		return agent.apiAgent;
 	}
 
-	registerChatParticipantDetectionProvider(provider: vscode.ChatParticipantDetectionProvider): vscode.Disposable {
+	registerChatParticipantDetectionProvider(extension: IExtensionDescription, provider: vscode.AideAgentParticipantDetectionProvider): vscode.Disposable {
 		const handle = ExtHostAideAgentAgents2._participantDetectionProviderIdPool++;
-		this._participantDetectionProviders.set(handle, provider);
+		this._participantDetectionProviders.set(handle, new ExtHostParticipantDetector(extension, provider));
 		this._proxy.$registerChatParticipantDetectionProvider(handle);
 		return toDisposable(() => {
 			this._participantDetectionProviders.delete(handle);
@@ -319,13 +350,15 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 	async $detectChatParticipant(handle: number, requestDto: Dto<IChatAgentRequest>, context: { history: IChatAgentHistoryEntryDto[] }, options: { location: ChatAgentLocation; participants?: vscode.ChatParticipantMetadata[] }, token: CancellationToken): Promise<vscode.ChatParticipantDetectionResult | null | undefined> {
 		const { request, location, history } = await this._createRequest(requestDto, context);
 
-		const provider = this._participantDetectionProviders.get(handle);
-		if (!provider) {
+		const detector = this._participantDetectionProviders.get(handle);
+		if (!detector) {
 			return undefined;
 		}
 
-		return provider.provideParticipantDetection(
-			typeConvert.ChatAgentRequest.to(request, location),
+		const extRequest = typeConvert.AideAgentRequest.to(request, location);
+
+		return detector.provider.provideParticipantDetection(
+			extRequest,
 			{ history },
 			{ participants: options.participants, location: typeConvert.ChatLocation.to(options.location) },
 			token
@@ -379,9 +412,6 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 
 		try {
 			const { request, location } = await this._createRequest(requestDto, context);
-			if (!isProposedApiEnabled(agent.extension, 'chatParticipantAdditions')) {
-				delete request.userSelectedModelId;
-			}
 
 			const task = agent.invoke(
 				typeConvert.AideAgentRequest.to(request, location),
@@ -395,7 +425,7 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 					} catch (err) {
 						const msg = `result.metadata MUST be JSON.stringify-able. Got error: ${err.message}`;
 						this._logService.error(`[${agent.extension.identifier.value}] [@${agent.id}] ${msg}`, agent.extension);
-						return { errorDetails: { message: msg }, nextQuestion: result.nextQuestion } satisfies IChatAgentResult;
+						return { errorDetails: { message: msg }, nextQuestion: result.nextQuestion };
 					}
 				}
 				let errorDetails: IChatResponseErrorDetails | undefined;
@@ -425,23 +455,13 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 			return undefined;
 		}
 
-		// Create a new cancellation token over here, this will proxy whatever
-		// is happening on the editor side and relay this back to the extension
-		const cancellationTokenSource = new CancellationTokenSource();
-		// forcefully create the cancellation token over here
-		const cancellationToken = cancellationTokenSource.token;
-
+		const cts = new CancellationTokenSource();
 		const { responseId } = await this._proxy.$initResponse(sessionId);
 		const stream = new AideAgentResponseStream(responseId, this._proxy, this._commands.converter, sessionDisposables);
-		// javascript ftw, since this is an async function it does not get cleared
-		// by the GC and keeps spinning in the background, what this means for us
-		// is that we have a way to send to the extension layer what the cancellation
-		// token status is as it is present on the editor layer
 		this._proxy.$cancelExchange(sessionId, responseId).then(() => {
-			// cancel the pending source over here
-			cancellationTokenSource.cancel();
+			cts.cancel();
 		});
-		return { stream: stream.apiObject, token: cancellationToken, exchangeId: responseId };
+		return { stream: stream.apiObject, token: cts.token, exchangeId: responseId };
 	}
 
 	private async prepareHistoryTurns(agentId: string, context: { history: IChatAgentHistoryEntryDto[] }): Promise<(vscode.ChatRequestTurn | vscode.ChatResponseTurn)[]> {
@@ -460,8 +480,7 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 			const toolReferences = h.request.variables.variables
 				.filter(v => v.isTool)
 				.map(typeConvert.ChatLanguageModelToolReference.to);
-			const turn = new extHostTypes.ChatRequestTurn(h.request.message, h.request.command, varsWithoutTools, h.request.agentId);
-			turn.toolReferences = toolReferences;
+			const turn = new extHostTypes.ChatRequestTurn(h.request.message, h.request.command, varsWithoutTools, h.request.agentId, toolReferences);
 			res.push(turn);
 
 			// RESPONSE turn
@@ -561,13 +580,13 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 		return items.map((i) => typeConvert.ChatAgentCompletionItem.from(i, this._commands.converter, disposables));
 	}
 
-	async $provideWelcomeMessage(handle: number, location: ChatAgentLocation, token: CancellationToken): Promise<(string | IMarkdownString)[] | undefined> {
+	async $provideWelcomeMessage(handle: number, token: CancellationToken): Promise<IChatWelcomeMessageContent | undefined> {
 		const agent = this._agents.get(handle);
 		if (!agent) {
 			return;
 		}
 
-		return await agent.provideWelcomeMessage(typeConvert.ChatLocation.to(location), token);
+		return await agent.provideWelcomeMessage(token);
 	}
 
 	async $provideChatTitle(handle: number, context: IChatAgentHistoryEntryDto[], token: CancellationToken): Promise<string | undefined> {
@@ -589,6 +608,13 @@ export class ExtHostAideAgentAgents2 extends Disposable implements ExtHostAideAg
 		return (await agent.provideSampleQuestions(typeConvert.ChatLocation.to(location), token))
 			.map(f => typeConvert.ChatFollowup.from(f, undefined));
 	}
+}
+
+class ExtHostParticipantDetector {
+	constructor(
+		public readonly extension: IExtensionDescription,
+		public readonly provider: vscode.AideAgentParticipantDetectionProvider,
+	) { }
 }
 
 class ExtHostChatAgent {
@@ -654,21 +680,22 @@ class ExtHostChatAgent {
 			.filter(f => !(f && 'message' in f));
 	}
 
-	async provideWelcomeMessage(location: vscode.ChatLocation, token: CancellationToken): Promise<(string | IMarkdownString)[] | undefined> {
-		if (!this._welcomeMessageProvider) {
-			return [];
+	async provideWelcomeMessage(token: CancellationToken): Promise<IChatWelcomeMessageContent | undefined> {
+		if (!this._welcomeMessageProvider?.provideWelcomeMessage) {
+			return undefined;
 		}
-		const content = await this._welcomeMessageProvider.provideWelcomeMessage(location, token);
-		if (!content) {
-			return [];
+
+		const content = await this._welcomeMessageProvider.provideWelcomeMessage(token);
+		const icon = content?.icon;
+		if (!content || !ThemeIcon.isThemeIcon(icon)) {
+			return undefined;
 		}
-		return content.map(item => {
-			if (typeof item === 'string') {
-				return item;
-			} else {
-				return typeConvert.MarkdownString.from(item);
-			}
-		});
+
+		return {
+			...content,
+			icon,
+			message: typeConvert.MarkdownString.from(content.message),
+		};
 	}
 
 	async provideTitle(context: vscode.ChatContext, token: CancellationToken): Promise<string | undefined> {

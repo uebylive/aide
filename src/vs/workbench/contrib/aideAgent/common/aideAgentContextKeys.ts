@@ -26,6 +26,7 @@ export const CONTEXT_IN_CHAT_INPUT = new RawContextKey<boolean>('inAideAgentInpu
 export const CONTEXT_IN_CHAT_SESSION = new RawContextKey<boolean>('inAideAgent', false, { type: 'boolean', description: localize('inChat', "True when focus is in the chat widget, false otherwise.") });
 export const CONTEXT_CHAT_MODE = new RawContextKey<string>('aideAgentMode', 'Plan', { type: 'string', description: localize('chatMode', "The current chat mode.") });
 export const CONTEXT_CHAT_IS_PLAN_VISIBLE = new RawContextKey<boolean>('aideAgentIsPlanVisible', false, { type: 'boolean', description: localize('chatIsPlanVisible', "True when the plan is visible.") });
+export const CONTEXT_CHAT_LAST_ITEM_ID = new RawContextKey<string[]>('aideAgentLastItemId', [], { type: 'string', description: localize('chatLastItemId', "The id of the last chat item.") });
 export const CONTEXT_CHAT_LAST_EXCHANGE_COMPLETE = new RawContextKey<boolean>('aideAgentLastExchangeComplete', false, { type: 'boolean', description: localize('chatLastExchangeComplete', "True when the last exchange is complete.") });
 export const CONTEXT_CHAT_SESSION_WITH_EDITS = new RawContextKey<boolean>('aideAgentSessionWithEdits', false, { type: 'boolean', description: localize('chatSessionWithEdits', "True when the chat session has edits.") });
 
