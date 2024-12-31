@@ -16,9 +16,36 @@ import { unzip } from './unzip';
 
 const updateBaseURL = `https://aide-updates.codestory.ai/api/update/sidecar`;
 
+// Add function to detect WSL environment
+async function isWSLEnvironment(): Promise<boolean> {
+	if (os.platform() !== 'win32') {
+		return false;
+	}
+
+	try {
+		const content = await vscode.workspace.fs.readFile(vscode.Uri.file('/proc/version'));
+		return content.toString().toLowerCase().includes('microsoft');
+	} catch {
+		return false;
+	}
+}
+
+let wslTunnel: vscode.Tunnel | undefined;
+
+async function getHealthCheckURL(): Promise<string> {
+	if (await isWSLEnvironment() && wslTunnel) {
+		const localAddress = typeof wslTunnel.localAddress === 'string'
+			? wslTunnel.localAddress
+			: `${wslTunnel.localAddress.host}:${wslTunnel.localAddress.port}`;
+		return `http://${localAddress}/api/health`;
+	}
+	return `${sidecarURL()}/api/health`;
+}
+
 async function healthCheck(): Promise<boolean> {
 	try {
-		const response = await fetch(`${sidecarURL()}/api/health`);
+		const healthCheckURL = await getHealthCheckURL();
+		const response = await fetch(healthCheckURL);
 		if (response.status === 200) {
 			return true;
 		} else {
@@ -184,6 +211,20 @@ async function runSideCarBinary(webserverPath: string) {
 			console.error('Failed to start sidecar binary:', error);
 			throw error;
 		});
+
+		// Set up WSL tunnel if needed
+		if (await isWSLEnvironment()) {
+			try {
+				wslTunnel = await vscode.workspace.openTunnel({
+					remoteAddress: { port: 42424, host: 'localhost' },
+					localAddressPort: 42424
+				});
+				console.log('WSL tunnel created successfully');
+			} catch (error) {
+				console.error('Failed to create WSL tunnel:', error);
+				throw error;
+			}
+		}
 	} catch (error) {
 		console.error('Failed to start sidecar binary:', error);
 		throw new Error('Failed to start sidecar binary. Please check logs for details.');
@@ -206,6 +247,12 @@ export async function restartSidecarBinary(extensionBasePath: string) {
 		const port = parseInt(url.split(':').at(-1) ?? '42424');
 		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Restarting);
 		await killProcessOnPort(port);
+
+		// Clean up WSL tunnel if it exists
+		if (wslTunnel) {
+			await wslTunnel.dispose();
+			wslTunnel = undefined;
+		}
 	} catch (error) {
 		console.warn(error);
 	}
