@@ -28,7 +28,7 @@
     "modelSelection",
     "sidecar",
     "terminalSelection",
-    "textSearchProviderNew"
+    "tunnels"
   ],
   "files": [
     "src/llm/embeddings/models/**/*",
