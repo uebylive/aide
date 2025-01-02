@@ -160,7 +160,6 @@ export interface IChatWidget {
 	getInput(): string;
 	logInputHistory(): void;
 	acceptInput(mode: AgentMode, query?: string): Promise<IChatResponseModel | undefined>;
-	acceptInputWithPrefix(prefix: string): void;
 	setInputPlaceholder(placeholder: string): void;
 	resetInputPlaceholder(): void;
 	focusLastMessage(): void;

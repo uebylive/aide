@@ -879,10 +879,6 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		return this._acceptInput(query && mode ? { query, mode } : undefined);
 	}
 
-	async acceptInputWithPrefix(prefix: string): Promise<void> {
-		this._acceptInput({ prefix });
-	}
-
 	private collectInputState(): IChatInputState {
 		const inputState: IChatInputState = {};
 		this.contribs.forEach(c => {
@@ -893,7 +889,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		return inputState;
 	}
 
-	private async _acceptInput(opts: { query: string; mode: AgentMode } | { prefix: string } | undefined): Promise<IChatResponseModel | undefined> {
+	private async _acceptInput(opts: { query: string; mode: AgentMode } | undefined): Promise<IChatResponseModel | undefined> {
 		if (this.viewModel) {
 			this.editPreviewWidget?.updateProgress('Thinking...');
 			const editorValue = this.getInput();
@@ -915,8 +911,8 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			const requestId = this.chatAccessibilityService.acceptRequest();
 			const input = !opts ? editorValue :
 				'query' in opts ? opts.query :
-					`${opts.prefix} ${editorValue}`;
-			const isUserQuery = !opts || 'prefix' in opts;
+					editorValue;
+			const isUserQuery = true; // we don't support non-user queries at the moment
 			let agentMode = AgentMode.Chat;
 			if (opts && 'mode' in opts) {
 				agentMode = opts.mode;
