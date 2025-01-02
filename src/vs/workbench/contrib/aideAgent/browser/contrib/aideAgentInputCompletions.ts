@@ -587,7 +587,6 @@ class BuiltInFileProvider extends Disposable {
 		const query = this.queryBuilder.file(this.workspaceContextService.getWorkspace().folders, {
 			filePattern: this.lastPattern,
 			sortByScore: true,
-			maxResults: 250,
 			cacheKey: this.cacheKey.key
 		});
 
