@@ -91,7 +91,7 @@ export class AideAgentEditPreviewWidget extends Disposable {
 	}
 
 	updateProgress(message: string) {
-		this.visible = true;
+		this.visible = Boolean(message) ? true : false; // Hide if empty string
 		if (message === 'Complete') {
 			this._elements.icon.classList.remove(...progressIconClasses);
 			this._elements.icon.classList.add(...defaultIconClasses);

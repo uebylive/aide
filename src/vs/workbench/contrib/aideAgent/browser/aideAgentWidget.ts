@@ -484,11 +484,11 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		}
 
 		if (this.editPreviewWidget) {
-			const lastProgressStage = vmItems
+			const progressStages = vmItems
 				.filter(i => isResponseVM(i))
 				.flatMap(i => i.response.value.map(progress => ({ progress, exchangeId: i.id })))
-				.filter(i => i.progress.kind === 'stage')
-				.pop();
+				.filter(i => i.progress.kind === 'stage');
+			const lastProgressStage = progressStages.pop();
 			if (lastProgressStage && lastProgressStage.exchangeId === this.chatService.lastExchangeId) {
 				const entry = lastProgressStage?.progress as IChatProgressResponseContent & { kind: 'stage' };
 				this.editPreviewWidget.updateProgress(entry.message);

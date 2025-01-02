@@ -84,6 +84,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	// this is a hack to test the theory that we can keep snapshots and make
 	// that work
 	private editCounter = 0;
+	private startedStreams = new Set<string>();
 
 	private async isPortOpen(port: number): Promise<boolean> {
 		return new Promise((resolve, _) => {
@@ -461,6 +462,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		const exchangeIdForEvent = event.exchangeId;
 		const agentMode = event.mode;
 		const variables = event.references;
+
 		if (event.mode === vscode.AideAgentMode.Chat) {
 			const responseStream = this.sidecarClient.agentSessionChat(prompt, sessionId, exchangeIdForEvent, editorUrl, agentMode, variables, this.currentRepoRef, this.projectContext.labels, workosAccessToken);
 			await this.reportAgentEventsToChat(true, responseStream);
@@ -526,6 +528,13 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			});
 			if (responseStream === undefined) {
 				continue;
+			}
+
+			// Call this only once per session-exchange
+			const key = `${sessionId}-${exchangeId}`;
+			if (!this.startedStreams.has(key)) {
+				responseStream.stream.stage({ message: 'Thinking...' });
+				this.startedStreams.add(key);
 			}
 
 			if (event.event.FrameworkEvent) {
@@ -718,7 +727,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					sessionId,
 					exchangeId,
 				});
-
 				if (event.event.ExchangeEvent.PlansExchangeState) {
 					const editsState = event.event.ExchangeEvent.PlansExchangeState.edits_state;
 					if (editsState === 'Loading') {
@@ -760,6 +768,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					continue;
 				}
 				if (event.event.ExchangeEvent.FinishedExchange) {
+					responseStream?.stream.stage({ message: 'Complete' });
 					this.closeAndRemoveResponseStream(sessionId, exchangeId);
 				}
 			}
