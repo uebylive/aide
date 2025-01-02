@@ -895,6 +895,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 	private async _acceptInput(opts: { query: string; mode: AgentMode } | { prefix: string } | undefined): Promise<IChatResponseModel | undefined> {
 		if (this.viewModel) {
+			this.editPreviewWidget?.updateProgress('Thinking...');
 			const editorValue = this.getInput();
 			if ('isPassthrough' in this.viewContext && this.viewContext.isPassthrough) {
 				const widget = await showChatView(this.viewsService);

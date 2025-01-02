@@ -533,7 +533,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			// Call this only once per session-exchange
 			const key = `${sessionId}-${exchangeId}`;
 			if (!this.startedStreams.has(key)) {
-				responseStream.stream.stage({ message: 'Thinking...' });
+				responseStream.stream.stage({ message: 'Loading...' });
 				this.startedStreams.add(key);
 			}
 
