@@ -19,7 +19,7 @@ import { ensureSideBarChatViewSize } from '../aideAgent.js';
 
 
 export class ChatGettingStartedContribution extends Disposable implements IWorkbenchContribution {
-	static readonly ID = 'workbench.contrib.chatGettingStarted';
+	static readonly ID = 'workbench.contrib.aideAgentGettingStarted';
 	private recentlyInstalled: boolean = false;
 
 	private static readonly hideWelcomeView = 'workbench.chat.hideWelcomeView';
