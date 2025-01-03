@@ -32,7 +32,7 @@ import { ChatServiceTelemetry } from './aideAgentServiceTelemetry.js';
 import { IAideAgentSlashCommandService } from './aideAgentSlashCommands.js';
 import { IAideAgentVariablesService } from './aideAgentVariables.js';
 
-const serializedChatKey = 'interactive.sessions';
+const serializedChatKey = 'aide.sessions';
 
 const globalChatKey = 'chat.workspaceTransfer';
 interface IChatTransfer {
