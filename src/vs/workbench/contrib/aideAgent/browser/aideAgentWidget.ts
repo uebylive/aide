@@ -328,15 +328,6 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		return this._lastSelectedAgent;
 	}
 
-	private _completionContext: IChatWidgetCompletionContext = 'default';
-	set completionContext(context: IChatWidgetCompletionContext) {
-		this._completionContext = context;
-	}
-
-	get completionContext(): IChatWidgetCompletionContext {
-		return this._completionContext;
-	}
-
 	get supportsFileReferences(): boolean {
 		return !!this.viewOptions.supportsFileReferences;
 	}

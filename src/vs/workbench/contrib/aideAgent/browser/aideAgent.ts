@@ -22,7 +22,7 @@ import { IAideAgentPlanStepViewModel } from '../common/aideAgentPlanViewModel.js
 import { IChatRequestViewModel, IChatResponseViewModel, IChatViewModel } from '../common/aideAgentViewModel.js';
 import { ChatInputPart } from './aideAgentInputPart.js';
 import { ChatViewPane } from './aideAgentViewPane.js';
-import { IChatViewState, IChatWidgetCompletionContext, IChatWidgetContrib } from './aideAgentWidget.js';
+import { IChatViewState, IChatWidgetContrib } from './aideAgentWidget.js';
 import { ICodeBlockActionContext } from './codeBlockPart.js';
 
 export const IAideAgentWidgetService = createDecorator<IAideAgentWidgetService>('aideAgentWidgetService');
@@ -149,7 +149,6 @@ export interface IChatWidget {
 	lastSelectedAgent: IChatAgentData | undefined;
 	readonly scopedContextKeyService: IContextKeyService;
 	readonly input: ChatInputPart;
-	completionContext: IChatWidgetCompletionContext;
 	readonly mode: AgentMode;
 
 	getContrib<T extends IChatWidgetContrib>(id: string): T | undefined;

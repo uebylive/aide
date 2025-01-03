@@ -8,7 +8,6 @@ import { CancellationToken } from '../../../../../base/common/cancellation.js';
 import { isPatternInWord } from '../../../../../base/common/filters.js';
 import { Disposable } from '../../../../../base/common/lifecycle.js';
 import { ResourceSet } from '../../../../../base/common/map.js';
-import { StopWatch } from '../../../../../base/common/stopwatch.js';
 import { URI } from '../../../../../base/common/uri.js';
 import { generateUuid } from '../../../../../base/common/uuid.js';
 import { Position } from '../../../../../editor/common/core/position.js';
@@ -45,7 +44,10 @@ import { ChatInputPart } from '../aideAgentInputPart.js';
 import { IChatWidgetCompletionContext } from '../aideAgentWidget.js';
 import { ChatDynamicVariableModel } from './aideAgentDynamicVariables.js';
 
-const chatDynamicCompletions = 'chatDynamicCompletions';
+const builtinStaticCompletions = 'builtinStaticCompletions';
+const builtinFileProvider = 'builtinFileProvider';
+const builtinCodeProvider = 'builtinCodeProvider';
+type builtinSecondaryProvider = 'builtinFileProvider' | 'builtinCodeProvider';
 
 class SlashCommandCompletions extends Disposable {
 	constructor(
@@ -339,7 +341,7 @@ class BuiltinStaticCompletions extends Disposable {
 		super();
 
 		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
-			_debugDisplayName: chatDynamicCompletions,
+			_debugDisplayName: builtinStaticCompletions,
 			triggerCharacters: [chatVariableLeader],
 			provideCompletionItems: async (model: ITextModel, position: Position, context: CompletionContext, token: CancellationToken) => {
 				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
@@ -353,36 +355,8 @@ class BuiltinStaticCompletions extends Disposable {
 				}
 
 				const result: CompletionList = { suggestions: [] };
-				let pattern: string = '';
-				if (range.varWord?.word && range.varWord.word.startsWith(chatVariableLeader)) {
-					pattern = range.varWord.word.toLowerCase().slice(1); // remove leading @
-				}
-
-				// We currently trigger the same completion provider when the user selects one of the predefined
-				// options like "File" or "Code". In order to support this, we set the completion context on the widget,
-				// and reset it when the user is done with the current completion context and starts over again.
-				const currentCompletionContext = widget.completionContext;
-				if (
-					currentCompletionContext !== 'default'
-					&& pattern.length === 0
-					&& context.triggerKind === CompletionTriggerKind.TriggerCharacter
-				) {
-					widget.completionContext = 'default';
-				}
-
-				if (currentCompletionContext === 'default' && (
-					pattern.length === 0
-					|| isPatternInWord(pattern.toLowerCase(), 0, pattern.length, 'file', 0, 4)
-					|| isPatternInWord(pattern.toLowerCase(), 0, pattern.length, 'code', 0, 4)
-				)) {
-					this.addStaticFileEntry(widget, range, result);
-					this.addStaticCodeEntry(widget, range, result);
-				}
-
-				// mark results as incomplete because further typing might yield
-				// in more search results
-				result.incomplete = true;
-
+				this.addStaticFileEntry(widget, range, result);
+				this.addStaticCodeEntry(widget, range, result);
 				return result;
 			}
 		}));
@@ -399,7 +373,7 @@ class BuiltinStaticCompletions extends Disposable {
 			range,
 			kind: CompletionItemKind.File,
 			sortText: 'z',
-			command: { id: TriggerSecondaryChatWidgetCompletionAction.ID, title: TriggerSecondaryChatWidgetCompletionAction.ID, arguments: [{ widget, range: range.replace, pick: 'files' } satisfies TriggerSecondaryChatWidgetCompletionContext] }
+			command: { id: TriggerSecondaryChatWidgetCompletionAction.ID, title: TriggerSecondaryChatWidgetCompletionAction.ID, arguments: [{ widget, pick: 'files' } satisfies TriggerSecondaryChatWidgetCompletionContext] }
 		});
 	}
 
@@ -412,7 +386,7 @@ class BuiltinStaticCompletions extends Disposable {
 			range,
 			kind: CompletionItemKind.Reference,
 			sortText: 'z',
-			command: { id: TriggerSecondaryChatWidgetCompletionAction.ID, title: TriggerSecondaryChatWidgetCompletionAction.ID, arguments: [{ widget, range: range.replace, pick: 'code' } satisfies TriggerSecondaryChatWidgetCompletionContext] }
+			command: { id: TriggerSecondaryChatWidgetCompletionAction.ID, title: TriggerSecondaryChatWidgetCompletionAction.ID, arguments: [{ widget, pick: 'code' } satisfies TriggerSecondaryChatWidgetCompletionContext] }
 		});
 	}
 
@@ -448,11 +422,9 @@ class BuiltInFileProvider extends Disposable {
 		this.queryBuilder = this.instantiationService.createInstance(QueryBuilder);
 
 		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
-			_debugDisplayName: chatDynamicCompletions,
+			_debugDisplayName: builtinFileProvider,
 			triggerCharacters: [chatVariableLeader],
 			provideCompletionItems: async (model: ITextModel, position: Position, context: CompletionContext, token: CancellationToken) => {
-				const stopWatch = new StopWatch(false);
-
 				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
 				if (!widget || !widget.supportsFileReferences) {
 					return null;
@@ -469,16 +441,11 @@ class BuiltInFileProvider extends Disposable {
 					pattern = range.varWord.word.toLowerCase().slice(1); // remove leading @
 				}
 
-				if (pattern.length === 0) {
-					return null;
+				if (pattern.length === 0 && context.triggerKind === CompletionTriggerKind.TriggerCharacter) {
+					return;
 				}
 
-				const currentCompletionContext = widget.completionContext;
-				if (currentCompletionContext !== 'default' && currentCompletionContext !== 'files') {
-					return null;
-				}
-
-				await this.addFileEntries(pattern, widget, result, range, token, stopWatch);
+				await this.addFileEntries(pattern, widget, result, range, token);
 
 				this.lastPattern = pattern;
 				// mark results as incomplete because further typing might yield
@@ -488,14 +455,12 @@ class BuiltInFileProvider extends Disposable {
 				// cache the entries for the next completion
 				this.cacheScheduler.schedule();
 
-				console.log('Done fetching file entries in ' + stopWatch.elapsed());
-
 				return result;
 			}
 		}));
 	}
 
-	private async addFileEntries(pattern: string, widget: IChatWidget, result: CompletionList, info: { insert: Range; replace: Range; varWord: IWordAtPosition | null }, token: CancellationToken, stopwatch: StopWatch) {
+	private async addFileEntries(pattern: string, widget: IChatWidget, result: CompletionList, info: { insert: Range; replace: Range; varWord: IWordAtPosition | null }, token: CancellationToken) {
 		const makeFileCompletionItem = async (resource: URI): Promise<CompletionItem | undefined> => {
 			const basename = this.labelService.getUriBasenameLabel(resource);
 			const insertText = `${chatVariableLeader}${basename}`;
@@ -521,7 +486,6 @@ class BuiltInFileProvider extends Disposable {
 		const seen = new ResourceSet();
 		const len = result.suggestions.length;
 
-		console.log('Start querying history:' + stopwatch.elapsed());
 		// HISTORY
 		// always take the last N items
 		for (const item of this.historyService.getHistory()) {
@@ -549,7 +513,6 @@ class BuiltInFileProvider extends Disposable {
 			}
 		}
 
-		console.log('Start querying file cache:' + stopwatch.elapsed());
 		// SEARCH
 		// use file search when having a pattern
 		if (pattern) {
@@ -670,11 +633,9 @@ class BuiltInCodeProvider extends Disposable {
 		this.workspaceSymbolsQuickAccess = this.instantiationService.createInstance(SymbolsQuickAccessProvider);
 
 		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
-			_debugDisplayName: chatDynamicCompletions,
+			_debugDisplayName: builtinCodeProvider,
 			triggerCharacters: [chatVariableLeader],
 			provideCompletionItems: async (model: ITextModel, position: Position, context: CompletionContext, token: CancellationToken) => {
-				// const stopWatch = new StopWatch();
-
 				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
 				if (!widget || !widget.supportsFileReferences) {
 					return null;
@@ -691,13 +652,8 @@ class BuiltInCodeProvider extends Disposable {
 					pattern = range.varWord.word.toLowerCase().slice(1); // remove leading @
 				}
 
-				if (pattern.length === 0) {
-					return null;
-				}
-
-				const currentCompletionContext = widget.completionContext;
-				if (currentCompletionContext !== 'default' && currentCompletionContext !== 'code') {
-					return null;
+				if (pattern.length === 0 && context.triggerKind === CompletionTriggerKind.TriggerCharacter) {
+					return;
 				}
 
 				await this.addCodeEntries(pattern, widget, result, range, token);
@@ -709,8 +665,6 @@ class BuiltInCodeProvider extends Disposable {
 
 				// cache the entries for the next completion
 				this.cacheScheduler.schedule();
-
-				// console.log('Done fetching code entries in ' + stopWatch.elapsed());
 
 				return result;
 			}
@@ -727,23 +681,20 @@ class BuiltInCodeProvider extends Disposable {
 		}
 
 		for (const pick of entries) {
-			const label = pick.label;
+			const symbolName = pick.ariaLabel!;
 			const uri = pick.symbol?.location.uri;
 			const range = pick.symbol?.location.range;
-			// if any of this is null, then hard continue, we do not want to send
-			// nullable data to the extension
 			if (uri === undefined || range === undefined) {
 				continue;
 			}
 
-			// label looks like `$(symbol-type) symbol-name`, but we want to insert `@symbol-name`.
-			const insertText = `${chatVariableLeader}${label.replace(/^\$\([^)]+\) /, '')}`;
+			const insertText = `${chatVariableLeader}${symbolName}`;
 			result.suggestions.push({
-				label: pick,
-				filterText: `${chatVariableLeader}${pick.label}`,
+				label: { ...pick, label: symbolName },
+				filterText: insertText,
 				insertText,
 				range: info,
-				kind: CompletionItemKind.Text,
+				kind: CompletionItemKind.Reference,
 				sortText: '{', // after `z`
 				command: {
 					id: BuiltinStaticCompletions.addReferenceCommand, title: '', arguments: [new ReferenceArgument(widget, {
@@ -765,12 +716,11 @@ Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).regi
 
 interface TriggerSecondaryChatWidgetCompletionContext {
 	widget: IChatWidget;
-	range: IRange;
 	pick: IChatWidgetCompletionContext;
 }
 
 function isTriggerSecondaryChatWidgetCompletionContext(context: any): context is TriggerSecondaryChatWidgetCompletionContext {
-	return 'widget' in context && 'range' in context && 'pick' in context;
+	return 'widget' in context && 'pick' in context;
 }
 
 export class TriggerSecondaryChatWidgetCompletionAction extends Action2 {
@@ -795,17 +745,25 @@ export class TriggerSecondaryChatWidgetCompletionAction extends Action2 {
 		if (!widget.supportsFileReferences) {
 			return;
 		}
-		widget.completionContext = context.pick;
+
+		const pick = context.pick;
+		let debugDisplayName: builtinSecondaryProvider | undefined = undefined;
+		if (pick === 'files') {
+			debugDisplayName = 'builtinFileProvider';
+		} else if (pick === 'code') {
+			debugDisplayName = 'builtinCodeProvider';
+		} else {
+			return;
+		}
 
 		const inputEditor = widget.inputEditor;
-
 		const suggestController = SuggestController.get(inputEditor);
 		if (!suggestController) {
 			return;
 		}
 
 		const completionProviders = languageFeaturesService.completionProvider.getForAllLanguages();
-		const completionProvider = completionProviders.find(provider => provider._debugDisplayName === chatDynamicCompletions);
+		const completionProvider = completionProviders.find(provider => provider._debugDisplayName === debugDisplayName);
 		if (!completionProvider) {
 			return;
 		}
