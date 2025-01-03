@@ -1059,7 +1059,9 @@ export class SideCarClient {
 		const allFiles = vscode.workspace.textDocuments.map((textDocument) => {
 			return textDocument.uri.fsPath;
 		});
-		const openFiles = vscode.window.visibleTextEditors.map((textDocument) => {
+		const openFiles = vscode.window.visibleTextEditors.filter((textDocument) => {
+			return textDocument.document.uri.scheme === 'file';
+		}).map((textDocument) => {
 			return textDocument.document.uri.fsPath;
 		});
 		const currentShell = detectDefaultShell();
