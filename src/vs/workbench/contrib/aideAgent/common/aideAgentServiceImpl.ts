@@ -24,7 +24,7 @@ import { IWorkbenchAssignmentService } from '../../../services/assignment/common
 import { IExtensionService } from '../../../services/extensions/common/extensions.js';
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgent, IChatAgentCommand, IChatAgentData, IChatAgentRequest, IChatAgentResult } from './aideAgentAgents.js';
 import { CONTEXT_VOTE_UP_ENABLED } from './aideAgentContextKeys.js';
-import { AgentMode, AgentScope, ChatModel, ChatRequestModel, ChatResponseModel, IChatModel, IChatRequestVariableData, IChatResponseModel, IExportableChatData, ISerializableChatData, ISerializableChatDataIn, ISerializableChatsData, normalizeSerializableChatData, updateRanges } from './aideAgentModel.js';
+import { AgentMode, AgentScope, ChatModel, ChatRequestModel, ChatResponseModel, IChatModel, IChatRequestVariableData, IChatResponseModel, IExportableChatData, ISerializableChatData, ISerializableChatDataIn, ISerializableChatsData, updateRanges } from './aideAgentModel.js';
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestSlashCommandPart, IParsedChatRequest, chatAgentLeader, chatSubcommandLeader, getPromptText } from './aideAgentParserTypes.js';
 import { ChatRequestParser } from './aideAgentRequestParser.js';
 import { IAideAgentService, IChatCompleteResponse, IChatDetail, IChatFollowup, IChatProgress, IChatSendRequestData, IChatSendRequestOptions, IChatSendRequestResponseState, IChatTransferredSessionData, IChatUserActionEvent } from './aideAgentService.js';
@@ -151,7 +151,7 @@ export class ChatService extends Disposable implements IAideAgentService {
 			allSessions = allSessions.concat(
 				Object.values(this._persistedSessions)
 					.filter(session => !this._sessionModels.has(session.sessionId))
-					.filter(session => session.requests.length));
+					.filter(session => session.exchanges.length));
 			allSessions.sort((a, b) => (b.creationDate ?? 0) - (a.creationDate ?? 0));
 			allSessions = allSessions.slice(0, maxPersistedSessions);
 			if (allSessions.length) {
@@ -194,7 +194,7 @@ export class ChatService extends Disposable implements IAideAgentService {
 		// Has the chat in this window been updated, and then closed? Overwrite the old persisted chats.
 		Object.values(originalPersistedSessions).forEach(session => {
 			const persistedSession = persistedSessions[session.sessionId];
-			if (persistedSession && session.requests.length > persistedSession.requests.length) {
+			if (persistedSession && session.exchanges.length > persistedSession.exchanges.length) {
 				// We will add a 'modified date' at some point, but comparing the number of requests is good enough
 				persistedSessions[session.sessionId] = session;
 			} else if (!persistedSession && session.isNew) {
@@ -259,20 +259,24 @@ export class ChatService extends Disposable implements IAideAgentService {
 
 			const sessions = arrayOfSessions.reduce<ISerializableChatsData>((acc, session) => {
 				// Revive serialized markdown strings in response data
-				for (const request of session.requests) {
-					if (Array.isArray(request.response)) {
-						request.response = request.response.map((response) => {
-							if (typeof response === 'string') {
-								return new MarkdownString(response);
-							}
-							return response;
-						});
-					} else if (typeof request.response === 'string') {
-						request.response = [new MarkdownString(request.response)];
+				for (const exchange of session.exchanges) {
+
+					if (exchange.type === 'response') {
+						if (Array.isArray(exchange.response)) {
+							exchange.response = exchange.response.map((response) => {
+								if (typeof response === 'string') {
+									return new MarkdownString(response);
+								}
+								return response;
+							});
+						} else if (typeof exchange.response === 'string') {
+							exchange.response = [new MarkdownString(exchange.response)];
+						}
 					}
+
 				}
 
-				acc[session.sessionId] = normalizeSerializableChatData(session);
+				acc[session.sessionId] = session;
 				return acc;
 			}, {});
 			return sessions;
@@ -307,13 +311,13 @@ export class ChatService extends Disposable implements IAideAgentService {
 	 */
 	getHistory(): IChatDetail[] {
 		const persistedSessions = Object.values(this._persistedSessions)
-			.filter(session => session.requests.length > 0)
+			.filter(session => session.exchanges.length > 0)
 			.filter(session => !this._sessionModels.has(session.sessionId));
 
 		const persistedSessionItems = persistedSessions
 			.filter(session => !session.isImported)
 			.map(session => {
-				const title = session.customTitle ?? ChatModel.getDefaultTitle(session.requests);
+				const title = session.customTitle ?? ChatModel.getDefaultTitle(session.exchanges);
 				return {
 					sessionId: session.sessionId,
 					title,

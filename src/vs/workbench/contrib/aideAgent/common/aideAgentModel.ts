@@ -594,9 +594,14 @@ export interface ISerializableChatsData {
 export type ISerializableChatAgentData = UriDto<IChatAgentData>;
 
 export interface ISerializableChatRequestData {
+	type: 'request';
 	message: string | IParsedChatRequest; // string => old format
 	/** Is really like "prompt data". This is the message in the format in which the agent gets it + variable values. */
 	variableData: IChatRequestVariableData;
+}
+
+export interface ISerializableChatResponseData {
+	type: 'response';
 	response: ReadonlyArray<IMarkdownString | IChatResponseProgressFileTreeData | IChatContentInlineReference | IChatAgentMarkdownContentWithVulnerability> | undefined;
 	agent?: ISerializableChatAgentData;
 	slashCommand?: IChatAgentCommand;
@@ -612,9 +617,11 @@ export interface ISerializableChatRequestData {
 	codeCitations?: ReadonlyArray<IChatCodeCitation>;
 }
 
+export type ISerializableExchange = ISerializableChatRequestData | ISerializableChatResponseData;
+
 export interface IExportableChatData {
 	initialLocation: ChatAgentLocation | undefined;
-	requests: ISerializableChatRequestData[];
+	exchanges: ISerializableExchange[];
 	requesterUsername: string;
 	responderUsername: string;
 	requesterAvatarIconUri: UriComponents | undefined;
@@ -629,82 +636,23 @@ export interface ISerializableChatData1 extends IExportableChatData {
 	sessionId: string;
 	creationDate: number;
 	isImported: boolean;
-
 	/** Indicates that this session was created in this window. Is cleared after the chat has been written to storage once. Needed to sync chat creations/deletions between empty windows. */
 	isNew?: boolean;
-}
-
-export interface ISerializableChatData2 extends ISerializableChatData1 {
-	version: 2;
 	lastMessageDate: number;
-	computedTitle: string | undefined;
-}
-
-export interface ISerializableChatData3 extends Omit<ISerializableChatData2, 'version' | 'computedTitle'> {
-	version: 3;
 	customTitle: string | undefined;
 }
+
 
 /**
  * Chat data that has been parsed and normalized to the current format.
  */
-export type ISerializableChatData = ISerializableChatData3;
+export type ISerializableChatData = ISerializableChatData1;
 
 /**
  * Chat data that has been loaded but not normalized, and could be any format
  */
-export type ISerializableChatDataIn = ISerializableChatData1 | ISerializableChatData2 | ISerializableChatData3;
+export type ISerializableChatDataIn = ISerializableChatData1;
 
-/**
- * Normalize chat data from storage to the current format.
- * TODO- ChatModel#_deserialize and reviveSerializedAgent also still do some normalization and maybe that should be done in here too.
- */
-export function normalizeSerializableChatData(raw: ISerializableChatDataIn): ISerializableChatData {
-	normalizeOldFields(raw);
-
-	if (!('version' in raw)) {
-		return {
-			version: 3,
-			...raw,
-			lastMessageDate: raw.creationDate,
-			customTitle: undefined,
-		};
-	}
-
-	if (raw.version === 2) {
-		return {
-			...raw,
-			version: 3,
-			customTitle: raw.computedTitle
-		};
-	}
-
-	return raw;
-}
-
-function normalizeOldFields(raw: ISerializableChatDataIn): void {
-	// Fill in fields that very old chat data may be missing
-	if (!raw.sessionId) {
-		raw.sessionId = generateUuid();
-	}
-
-	if (!raw.creationDate) {
-		raw.creationDate = getLastYearDate();
-	}
-
-	if ('version' in raw && (raw.version === 2 || raw.version === 3)) {
-		if (!raw.lastMessageDate) {
-			// A bug led to not porting creationDate properly, and that was copied to lastMessageDate, so fix that up if missing.
-			raw.lastMessageDate = getLastYearDate();
-		}
-	}
-}
-
-function getLastYearDate(): number {
-	const lastYearDate = new Date();
-	lastYearDate.setFullYear(lastYearDate.getFullYear() - 1);
-	return lastYearDate.getTime();
-}
 
 export function isExportableSessionData(obj: unknown): obj is IExportableChatData {
 	const data = obj as IExportableChatData;
@@ -717,8 +665,8 @@ export function isSerializableSessionData(obj: unknown): obj is ISerializableCha
 	return isExportableSessionData(obj) &&
 		typeof data.creationDate === 'number' &&
 		typeof data.sessionId === 'string' &&
-		obj.requests.every((request: ISerializableChatRequestData) =>
-			!request.usedContext /* for backward compat allow missing usedContext */ || isIUsedContext(request.usedContext)
+		obj.exchanges.every((exchange: ISerializableExchange) =>
+			exchange.type === 'request' || (exchange.type === 'response' && (!exchange.usedContext /* for backward compat allow missing usedContext */ || isIUsedContext(exchange.usedContext)))
 		);
 }
 
@@ -811,8 +759,8 @@ export enum AgentScope {
 }
 
 export class ChatModel extends Disposable implements IChatModel {
-	static getDefaultTitle(requests: (ISerializableChatRequestData | IChatExchangeModel)[]): string {
-		const firstRequestMessage = requests.find(r => isRequestModel(r));
+	static getDefaultTitle(exchanges: (ISerializableExchange | IChatExchangeModel)[]): string {
+		const firstRequestMessage = exchanges.find(r => isRequestModel(r));
 		const message = firstRequestMessage?.message.text ?? 'Session';
 		return message.split('\n')[0].substring(0, 50);
 	}
@@ -964,44 +912,51 @@ export class ChatModel extends Disposable implements IChatModel {
 		}));
 	}
 
-	private _deserialize(obj: IExportableChatData): ChatRequestModel[] {
-		const requests = obj.requests;
-		if (!Array.isArray(requests)) {
+	private _deserialize(obj: IExportableChatData): Array<ChatRequestModel | ChatResponseModel> {
+		const exchanges = obj.exchanges;
+		if (!Array.isArray(exchanges)) {
 			this.logService.error(`Ignoring malformed session data: ${JSON.stringify(obj)}`);
 			return [];
 		}
 
 		try {
-			return requests.map((raw: ISerializableChatRequestData) => {
-				const parsedRequest =
-					typeof raw.message === 'string'
-						? this.getParsedRequestFromString(raw.message)
-						: reviveParsedChatRequest(raw.message);
+			return exchanges.map((raw: ISerializableExchange) => {
+				if (raw.type === 'request') {
+					const parsedRequest =
+						typeof raw.message === 'string'
+							? this.getParsedRequestFromString(raw.message)
+							: reviveParsedChatRequest(raw.message);
 
-				// Old messages don't have variableData, or have it in the wrong (non-array) shape
-				const variableData: IChatRequestVariableData = this.reviveVariableData(raw.variableData);
-				const request = new ChatRequestModel(this, parsedRequest, variableData);
-				if (raw.response || raw.result || (raw as any).responseErrorDetails) {
-					const agent = (raw.agent && 'metadata' in raw.agent) ? // Check for the new format, ignore entries in the old format
-						reviveSerializedAgent(raw.agent) : undefined;
+					// Old messages don't have variableData, or have it in the wrong (non-array) shape
+					const variableData: IChatRequestVariableData = this.reviveVariableData(raw.variableData);
+					return new ChatRequestModel(this, parsedRequest, variableData);
+				} else if (raw.type === 'response') {
+					if (raw.response || raw.result || (raw as any).responseErrorDetails) {
+						const agent = (raw.agent && 'metadata' in raw.agent) ? // Check for the new format, ignore entries in the old format
+							reviveSerializedAgent(raw.agent) : undefined;
 
-					// Port entries from old format
-					const result = 'responseErrorDetails' in raw ?
-						// eslint-disable-next-line local/code-no-dangerous-type-assertions
-						{ errorDetails: raw.responseErrorDetails } as IChatAgentResult : raw.result;
-					// TODO(@ghostwriternr): We used to assign the response to the request here, but now we don't.
-					const response = new ChatResponseModel(
-						this.aideAgentCodeEditingService,
-						raw.response ?? [new MarkdownString(raw.response)], this, agent, raw.slashCommand, true, raw.isCanceled, raw.vote, raw.voteDownReason, result, raw.followups
-					);
-					if (raw.usedContext) { // @ulugbekna: if this's a new vscode sessions, doc versions are incorrect anyway?
-						response.applyReference(revive(raw.usedContext));
+						// Port entries from old format
+						const result = 'responseErrorDetails' in raw ?
+							// eslint-disable-next-line local/code-no-dangerous-type-assertions
+							{ errorDetails: raw.responseErrorDetails } as IChatAgentResult : raw.result;
+						// TODO(@ghostwriternr): We used to assign the response to the request here, but now we don't.
+						const response = new ChatResponseModel(
+							this.aideAgentCodeEditingService,
+							raw.response ?? [new MarkdownString(raw.response)], this, agent, raw.slashCommand, true, raw.isCanceled, raw.vote, raw.voteDownReason, result, raw.followups
+						);
+						if (raw.usedContext) { // @ulugbekna: if this's a new vscode sessions, doc versions are incorrect anyway?
+							response.applyReference(revive(raw.usedContext));
+						}
+
+						raw.contentReferences?.forEach(r => response.applyReference(revive(r)));
+						raw.codeCitations?.forEach(c => response.applyCodeCitation(revive(c)));
+						return response;
+					} else {
+						throw new Error('Unknown response');
 					}
-
-					raw.contentReferences?.forEach(r => response.applyReference(revive(r)));
-					raw.codeCitations?.forEach(c => response.applyCodeCitation(revive(c)));
 				}
-				return request;
+				throw new Error('Unknown exchange');
+
 			});
 		} catch (error) {
 			this.logService.error('Failed to parse chat data', error);
@@ -1250,51 +1205,56 @@ export class ChatModel extends Disposable implements IChatModel {
 			responderUsername: this.responderUsername,
 			responderAvatarIconUri: this.responderAvatarIcon,
 			initialLocation: this.initialLocation,
-			// TODO(@ghostwriternr): Don't want to deal with this for now.
-			requests: [],
-			/*
-			requests: this._exchanges.map((r): ISerializableChatRequestData => {
-				const message = {
-					...r.message,
-					parts: r.message.parts.map(p => p && 'toJSON' in p ? (p.toJSON as Function)() : p)
-				};
-				const agent = r.response?.agent;
-				const agentJson = agent && 'toJSON' in agent ? (agent.toJSON as Function)() :
-					agent ? { ...agent } : undefined;
-				return {
-					message,
-					variableData: r.variableData,
-					response: r.response ?
-						r.response.response.value.map(item => {
-							// Keeping the shape of the persisted data the same for back compat
-							if (item.kind === 'treeData') {
-								return item.treeData;
-							} else if (item.kind === 'markdownContent') {
-								return item.content;
-							} else {
-								return item as any; // TODO
-							}
-						})
-						: undefined,
-					result: r.response?.result,
-					followups: r.response?.followups,
-					isCanceled: r.response?.isCanceled,
-					vote: r.response?.vote,
-					voteDownReason: r.response?.voteDownReason,
-					agent: agentJson,
-					slashCommand: r.response?.slashCommand,
-					usedContext: r.response?.usedContext,
-					contentReferences: r.response?.contentReferences,
-					codeCitations: r.response?.codeCitations
-				};
+			exchanges: this._exchanges.map((r): ISerializableExchange => {
+				if (isRequestModel(r)) {
+					const message = {
+						...r.message,
+						parts: r.message.parts.map(p => p && 'toJSON' in p ? (p.toJSON as Function)() : p)
+					};
+					return {
+						type: 'request',
+						message,
+						variableData: r.variableData
+					};
+				} else if (isResponseModel(r)) {
+					const agent = r.agent;
+					const agentJson = agent && 'toJSON' in agent ? (agent.toJSON as Function)() :
+						agent ? { ...agent } : undefined;
+					return {
+						type: 'response',
+						response: r ?
+							r.response.value.map(item => {
+								// Keeping the shape of the persisted data the same for back compat
+								if (item.kind === 'treeData') {
+									return item.treeData;
+								} else if (item.kind === 'markdownContent') {
+									return item.content;
+								} else {
+									return item as any; // TODO
+								}
+							})
+							: undefined,
+						result: r.result,
+						followups: r.followups,
+						isCanceled: r.isCanceled,
+						vote: r.vote,
+						voteDownReason: r.voteDownReason,
+						agent: agentJson,
+						slashCommand: r.slashCommand,
+						usedContext: r.usedContext,
+						contentReferences: r.contentReferences,
+						codeCitations: r.codeCitations
+					};
+				} else {
+					// TODO (g-danna) is it a good idea to throw an error here?
+					throw new Error('Unknown exchange type');
+				}
 			}),
-			*/
 		};
 	}
 
 	toJSON(): ISerializableChatData {
 		return {
-			version: 3,
 			...this.toExport(),
 			sessionId: this.sessionId,
 			creationDate: this._creationDate,
