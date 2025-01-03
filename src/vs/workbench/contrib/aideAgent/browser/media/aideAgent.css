@@ -1112,6 +1112,10 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	color: var(--vscode-textLink-foreground);
 }
 
+.aideagent-item-container .aideagent-attachment-icons {
+	padding-right: 8px;
+}
+
 .aideagent-item-container .aideagent-attachment-icons .icon {
 	height: 18px;
 	display: inline-block;

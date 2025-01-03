@@ -38,7 +38,7 @@ const PINNED_CONTEXT_CATEGORY = localize2('pinnedContext.category', "Pinned Cont
 
 const clearPinnedContextIcon = registerIcon('clear-pinned-context', Codicon.clearAll, localize('clearPinnedContextIcon', 'Icon for the clear pinned context action.'));
 
-const createQuickPickItem = (resourceOrEditor: URI | EditorInput | IResourceEditorInput, labelService: ILabelService, modelService: IModelService, languageService: ILanguageService) => {
+const createQuickPickItem = (resourceOrEditor: URI | EditorInput | IResourceEditorInput, labelService: ILabelService, modelService: IModelService, languageService: ILanguageService): IQuickPickItem & PinnedContextItem => {
 	let resource: URI | undefined;
 	if (isEditorInput(resourceOrEditor)) {
 		resource = EditorResourceAccessor.getOriginalUri(resourceOrEditor);
@@ -52,7 +52,7 @@ const createQuickPickItem = (resourceOrEditor: URI | EditorInput | IResourceEdit
 
 	const iconClassesValue = new Lazy(() => getIconClasses(modelService, languageService, resource, undefined, undefined));
 
-	return <IQuickPickItem & PinnedContextItem>{
+	return {
 		uri: resource,
 		label: basenameOrAuthority(resource),
 		description: labelService.getUriLabel(dirname(resource), { relative: true }),
@@ -95,6 +95,9 @@ CommandsRegistry.registerCommand(MANAGE_PINNED_CONTEXT, async (accessor) => {
 	picker.items = Array.from(uniqueItems.values());
 	picker.canSelectMany = true;
 	picker.hideCheckAll = true;
+	picker.matchOnDescription = true;
+	picker.matchOnDetail = true;
+	picker.matchOnLabel = true;
 	picker.placeholder = localize('pinnedContext.placeholder', "Select files to pin as context (press space to toggle)");
 	picker.selectedItems = picker.items.filter(item => {
 		const pickerItem = item as PinnedContextItem;

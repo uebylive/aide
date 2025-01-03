@@ -6,9 +6,11 @@
 import * as dom from '../../../../../base/browser/dom.js';
 import { Button } from '../../../../../base/browser/ui/button/button.js';
 import { IListRenderer, IListVirtualDelegate } from '../../../../../base/browser/ui/list/list.js';
+import { Codicon } from '../../../../../base/common/codicons.js';
 import { Emitter } from '../../../../../base/common/event.js';
 import { Disposable, DisposableStore, IDisposable } from '../../../../../base/common/lifecycle.js';
 import { basename, dirname } from '../../../../../base/common/path.js';
+import { ThemeIcon } from '../../../../../base/common/themables.js';
 import { URI } from '../../../../../base/common/uri.js';
 import { Range } from '../../../../../editor/common/core/range.js';
 import { isLocation } from '../../../../../editor/common/languages.js';
@@ -65,13 +67,23 @@ export class ChatAttachmentsContentPart extends Disposable {
 				localize('attachmentsPlural', "{0} attachments", this.variables.length) :
 				localize('attachmentsSingular', "1 attachment");
 			const iconsContainer = $('.aideagent-attachment-icons');
-			for (const item of this.variables) {
+			// Only process up to 3 items for icons
+			const maxIcons = 3;
+			const itemsToShow = this.variables.slice(0, maxIcons);
+			for (const item of itemsToShow) {
 				const reference = this.getReferenceUri(item.value);
 				if (reference) {
 					const iconElement = $('span.icon');
 					iconElement.classList.add(...getIconClasses(this.modelService, this.languageService, reference, FileKind.FILE));
 					iconsContainer.appendChild(iconElement);
 				}
+			}
+
+			// Add ellipsis icon if there are more than 3 items
+			if (this.variables.length > maxIcons) {
+				const iconElement = $('span.icon');
+				iconElement.classList.add(...ThemeIcon.asClassNameArray(Codicon.more));
+				iconsContainer.appendChild(iconElement);
 			}
 
 			const buttonElement = $('.aideagent-attachments-label.show-file-icons', undefined);
