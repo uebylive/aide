@@ -15,6 +15,7 @@ import { isCodeEditor } from '../../../../editor/browser/editorBrowser.js';
 import { IRange } from '../../../../editor/common/core/range.js';
 import { Location } from '../../../../editor/common/languages.js';
 import { IModelService } from '../../../../editor/common/services/model.js';
+import { ITextModelService } from '../../../../editor/common/services/resolverService.js';
 import { IEditorService } from '../../../services/editor/common/editorService.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { IPinnedContextService } from '../../pinnedContext/common/pinnedContext.js';
@@ -43,6 +44,7 @@ export class ChatVariablesService implements IAideAgentVariablesService {
 		@IAideAgentWidgetService private readonly chatWidgetService: IAideAgentWidgetService,
 		@IEditorService private readonly editorService: IEditorService,
 		@IModelService private readonly modelService: IModelService,
+		@ITextModelService private readonly textModelService: ITextModelService,
 		@IPinnedContextService private readonly pinnedContextService: IPinnedContextService,
 		@IViewsService private readonly viewsService: IViewsService,
 	) {
@@ -134,17 +136,28 @@ export class ChatVariablesService implements IAideAgentVariablesService {
 
 		// Always attach pinned context
 		const pinnedContexts = this.pinnedContextService.getPinnedContexts();
-		pinnedContexts.forEach(context => {
-			const model = this.modelService.getModel(context);
-			if (model) {
-				const range = model.getFullModelRange();
-				resolvedAttachedContext.push({
-					id: 'vscode.file.pinnedContext',
-					name: basename(model.uri.fsPath),
-					value: { uri: model.uri, range }
-				});
+		const pinnedContextPromises = pinnedContexts.map(async (context) => {
+			let model = this.modelService.getModel(context);
+			if (!model) {
+				try {
+					const modelReference = await this.textModelService.createModelReference(context);
+					model = modelReference.object.textEditorModel;
+					modelReference.dispose();
+				} catch (e) {
+					return null;
+				}
 			}
+
+			const range = model.getFullModelRange();
+			return {
+				id: 'vscode.file.pinnedContext',
+				name: basename(model.uri.fsPath),
+				value: { uri: model.uri, range }
+			};
 		});
+
+		const resolvedPinnedContexts = await Promise.all(pinnedContextPromises);
+		resolvedAttachedContext.push(...resolvedPinnedContexts.filter(pc => pc !== null));
 
 		if (options?.agentScope === AgentScope.Codebase) {
 			const openEditors = this.editorService.editors;
