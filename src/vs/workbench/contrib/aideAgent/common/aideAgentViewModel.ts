@@ -164,6 +164,7 @@ export interface IChatResponseViewModel {
 	readonly isComplete: boolean;
 	readonly isCanceled: boolean;
 	readonly isStale: boolean;
+	isLast: boolean;
 	readonly vote: ChatAgentVoteDirection | undefined;
 	readonly voteDownReason: ChatAgentVoteDownReason | undefined;
 	readonly replyFollowups?: IChatFollowup[];
@@ -187,7 +188,31 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 	private readonly _onDidChange = this._register(new Emitter<IChatViewModelChangeEvent>());
 	readonly onDidChange = this._onDidChange.event;
 
-	private readonly _items: (ChatRequestViewModel | ChatResponseViewModel)[] = [];
+	private _items: (ChatRequestViewModel | ChatResponseViewModel)[] = [];
+
+	private removeItem(index: number) {
+		if (index >= 0) {
+			const items = this._items.splice(index, 1);
+			const item = items[0];
+			if (item instanceof ChatResponseViewModel) {
+				item.dispose();
+			}
+		}
+	}
+
+	private addItem(item: ChatRequestViewModel | ChatResponseViewModel) {
+		if (isResponseVM(item)) {
+			const clonedItems = this._items.slice();
+			const lastResponseVMIndex = clonedItems.reverse().findIndex(isResponseVM);
+			if (lastResponseVMIndex >= 0) {
+				const lastResponseVM = this._items.at(lastResponseVMIndex);
+				if (isResponseVM(lastResponseVM)) {
+					lastResponseVM.isLast = false;
+				}
+			}
+		}
+		this._items.push(item);
+	}
 
 	private _inputPlaceholder: string | undefined = undefined;
 	get inputPlaceholder(): string | undefined {
@@ -230,7 +255,7 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 		_model.getExchanges().forEach((exchange, i) => {
 			if ('message' in exchange) {
 				const requestModel = this.instantiationService.createInstance(ChatRequestViewModel, exchange);
-				this._items.push(requestModel);
+				this.addItem(requestModel);
 				this.updateCodeBlockTextModels(requestModel);
 			} else if ('response' in exchange) {
 				this.onAddResponse(exchange);
@@ -241,7 +266,7 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 		this._register(_model.onDidChange(e => {
 			if (e.kind === 'addRequest') {
 				const requestModel = this.instantiationService.createInstance(ChatRequestViewModel, e.request);
-				this._items.push(requestModel);
+				this.addItem(requestModel);
 				this.updateCodeBlockTextModels(requestModel);
 
 				/* TODO(@ghostwriternr): Why do we need to do this?
@@ -253,17 +278,11 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 				this.onAddResponse(e.response);
 			} else if (e.kind === 'removeRequest') {
 				const requestIdx = this._items.findIndex(item => isRequestVM(item) && item.id === e.requestId);
-				if (requestIdx >= 0) {
-					this._items.splice(requestIdx, 1);
-				}
+				this.removeItem(requestIdx);
 
 				const responseIdx = e.responseId && this._items.findIndex(item => isResponseVM(item) && item.id === e.responseId);
-				if (typeof responseIdx === 'number' && responseIdx >= 0) {
-					const items = this._items.splice(responseIdx, 1);
-					const item = items[0];
-					if (item instanceof ChatResponseViewModel) {
-						item.dispose();
-					}
+				if (typeof responseIdx === 'number') {
+					this.removeItem(responseIdx);
 				}
 			}
 
@@ -282,7 +301,7 @@ export class ChatViewModel extends Disposable implements IChatViewModel {
 			}
 			return this._onDidChange.fire(null);
 		}));
-		this._items.push(response);
+		this.addItem(response);
 		this.updateCodeBlockTextModels(response);
 	}
 
@@ -383,6 +402,8 @@ export class ChatResponseViewModel extends Disposable implements IChatResponseVi
 	get id() {
 		return this._model.id;
 	}
+
+	isLast = true;
 
 	get dataId() {
 		return this._model.id + `_${this._modelChangeCount}` + `_${ChatModelInitState[this._model.session.initState]}`;

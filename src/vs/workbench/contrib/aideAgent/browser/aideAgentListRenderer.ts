@@ -306,7 +306,7 @@ export class ChatListItemRenderer extends Disposable implements ITreeRenderer<Ch
 
 		templateData.rowContainer.classList.toggle('aideagent-request', isRequestVM(element));
 		templateData.rowContainer.classList.toggle('interactive-response', isResponseVM(element));
-		templateData.rowContainer.classList.toggle('show-detail-progress', isResponseVM(element) && !element.isComplete && !element.progressMessages.length);
+		templateData.rowContainer.classList.toggle('show-detail-progress', isResponseVM(element) && element.isLast && !element.isComplete && !element.progressMessages.length);
 		templateData.username.textContent = element.username;
 		/*
 		if (!this.rendererOptions.noHeader) {
