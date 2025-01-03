@@ -84,7 +84,10 @@ export class ChatCollapsibleListContentPart extends Disposable implements IChatC
 			localize('usedReferencesPlural', "used {0} references", data.length) :
 			localize('usedReferencesSingular', "used {0} reference", 1));
 		const iconsContainer = $('.aideagent-attachment-icons');
-		for (const item of data) {
+		// Only process up to 3 items for icons
+		const maxIcons = 3;
+		const itemsToShow = data.slice(0, maxIcons);
+		for (const item of itemsToShow) {
 			if (item.kind === 'reference') {
 				const iconElement = $('span.icon');
 				const reference = this.getReferenceUri(item.reference);
@@ -93,6 +96,13 @@ export class ChatCollapsibleListContentPart extends Disposable implements IChatC
 				}
 				iconsContainer.appendChild(iconElement);
 			}
+		}
+
+		// Add ellipsis icon if there are more than 3 items
+		if (data.length > maxIcons) {
+			const iconElement = $('span.icon');
+			iconElement.classList.add(...ThemeIcon.asClassNameArray(Codicon.more));
+			iconsContainer.appendChild(iconElement);
 		}
 
 		const buttonElement = $('.aideagent-used-context-label.show-file-icons', undefined);
