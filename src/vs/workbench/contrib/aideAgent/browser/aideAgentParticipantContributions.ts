@@ -185,7 +185,7 @@ const planViewContainer: ViewContainer = Registry.as<IViewContainersRegistry>(Vi
 	storageId: planViewContainerId,
 	hideIfEmpty: true,
 	order: 5,
-}, ViewContainerLocation.Sidebar, { isDefault: true });
+}, ViewContainerLocation.Sidebar);
 
 export class ChatExtensionPointHandler implements IWorkbenchContribution {
 
