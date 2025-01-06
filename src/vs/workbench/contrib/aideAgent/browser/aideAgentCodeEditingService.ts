@@ -184,6 +184,11 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 				ref.dispose();
 			}
 			const textModelN = textModel;
+			this._register(textModelN.onDidChangeContent(e => {
+				if (e.isUndoing) {
+					this.handleUndoEditEvent(resource, e.changes);
+				}
+			}));
 
 			const id = generateUuid();
 			const textModel0 = this._register(this._modelService.createModel(
@@ -208,11 +213,12 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 
 		codeEdits.hunkData.ignoreTextModelNChanges = true;
 		codeEdits.textModelN.pushEditOperations(null, [workspaceEdit.textEdit], () => null);
-		this._register(codeEdits.textModelN.onDidChangeContent(e => {
-			if (e.isUndoing) {
-				this.handleUndoEditEvent(resource, e.changes);
-			}
-		}));
+
+		this.updateView(resource, codeEdits);
+		this._onDidChange.fire();
+	}
+
+	private async updateView(resource: URI, codeEdits: IAideAgentEdits) {
 		const { editState, diff } = await this.calculateDiff(codeEdits.textModel0, codeEdits.textModelN);
 		await codeEdits.hunkData.recompute(editState, diff);
 		codeEdits.hunkData.ignoreTextModelNChanges = false;
@@ -220,8 +226,6 @@ class AideAgentCodeEditingSession extends Disposable implements IAideAgentCodeEd
 		if (this.activeEditor?.getModel()?.uri.toString() === resource.toString()) {
 			this.updateDecorations(this.activeEditor, codeEdits);
 		}
-
-		this._onDidChange.fire();
 	}
 
 	private async calculateDiff(textModel0: ITextModel, textModelN: ITextModel) {
