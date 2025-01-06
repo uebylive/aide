@@ -148,6 +148,8 @@ export class RecentEditsRetriever implements vscode.Disposable {
 			oldContent,
 			trackedDocument.changes.map(c => c.change)
 		);
+		console.log('newContent');
+		console.log(newContent);
 
 		const diff = createGitDiff(uri.fsPath, oldContent, newContent);
 		return {
@@ -169,6 +171,8 @@ export class RecentEditsRetriever implements vscode.Disposable {
 	}
 
 	private onDidChangeTextDocument(event: vscode.TextDocumentChangeEvent): void {
+		console.log('onDidChangeTextDocument');
+		console.log({ event });
 		const shouldTrack = this.shouldTrackFile(event.document.uri);
 		if (!shouldTrack) {
 			return;
