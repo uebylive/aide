@@ -492,13 +492,17 @@ export class ChatResponseModel extends Disposable implements IChatResponseModel 
 	}
 
 	async applyCodeEdit(codeEdit: IChatCodeEdit) {
-		this._editingSession = this._register(this._aideAgentCodeEditingService.getOrStartCodeEditingSession(this.session.sessionId));
-		this._register(this._editingSession.onDidChange(() => {
-			this._onDidChange.fire();
-		}));
-		this._register(this._editingSession.onDidDispose(() => {
-			this._editingSession = undefined;
-		}));
+		let editingSession = this._aideAgentCodeEditingService.getExistingCodeEditingSession(this.session.sessionId);
+		if (!editingSession) {
+			editingSession = this._register(this._aideAgentCodeEditingService.getOrStartCodeEditingSession(this.session.sessionId));
+			this._register(editingSession.onDidChange(() => {
+				this._onDidChange.fire();
+			}));
+			this._register(editingSession.onDidDispose(() => {
+				this._editingSession = undefined;
+			}));
+		}
+		this._editingSession = editingSession;
 
 		for (const edit of codeEdit.edits.edits) {
 			if (isWorkspaceTextEdit(edit)) {
