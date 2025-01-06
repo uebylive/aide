@@ -529,7 +529,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			if (responseStream === undefined) {
 				continue;
 			}
-			console.log('eventType', event.event);
 
 			// Call this only once per session-exchange
 			const key = `${sessionId}-${exchangeId}`;
