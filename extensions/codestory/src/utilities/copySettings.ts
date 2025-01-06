@@ -9,7 +9,7 @@ import * as path from 'path';
 import { commands, env, ProgressLocation, Uri, window } from 'vscode';
 import { Logger } from 'winston';
 
-export type VSCodeVariant = 'vscode' | 'cursor' | 'vscodium' | 'vscode-insiders' | 'vscodium-insiders';
+export type VSCodeVariant = 'vscode' | 'cursor' | 'windsurf' | 'vscodium' | 'vscode-insiders' | 'vscodium-insiders';
 
 interface EditorPaths {
 	configDir: string;
@@ -106,6 +106,11 @@ const EDITOR_CONFIGS: Record<VSCodeVariant, {
 		displayName: 'Cursor',
 		configDirName: 'Cursor',
 		extensionsDirName: '.cursor'
+	},
+	'windsurf': {
+		displayName: 'Windsurf',
+		configDirName: 'Windsurf',
+		extensionsDirName: '.windsurf'
 	},
 	vscodium: {
 		displayName: 'VS Codium',
@@ -231,6 +236,7 @@ export const copySettings = async (logger: Logger) => {
 		[
 			{ label: 'VS Code', value: 'vscode' as VSCodeVariant },
 			{ label: 'Cursor', value: 'cursor' as VSCodeVariant },
+			{ label: 'Windsurf', value: 'windsurf' as VSCodeVariant },
 			{ label: 'VS Codium', value: 'vscodium' as VSCodeVariant },
 			{ label: 'VS Code Insiders', value: 'vscode-insiders' as VSCodeVariant },
 			{ label: 'VS Codium Insiders', value: 'vscodium-insiders' as VSCodeVariant }
