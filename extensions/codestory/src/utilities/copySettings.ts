@@ -3,314 +3,487 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-//  Copy keybindings.json and settings.json files
-// cp ~/Library/Application\ Support/Code/User/keybindings.json ~/Library/Application\ Support/Aide/User
-// cp ~/Library/Application\ Support/Code/User/settings.json ~/Library/Application\ Support/Aide/User
-
-import { Logger } from 'winston';
-import { commands, env, Uri, window } from 'vscode';
 import * as fs from 'fs';
 import * as os from 'os';
-import * as process from 'process';
 import * as path from 'path';
-import { runCommandAsync } from './commandRunner';
-import { get } from 'https';
+import { commands, env, ProgressLocation, Uri, window } from 'vscode';
+import { Logger } from 'winston';
 
+export type VSCodeVariant = 'vscode' | 'cursor' | 'windsurf' | 'vscodium' | 'vscode-insiders' | 'vscodium-insiders';
 
-type Architectures = typeof process.arch;
-type ExtensionPlatorm = 'universal' | `${NodeJS.Platform}-${Architectures}`;
-
-type VsixMetadata = {
-	downloads: {
-		[platform in ExtensionPlatorm]?: string
-	};
-};
-
-export interface IProductConfiguration {
-	updateUrl: string;
-	commit: string;
-	quality: string;
-	dataFolderName: string;
-	serverApplicationName?: string;
-	serverDataFolderName?: string;
+interface EditorPaths {
+	configDir: string;
+	extensionsDir: string;
+	displayName: string;
 }
 
+interface ExtensionMetadata {
+	namespace: string;
+	name: string;
+	version: string;
+}
+
+interface ExtensionInstallResult {
+	success: boolean;
+	message: string;
+}
+
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000;
+
+async function retry<T>(
+	operation: () => Promise<T>,
+	retries: number = MAX_RETRIES,
+	delay: number = RETRY_DELAY
+): Promise<T> {
+	let lastError: Error | undefined;
+	for (let i = 0; i < retries; i++) {
+		try {
+			return await operation();
+		} catch (error) {
+			lastError = error instanceof Error ? error : new Error(String(error));
+			if (i < retries - 1) {
+				await new Promise(resolve => setTimeout(resolve, delay));
+			}
+		}
+	}
+	throw new Error(lastError?.message || 'Operation failed after multiple retries');
+}
+
+interface OpenVSXResponse {
+	downloads: {
+		universal?: string;
+		linux?: {
+			x64?: string;
+			arm64?: string;
+		};
+		darwin?: {
+			x64?: string;
+			arm64?: string;
+		};
+		win32?: {
+			x64?: string;
+			arm64?: string;
+			ia32?: string;
+		};
+	};
+	files: {
+		download: string;
+	};
+}
+
+function getPlatformInfo() {
+	const platform = os.platform();
+	const arch = os.arch();
+	return { platform, arch };
+}
+
+// Helper function to download files
+async function downloadFileToFolder(url: string, destFolder: string, filename: string): Promise<string> {
+	const response = await fetch(url);
+	if (!response.ok) {
+		throw new Error(`Failed to download from ${url}: ${response.statusText}`);
+	}
+
+	const destPath = path.join(destFolder, filename);
+	const buffer = Buffer.from(await response.arrayBuffer());
+	fs.writeFileSync(destPath, buffer);
+	return destPath;
+}
+
+// Map of editor variants to their configuration details
+const EDITOR_CONFIGS: Record<VSCodeVariant, {
+	displayName: string;
+	configDirName: string;
+	extensionsDirName: string;
+}> = {
+	vscode: {
+		displayName: 'VS Code',
+		configDirName: 'Code',
+		extensionsDirName: '.vscode'
+	},
+	cursor: {
+		displayName: 'Cursor',
+		configDirName: 'Cursor',
+		extensionsDirName: '.cursor'
+	},
+	'windsurf': {
+		displayName: 'Windsurf',
+		configDirName: 'Windsurf',
+		extensionsDirName: '.windsurf'
+	},
+	vscodium: {
+		displayName: 'VS Codium',
+		configDirName: 'VSCodium',
+		extensionsDirName: '.vscode-oss'
+	},
+	'vscode-insiders': {
+		displayName: 'VS Code Insiders',
+		configDirName: 'Code - Insiders',
+		extensionsDirName: '.vscode-insiders'
+	},
+	'vscodium-insiders': {
+		displayName: 'VS Codium Insiders',
+		configDirName: 'VSCodium-Insiders',
+		extensionsDirName: '.vscode-oss-insiders'
+	}
+};
+
+function getSourceEditorPaths(variant: VSCodeVariant): EditorPaths {
+	const homeDir = os.homedir();
+	const config = EDITOR_CONFIGS[variant];
+
+	// Get the base paths from environment variables, similar to how VSCode does it
+	const userDataDir = process.env.VSCODE_PORTABLE
+		? path.join(process.env.VSCODE_PORTABLE, 'user-data')
+		: process.env.VSCODE_APPDATA
+			? process.env.VSCODE_APPDATA
+			: path.join(homeDir, '.config');
+
+	// Use the environment variable for extensions if available
+	const extensionsDir = process.env.VSCODE_EXTENSIONS
+		? process.env.VSCODE_EXTENSIONS
+		: path.join(homeDir, config.extensionsDirName, 'extensions');
+
+	// Construct the config directory path using the config dir name
+	const configDir = path.join(userDataDir, config.configDirName, 'User');
+
+	return {
+		configDir,
+		extensionsDir,
+		displayName: config.displayName
+	};
+}
+
+function getDestinationEditorPaths(product: IProductConfiguration): EditorPaths {
+	const homeDir = os.homedir();
+
+	// Handle development mode by appending -dev to dataFolderName
+	const isDevMode = process.env.VSCODE_DEV === '1';
+	const dataFolderName = isDevMode
+		? `${product.dataFolderName}-dev`
+		: product.dataFolderName;
+
+	// In development mode on Linux, both config and extensions are in the dev folder
+	if (isDevMode && (os.platform() === 'linux' || os.platform() === 'darwin')) {
+		const devDir = path.join(homeDir, dataFolderName);
+		return {
+			configDir: path.join(devDir, 'User'),
+			extensionsDir: path.join(devDir, 'extensions'),
+			displayName: product.nameLong || product.nameShort || 'Aide'
+		};
+	}
+
+	// For non-dev mode or other platforms, use the standard paths
+	const userDataDir = process.env.VSCODE_PORTABLE
+		? path.join(process.env.VSCODE_PORTABLE, 'user-data')
+		: process.env.VSCODE_APPDATA
+			? process.env.VSCODE_APPDATA
+			: path.join(homeDir, '.config');
+
+	// Use the environment variable for extensions if available
+	const extensionsDir = process.env.VSCODE_EXTENSIONS
+		? process.env.VSCODE_EXTENSIONS
+		: path.join(homeDir, dataFolderName, 'extensions');
+
+	// For config dir, use the application name from product.json, fallback to dataFolderName if not available
+	const configDir = path.join(userDataDir, product.applicationName || product.dataFolderName, 'User');
+
+	return {
+		configDir,
+		extensionsDir,
+		displayName: product.nameLong || product.nameShort || 'Aide'
+	};
+}
+
+// Helper function to ensure directory exists
+function ensureDir(dir: string): void {
+	if (!fs.existsSync(dir)) {
+		fs.mkdirSync(dir, { recursive: true });
+	}
+}
+
+// Helper function to copy file if it exists
+async function copyFileIfExists(src: string, dest: string, logger: Logger): Promise<void> {
+	try {
+		if (fs.existsSync(src)) {
+			ensureDir(path.dirname(dest));
+			fs.copyFileSync(src, dest);
+		}
+	} catch (error) {
+		logger.error(`Error copying file from ${src} to ${dest}`, error);
+		throw error;
+	}
+}
+
+export interface IProductConfiguration {
+	dataFolderName: string;
+	nameShort?: string;
+	nameLong?: string;
+	applicationName?: string;
+}
 
 function getProductConfiguration(): IProductConfiguration {
 	const content = fs.readFileSync(path.join(env.appRoot, 'product.json')).toString();
 	return JSON.parse(content) as IProductConfiguration;
 }
 
-export const copySettings = async (workingDirectory: string, logger: Logger) => {
+export const copySettings = async (logger: Logger) => {
+	const product = getProductConfiguration();
 
-	const { dataFolderName } = getProductConfiguration();
-
-	window.showInformationMessage('Copying settings from vscode to aide');
-	// We want to execute the cp command above
-	// First we want to ensure that ~/.aide exists
-
-	// if the platform is windows we have to gate is specially
-	if (os.platform() === 'win32') {
-		// Now we write custom code to make this work
-		const appDataPath = process.env.APPDATA;
-		const userProfilePath = process.env.USERPROFILE;
-		try {
-			if (appDataPath !== undefined) {
-				// copy the settings.json
-				const settingsPath = path.join(appDataPath, 'Code', 'User', 'settings.json');
-				const destinationPath = path.join(appDataPath, 'Aide', 'User', 'settings.json');
-				if (fs.existsSync(settingsPath)) {
-					fs.copyFileSync(settingsPath, destinationPath);
-				}
-			}
-		} catch (exception) {
-			// console.log('error when copying user settings.json', exception);
+	// Show quick pick for editor selection
+	const editorChoice = await window.showQuickPick(
+		[
+			{ label: 'VS Code', value: 'vscode' as VSCodeVariant },
+			{ label: 'Cursor', value: 'cursor' as VSCodeVariant },
+			{ label: 'Windsurf', value: 'windsurf' as VSCodeVariant },
+			{ label: 'VS Codium', value: 'vscodium' as VSCodeVariant },
+			{ label: 'VS Code Insiders', value: 'vscode-insiders' as VSCodeVariant },
+			{ label: 'VS Codium Insiders', value: 'vscodium-insiders' as VSCodeVariant }
+		],
+		{
+			placeHolder: 'Select your previous editor',
+			title: 'Import Settings From'
 		}
-		try {
-			if (appDataPath !== undefined) {
-				// copy the keybindings.json
-				const keybindingsPath = path.join(appDataPath, 'Code', 'User', 'keybindings.json');
-				const destinationKeybindingsPath = path.join(appDataPath, 'Aide', 'User', 'keybindings.json');
-				if (fs.existsSync(keybindingsPath)) {
-					fs.copyFileSync(keybindingsPath, destinationKeybindingsPath);
-				}
-			}
-		} catch (exception) {
-			// console.log('error when copying keybindings.json', exception);
-		}
+	);
 
-		// Now we copy the extensions
-		try {
-			if (userProfilePath) {
-				const keybindingsFolder = path.join(userProfilePath, '.vscode', 'extensions');
-				const destinationFolder = path.join(userProfilePath, dataFolderName, 'extensions');
-				copyFiles(keybindingsFolder, destinationFolder);
-			}
-		} catch (exception) {
-			// console.log('error when copying extensions', exception);
-		}
-		return;
+	if (!editorChoice) {
+		return; // User cancelled
 	}
 
-	const homeDir = os.homedir();
-	const { exitCode: exitCodeMkdir } = await runCommandAsync(workingDirectory, 'mkdir', ['-p', `${homeDir}/${dataFolderName}`]);
-	if (exitCodeMkdir !== 0) {
-		window.showErrorMessage('Error creating ~/.aide directory');
-		logger.error('Error creating ~/.aide directory');
-		return;
-	}
-
-	// EXTENSIONS
-
-	const srcDir = path.join(homeDir, '.vscode/extensions');
-	const destDir = path.join(homeDir, `${dataFolderName}/extensions`);
-
-	// Get all subdirectories in the source folder
-	const allDirs = fs.readdirSync(srcDir).filter(file => {
-		const fullPath = path.join(srcDir, file);
-		return fs.statSync(fullPath).isDirectory();
-	});
-
-
-	window.showInformationMessage(`Installing extensions from OpenVSX...`);
-
-	for (const dir of allDirs) {
-
-		const namespaceAndExt = getNamesapceAndExtension(dir);
-		if (!namespaceAndExt) {
-			console.error(`Failed to copy directory: ${dir}`);
-			window.showErrorMessage(`Error copying directory "${dir}", it does not match the expected format`);
-			continue;
-		}
-		const [namespace, extension] = namespaceAndExt;
-
-		let openVSXExtensionPath: string | undefined;
+	await window.withProgress({
+		location: ProgressLocation.Notification,
+		title: `Importing from ${editorChoice.label}`,
+		cancellable: true
+	}, async (progress, token) => {
 		try {
-			const vsixResponse = await fetch(`https://open-vsx.org/api/${namespace}/${extension}`);
-			if (!vsixResponse.ok) {
-				throw new Error(`Failed to fetch OpenVSX metadata for ${namespace}.${extension}`);
-			}
-			const vsixMetadata = await vsixResponse.json() as VsixMetadata;
-			if (!vsixMetadata) {
-				throw new Error(`No OpenVSX metadata found for ${namespace}.${extension}`);
-			}
+			const sourceEditorPaths = getSourceEditorPaths(editorChoice.value);
+			const destEditorPaths = getDestinationEditorPaths(product);
 
-			const tempFile = `${namespace}.${extension}.vsix`;
-			const platform = `${os.platform()}-${os.arch()}` as ExtensionPlatorm;
-			if (vsixMetadata.downloads.universal) {
-				console.log(`Found universal download URL for ${namespace}.${extension}`);
-				openVSXExtensionPath = await downloadFileToFolder(vsixMetadata.downloads.universal, destDir, tempFile);
-			} else if (vsixMetadata.downloads[platform]) {
-				console.log(`Found platform-specific download URL for ${namespace}.${extension} on ${platform}`);
-				const platformSpecificDownloadUrl = vsixMetadata.downloads[platform];
-				openVSXExtensionPath = await downloadFileToFolder(platformSpecificDownloadUrl, destDir, tempFile);
-			}
-			if (!openVSXExtensionPath) {
-				throw new Error(`Failed to find a suitabile download URL for the ${namespace}.${extension} extension for ${os.platform()} and ${os.arch()}`);
-			}
-			await commands.executeCommand('workbench.extensions.command.installFromVSIX', Uri.parse(openVSXExtensionPath));
-			console.log(`Successfully installed ${namespace}.${extension} from OpenVSX`);
-		} catch (error) {
-			console.error(`Failed to install from VSX: ${namespace}.${extension}. Error: ${error.message}`);
-		} finally {
-			if (openVSXExtensionPath) {
-				fs.unlinkSync(openVSXExtensionPath);
-				console.log(`Deleted installation file: ${openVSXExtensionPath}`);
-			}
-		}
-	}
+			progress.report({ message: 'Preparing directories...', increment: 10 });
 
-	window.showInformationMessage(`Completed installing extensions from OpenVSX`);
+			const destConfigDir = destEditorPaths.configDir;
+			const destExtDir = destEditorPaths.extensionsDir;
 
-	// Now we can copy over keybindings.json and settings.json
-	// We want to ensure that ~/Library/Application\\ Support/Aide/User exists
-	// of if its on linux it might be on path: ~/.config/aide
-	if (os.platform() === 'linux') {
-		try {
-			const { exitCode: exitCodeMkdirAideUser } = await runCommandAsync(workingDirectory, 'mkdir', ['-p', `${homeDir}/.config/Code/User/`]);
-			if (exitCodeMkdirAideUser !== 0) {
-				window.showErrorMessage(`Error creating ${homeDir}/.config/Code/User/ directory`);
-				logger.error(`Error creating ${homeDir}/.config/Code/User/ directory`);
-			}
-		} catch (exception) {
-			// console.log('error when creating ~/.config/Code/User/ directory', exception);
-		}
-		try {
-			const outputKeybindings = await runCommandAsync(workingDirectory, 'cp', [`${homeDir}/.config/Code/User/keybindings.json`, `${homeDir}/.config/Aide/User`]);
-			if (outputKeybindings.exitCode !== 0) {
-				window.showErrorMessage('Error copying keybindings from vscode to aide');
-				logger.error('Error copying keybindings from vscode to aide');
-			}
-		} catch (exception) {
-			// console.log('error when copying keybindings.json', exception);
-		}
-		try {
-			const outputSettings = await runCommandAsync(workingDirectory, 'cp', [`${homeDir}/.config/Code/User/settings.json`, `${homeDir}/.config/Aide/User`]);
-			if (outputSettings.exitCode !== 0) {
-				window.showErrorMessage('Error copying settings from vscode to aide');
-				logger.error('Error copying settings from vscode to aide');
-			}
-		} catch (exception) {
-			// console.log('error when copying settings.json', exception);
-		}
-		window.showInformationMessage('Copied settings from vscode to aide');
-		logger.info('Reload your window with Cmd + Shift + P -> Developer: Reload Window');
-		return;
-	} else if (os.platform() === 'darwin') {
-		try {
-			const { exitCode: exitCodeMkdirAideUser } = await runCommandAsync(workingDirectory, 'mkdir', ['-p', `${homeDir}/Library/Application Support/Aide/User`]);
-			if (exitCodeMkdirAideUser !== 0) {
-				window.showErrorMessage('Error creating ~/Library/Application Support/Aide/User directory');
-				logger.error('Error creating ~/Library/Application Support/Aide/User directory');
-			}
-		} catch (exception) {
-			// console.log('error when creating ~/Library/Application Support/Aide/User directory', exception);
-		}
-		try {
-			const outputKeybindings = await runCommandAsync(workingDirectory, 'cp', [`${homeDir}/Library/Application Support/Code/User/keybindings.json`, `${homeDir}/Library/Application Support/Aide/User`]);
-			if (outputKeybindings.exitCode !== 0) {
-				window.showErrorMessage('Error copying keybindings from vscode to aide');
-				logger.error('Error copying keybindings from vscode to aide');
-			}
-		} catch (exception) {
-			// console.log('error when copying keybindings.json', exception);
-		}
-		try {
-			const outputSettings = await runCommandAsync(workingDirectory, 'cp', [`${homeDir}/Library/Application Support/Code/User/settings.json`, `${homeDir}/Library/Application Support/Aide/User`]);
-			if (outputSettings.exitCode !== 0) {
-				window.showErrorMessage('Error copying settings from vscode to aide');
-				logger.error('Error copying settings from vscode to aide');
-			}
-		} catch (exception) {
-			// console.log('error when copying settings.json', exception);
-		}
-		window.showInformationMessage('Copied settings from vscode to aide');
-		logger.info('Reload your window with Cmd + Shift + P -> Developer: Reload Window');
-		return;
-	}
-};
+			// Add logging to help debug the paths
+			logger.info(`Source config directory: ${sourceEditorPaths.configDir}`);
+			logger.info(`Destination config directory: ${destConfigDir}`);
+			logger.info(`Data folder name from product.json: ${product.dataFolderName}`);
+			logger.info(`Using destination extensions directory: ${destExtDir}`);
+			logger.info(`Development mode: ${process.env.VSCODE_DEV === '1'}`);
 
-function getNamesapceAndExtension(extensionFolderName: string) {
-	// Define a regular expression to match the "[spacename].[extension]-[version]" pattern
-	const regex = /([a-zA-Z0-9\-]+)\.([a-zA-Z0-9\-]+)-(\d+\.\d+\.\d+)/;
+			// Ensure destination directories exist
+			ensureDir(destConfigDir);
+			ensureDir(destExtDir);
 
-	// Apply the regex to the folder name
-	const match = extensionFolderName.match(regex);
+			progress.report({ message: 'Copying settings and keybindings...', increment: 20 });
 
-	// If a match is found, return it in the desired format
-	if (match) {
-		const spaceName = match[1];
-		const extension = match[2];
-		const version = match[3];
-		return [spaceName, extension, version];
-	}
+			// Copy settings and keybindings
+			await copyFileIfExists(
+				path.join(sourceEditorPaths.configDir, 'settings.json'),
+				path.join(destConfigDir, 'settings.json'),
+				logger
+			);
 
-	// If no match is found, return null
-	return null;
-}
+			await copyFileIfExists(
+				path.join(sourceEditorPaths.configDir, 'keybindings.json'),
+				path.join(destConfigDir, 'keybindings.json'),
+				logger
+			);
 
-function copyFiles(srcDirectory: string, destDirectory: string) {
-	fs.readdirSync(srcDirectory).forEach(file => {
-		const srcFile = path.join(srcDirectory, file);
-		const destFile = path.join(destDirectory, file);
+			progress.report({ message: 'Scanning for installed extensions...', increment: 10 });
 
-		const stat = fs.statSync(srcFile);
-		if (stat.isDirectory()) {
-			fs.mkdirSync(destFile, { recursive: true });
-			copyFiles(srcFile, destFile);
-		} else {
-			fs.copyFileSync(srcFile, destFile);
-		}
-	});
-}
+			// Handle extensions
+			const allDirs = fs.readdirSync(sourceEditorPaths.extensionsDir).filter(file => {
+				const fullPath = path.join(sourceEditorPaths.extensionsDir, file);
+				return fs.statSync(fullPath).isDirectory();
+			});
 
+			const totalExtensions = allDirs.length;
+			let installedCount = 0;
 
-function downloadFileToFolder(fileUrl: string, downloadFolder: string, fileName: string, redirectCount = 0): Promise<string> {
-	return new Promise((resolve, reject) => {
+			progress.report({ message: `Installing extensions (0/${totalExtensions})...`, increment: 10 });
 
-		if (redirectCount > 5) {
-			reject(new Error('Too many redirects'));
-			return;
-		}
+			const results: { extension: string; result: ExtensionInstallResult }[] = [];
+			let successCount = 0;
 
-		const filePath = path.join(downloadFolder, fileName);
-
-		// Create the folder if it doesn't exist
-		if (!fs.existsSync(downloadFolder)) {
-			fs.mkdirSync(downloadFolder, { recursive: true });
-		}
-
-		const file = fs.createWriteStream(filePath);
-
-
-		get(fileUrl, (response) => {
-
-			if (response.statusCode === 302) {
-				const location = response.headers.location;
-				if (!location) {
-					reject(new Error('Redirect location not provided'));
+			for (const dir of allDirs) {
+				if (token.isCancellationRequested) {
+					window.showInformationMessage('Import process was cancelled');
 					return;
 				}
-				downloadFileToFolder(location, downloadFolder, fileName, redirectCount + 1).then(resolve, reject);
-				return;
-			}
 
-			if (response.statusCode !== 200) {
-				reject(new Error(`Failed to download file: ${response.statusCode}`));
-				return;
-			}
+				const extensionInfo = parseExtensionFolder(dir);
+				if (!extensionInfo) {
+					logger.error(`Failed to parse extension directory: ${dir}`);
+					continue;
+				}
 
-			response.pipe(file);
-
-			file.on('finish', () => {
-				file.close(() => {
-					console.log(`Downloaded file: ${filePath}`);
-					resolve(filePath);
+				progress.report({
+					message: `Installing extension ${extensionInfo.namespace}.${extensionInfo.name} (${++installedCount}/${totalExtensions})`,
+					increment: (50 / totalExtensions)
 				});
+
+				const result = await installExtensionFromOpenVSX(extensionInfo, destExtDir, logger);
+				results.push({
+					extension: `${extensionInfo.namespace}.${extensionInfo.name}`,
+					result
+				});
+
+				if (result.success) {
+					successCount++;
+				}
+			}
+
+			// Show summary after all extensions are processed
+			const failedCount = results.length - successCount;
+			if (failedCount > 0) {
+				const failedExtensions = results
+					.filter(r => !r.result.success)
+					.map(r => `${r.extension}: ${r.result.message}`)
+					.join('\n');
+
+				void window.showWarningMessage(
+					`Completed with ${failedCount} failed extensions. Check output for details.`,
+					'Show Details'
+				).then(selection => {
+					if (selection === 'Show Details') {
+						// Create and show output channel with details
+						const channel = window.createOutputChannel('Extension Import Results');
+						channel.appendLine('Failed Extensions:');
+						channel.appendLine(failedExtensions);
+						channel.show();
+					}
+				});
+			}
+
+			// Show completion message
+			void window.withProgress({
+				location: ProgressLocation.Notification,
+				title: 'Settings import complete!',
+			}, async (progress) => {
+				progress.report({ increment: 100 });
+				// Auto-hide after 3 seconds
+				await new Promise(resolve => setTimeout(resolve, 3000));
 			});
-		}).on('error', (err) => {
-			fs.unlinkSync(filePath); // Delete the file if an error occurs
-			reject(err);
-		});
+		} catch (error) {
+			window.showErrorMessage('Error during import process');
+			logger.error('Error during import process', error);
+			throw error;
+		}
 	});
+};
+
+async function installExtensionFromOpenVSX(
+	extensionInfo: ExtensionMetadata,
+	destDir: string,
+	logger: Logger
+): Promise<ExtensionInstallResult> {
+	const { namespace, name } = extensionInfo;
+	let vsixPath: string | undefined;
+	let installAttempted = false;
+
+	try {
+		// Fetch extension metadata from OpenVSX with retry
+		const response = await retry(async () => {
+			const resp = await fetch(`https://open-vsx.org/api/${namespace}/${name}/latest`);
+			if (resp.status === 429) {
+				throw new Error('Rate limit exceeded');
+			}
+			if (!resp.ok) {
+				if (resp.status === 404) {
+					return { notFound: true, response: resp };
+				}
+				throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+			}
+			return { notFound: false, response: resp };
+		});
+
+		if (response.notFound) {
+			logger.warn(`Extension ${namespace}.${name} not found on OpenVSX, skipping...`);
+			return {
+				success: false,
+				message: `Extension ${namespace}.${name} not available on OpenVSX`
+			};
+		}
+
+		const metadata: OpenVSXResponse = await response.response.json();
+		const { platform, arch } = getPlatformInfo();
+
+		// Determine the best download URL based on platform and architecture
+		let downloadUrl: string | undefined;
+
+		// First try platform-specific build
+		if (metadata.downloads[platform as keyof typeof metadata.downloads]) {
+			const platformDownloads = metadata.downloads[platform as keyof typeof metadata.downloads] as Record<string, string>;
+			downloadUrl = platformDownloads[arch];
+		}
+
+		// Fallback to universal build if platform-specific not found
+		if (!downloadUrl) {
+			downloadUrl = metadata.downloads.universal || metadata.files?.download;
+		}
+
+		if (!downloadUrl) {
+			return {
+				success: false,
+				message: `No compatible version found for ${namespace}.${name} (${platform}-${arch})`
+			};
+		}
+
+		// Download and install the extension with retry
+		const tempFilename = `${namespace}.${name}.vsix`;
+		vsixPath = await retry(() => downloadFileToFolder(downloadUrl!, destDir, tempFilename));
+
+		installAttempted = true;
+		await commands.executeCommand(
+			'workbench.extensions.command.installFromVSIX',
+			Uri.file(vsixPath)
+		);
+
+		logger.info(`Successfully installed ${namespace}.${name} from OpenVSX (${platform}-${arch})`);
+
+		return {
+			success: true,
+			message: `Successfully installed ${namespace}.${name}`
+		};
+
+	} catch (error) {
+		const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+		logger.error(`Failed to install ${namespace}.${name}: ${errorMessage}`);
+
+		return {
+			success: false,
+			message: installAttempted ?
+				`Failed to install ${namespace}.${name}: Installation error` :
+				`Failed to download ${namespace}.${name}: ${errorMessage}`
+		};
+	} finally {
+		// Cleanup temporary file
+		if (vsixPath && fs.existsSync(vsixPath)) {
+			try {
+				fs.unlinkSync(vsixPath);
+			} catch (error) {
+				logger.warn(`Failed to cleanup temporary file ${vsixPath}`, error);
+			}
+		}
+	}
+}
+
+function parseExtensionFolder(extensionFolderName: string): ExtensionMetadata | null {
+	// Support both formats:
+	// publisher.extension-1.2.3
+	// publisher.extension-1.2.3-universal
+	const regex = /^([a-zA-Z0-9\-]+)\.([a-zA-Z0-9\-]+)-(\d+\.\d+\.\d+(?:-[a-zA-Z0-9\-]+)?)/;
+	const match = extensionFolderName.match(regex);
+
+	if (!match) {
+		return null;
+	}
+
+	return {
+		namespace: match[1],
+		name: match[2],
+		version: match[3]
+	};
 }

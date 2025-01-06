@@ -8,6 +8,7 @@ import * as vscode from 'vscode';
 import { createInlineCompletionItemProvider } from './completions/create-inline-completion-item-provider';
 import { AideAgentSessionProvider } from './completions/providers/aideAgentProvider';
 import { CSEventHandler } from './csEvents/csEventHandler';
+import { ReactDevtoolsManager } from './devtools/react/DevtoolsManager';
 import { getGitCurrentHash, getGitRepoName } from './git/helper';
 import { aideCommands } from './inlineCompletion/commands';
 import { startupStatusBar } from './inlineCompletion/statusBar';
@@ -17,18 +18,17 @@ import { AideQuickFix } from './quickActions/fix';
 import { RecentEditsRetriever } from './server/editedFiles';
 import { RepoRef, RepoRefBackend, SideCarClient } from './sidecar/client';
 import { getSideCarModelConfiguration } from './sidecar/types';
+import { SimpleBrowserManager } from './simpleBrowser/simpleBrowserManager';
 import { loadOrSaveToStorage } from './storage/types';
 import { copySettings } from './utilities/copySettings';
 import { killProcessOnPort } from './utilities/killPort';
 import { getRelevantFiles, shouldTrackFile } from './utilities/openTabs';
+import { findPortPosition } from './utilities/port';
 import { checkReadonlyFSMode } from './utilities/readonlyFS';
 import { restartSidecarBinary, setupSidecar } from './utilities/setupSidecarBinary';
 import { sidecarURL, sidecarUseSelfRun } from './utilities/sidecarUrl';
 import { getUniqueId } from './utilities/uniqueId';
 import { ProjectContext } from './utilities/workspaceContext';
-import { findPortPosition } from './utilities/port';
-import { ReactDevtoolsManager } from './devtools/react/DevtoolsManager';
-import { SimpleBrowserManager } from './simpleBrowser/simpleBrowserManager';
 
 export let SIDECAR_CLIENT: SideCarClient | null = null;
 
@@ -51,13 +51,6 @@ export async function activate(context: vscode.ExtensionContext) {
 		},
 	});
 
-	const registerPreCopyCommand = vscode.commands.registerCommand(
-		'webview.preCopySettings',
-		async () => {
-			await copySettings(vscode.env.appRoot, logger);
-		}
-	);
-	context.subscriptions.push(registerPreCopyCommand);
 	let rootPath = vscode.workspace.rootPath;
 	if (!rootPath) {
 		rootPath = '';
@@ -65,10 +58,8 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// Create the copy settings from vscode command for the extension
 	const registerCopySettingsCommand = vscode.commands.registerCommand(
-		'webview.copySettings',
-		async () => {
-			await copySettings(rootPath ?? '', logger);
-		}
+		'codestory.importSettings',
+		async () => await copySettings(logger)
 	);
 	context.subscriptions.push(registerCopySettingsCommand);
 	const readonlyFS = checkReadonlyFSMode();

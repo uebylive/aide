@@ -647,6 +647,13 @@ export class ExtensionsViewPaneContainer extends ViewPaneContainer implements IE
 			}
 		}));
 
+		const marketplaceSettings = append(this.root, $('.marketplace-settings'));
+		const importSettingsLink = append(marketplaceSettings, $('.import-settings'));
+		importSettingsLink.textContent = 'Import extensions from your previous editor';
+		this._register(addDisposableListener(importSettingsLink, EventType.CLICK, () => {
+			this.commandService.executeCommand('codestory.importSettings');
+		}));
+
 		super.create(append(this.root, $('.extensions')));
 
 		const focusTracker = this._register(trackFocus(this.root));
