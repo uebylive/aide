@@ -23,6 +23,33 @@ interface ExtensionMetadata {
 	version: string;
 }
 
+interface ExtensionInstallResult {
+	success: boolean;
+	message: string;
+}
+
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000;
+
+async function retry<T>(
+	operation: () => Promise<T>,
+	retries: number = MAX_RETRIES,
+	delay: number = RETRY_DELAY
+): Promise<T> {
+	let lastError: Error | undefined;
+	for (let i = 0; i < retries; i++) {
+		try {
+			return await operation();
+		} catch (error) {
+			lastError = error instanceof Error ? error : new Error(String(error));
+			if (i < retries - 1) {
+				await new Promise(resolve => setTimeout(resolve, delay));
+			}
+		}
+	}
+	throw new Error(lastError?.message || 'Operation failed after multiple retries');
+}
+
 interface OpenVSXResponse {
 	downloads: {
 		universal?: string;
@@ -231,6 +258,9 @@ export const copySettings = async (logger: Logger) => {
 
 			progress.report({ message: `Installing extensions (0/${totalExtensions})...`, increment: 10 });
 
+			const results: { extension: string; result: ExtensionInstallResult }[] = [];
+			let successCount = 0;
+
 			for (const dir of allDirs) {
 				if (token.isCancellationRequested) {
 					window.showInformationMessage('Import process was cancelled');
@@ -245,15 +275,51 @@ export const copySettings = async (logger: Logger) => {
 
 				progress.report({
 					message: `Installing extension ${extensionInfo.namespace}.${extensionInfo.name} (${++installedCount}/${totalExtensions})`,
-					increment: (50 / totalExtensions) // Distribute remaining 50% across extensions
+					increment: (50 / totalExtensions)
 				});
 
-				await installExtensionFromOpenVSX(extensionInfo, destExtDir, logger);
+				const result = await installExtensionFromOpenVSX(extensionInfo, destExtDir, logger);
+				results.push({
+					extension: `${extensionInfo.namespace}.${extensionInfo.name}`,
+					result
+				});
+
+				if (result.success) {
+					successCount++;
+				}
 			}
 
-			window.showInformationMessage('Settings import completed. Please reload the window.');
-			logger.info('Reload your window with Cmd + Shift + P -> Developer: Reload Window');
+			// Show summary after all extensions are processed
+			const failedCount = results.length - successCount;
+			if (failedCount > 0) {
+				const failedExtensions = results
+					.filter(r => !r.result.success)
+					.map(r => `${r.extension}: ${r.result.message}`)
+					.join('\n');
 
+				void window.showWarningMessage(
+					`Completed with ${failedCount} failed extensions. Check output for details.`,
+					'Show Details'
+				).then(selection => {
+					if (selection === 'Show Details') {
+						// Create and show output channel with details
+						const channel = window.createOutputChannel('Extension Import Results');
+						channel.appendLine('Failed Extensions:');
+						channel.appendLine(failedExtensions);
+						channel.show();
+					}
+				});
+			}
+
+			// Show completion message
+			void window.withProgress({
+				location: ProgressLocation.Notification,
+				title: 'Settings import complete!',
+			}, async (progress) => {
+				progress.report({ increment: 100 });
+				// Auto-hide after 3 seconds
+				await new Promise(resolve => setTimeout(resolve, 3000));
+			});
 		} catch (error) {
 			window.showErrorMessage('Error during import process');
 			logger.error('Error during import process', error);
@@ -266,18 +332,36 @@ async function installExtensionFromOpenVSX(
 	extensionInfo: ExtensionMetadata,
 	destDir: string,
 	logger: Logger
-): Promise<void> {
+): Promise<ExtensionInstallResult> {
 	const { namespace, name } = extensionInfo;
 	let vsixPath: string | undefined;
+	let installAttempted = false;
 
 	try {
-		// Fetch extension metadata from OpenVSX
-		const response = await fetch(`https://open-vsx.org/api/${namespace}/${name}/latest`);
-		if (!response.ok) {
-			throw new Error(`Extension ${namespace}.${name} not found on OpenVSX`);
+		// Fetch extension metadata from OpenVSX with retry
+		const response = await retry(async () => {
+			const resp = await fetch(`https://open-vsx.org/api/${namespace}/${name}/latest`);
+			if (resp.status === 429) {
+				throw new Error('Rate limit exceeded');
+			}
+			if (!resp.ok) {
+				if (resp.status === 404) {
+					return { notFound: true, response: resp };
+				}
+				throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
+			}
+			return { notFound: false, response: resp };
+		});
+
+		if (response.notFound) {
+			logger.warn(`Extension ${namespace}.${name} not found on OpenVSX, skipping...`);
+			return {
+				success: false,
+				message: `Extension ${namespace}.${name} not available on OpenVSX`
+			};
 		}
 
-		const metadata: OpenVSXResponse = await response.json();
+		const metadata: OpenVSXResponse = await response.response.json();
 		const { platform, arch } = getPlatformInfo();
 
 		// Determine the best download URL based on platform and architecture
@@ -295,26 +379,47 @@ async function installExtensionFromOpenVSX(
 		}
 
 		if (!downloadUrl) {
-			throw new Error(`No compatible download URL found for ${namespace}.${name} (${platform}-${arch})`);
+			return {
+				success: false,
+				message: `No compatible version found for ${namespace}.${name} (${platform}-${arch})`
+			};
 		}
 
-		// Download and install the extension
+		// Download and install the extension with retry
 		const tempFilename = `${namespace}.${name}.vsix`;
-		vsixPath = await downloadFileToFolder(downloadUrl, destDir, tempFilename);
+		vsixPath = await retry(() => downloadFileToFolder(downloadUrl!, destDir, tempFilename));
 
+		installAttempted = true;
 		await commands.executeCommand(
 			'workbench.extensions.command.installFromVSIX',
 			Uri.file(vsixPath)
 		);
 
 		logger.info(`Successfully installed ${namespace}.${name} from OpenVSX (${platform}-${arch})`);
+
+		return {
+			success: true,
+			message: `Successfully installed ${namespace}.${name}`
+		};
+
 	} catch (error) {
-		logger.error(`Failed to install ${namespace}.${name}:`, error);
-		window.showWarningMessage(`Failed to install extension ${namespace}.${name}`);
+		const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+		logger.error(`Failed to install ${namespace}.${name}: ${errorMessage}`);
+
+		return {
+			success: false,
+			message: installAttempted ?
+				`Failed to install ${namespace}.${name}: Installation error` :
+				`Failed to download ${namespace}.${name}: ${errorMessage}`
+		};
 	} finally {
 		// Cleanup temporary file
 		if (vsixPath && fs.existsSync(vsixPath)) {
-			fs.unlinkSync(vsixPath);
+			try {
+				fs.unlinkSync(vsixPath);
+			} catch (error) {
+				logger.warn(`Failed to cleanup temporary file ${vsixPath}`, error);
+			}
 		}
 	}
 }
