@@ -9,7 +9,9 @@ import * as path from 'path';
 import { commands, env, ProgressLocation, Uri, window } from 'vscode';
 import { Logger } from 'winston';
 
-export type VSCodeVariant = 'vscode' | 'cursor' | 'windsurf' | 'vscodium' | 'vscode-insiders' | 'vscodium-insiders';
+const cwd = process.env['VSCODE_CWD'] || process.cwd();
+
+export type VSCodeVariant = 'aide-old' | 'vscode' | 'cursor' | 'windsurf' | 'vscodium' | 'vscode-insiders' | 'vscodium-insiders';
 
 interface EditorPaths {
 	configDir: string;
@@ -91,12 +93,14 @@ async function downloadFileToFolder(url: string, destFolder: string, filename: s
 	return destPath;
 }
 
-// Map of editor variants to their configuration details
-const EDITOR_CONFIGS: Record<VSCodeVariant, {
+type EditorConfig = {
 	displayName: string;
 	configDirName: string;
 	extensionsDirName: string;
-}> = {
+};
+
+// Map of editor variants to their configuration details
+const EDITOR_CONFIGS: Record<VSCodeVariant, EditorConfig> = {
 	vscode: {
 		displayName: 'VS Code',
 		configDirName: 'Code',
@@ -113,7 +117,7 @@ const EDITOR_CONFIGS: Record<VSCodeVariant, {
 		extensionsDirName: '.windsurf'
 	},
 	vscodium: {
-		displayName: 'VS Codium',
+		displayName: 'VSCodium',
 		configDirName: 'VSCodium',
 		extensionsDirName: '.vscode-oss'
 	},
@@ -123,9 +127,14 @@ const EDITOR_CONFIGS: Record<VSCodeVariant, {
 		extensionsDirName: '.vscode-insiders'
 	},
 	'vscodium-insiders': {
-		displayName: 'VS Codium Insiders',
+		displayName: 'VSCodium Insiders',
 		configDirName: 'VSCodium-Insiders',
 		extensionsDirName: '.vscode-oss-insiders'
+	},
+	'aide-old': {
+		displayName: 'Aide (older version)',
+		configDirName: 'Aide',
+		extensionsDirName: '.vscode-oss'
 	}
 };
 
@@ -137,16 +146,31 @@ function getSourceEditorPaths(variant: VSCodeVariant): EditorPaths {
 	// Get the base paths from environment variables, similar to how VSCode does it
 	let userDataDir: string;
 
+	// 1. Support portable mode
 	if (process.env.VSCODE_PORTABLE) {
 		userDataDir = path.join(process.env.VSCODE_PORTABLE, 'user-data');
-	} else if (process.env.VSCODE_APPDATA) {
-		userDataDir = process.env.VSCODE_APPDATA;
-	} else if (platform === 'win32') {
-		// On Windows, use AppData\Roaming as the default
-		userDataDir = path.join(process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming'));
-	} else {
-		// For Linux/macOS, use .config
-		userDataDir = path.join(homeDir, '.config');
+	}
+	// 2. Support global VSCODE_APPDATA environment variable
+	else if (process.env.VSCODE_APPDATA) {
+		userDataDir = path.join(process.env.VSCODE_APPDATA, config.configDirName);
+	}
+	// 3. Otherwise check per platform
+	else {
+		let appDataPath: string;
+		switch (platform) {
+			case 'win32':
+				appDataPath = process.env.APPDATA || path.join(process.env.USERPROFILE || homeDir, 'AppData', 'Roaming');
+				userDataDir = appDataPath;
+				break;
+			case 'darwin':
+				userDataDir = path.join(homeDir, 'Library', 'Application Support');
+				break;
+			case 'linux':
+				userDataDir = process.env.XDG_CONFIG_HOME || path.join(homeDir, '.config');
+				break;
+			default:
+				throw new Error('Platform not supported');
+		}
 	}
 
 	// Use the environment variable for extensions if available
@@ -154,8 +178,11 @@ function getSourceEditorPaths(variant: VSCodeVariant): EditorPaths {
 		? process.env.VSCODE_EXTENSIONS
 		: path.join(homeDir, config.extensionsDirName, 'extensions');
 
-	// Construct the config directory path using the config dir name
-	const configDir = path.join(userDataDir, config.configDirName, 'User');
+	// Construct the config directory path and resolve against cwd if not absolute
+	let configDir = path.join(userDataDir, config.configDirName, 'User');
+	if (!path.isAbsolute(configDir)) {
+		configDir = path.resolve(cwd, configDir);
+	}
 
 	return {
 		configDir,
@@ -170,9 +197,7 @@ function getDestinationEditorPaths(product: IProductConfiguration): EditorPaths 
 
 	// Handle development mode by appending -dev to dataFolderName
 	const isDevMode = process.env.VSCODE_DEV === '1';
-	const dataFolderName = isDevMode
-		? `${product.dataFolderName}-dev`
-		: product.dataFolderName;
+	const dataFolderName = isDevMode ? `${product.dataFolderName}-dev` : product.dataFolderName;
 
 	// In development mode, both config and extensions are in the dev folder
 	if (isDevMode) {
@@ -184,19 +209,32 @@ function getDestinationEditorPaths(product: IProductConfiguration): EditorPaths 
 		};
 	}
 
-	// Get the base paths from environment variables, similar to how VSCode does it
 	let userDataDir: string;
-
+	// 1. Support portable mode
 	if (process.env.VSCODE_PORTABLE) {
 		userDataDir = path.join(process.env.VSCODE_PORTABLE, 'user-data');
-	} else if (process.env.VSCODE_APPDATA) {
+	}
+	// 2. Support global VSCODE_APPDATA environment variable
+	else if (process.env.VSCODE_APPDATA) {
 		userDataDir = process.env.VSCODE_APPDATA;
-	} else if (platform === 'win32') {
-		// On Windows, use AppData\Roaming as the default
-		userDataDir = path.join(process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming'));
-	} else {
-		// For Linux/macOS, use .config
-		userDataDir = path.join(homeDir, '.config');
+	}
+	// 3. Otherwise check per platform
+	else {
+		let appDataPath: string;
+		switch (platform) {
+			case 'win32':
+				appDataPath = process.env.APPDATA || path.join(process.env.USERPROFILE || homeDir, 'AppData', 'Roaming');
+				userDataDir = appDataPath;
+				break;
+			case 'darwin':
+				userDataDir = path.join(homeDir, 'Library', 'Application Support');
+				break;
+			case 'linux':
+				userDataDir = process.env.XDG_CONFIG_HOME || path.join(homeDir, '.config');
+				break;
+			default:
+				throw new Error('Platform not supported');
+		}
 	}
 
 	// Use the environment variable for extensions if available
@@ -204,8 +242,11 @@ function getDestinationEditorPaths(product: IProductConfiguration): EditorPaths 
 		? process.env.VSCODE_EXTENSIONS
 		: path.join(homeDir, dataFolderName, 'extensions');
 
-	// For config dir, use the application name from product.json, fallback to dataFolderName if not available
-	const configDir = path.join(userDataDir, product.applicationName || product.dataFolderName, 'User');
+	// Construct the config directory path and resolve against cwd if not absolute
+	let configDir = path.join(userDataDir, product.applicationName || dataFolderName, 'User');
+	if (!path.isAbsolute(configDir)) {
+		configDir = path.resolve(cwd, configDir);
+	}
 
 	return {
 		configDir,
@@ -253,9 +294,9 @@ export const copySettings = async (logger: Logger) => {
 			{ label: 'VS Code', value: 'vscode' as VSCodeVariant },
 			{ label: 'Cursor', value: 'cursor' as VSCodeVariant },
 			{ label: 'Windsurf', value: 'windsurf' as VSCodeVariant },
-			{ label: 'VS Codium', value: 'vscodium' as VSCodeVariant },
+			{ label: 'VSCodium', value: 'vscodium' as VSCodeVariant },
 			{ label: 'VS Code Insiders', value: 'vscode-insiders' as VSCodeVariant },
-			{ label: 'VS Codium Insiders', value: 'vscodium-insiders' as VSCodeVariant }
+			{ label: 'VSCodium Insiders', value: 'vscodium-insiders' as VSCodeVariant }
 		],
 		{
 			placeHolder: 'Select your previous editor',
@@ -267,7 +308,7 @@ export const copySettings = async (logger: Logger) => {
 		return; // User cancelled
 	}
 
-	await copySettingsWithProgress(editorChoice, logger);
+	await copySettingsWithProgress(editorChoice.value, logger);
 };
 
 export const migrateFromVSCodeOSS = async (logger: Logger): Promise<void> => {
@@ -303,14 +344,9 @@ export const migrateFromVSCodeOSS = async (logger: Logger): Promise<void> => {
 	if (shouldMigrate) {
 		logger.info('No settings found in new location, attempting migration from .vscode-oss');
 
-		// Create a mock editor choice for VSCodium since it uses .vscode-oss
-		const oldEditor = {
-			label: 'Aide (older version)',
-			value: 'vscodium' as VSCodeVariant
-		};
-
+		const oldAideVariant: VSCodeVariant = 'aide-old';
 		try {
-			await copySettingsWithProgress(oldEditor, logger);
+			await copySettingsWithProgress(oldAideVariant, logger);
 		} catch (error) {
 			logger.error('Failed to migrate settings from .vscode-oss', error);
 			// Don't show error to user as this is an automatic migration
@@ -319,18 +355,19 @@ export const migrateFromVSCodeOSS = async (logger: Logger): Promise<void> => {
 };
 
 export const copySettingsWithProgress = async (
-	editorChoice: { label: string; value: VSCodeVariant },
+	variant: VSCodeVariant,
 	logger: Logger
 ) => {
 	const product = getProductConfiguration();
+	const editorConfig = EDITOR_CONFIGS[variant];
 
 	await window.withProgress({
 		location: ProgressLocation.Notification,
-		title: `Importing from ${editorChoice.label}`,
+		title: `Importing from ${editorConfig.displayName}`,
 		cancellable: true
 	}, async (progress, token) => {
 		try {
-			const sourceEditorPaths = getSourceEditorPaths(editorChoice.value);
+			const sourceEditorPaths = getSourceEditorPaths(variant);
 			const destEditorPaths = getDestinationEditorPaths(product);
 
 			progress.report({ message: 'Preparing directories...', increment: 10 });
