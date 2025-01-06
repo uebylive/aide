@@ -113,7 +113,7 @@ const EDITOR_CONFIGS: Record<VSCodeVariant, {
 		extensionsDirName: '.windsurf'
 	},
 	vscodium: {
-		displayName: 'VS Codium',
+		displayName: 'VSCodium',
 		configDirName: 'VSCodium',
 		extensionsDirName: '.vscode-oss'
 	},
@@ -123,7 +123,7 @@ const EDITOR_CONFIGS: Record<VSCodeVariant, {
 		extensionsDirName: '.vscode-insiders'
 	},
 	'vscodium-insiders': {
-		displayName: 'VS Codium Insiders',
+		displayName: 'VSCodium Insiders',
 		configDirName: 'VSCodium-Insiders',
 		extensionsDirName: '.vscode-oss-insiders'
 	}
@@ -253,9 +253,9 @@ export const copySettings = async (logger: Logger) => {
 			{ label: 'VS Code', value: 'vscode' as VSCodeVariant },
 			{ label: 'Cursor', value: 'cursor' as VSCodeVariant },
 			{ label: 'Windsurf', value: 'windsurf' as VSCodeVariant },
-			{ label: 'VS Codium', value: 'vscodium' as VSCodeVariant },
+			{ label: 'VSCodium', value: 'vscodium' as VSCodeVariant },
 			{ label: 'VS Code Insiders', value: 'vscode-insiders' as VSCodeVariant },
-			{ label: 'VS Codium Insiders', value: 'vscodium-insiders' as VSCodeVariant }
+			{ label: 'VSCodium Insiders', value: 'vscodium-insiders' as VSCodeVariant }
 		],
 		{
 			placeHolder: 'Select your previous editor',
