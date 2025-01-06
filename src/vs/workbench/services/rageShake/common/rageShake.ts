@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { SystemInfo } from '../../../../platform/diagnostics/common/diagnostics.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
 
 export interface RageShakeReport {
@@ -11,7 +12,7 @@ export interface RageShakeReport {
 }
 
 export interface IssueReport extends RageShakeReport {
-	systemInfo?: any; // TODO @g-danna type this better
+	systemInfo?: SystemInfo;
 	screenShot?: ImageBitmap;
 }
 
@@ -20,11 +21,4 @@ export interface IRageShakeService {
 	readonly _serviceBrand: undefined;
 
 	toggle(): void;
-}
-
-export const IRageShakeLogsService = createDecorator<IRageShakeLogsService>('rageShakeLogsService');
-export interface IRageShakeLogsService {
-	readonly _serviceBrand: undefined;
-
-	getLatestLogs(): Promise<string | undefined>;
 }

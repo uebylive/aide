@@ -4,12 +4,12 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as fs from 'fs';
-import { Disposable } from '../../../../base/common/lifecycle.js';
-import { URI } from '../../../../base/common/uri.js';
-import { IFile, zip } from '../../../../base/node/zip.js';
-import * as path from '../../../../base/common/path.js';
-import * as pfs from '../../../../base/node/pfs.js';
-import { IEnvironmentService } from '../../../../platform/environment/common/environment.js';
+import { Disposable } from '../../../base/common/lifecycle.js';
+import { URI } from '../../../base/common/uri.js';
+import { IFile, zip } from '../../../base/node/zip.js';
+import * as path from '../../../base/common/path.js';
+import * as pfs from '../../../base/node/pfs.js';
+import { IEnvironmentService } from '../../environment/common/environment.js';
 import { IRageShakeLogsService } from '../common/rageShake.js';
 
 export class RageShakeLogsService extends Disposable implements IRageShakeLogsService {
@@ -44,10 +44,10 @@ export class RageShakeLogsService extends Disposable implements IRageShakeLogsSe
 		return files.map(f => ({ path: uri.fsPath, localPath: f }));
 	}
 
-	async getLatestLogs(): Promise<string | undefined> {
+	async getLatestLogs(): Promise<string> {
 		const latestLogsUri = this.environmentService.logsHome;
 		const files = await this.collectFiles(latestLogsUri);
-		zip(`${latestLogsUri.fsPath}.zip`, files);
-		return undefined;
+		const zipResultPath = await zip(`${latestLogsUri.fsPath}.zip`, files);
+		return zipResultPath;
 	}
 }

@@ -15,9 +15,10 @@ import { SystemInfo } from '../../../../platform/diagnostics/common/diagnostics.
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ILayoutService } from '../../../../platform/layout/browser/layoutService.js';
 import { IProcessMainService } from '../../../../platform/process/common/process.js';
+import { IRageShakeLogsService } from '../../../../platform/rageShakeLogs/common/rageShake.js';
 import { defaultButtonStyles } from '../../../../platform/theme/browser/defaultStyles.js';
 import { IHostService } from '../../host/browser/host.js';
-import { IRageShakeLogsService, IRageShakeService } from '../common/rageShake.js';
+import { IRageShakeService } from '../common/rageShake.js';
 import { RAGESHAKE_CARD_VISIBLE } from '../common/rageShakeContextKeys.js';
 import './media/rageShake.css';
 
