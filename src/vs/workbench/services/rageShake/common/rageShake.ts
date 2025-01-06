@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { createDecorator } from '../../instantiation/common/instantiation.js';
+import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
 
 export interface RageShakeReport {
 	id: string;
@@ -20,4 +20,11 @@ export interface IRageShakeService {
 	readonly _serviceBrand: undefined;
 
 	toggle(): void;
+}
+
+export const IRageShakeLogsService = createDecorator<IRageShakeLogsService>('rageShakeLogsService');
+export interface IRageShakeLogsService {
+	readonly _serviceBrand: undefined;
+
+	getLatestLogs(): Promise<string | undefined>;
 }

@@ -8,8 +8,8 @@ import { ServicesAccessor } from '../../../editor/browser/editorExtensions.js';
 import { localize } from '../../../nls.js';
 import { Categories } from '../../../platform/action/common/actionCommonCategories.js';
 import { Action2, MenuId, registerAction2 } from '../../../platform/actions/common/actions.js';
-import { IRageShakeService } from '../../../platform/rageShake/common/rageShake.js';
-import { RAGESHAKE_CARD_VISIBLE } from '../../../platform/rageShake/common/rageShakeContextKeys.js';
+import { IRageShakeService } from '../../services/rageShake/common/rageShake.js';
+import { RAGESHAKE_CARD_VISIBLE } from '../../services/rageShake/common/rageShakeContextKeys.js';
 
 export class ToggleRageshakeCardAction extends Action2 {
 	static readonly ID = 'workbench.action.toggleRageShakeCard';
