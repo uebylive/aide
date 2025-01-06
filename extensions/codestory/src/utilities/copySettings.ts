@@ -6,7 +6,7 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { commands, env, Uri, window, ProgressLocation } from 'vscode';
+import { commands, env, ProgressLocation, Uri, window } from 'vscode';
 import { Logger } from 'winston';
 
 export type VSCodeVariant = 'vscode' | 'cursor' | 'vscodium' | 'vscode-insiders' | 'vscodium-insiders';
@@ -124,33 +124,70 @@ const EDITOR_CONFIGS: Record<VSCodeVariant, {
 	}
 };
 
-function getEditorPaths(variant: VSCodeVariant, homeDir: string): EditorPaths {
+function getSourceEditorPaths(variant: VSCodeVariant): EditorPaths {
+	const homeDir = os.homedir();
 	const config = EDITOR_CONFIGS[variant];
-	const platform = os.platform();
 
-	let configDir: string;
-	if (platform === 'win32') {
-		const appDataPath = process.env.APPDATA;
-		if (!appDataPath) {
-			throw new Error('APPDATA environment variable not found');
-		}
-		configDir = path.join(appDataPath, config.configDirName, 'User');
-	} else if (platform === 'darwin') {
-		configDir = path.join(homeDir, 'Library/Application Support', config.configDirName, 'User');
-	} else {
-		configDir = path.join(homeDir, '.config', config.configDirName, 'User');
-	}
+	// Get the base paths from environment variables, similar to how VSCode does it
+	const userDataDir = process.env.VSCODE_PORTABLE
+		? path.join(process.env.VSCODE_PORTABLE, 'user-data')
+		: process.env.VSCODE_APPDATA
+			? process.env.VSCODE_APPDATA
+			: path.join(homeDir, '.config');
 
-	const extensionsDir = path.join(
-		platform === 'win32' ? process.env.USERPROFILE! : homeDir,
-		config.extensionsDirName,
-		'extensions'
-	);
+	// Use the environment variable for extensions if available
+	const extensionsDir = process.env.VSCODE_EXTENSIONS
+		? process.env.VSCODE_EXTENSIONS
+		: path.join(homeDir, config.extensionsDirName, 'extensions');
+
+	// Construct the config directory path using the config dir name
+	const configDir = path.join(userDataDir, config.configDirName, 'User');
 
 	return {
 		configDir,
 		extensionsDir,
 		displayName: config.displayName
+	};
+}
+
+function getDestinationEditorPaths(product: IProductConfiguration): EditorPaths {
+	const homeDir = os.homedir();
+
+	// Handle development mode by appending -dev to dataFolderName
+	const isDevMode = process.env.VSCODE_DEV === '1';
+	const dataFolderName = isDevMode
+		? `${product.dataFolderName}-dev`
+		: product.dataFolderName;
+
+	// In development mode on Linux, both config and extensions are in the dev folder
+	if (isDevMode && (os.platform() === 'linux' || os.platform() === 'darwin')) {
+		const devDir = path.join(homeDir, dataFolderName);
+		return {
+			configDir: path.join(devDir, 'User'),
+			extensionsDir: path.join(devDir, 'extensions'),
+			displayName: product.nameLong || product.nameShort || 'Aide'
+		};
+	}
+
+	// For non-dev mode or other platforms, use the standard paths
+	const userDataDir = process.env.VSCODE_PORTABLE
+		? path.join(process.env.VSCODE_PORTABLE, 'user-data')
+		: process.env.VSCODE_APPDATA
+			? process.env.VSCODE_APPDATA
+			: path.join(homeDir, '.config');
+
+	// Use the environment variable for extensions if available
+	const extensionsDir = process.env.VSCODE_EXTENSIONS
+		? process.env.VSCODE_EXTENSIONS
+		: path.join(homeDir, dataFolderName, 'extensions');
+
+	// For config dir, use the application name from product.json, fallback to dataFolderName if not available
+	const configDir = path.join(userDataDir, product.applicationName || product.dataFolderName, 'User');
+
+	return {
+		configDir,
+		extensionsDir,
+		displayName: product.nameLong || product.nameShort || 'Aide'
 	};
 }
 
@@ -175,12 +212,10 @@ async function copyFileIfExists(src: string, dest: string, logger: Logger): Prom
 }
 
 export interface IProductConfiguration {
-	updateUrl: string;
-	commit: string;
-	quality: string;
 	dataFolderName: string;
-	serverApplicationName?: string;
-	serverDataFolderName?: string;
+	nameShort?: string;
+	nameLong?: string;
+	applicationName?: string;
 }
 
 function getProductConfiguration(): IProductConfiguration {
@@ -189,7 +224,7 @@ function getProductConfiguration(): IProductConfiguration {
 }
 
 export const copySettings = async (logger: Logger) => {
-	const { dataFolderName } = getProductConfiguration();
+	const product = getProductConfiguration();
 
 	// Show quick pick for editor selection
 	const editorChoice = await window.showQuickPick(
@@ -216,27 +251,20 @@ export const copySettings = async (logger: Logger) => {
 		cancellable: true
 	}, async (progress, token) => {
 		try {
-			const homeDir = os.homedir();
-			const sourceEditorPaths = getEditorPaths(editorChoice.value, homeDir);
+			const sourceEditorPaths = getSourceEditorPaths(editorChoice.value);
+			const destEditorPaths = getDestinationEditorPaths(product);
 
 			progress.report({ message: 'Preparing directories...', increment: 10 });
 
-			// Get destination paths using VSCode's env API where possible
-			const destConfigDir = path.join(
-				os.platform() === 'win32'
-					? process.env.APPDATA!
-					: os.platform() === 'darwin'
-						? path.join(homeDir, 'Library/Application Support')
-						: path.join(homeDir, '.config'),
-				'Aide',
-				'User'
-			);
+			const destConfigDir = destEditorPaths.configDir;
+			const destExtDir = destEditorPaths.extensionsDir;
 
-			const destExtDir = path.join(
-				os.platform() === 'win32' ? process.env.USERPROFILE! : homeDir,
-				dataFolderName,
-				'extensions'
-			);
+			// Add logging to help debug the paths
+			logger.info(`Source config directory: ${sourceEditorPaths.configDir}`);
+			logger.info(`Destination config directory: ${destConfigDir}`);
+			logger.info(`Data folder name from product.json: ${product.dataFolderName}`);
+			logger.info(`Using destination extensions directory: ${destExtDir}`);
+			logger.info(`Development mode: ${process.env.VSCODE_DEV === '1'}`);
 
 			// Ensure destination directories exist
 			ensureDir(destConfigDir);
