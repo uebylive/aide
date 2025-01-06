@@ -26,6 +26,7 @@
 	height: 41px;
 	box-sizing: border-box;
 	padding: 5px 12px 6px 20px;
+	border-color: transparent !important;
 }
 
 .extensions-viewlet > .header  > .extensions-search-container {
@@ -89,6 +90,21 @@
 .extensions-viewlet .notification-container .message-action:hover {
 	background-color: var(--vscode-toolbar-hoverBackground);
 	outline: 1px dashed var(--vscode-toolbar-hoverOutline);
+}
+
+.extensions-viewlet > .marketplace-settings {
+	padding: 0px 8px 12px 20px;
+	border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.extensions-viewlet > .marketplace-settings > .import-settings {
+	cursor: pointer;
+	color: var(--vscode-textLink-foreground);
+	text-decoration: underline;
+}
+
+.extensions-viewlet > .marketplace-settings > .import-settings:hover {
+	color: var(--vscode-textLink-activeForeground);
 }
 
 .extensions-viewlet > .extensions {
