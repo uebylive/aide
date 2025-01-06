@@ -171,8 +171,8 @@ export class RecentEditsRetriever implements vscode.Disposable {
 	}
 
 	private onDidChangeTextDocument(event: vscode.TextDocumentChangeEvent): void {
-		console.log('onDidChangeTextDocument');
-		console.log({ event });
+		// console.log('onDidChangeTextDocument');
+		// console.log({ event });
 		const shouldTrack = this.shouldTrackFile(event.document.uri);
 		if (!shouldTrack) {
 			return;
