@@ -9,7 +9,7 @@ import * as path from 'path';
 import { commands, env, Uri, window, ProgressLocation } from 'vscode';
 import { Logger } from 'winston';
 
-export type VSCodeVariant = 'vscode' | 'vscodium' | 'insiders';
+export type VSCodeVariant = 'vscode' | 'cursor' | 'vscodium' | 'vscode-insiders' | 'vscodium-insiders';
 
 interface EditorPaths {
 	configDir: string;
@@ -102,15 +102,25 @@ const EDITOR_CONFIGS: Record<VSCodeVariant, {
 		configDirName: 'Code',
 		extensionsDirName: '.vscode'
 	},
+	cursor: {
+		displayName: 'Cursor',
+		configDirName: 'Cursor',
+		extensionsDirName: '.cursor'
+	},
 	vscodium: {
 		displayName: 'VS Codium',
 		configDirName: 'VSCodium',
 		extensionsDirName: '.vscode-oss'
 	},
-	insiders: {
+	'vscode-insiders': {
 		displayName: 'VS Code Insiders',
 		configDirName: 'Code - Insiders',
 		extensionsDirName: '.vscode-insiders'
+	},
+	'vscodium-insiders': {
+		displayName: 'VS Codium Insiders',
+		configDirName: 'VSCodium-Insiders',
+		extensionsDirName: '.vscode-oss-insiders'
 	}
 };
 
@@ -185,8 +195,10 @@ export const copySettings = async (logger: Logger) => {
 	const editorChoice = await window.showQuickPick(
 		[
 			{ label: 'VS Code', value: 'vscode' as VSCodeVariant },
-			{ label: 'VS Code Insiders', value: 'insiders' as VSCodeVariant },
-			{ label: 'VS Codium', value: 'vscodium' as VSCodeVariant }
+			{ label: 'Cursor', value: 'cursor' as VSCodeVariant },
+			{ label: 'VS Codium', value: 'vscodium' as VSCodeVariant },
+			{ label: 'VS Code Insiders', value: 'vscode-insiders' as VSCodeVariant },
+			{ label: 'VS Codium Insiders', value: 'vscodium-insiders' as VSCodeVariant }
 		],
 		{
 			placeHolder: 'Select your previous editor',
