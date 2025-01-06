@@ -132,13 +132,22 @@ const EDITOR_CONFIGS: Record<VSCodeVariant, {
 function getSourceEditorPaths(variant: VSCodeVariant): EditorPaths {
 	const homeDir = os.homedir();
 	const config = EDITOR_CONFIGS[variant];
+	const platform = os.platform();
 
 	// Get the base paths from environment variables, similar to how VSCode does it
-	const userDataDir = process.env.VSCODE_PORTABLE
-		? path.join(process.env.VSCODE_PORTABLE, 'user-data')
-		: process.env.VSCODE_APPDATA
-			? process.env.VSCODE_APPDATA
-			: path.join(homeDir, '.config');
+	let userDataDir: string;
+
+	if (process.env.VSCODE_PORTABLE) {
+		userDataDir = path.join(process.env.VSCODE_PORTABLE, 'user-data');
+	} else if (process.env.VSCODE_APPDATA) {
+		userDataDir = process.env.VSCODE_APPDATA;
+	} else if (platform === 'win32') {
+		// On Windows, use AppData\Roaming as the default
+		userDataDir = path.join(process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming'));
+	} else {
+		// For Linux/macOS, use .config
+		userDataDir = path.join(homeDir, '.config');
+	}
 
 	// Use the environment variable for extensions if available
 	const extensionsDir = process.env.VSCODE_EXTENSIONS
@@ -157,6 +166,7 @@ function getSourceEditorPaths(variant: VSCodeVariant): EditorPaths {
 
 function getDestinationEditorPaths(product: IProductConfiguration): EditorPaths {
 	const homeDir = os.homedir();
+	const platform = os.platform();
 
 	// Handle development mode by appending -dev to dataFolderName
 	const isDevMode = process.env.VSCODE_DEV === '1';
@@ -164,8 +174,8 @@ function getDestinationEditorPaths(product: IProductConfiguration): EditorPaths 
 		? `${product.dataFolderName}-dev`
 		: product.dataFolderName;
 
-	// In development mode on Linux, both config and extensions are in the dev folder
-	if (isDevMode && (os.platform() === 'linux' || os.platform() === 'darwin')) {
+	// In development mode, both config and extensions are in the dev folder
+	if (isDevMode) {
 		const devDir = path.join(homeDir, dataFolderName);
 		return {
 			configDir: path.join(devDir, 'User'),
@@ -174,12 +184,20 @@ function getDestinationEditorPaths(product: IProductConfiguration): EditorPaths 
 		};
 	}
 
-	// For non-dev mode or other platforms, use the standard paths
-	const userDataDir = process.env.VSCODE_PORTABLE
-		? path.join(process.env.VSCODE_PORTABLE, 'user-data')
-		: process.env.VSCODE_APPDATA
-			? process.env.VSCODE_APPDATA
-			: path.join(homeDir, '.config');
+	// Get the base paths from environment variables, similar to how VSCode does it
+	let userDataDir: string;
+
+	if (process.env.VSCODE_PORTABLE) {
+		userDataDir = path.join(process.env.VSCODE_PORTABLE, 'user-data');
+	} else if (process.env.VSCODE_APPDATA) {
+		userDataDir = process.env.VSCODE_APPDATA;
+	} else if (platform === 'win32') {
+		// On Windows, use AppData\Roaming as the default
+		userDataDir = path.join(process.env.APPDATA || path.join(homeDir, 'AppData', 'Roaming'));
+	} else {
+		// For Linux/macOS, use .config
+		userDataDir = path.join(homeDir, '.config');
+	}
 
 	// Use the environment variable for extensions if available
 	const extensionsDir = process.env.VSCODE_EXTENSIONS
@@ -229,8 +247,6 @@ function getProductConfiguration(): IProductConfiguration {
 }
 
 export const copySettings = async (logger: Logger) => {
-	const product = getProductConfiguration();
-
 	// Show quick pick for editor selection
 	const editorChoice = await window.showQuickPick(
 		[
@@ -250,6 +266,63 @@ export const copySettings = async (logger: Logger) => {
 	if (!editorChoice) {
 		return; // User cancelled
 	}
+
+	await copySettingsWithProgress(editorChoice, logger);
+};
+
+export const migrateFromVSCodeOSS = async (logger: Logger): Promise<void> => {
+	const product = getProductConfiguration();
+	const destEditorPaths = getDestinationEditorPaths(product);
+
+	// Check if settings.json exists in the new location
+	const newSettingsPath = path.join(destEditorPaths.configDir, 'settings.json');
+
+	let shouldMigrate = false;
+
+	if (!fs.existsSync(newSettingsPath)) {
+		shouldMigrate = true;
+	} else {
+		try {
+			const settingsContent = fs.readFileSync(newSettingsPath, 'utf8');
+			if (!settingsContent.trim()) {
+				shouldMigrate = true;
+			} else {
+				const settingsJson = JSON.parse(settingsContent);
+				// Check if the JSON object has any keys
+				if (Object.keys(settingsJson).length === 0) {
+					shouldMigrate = true;
+				}
+			}
+		} catch (error) {
+			// If there's an error reading or parsing the file, assume it's corrupted and migrate
+			logger.warn('Error reading settings file, will attempt migration', error);
+			shouldMigrate = true;
+		}
+	}
+
+	if (shouldMigrate) {
+		logger.info('No settings found in new location, attempting migration from .vscode-oss');
+
+		// Create a mock editor choice for VSCodium since it uses .vscode-oss
+		const oldEditor = {
+			label: 'Aide (older version)',
+			value: 'vscodium' as VSCodeVariant
+		};
+
+		try {
+			await copySettingsWithProgress(oldEditor, logger);
+		} catch (error) {
+			logger.error('Failed to migrate settings from .vscode-oss', error);
+			// Don't show error to user as this is an automatic migration
+		}
+	}
+};
+
+export const copySettingsWithProgress = async (
+	editorChoice: { label: string; value: VSCodeVariant },
+	logger: Logger
+) => {
+	const product = getProductConfiguration();
 
 	await window.withProgress({
 		location: ProgressLocation.Notification,
