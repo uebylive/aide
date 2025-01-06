@@ -1,0 +1,49 @@
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+.monaco-workbench .rageShake-card {
+	position: absolute;
+	z-index: 1000;
+	top: 35px;
+	right: 0px;
+	width: 260px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 12px 10px;
+	border-radius: 4px;
+	background-color: var(--vscode-editor-background);
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+	transition: box-shadow 0.2s;
+}
+
+.monaco-workbench .rageShake-card > .rageShake-card-header {
+	font-weight: bold;
+	font-size: 14px;
+	grid-template-columns: 1fr auto 1fr;
+}
+
+.monaco-workbench .rageShake-card > .rageShake-card-header > .rageShake-card-title {
+	text-align: center;
+}
+
+
+/* Start */
+
+.monaco-worbench .rageShake-card > .rageShake-card-body > .rageShake-list {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+
+/* Issue */
+
+.monaco-worbench .rageShake-card > .rageShake-card-body > .rageShake-issue-attachments {
+	display: flex;
+	gap: 4px;
+}
+
+
