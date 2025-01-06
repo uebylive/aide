@@ -229,8 +229,6 @@ function getProductConfiguration(): IProductConfiguration {
 }
 
 export const copySettings = async (logger: Logger) => {
-	const product = getProductConfiguration();
-
 	// Show quick pick for editor selection
 	const editorChoice = await window.showQuickPick(
 		[
@@ -250,6 +248,63 @@ export const copySettings = async (logger: Logger) => {
 	if (!editorChoice) {
 		return; // User cancelled
 	}
+
+	await copySettingsWithProgress(editorChoice, logger);
+};
+
+export const migrateFromVSCodeOSS = async (logger: Logger): Promise<void> => {
+	const product = getProductConfiguration();
+	const destEditorPaths = getDestinationEditorPaths(product);
+
+	// Check if settings.json exists in the new location
+	const newSettingsPath = path.join(destEditorPaths.configDir, 'settings.json');
+
+	let shouldMigrate = false;
+
+	if (!fs.existsSync(newSettingsPath)) {
+		shouldMigrate = true;
+	} else {
+		try {
+			const settingsContent = fs.readFileSync(newSettingsPath, 'utf8');
+			if (!settingsContent.trim()) {
+				shouldMigrate = true;
+			} else {
+				const settingsJson = JSON.parse(settingsContent);
+				// Check if the JSON object has any keys
+				if (Object.keys(settingsJson).length === 0) {
+					shouldMigrate = true;
+				}
+			}
+		} catch (error) {
+			// If there's an error reading or parsing the file, assume it's corrupted and migrate
+			logger.warn('Error reading settings file, will attempt migration', error);
+			shouldMigrate = true;
+		}
+	}
+
+	if (shouldMigrate) {
+		logger.info('No settings found in new location, attempting migration from .vscode-oss');
+
+		// Create a mock editor choice for VSCodium since it uses .vscode-oss
+		const oldEditor = {
+			label: 'Aide (older version)',
+			value: 'vscodium' as VSCodeVariant
+		};
+
+		try {
+			await copySettingsWithProgress(oldEditor, logger);
+		} catch (error) {
+			logger.error('Failed to migrate settings from .vscode-oss', error);
+			// Don't show error to user as this is an automatic migration
+		}
+	}
+};
+
+export const copySettingsWithProgress = async (
+	editorChoice: { label: string; value: VSCodeVariant },
+	logger: Logger
+) => {
+	const product = getProductConfiguration();
 
 	await window.withProgress({
 		location: ProgressLocation.Notification,

@@ -20,7 +20,7 @@ import { RepoRef, RepoRefBackend, SideCarClient } from './sidecar/client';
 import { getSideCarModelConfiguration } from './sidecar/types';
 import { SimpleBrowserManager } from './simpleBrowser/simpleBrowserManager';
 import { loadOrSaveToStorage } from './storage/types';
-import { copySettings } from './utilities/copySettings';
+import { copySettings, migrateFromVSCodeOSS } from './utilities/copySettings';
 import { killProcessOnPort } from './utilities/killPort';
 import { getRelevantFiles, shouldTrackFile } from './utilities/openTabs';
 import { findPortPosition } from './utilities/port';
@@ -62,6 +62,8 @@ export async function activate(context: vscode.ExtensionContext) {
 		async () => await copySettings(logger)
 	);
 	context.subscriptions.push(registerCopySettingsCommand);
+	migrateFromVSCodeOSS(logger);
+
 	const readonlyFS = checkReadonlyFSMode();
 	if (readonlyFS) {
 		vscode.window.showErrorMessage('Move Aide to the Applications folder using Finder. More instructions here: [link](https://docs.codestory.ai/troubleshooting#macos-readonlyfs-warning)');
