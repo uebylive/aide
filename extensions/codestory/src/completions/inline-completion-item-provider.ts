@@ -82,6 +82,7 @@ export class InlineCompletionItemProvider
 			formatOnAccept,
 		};
 		this.sidecarClient = sidecarClient;
+		/*
 		if (this.config.completeSuggestWidgetSelection) {
 			// This must be set to true, or else the suggest widget showing will suppress inline
 			// completions. Note that the VS Code proposed API inlineCompletionsAdditions contains
@@ -96,6 +97,7 @@ export class InlineCompletionItemProvider
 					vscode.ConfigurationTarget.Global
 				);
 		}
+		*/
 		this.requestManager = new RequestManager();
 		this.disposables.push(
 			vscode.commands.registerCommand(
