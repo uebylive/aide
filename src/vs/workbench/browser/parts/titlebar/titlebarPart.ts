@@ -462,8 +462,8 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 		if (hasCustomTitlebar(this.configurationService, this.titleBarStyle)) {
 			this.actionToolBarElement = append(this.leftContent, $('div.action-toolbar-container'));
 			this.secondaryActionToolBarElement = append(this.rightContent, $('div.secondary-action-toolbar-container'));
-			this.codestoryAccountActionToolBarElement = append(this.rightContent, $('div.codestory-action-toolbar-container'));
 			this.rageShakeActionToolBarElement = append(this.rightContent, $('div.rageShake-action-toolbar-container'));
+			this.codestoryAccountActionToolBarElement = append(this.rightContent, $('div.codestory-action-toolbar-container'));
 			this.createActionToolBar();
 			this.createsecondaryActionToolBar();
 			this.createCodestoryAccountActionToolBar();

@@ -491,7 +491,7 @@
 	text-align: center;
 }
 
-.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container {
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > :is(.codestory-action-toolbar-container, .rageShake-action-toolbar-container) {
 	display: none;
 	flex-grow: 0;
 	flex-shrink: 0;
@@ -503,26 +503,26 @@
 	min-width: 28px;
 }
 
-.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container:not(.has-no-actions) {
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > :is(.codestory-action-toolbar-container, .rageShake-action-toolbar-container):not(.has-no-actions) {
 	display: flex;
 	justify-content: center;
 }
 
-.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container .monaco-action-bar .actions-container {
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > :is(.codestory-action-toolbar-container, .rageShake-action-toolbar-container) .monaco-action-bar .actions-container {
 	padding-right: 4px;
 }
 
-.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container .monaco-action-bar .action-item {
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > :is(.codestory-action-toolbar-container, .rageShake-action-toolbar-container) .monaco-action-bar .action-item {
 	display: flex;
 }
 
-.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container .monaco-action-bar .action-item .action-label {
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right >.codestory-action-toolbar-container .monaco-action-bar .action-item .action-label {
 	padding: 3px 12px;
 	font-size: 14px;
 	font-weight: 600;
 }
 
-.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > .codestory-action-toolbar-container .monaco-action-bar .actions-container .action-item:has(> .action-label.checked) {
+.monaco-workbench .part.titlebar > .titlebar-container > .titlebar-right > :is(.codestory-action-toolbar-container, .rageShake-action-toolbar-container) .monaco-action-bar .actions-container .action-item:has(> .action-label.checked) {
 	background: var(--vscode-actionBar-toggledBackground) !important;
 }
 
