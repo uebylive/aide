@@ -20,30 +20,61 @@
 }
 
 .monaco-workbench .rageShake-card > .rageShake-card-header {
+	display: grid;
 	font-weight: bold;
 	font-size: 14px;
-	grid-template-columns: 1fr auto 1fr;
+	grid-template-columns: min-content auto min-content;
 }
 
-.monaco-workbench .rageShake-card > .rageShake-card-header > .rageShake-card-title {
+.monaco-workbench .rageShake-card > .rageShake-card-header .rageShake-card-title {
 	text-align: center;
+}
+
+.monaco-workbench .rageShake-card > .rageShake-card-header .monaco-button {
+	transform: translateY(-1px);
+	padding: 3px;
+	border-radius: 5px;
+	cursor: pointer;
+}
+
+.monaco-workbench .rageShake-card > .rageShake-card-header .monaco-button:hover {
+	background-color: var(--vscode-actionBar-toggledBackground);
 }
 
 
 /* Start */
 
-.monaco-worbench .rageShake-card > .rageShake-card-body > .rageShake-list {
+.monaco-workbench .rageShake-card > .rageShake-card-body .rageShake-list {
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+
+.monaco-workbench .rageShake-card > .rageShake-card-body .rageShake-list .monaco-button {
+	display: grid;
+	grid-template-columns: min-content auto min-content;
+	place-content: stretch;
 }
 
 
 /* Issue */
 
-.monaco-worbench .rageShake-card > .rageShake-card-body > .rageShake-issue-attachments {
+.monaco-workbench .rageShake-card > .rageShake-card-body .rageShake-issue-attachments {
 	display: flex;
 	gap: 4px;
+}
+
+@keyframes screenshot-button-icon-spin {
+	from { transform: rotate(0deg); }
+	to { transform: rotate(360deg); }
+}
+
+.monaco-workbench .rageShake-card > .rageShake-card-body .monaco-button.screenShot-button .codicon-loading {
+	animation: screenshot-button-icon-spin 1s linear infinite;
 }
 
 

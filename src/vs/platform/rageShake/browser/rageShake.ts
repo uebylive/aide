@@ -8,10 +8,13 @@ import { addDisposableListener } from '../../../base/browser/dom.js';
 import { Button } from '../../../base/browser/ui/button/button.js';
 import { Codicon } from '../../../base/common/codicons.js';
 import { Disposable, DisposableStore, toDisposable } from '../../../base/common/lifecycle.js';
+import { ThemeIcon } from '../../../base/common/themables.js';
 import { localize } from '../../../nls.js';
 import { IContextKey, IContextKeyService } from '../../contextkey/common/contextkey.js';
+import { SystemInfo } from '../../diagnostics/common/diagnostics.js';
 import { IInstantiationService } from '../../instantiation/common/instantiation.js';
 import { ILayoutService } from '../../layout/browser/layoutService.js';
+import { IProcessMainService } from '../../process/common/process.js';
 import { defaultButtonStyles } from '../../theme/browser/defaultStyles.js';
 import { IRageShakeService } from '../common/rageShake.js';
 import { RAGESHAKE_CARD_VISIBLE } from '../common/rageShakeContextKeys.js';
@@ -20,12 +23,19 @@ import './media/rageShake.css';
 const $ = dom.$;
 
 
-enum State {
+enum RageShakeView {
 	Start,
 	Issue,
 	Idea,
 	Other
 }
+
+
+const views: { destination: RageShakeView; label: string; codicon: ThemeIcon }[] = [
+	{ destination: RageShakeView.Issue, label: localize('rageShakeReportIssue', "Report an issue"), codicon: Codicon.warning },
+	{ destination: RageShakeView.Idea, label: localize('rageShakeShareIdea', "Share an idea"), codicon: Codicon.lightBulb },
+	{ destination: RageShakeView.Other, label: localize('rageShakeShareOther', "Tell us anything"), codicon: Codicon.commentDiscussion },
+];
 
 export class RageShakeService extends Disposable implements IRageShakeService {
 	_serviceBrand: undefined;
@@ -37,11 +47,20 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 	private backButton: Button;
 	private headerTitleElement: HTMLElement;
 
+	private screenShotButton: Button | undefined;
+	private screenShotBlob: Blob | null = null;
+
+	private systemInformationButton: Button | undefined;
+	private systemInfo: SystemInfo | undefined;
+
+	private currentView: RageShakeView = RageShakeView.Start;
+
 
 	constructor(
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@IInstantiationService private readonly instantiationService: IInstantiationService,
 		@ILayoutService private readonly layoutService: ILayoutService,
+		@IProcessMainService private readonly processMainService: IProcessMainService,
 	) {
 		super();
 
@@ -50,12 +69,12 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 		const container = this.layoutService.activeContainer;
 		const card = this.cardElement = dom.append(container, $('.rageShake-card'));
 		const header = card.appendChild($('header.rageShake-card-header'));
-		const backButton = this.backButton = this._register(this.instantiationService.createInstance(Button, header, defaultButtonStyles));
+		const backButton = this.backButton = this._register(this.instantiationService.createInstance(Button, header, {}));
 		backButton.icon = Codicon.arrowLeft;
 
-		this.headerTitleElement = card.appendChild($('.rageShake-card-title'));
+		this.headerTitleElement = header.appendChild($('.rageShake-card-title'));
 
-		const closeButton = this._register(this.instantiationService.createInstance(Button, header, defaultButtonStyles));
+		const closeButton = this._register(this.instantiationService.createInstance(Button, header, {}));
 		closeButton.icon = Codicon.close;
 
 		this.bodyElement = card.appendChild($('.rageShake-card-body'));
@@ -74,7 +93,11 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 		}
 	}
 
-	private async getScreenShot(): Promise<ArrayBufferLike | undefined> {
+	private async getScreenShot() {
+		const spinner = $('span.codicon.codicon-loading', { ariaHidden: true });
+		this.screenShotButton?.element.prepend(spinner);
+
+
 		// Gets a screenshot from the browser. This gets the screenshot via the browser's display
 		// media API which will typically offer a picker of all available screens and windows for
 		// the user to select. Using the video stream provided by the display media API, this will
@@ -127,6 +150,7 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 			console.error('Error taking screenshot:', error);
 			return undefined;
 		} finally {
+			this.screenShotButton?.element.removeChild(spinner);
 			store.dispose();
 			if (stream) {
 				for (const track of stream.getTracks()) {
@@ -135,20 +159,27 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 			}
 		}
 
+		//const grabber = this._register(this.instantiationService.createInstance(ScreenShotGrabber));
+		//grabber.grabScreenShot();
 	}
 
-	private navigate(state: State) {
+	private async getSystemInformation() {
+		this.systemInfo = await this.processMainService.$getSystemInfo();
+	}
+
+	private navigate(state: RageShakeView) {
+		this.currentView = state;
 		switch (state) {
-			case State.Start:
+			case RageShakeView.Start:
 				this.showStart();
 				break;
-			case State.Issue:
+			case RageShakeView.Issue:
 				this.showIssue();
 				break;
-			case State.Idea:
+			case RageShakeView.Idea:
 				this.showIdea();
 				break;
-			case State.Other:
+			case RageShakeView.Other:
 				this.showOther();
 				break;
 		}
@@ -156,27 +187,61 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 
 	private showStart() {
 		this.headerTitleElement.textContent = localize('rageShakeStart', "What's on your mind?");
-		dom.hide(this.backButton.element);
+		this.setVisibilityWithoutLayoutShift(false, this.backButton.element);
 		dom.clearNode(this.bodyElement);
-		const issueButton = this._register(this.instantiationService.createInstance(Button, this.bodyElement, defaultButtonStyles));
-		issueButton.label = localize('rageShakeReportIssue', "Report an issue");
-		this._register(issueButton.onDidClick(() => this.navigate(State.Issue)));
 
-		const ideaBtton = this._register(this.instantiationService.createInstance(Button, this.bodyElement, defaultButtonStyles));
-		ideaBtton.label = localize('rageShakeShareIdea', "Share an idea");
-		this._register(ideaBtton.onDidClick(() => this.navigate(State.Idea)));
+		const list = this.bodyElement.appendChild($('ul.rageShake-list'));
 
-		const otherButton = this._register(this.instantiationService.createInstance(Button, this.bodyElement, defaultButtonStyles));
-		otherButton.label = localize('rageShakeShareOther', "Tell us anything");
-		this._register(otherButton.onDidClick(() => this.navigate(State.Other)));
+		for (const { destination, label, codicon } of views) {
+			const listElement = list.appendChild($('li'));
+			const button = this._register(this.instantiationService.createInstance(Button, listElement, { secondary: true, ...defaultButtonStyles }));
+			button.label = label;
+			button.element.prepend($(`span.rageShake-icon.codicon${ThemeIcon.asCSSSelector(codicon)}`, { ariaHidden: true }));
+			this._register(button.onDidClick(() => this.navigate(destination)));
+		}
+	}
+
+	private setVisibilityWithoutLayoutShift(visible: boolean, element: HTMLElement) {
+		element.style.transition = 'opacity 200ms';
+		if (visible) {
+			element.style.opacity = '1';
+			this._register(addDisposableListener(element, 'transitionend', () => {
+				element.style.visibility = 'visible';
+			}));
+			element.ariaHidden = 'false';
+		} else {
+			element.style.opacity = '0';
+			this._register(addDisposableListener(element, 'transitionend', () => {
+				element.style.visibility = 'hidden';
+			}));
+			element.ariaHidden = 'true';
+		}
 	}
 
 	private showIssue() {
 		this.headerTitleElement.textContent = localize('rageShakeReportIssue', "Report an issue");
-		dom.show(this.backButton.element);
+		this.setVisibilityWithoutLayoutShift(true, this.backButton.element);
 		dom.clearNode(this.bodyElement);
 		const textArea = this.bodyElement.appendChild(document.createElement('textarea'));
 		textArea.placeholder = localize('rageShakeReportIssue.placeholder', "Describe your issue");
+
+		const attachments = this.bodyElement.appendChild($('div.rageShake-issue-attachments'));
+
+		if (this.screenShotButton) {
+			this.screenShotButton.dispose();
+		}
+		const screenshotButton = this.screenShotButton = this._register(this.instantiationService.createInstance(Button, attachments, { secondary: true, ...defaultButtonStyles }));
+		screenshotButton.label = localize('rageShakeReportIssue.takeScreenShot', "Take a screenshot");
+		this._register(screenshotButton.onDidClick(() => this.getScreenShot()));
+
+
+		if (this.systemInformationButton) {
+			this.systemInformationButton.dispose();
+		}
+
+		this.systemInformationButton = this._register(this.instantiationService.createInstance(Button, attachments, { secondary: true, ...defaultButtonStyles }));
+		this.systemInformationButton.label = localize('rageShakeReportIssue.getSystemInformation', "Attach system information");
+		this._register(this.systemInformationButton.onDidClick(() => this.getSystemInformation()));
 
 		const issueButton = this._register(this.instantiationService.createInstance(Button, this.bodyElement, defaultButtonStyles));
 		issueButton.label = localize('rageShakeReportIssue', "Report an issue");
@@ -184,7 +249,7 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 
 	private showIdea() {
 		this.headerTitleElement.textContent = localize('rageShakeShareIdea', "Share an idea");
-		dom.show(this.backButton.element);
+		this.setVisibilityWithoutLayoutShift(true, this.backButton.element);
 		dom.clearNode(this.bodyElement);
 		const textArea = this.bodyElement.appendChild(document.createElement('textarea'));
 		textArea.placeholder = localize('rageShakeShareIdea.placeholder', "Share your idea");
@@ -192,19 +257,19 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 
 	private showOther() {
 		this.headerTitleElement.textContent = localize('rageShakeShareOther', "Tell us anything");
-		dom.show(this.backButton.element);
+		this.setVisibilityWithoutLayoutShift(true, this.backButton.element);
 		dom.clearNode(this.bodyElement);
 		const textArea = this.bodyElement.appendChild(document.createElement('textarea'));
 		textArea.placeholder = localize('rageShakeShareOther.placeholder', "Tell us something else");
 	}
 
 	private goBack() {
-		this.navigate(State.Start);
+		this.navigate(RageShakeView.Start);
 	}
 
 	private async show() {
 		dom.show(this.cardElement);
-
+		this.navigate(this.currentView);
 	}
 
 	private hide() {
