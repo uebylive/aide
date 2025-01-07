@@ -110,7 +110,11 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 	private async getScreenShot() {
 		const spinner = $('span.codicon.codicon-loading', { ariaHidden: true });
 		this.screenShotButton?.element.prepend(spinner);
+		// Hide widget for screenshot
+		this.cardElement.style.opacity = '0';
 		const arrayBuffer = this.screenShotArrayBuffer = await this.hostService.getScreenshot();
+		// Reset visibility
+		this.cardElement.style.opacity = '';
 		this.screenShotButton?.element.removeChild(spinner);
 
 
