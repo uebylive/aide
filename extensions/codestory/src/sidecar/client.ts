@@ -1056,9 +1056,13 @@ export class SideCarClient {
 
 		const baseUrl = new URL(this._url);
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), workosAccessToken);
-		const allFiles = vscode.workspace.textDocuments.map((textDocument) => {
+		const allFiles = vscode.workspace.textDocuments.filter((textDocument) => {
+			return textDocument.uri.scheme === 'file';
+		}).map((textDocument) => {
 			return textDocument.uri.fsPath;
 		});
+		// log here for debugging
+		console.log(vscode.window.visibleTextEditors);
 		const openFiles = vscode.window.visibleTextEditors.filter((textDocument) => {
 			return textDocument.document.uri.scheme === 'file';
 		}).map((textDocument) => {
@@ -1196,10 +1200,14 @@ export class SideCarClient {
 		codebaseSearch: boolean,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
-		const allFiles = vscode.workspace.textDocuments.map((textDocument) => {
+		const allFiles = vscode.workspace.textDocuments.filter((textDocument) => {
+			return textDocument.uri.scheme === 'file';
+		}).map((textDocument) => {
 			return textDocument.uri.fsPath;
 		});
-		const openFiles = vscode.window.visibleTextEditors.map((textDocument) => {
+		const openFiles = vscode.window.visibleTextEditors.filter((textDocument) => {
+			return textDocument.document.uri.scheme === 'file';
+		}).map((textDocument) => {
 			return textDocument.document.uri.fsPath;
 		});
 		const currentShell = detectDefaultShell();
@@ -1249,10 +1257,14 @@ export class SideCarClient {
 		workosAccessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
-		const allFiles = vscode.workspace.textDocuments.map((textDocument) => {
+		const allFiles = vscode.workspace.textDocuments.filter((textDocument) => {
+			return textDocument.uri.scheme === 'file';
+		}).map((textDocument) => {
 			return textDocument.uri.fsPath;
 		});
-		const openFiles = vscode.window.visibleTextEditors.map((textDocument) => {
+		const openFiles = vscode.window.visibleTextEditors.filter((textDocument) => {
+			return textDocument.document.uri.scheme === 'file';
+		}).map((textDocument) => {
 			return textDocument.document.uri.fsPath;
 		});
 		const currentShell = detectDefaultShell();
