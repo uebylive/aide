@@ -10,6 +10,7 @@ import { Codicon } from '../../../../base/common/codicons.js';
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import { localize } from '../../../../nls.js';
+import { ICSAuthenticationService } from '../../../../platform/codestoryAccount/common/csAccount.js';
 import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { SystemInfo } from '../../../../platform/diagnostics/common/diagnostics.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
@@ -48,6 +49,8 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 	private systemInfo: SystemInfo | undefined;
 	private activeSessionId: string | undefined;
 
+	private messageMap: Map<RageShakeViewType, string> = new Map();
+
 	private currentView: IContextKey<RageShakeViewType>;
 
 
@@ -57,6 +60,7 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 		@ILayoutService private readonly layoutService: ILayoutService,
 		@IProcessMainService private readonly processMainService: IProcessMainService,
 		@IHostService private readonly hostService: IHostService,
+		@ICSAuthenticationService private readonly csAuthenticationService: ICSAuthenticationService
 	) {
 		super();
 
@@ -155,6 +159,37 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 		this.activeSessionId = sessionId;
 	}
 
+	private async sendFeedback() {
+		const formData = new FormData();
+		const currentView = this.currentView.get();
+
+
+		const dataBlob = new Blob([JSON.stringify({
+			systemInfo: this.systemInfo,
+			message: currentView && this.messageMap.get(currentView) || undefined,
+			sessionId: this.activeSessionId,
+		})], { type: 'application/json' });
+		formData.append('data', dataBlob, 'data.json');
+
+		if (this.screenShotArrayBuffer) {
+			const imageBlob = new Blob([this.screenShotArrayBuffer], { type: 'image/jpeg' });
+			formData.append('screenshot', imageBlob, 'screenshot.jpg');
+		}
+
+		const headers: HeadersInit = {};
+		const session = await this.csAuthenticationService.getSession();
+
+		if (session) {
+			headers.Authorization = `Bearer ${session.accessToken}`;
+		}
+
+		fetch('https://b8ee-80-209-142-211.ngrok-free.app/v1/debug/rage-shake', {
+			method: 'POST',
+			body: formData,
+			headers
+		});
+	}
+
 	private navigate(state: RageShakeViewType) {
 		this.currentView.set(state);
 		switch (state) {
@@ -214,6 +249,14 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 		const textArea = this.bodyElement.appendChild(document.createElement('textarea'));
 		textArea.placeholder = localize('rageShakeReportIssue.placeholder', "Describe your issue");
 
+		this._register(addDisposableListener(textArea, 'input', (event: InputEvent) => {
+			const textArea = event.target as HTMLTextAreaElement;
+			const view = this.currentView.get();
+			if (view) {
+				this.messageMap.set(view, textArea.value);
+			}
+		}));
+
 		const attachments = this.bodyElement.appendChild($('.rageShake-issue-attachments'));
 		const screenShotContainer = this.screenShotContainerElement = attachments.appendChild($('.rageShake-screenshot-container'));
 		if (this.screenShotButton) {
@@ -234,6 +277,10 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 
 		const issueButton = this._register(this.instantiationService.createInstance(Button, this.bodyElement, defaultButtonStyles));
 		issueButton.label = localize('rageShakeReportIssue', "Report an issue");
+		this._register(issueButton.onDidClick(() => {
+			this.sendFeedback();
+			this.toggle();
+		}));
 	}
 
 	private showIdea() {
