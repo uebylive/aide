@@ -13,6 +13,7 @@ import { localize } from '../../../../nls.js';
 import { ICSAuthenticationService } from '../../../../platform/codestoryAccount/common/csAccount.js';
 import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { SystemInfo } from '../../../../platform/diagnostics/common/diagnostics.js';
+import { IEnvironmentService } from '../../../../platform/environment/common/environment.js';
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ILayoutService } from '../../../../platform/layout/browser/layoutService.js';
 import { IProcessMainService } from '../../../../platform/process/common/process.js';
@@ -61,7 +62,8 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 		@ILayoutService private readonly layoutService: ILayoutService,
 		@IProcessMainService private readonly processMainService: IProcessMainService,
 		@IHostService private readonly hostService: IHostService,
-		@ICSAuthenticationService private readonly csAuthenticationService: ICSAuthenticationService
+		@ICSAuthenticationService private readonly csAuthenticationService: ICSAuthenticationService,
+		@IEnvironmentService private readonly environmentService: IEnvironmentService,
 	) {
 		super();
 
@@ -201,7 +203,11 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 			headers.Authorization = `Bearer ${session.accessToken}`;
 		}
 
-		fetch('https://b8ee-80-209-142-211.ngrok-free.app/v1/debug/rage-shake', {
+		const isDevelopment = !this.environmentService.isBuilt || this.environmentService.isExtensionDevelopment;
+
+		const urlBase = isDevelopment ? 'https://api.codestory.ai' : 'https://staging-api.codestory.ai';
+
+		fetch(`${urlBase}/v1/debug/rage-shake`, {
 			method: 'POST',
 			body: formData,
 			headers
