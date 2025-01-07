@@ -61,6 +61,25 @@
 }
 
 
+.monaco-workbench .rageShake-card > .rageShake-card-body {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.monaco-workbench .rageShake-card > .rageShake-card-body textarea {
+	background-color: var(--vscode-input-background);
+	color: var(--vscode-input-foreground);
+	border: 1px solid var(--vscode-input-border, transparent);
+	border-radius: 4px;
+	line-height: 18px;
+	font-family: inherit;
+	resize: vertical;
+	width: 100%;
+	padding: 6px;
+	box-sizing: border-box;
+}
+
 /* Issue */
 
 .monaco-workbench .rageShake-card > .rageShake-card-body .rageShake-issue-attachments {

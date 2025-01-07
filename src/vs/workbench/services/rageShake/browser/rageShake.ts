@@ -7,7 +7,7 @@ import * as dom from '../../../../base/browser/dom.js';
 import { addDisposableListener } from '../../../../base/browser/dom.js';
 import { Button } from '../../../../base/browser/ui/button/button.js';
 import { Codicon } from '../../../../base/common/codicons.js';
-import { Disposable } from '../../../../base/common/lifecycle.js';
+import { Disposable, DisposableStore } from '../../../../base/common/lifecycle.js';
 import { ThemeIcon } from '../../../../base/common/themables.js';
 import { localize } from '../../../../nls.js';
 import { ICSAuthenticationService } from '../../../../platform/codestoryAccount/common/csAccount.js';
@@ -50,6 +50,7 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 	private activeSessionId: string | undefined;
 
 	private messageMap: Map<RageShakeViewType, string> = new Map();
+	private readonly viewDisposables: DisposableStore;
 
 	private currentView: IContextKey<RageShakeViewType>;
 
@@ -66,6 +67,8 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 
 		this.isVisible = RAGESHAKE_CARD_VISIBLE.bindTo(this.contextKeyService);
 		this.currentView = RAGESHAKE_VIEW.bindTo(this.contextKeyService);
+
+		this.viewDisposables = this._register(this.instantiationService.createInstance(DisposableStore));
 
 		const container = this.layoutService.activeContainer;
 		const card = this.cardElement = dom.append(container, $('.rageShake-card'));
@@ -87,8 +90,12 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 		}
 
 		this._register(this.backButton.onDidClick(() => this.goBack()));
+		this._register(closeButton.onDidClick(() => this.toggle()));
 	}
 
+	setActiveSessionId(sessionId: string) {
+		this.activeSessionId = sessionId;
+	}
 
 	toggle() {
 		if (!this.isVisible.get()) {
@@ -105,6 +112,8 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 		this.screenShotButton?.element.prepend(spinner);
 		const arrayBuffer = this.screenShotArrayBuffer = await this.hostService.getScreenshot();
 		this.screenShotButton?.element.removeChild(spinner);
+
+
 		if (arrayBuffer) {
 			const blob = new Blob([arrayBuffer], { type: 'image/jpeg' });
 			const imageUrl = URL.createObjectURL(blob);
@@ -114,34 +123,41 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 				dom.clearNode(this.screenShotButton.element);
 				this.screenShotButton.element.appendChild($('img', { src: imageUrl, 'class': 'rageShake-screenshot-preview' }));
 
-				if (this.clearScreenShotButton) {
-					this.screenShotContainerElement.removeChild(this.clearScreenShotButton.element);
-					this.clearScreenShotButton.dispose();
-					this.clearScreenShotButton = undefined;
-				}
+				this.removeClearScreenShotButton();
 
-				const clearScreenShotButton = this.clearScreenShotButton = this._register(this.instantiationService.createInstance(Button, this.screenShotContainerElement, {}));
+				const clearScreenShotButton = this.clearScreenShotButton = this.instantiationService.createInstance(Button, this.screenShotContainerElement, {});
+				this.viewDisposables.add(clearScreenShotButton);
+
 				clearScreenShotButton.element.classList.add('rageShake-screenshot-clear-button');
 				// Set label for accessibility and get monaco-text button look
 				clearScreenShotButton.label = localize('rageShakeReportIssue.clearScreenShot', "Clear screenshot");
 				// Clear node to style it freely
 				dom.clearNode(clearScreenShotButton.element);
 				clearScreenShotButton.element.appendChild($('span.codicon.codicon-trash', { ariaHidden: true }));
-				this._register(clearScreenShotButton.onDidClick(() => this.screenShotButton && this.clearScreenShot(this.screenShotButton)));
+				this.viewDisposables.add(clearScreenShotButton.onDidClick(() => {
+					this.resetScreenShotButton();
+					this.removeClearScreenShotButton();
+				}));
 			}
 		}
 	}
 
-	private clearScreenShot(screenShotButton: Button) {
-		// Set label for accessibility and get monaco-text button look
-		screenShotButton.label = localize('rageShakeReportIssue.takeScreenShot', "Take a screenshot");
-		screenShotButton.element.classList.add('rageShake-screenshot-add-button');
-		// Clear node to style it freely
-		dom.clearNode(screenShotButton.element);
-		screenShotButton.element.appendChild($('span.codicon.codicon-device-camera', { ariaHidden: true }));
+	private resetScreenShotButton() {
+		if (this.screenShotButton) {
+			// Set label for accessibility and get monaco-text button look
+			this.screenShotButton.label = localize('rageShakeReportIssue.takeScreenShot', "Take a screenshot");
+			this.screenShotButton.element.classList.add('rageShake-screenshot-add-button');
+			// Clear node to style it freely
+			dom.clearNode(this.screenShotButton.element);
+			this.screenShotButton.element.appendChild($('span.codicon.codicon-device-camera', { ariaHidden: true }));
+		}
+	}
 
+	private removeClearScreenShotButton() {
 		if (this.screenShotContainerElement && this.clearScreenShotButton) {
-			this.screenShotContainerElement.removeChild(this.clearScreenShotButton.element);
+			if (this.screenShotContainerElement.contains(this.clearScreenShotButton.element)) {
+				this.screenShotContainerElement.removeChild(this.clearScreenShotButton.element);
+			}
 			this.clearScreenShotButton.dispose();
 			this.clearScreenShotButton = undefined;
 		}
@@ -155,21 +171,19 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 
 	}
 
-	setActiveSessionId(sessionId: string) {
-		this.activeSessionId = sessionId;
-	}
-
 	private async sendFeedback() {
 		const formData = new FormData();
 		const currentView = this.currentView.get();
 
-
 		const dataBlob = new Blob([JSON.stringify({
 			systemInfo: this.systemInfo,
+			type: currentView,
 			message: currentView && this.messageMap.get(currentView) || undefined,
 			sessionId: this.activeSessionId,
 		})], { type: 'application/json' });
 		formData.append('data', dataBlob, 'data.json');
+
+		this.messageMap.clear();
 
 		if (this.screenShotArrayBuffer) {
 			const imageBlob = new Blob([this.screenShotArrayBuffer], { type: 'image/jpeg' });
@@ -191,7 +205,10 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 	}
 
 	private navigate(state: RageShakeViewType) {
+		// Clear view disposables
+		this.viewDisposables.clear();
 		this.currentView.set(state);
+
 		switch (state) {
 			case RageShakeView.Start:
 				this.showStart();
@@ -206,6 +223,7 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 				this.showOther();
 				break;
 		}
+
 	}
 
 	private showStart() {
@@ -217,86 +235,86 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 
 		for (const { destination, label, codicon } of views) {
 			const listElement = list.appendChild($('li'));
-			const button = this._register(this.instantiationService.createInstance(Button, listElement, { secondary: true, ...defaultButtonStyles }));
+			const button = this.instantiationService.createInstance(Button, listElement, { secondary: true, ...defaultButtonStyles });
+			this.viewDisposables.add(button);
+
 			button.label = label;
 			button.element.prepend($(`span.rageShake-icon.codicon${ThemeIcon.asCSSSelector(codicon)}`, { ariaHidden: true }));
-			this._register(button.onDidClick(() => this.navigate(destination)));
+			this.viewDisposables.add(button.onDidClick(() => this.navigate(destination)));
 		}
 	}
 
-	private setVisibilityWithoutLayoutShift(visible: boolean, element: HTMLElement) {
-		element.style.transition = 'opacity 200ms';
-		if (visible) {
-			element.style.opacity = '1';
-			this._register(addDisposableListener(element, 'transitionend', () => {
-				element.style.visibility = 'visible';
-			}));
-			element.ariaHidden = 'false';
-		} else {
-			element.style.opacity = '0';
-			this._register(addDisposableListener(element, 'transitionend', () => {
-				element.style.visibility = 'hidden';
-			}));
-			element.ariaHidden = 'true';
-		}
-	}
-
-
-	private showIssue() {
-		this.headerTitleElement.textContent = localize('rageShakeReportIssue', "Report an issue");
-		this.setVisibilityWithoutLayoutShift(true, this.backButton.element);
-		dom.clearNode(this.bodyElement);
+	private createTextArea(placeholder: string) {
 		const textArea = this.bodyElement.appendChild(document.createElement('textarea'));
-		textArea.placeholder = localize('rageShakeReportIssue.placeholder', "Describe your issue");
+		textArea.setAttribute('rows', '4');
+		textArea.placeholder = placeholder;
 
-		this._register(addDisposableListener(textArea, 'input', (event: InputEvent) => {
+		const currentView = this.currentView.get();
+		const previousMessage = currentView && this.messageMap.get(currentView);
+		textArea.value = previousMessage || '';
+
+		this.viewDisposables.add(addDisposableListener(textArea, 'input', (event: InputEvent) => {
 			const textArea = event.target as HTMLTextAreaElement;
 			const view = this.currentView.get();
 			if (view) {
 				this.messageMap.set(view, textArea.value);
 			}
 		}));
+	}
+
+	private createSubmitButton(label: string) {
+		const submitButton = this.viewDisposables.add(this.instantiationService.createInstance(Button, this.bodyElement, defaultButtonStyles));
+		submitButton.label = label;
+		this.viewDisposables.add(submitButton.onDidClick(() => {
+			this.sendFeedback();
+			this.toggle();
+		}));
+	}
+
+	private showIssue() {
+		this.headerTitleElement.textContent = localize('rageShakeReportIssue', "Report an issue");
+		this.setVisibilityWithoutLayoutShift(true, this.backButton.element);
+		dom.clearNode(this.bodyElement);
+		this.createTextArea(localize('rageShakeReportIssue.placeholder', "Describe your issue"));
 
 		const attachments = this.bodyElement.appendChild($('.rageShake-issue-attachments'));
 		const screenShotContainer = this.screenShotContainerElement = attachments.appendChild($('.rageShake-screenshot-container'));
 		if (this.screenShotButton) {
 			this.screenShotButton.dispose();
 		}
-		const screenShotButton = this.screenShotButton = this._register(this.instantiationService.createInstance(Button, screenShotContainer, { secondary: true, ...defaultButtonStyles }));
-		this.clearScreenShot(screenShotButton);
-		this._register(screenShotButton.onDidClick(() => this.getScreenShot()));
+		const screenShotButton = this.screenShotButton = this.instantiationService.createInstance(Button, screenShotContainer, { secondary: true, ...defaultButtonStyles });
+		this.viewDisposables.add(screenShotButton);
+		this.resetScreenShotButton();
+
+
+		this.viewDisposables.add(screenShotButton.onDidClick(() => this.getScreenShot()));
 
 
 		if (this.systemInformationButton) {
 			this.systemInformationButton.dispose();
 		}
 
-		this.systemInformationButton = this._register(this.instantiationService.createInstance(Button, attachments, { secondary: true, ...defaultButtonStyles }));
+		this.systemInformationButton = this.viewDisposables.add(this.instantiationService.createInstance(Button, attachments, { secondary: true, ...defaultButtonStyles }));
 		this.systemInformationButton.label = localize('rageShakeReportIssue.getSystemInformation', "Attach system information");
-		this._register(this.systemInformationButton.onDidClick(() => this.getSystemInformation()));
+		this.viewDisposables.add(this.systemInformationButton.onDidClick(() => this.getSystemInformation()));
 
-		const issueButton = this._register(this.instantiationService.createInstance(Button, this.bodyElement, defaultButtonStyles));
-		issueButton.label = localize('rageShakeReportIssue', "Report an issue");
-		this._register(issueButton.onDidClick(() => {
-			this.sendFeedback();
-			this.toggle();
-		}));
+		this.createSubmitButton(localize('rageShakeReportIssue.submit', "Report issue"));
 	}
 
 	private showIdea() {
 		this.headerTitleElement.textContent = localize('rageShakeShareIdea', "Share an idea");
 		this.setVisibilityWithoutLayoutShift(true, this.backButton.element);
 		dom.clearNode(this.bodyElement);
-		const textArea = this.bodyElement.appendChild(document.createElement('textarea'));
-		textArea.placeholder = localize('rageShakeShareIdea.placeholder', "Share your idea");
+		this.createTextArea(localize('rageShakeShareIdea.placeholder', "Share your idea"));
+		this.createSubmitButton(localize('rageShakeReportSend', "Send"));
 	}
 
 	private showOther() {
 		this.headerTitleElement.textContent = localize('rageShakeShareOther', "Tell us anything");
 		this.setVisibilityWithoutLayoutShift(true, this.backButton.element);
 		dom.clearNode(this.bodyElement);
-		const textArea = this.bodyElement.appendChild(document.createElement('textarea'));
-		textArea.placeholder = localize('rageShakeShareOther.placeholder', "Tell us something else");
+		this.createTextArea(localize('rageShakeShareOther.placeholder', "Tell us something else"));
+		this.createSubmitButton(localize('rageShakeReportSend', "Send"));
 	}
 
 	private goBack() {
@@ -310,5 +328,26 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 
 	private hide() {
 		dom.hide(this.cardElement);
+	}
+
+	private setVisibilityWithoutLayoutShift(visible: boolean, element: HTMLElement) {
+		element.style.transition = 'opacity 200ms';
+		if (visible) {
+			element.style.opacity = '1';
+			const transitionEndListener = addDisposableListener(element, 'transitionend', () => {
+				element.style.visibility = 'visible';
+				transitionEndListener.dispose();
+			}, { once: true });
+			this._register(transitionEndListener);
+			element.ariaHidden = 'false';
+		} else {
+			element.style.opacity = '0';
+			const transitionEndListener = addDisposableListener(element, 'transitionend', () => {
+				element.style.visibility = 'hidden';
+				transitionEndListener.dispose();
+			}, { once: true });
+			this._register(transitionEndListener);
+			element.ariaHidden = 'true';
+		}
 	}
 }
