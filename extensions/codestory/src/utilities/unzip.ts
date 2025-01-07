@@ -31,15 +31,11 @@ async function extractZipWithYauzl(zipPath: string, destinationDir: string): Pro
 
 				try {
 					// Create directory if it doesn't exist
-					if (!fs.existsSync(entryDir)) {
-						fs.mkdirSync(entryDir, { recursive: true });
-					}
+					fs.mkdirSync(entryDir, { recursive: true });
 
 					if (/\/$/.test(entry.fileName)) {
 						// Directory entry
-						if (!fs.existsSync(entryPath)) {
-							fs.mkdirSync(entryPath, { recursive: true });
-						}
+						fs.mkdirSync(entryPath, { recursive: true });
 						zipfile.readEntry();
 					} else {
 						// File entry
@@ -47,7 +43,7 @@ async function extractZipWithYauzl(zipPath: string, destinationDir: string): Pro
 							if (err) { reject(err); return; }
 							if (!readStream) { reject(new Error('Failed to open read stream')); return; }
 
-							const writeStream = fs.createWriteStream(entryPath);
+							const writeStream = fs.createWriteStream(entryPath, { flags: 'w' });
 
 							writeStream.on('error', (error) => {
 								readStream.destroy();
@@ -93,7 +89,7 @@ export async function unzip(source: string, destinationDir: string): Promise<voi
 					'-NonInteractive',
 					'-NoLogo',
 					'-Command',
-					`Microsoft.PowerShell.Archive\\Expand-Archive -Path "${source}" -DestinationPath "${destinationDir}"`
+					`Microsoft.PowerShell.Archive\\Expand-Archive -Force -Path "${source}" -DestinationPath "${destinationDir}"`
 				]);
 
 				if (result.error) {

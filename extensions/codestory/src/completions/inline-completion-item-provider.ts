@@ -177,7 +177,7 @@ export class InlineCompletionItemProvider
 				abortController.abort();
 			});
 		}
-		const now = performance.now();
+		// const now = performance.now();
 		const response = await this.sidecarClient.getIdentifierNodes(
 			document.uri.fsPath,
 			document.getText(),
@@ -185,8 +185,8 @@ export class InlineCompletionItemProvider
 			position.line,
 			position.character,
 		);
-		console.log('Time taken for identifier nodes: ', performance.now() - now);
-		console.log('Identifier nodes interested', response);
+		// console.log('Time taken for identifier nodes: ', performance.now() - now);
+		// console.log('Identifier nodes interested', response);
 		let responses: TypeDefinitionProviderWithNode[] | unknown = [];
 		try {
 			responses = await Promise.race([typeDefinitionForIdentifierNodes(response, document.uri, this.sidecarClient), new Promise((_, reject) => {

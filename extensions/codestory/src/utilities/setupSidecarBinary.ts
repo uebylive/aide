@@ -45,10 +45,10 @@ async function getHealthCheckURL(): Promise<string> {
 async function healthCheck(): Promise<boolean> {
 	try {
 		const healthCheckURL = await getHealthCheckURL();
-		console.log('Performing health check at:', healthCheckURL);
+		// console.log('Performing health check at:', healthCheckURL);
 		const response = await fetch(healthCheckURL);
 		const isHealthy = response.status === 200;
-		console.log('Health check result:', { status: response.status, healthy: isHealthy });
+		// console.log('Health check result:', { status: response.status, healthy: isHealthy });
 		return isHealthy;
 	} catch (e) {
 		console.error('Health check failed with error:', e);
@@ -134,7 +134,7 @@ async function fetchSidecarWithProgress(
 			throw new Error(`Failed to download sidecar binary: ${error.message}`);
 		}
 
-		console.log('Unzipping sidecar binary');
+		console.log('Unzipping sidecar binary from ' + zipDestination + ' to ' + extractedDestination);
 		try {
 			await unzip(zipDestination, extractedDestination);
 		} catch (error) {
@@ -150,7 +150,7 @@ async function fetchSidecarWithProgress(
 			throw new Error(`Failed to extract sidecar binary: ${error.message}`);
 		}
 
-		console.log('Deleting zip file');
+		console.log('Deleting zip file from ' + zipDestination);
 		try {
 			fs.unlinkSync(zipDestination);
 		} catch (error) {
