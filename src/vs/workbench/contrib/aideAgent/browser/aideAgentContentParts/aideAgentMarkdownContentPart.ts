@@ -60,29 +60,42 @@ export class ChatMarkdownContentPart extends Disposable implements IChatContentP
 	private extractUriFromMarkdown(markdown: IMarkdownString): { uris: URI[]; cleanMarkdown: IMarkdownString } {
 		const lines = markdown.value.split('\n');
 		const extractedUris: URI[] = [];
+		let inCodeBlock = false;
 
 		// Find URIs and filter lines in a single pass
 		const modifiedLines = lines.filter((line, i) => {
 			const currentLine = line.trim();
-			const nextLine = lines[i + 1]?.trim() || '';
 
-			// Only process if next line starts a code block
-			if (nextLine.startsWith('```')) {
-				// Check if the current line looks like a file path
-				if (currentLine.startsWith('/') || // Unix-style absolute path
-					/^[a-zA-Z]:[/\\]/.test(currentLine) || // Windows-style absolute path
-					currentLine.startsWith('file://')) { // file:// URI
-					try {
-						// For plain paths, convert to file URI
-						const uriToTry = currentLine.startsWith('file://')
-							? currentLine
-							: `file://${currentLine}`;
-						const uri = URI.parse(uriToTry);
+			// Track if we're in a code block
+			if (currentLine.startsWith('```')) {
+				inCodeBlock = !inCodeBlock;
+				return true;
+			}
+
+			// Skip URI extraction if we're inside a code block
+			if (inCodeBlock) {
+				return true;
+			}
+
+			// Only process standalone lines that look like file paths
+			if (currentLine && (
+				(currentLine.startsWith('/') && !currentLine.includes('/>') && !currentLine.includes('<')) || // Unix-style absolute path
+				/^[a-zA-Z]:[/\\]/.test(currentLine) || // Windows-style absolute path
+				currentLine.startsWith('file://'))) { // file:// URI
+				try {
+					// For plain paths, convert to file URI
+					const uriToTry = currentLine.startsWith('file://')
+						? currentLine
+						: `file://${currentLine}`;
+					const uri = URI.parse(uriToTry);
+
+					// Additional validation - path should look like a real file path
+					if (uri.path && uri.path.length > 2 && !uri.path.includes('<') && !uri.path.includes('>')) {
 						extractedUris.push(uri);
 						return false; // Remove the URI line
-					} catch {
-						// Not a valid URI, keep the line
 					}
+				} catch {
+					// Not a valid URI, keep the line
 				}
 			}
 			return true;
@@ -90,6 +103,22 @@ export class ChatMarkdownContentPart extends Disposable implements IChatContentP
 
 		return {
 			uris: extractedUris,
+			cleanMarkdown: { ...markdown, value: modifiedLines.join('\n') }
+		};
+	}
+
+	private parseOutSRSystemMessage(markdown: IMarkdownString): { hasSearchReplace: boolean; cleanMarkdown: IMarkdownString } {
+		const lines = markdown.value.split('\n');
+		const hasSearchReplace = lines.some(line => line.includes('SEARCH/REPLACE'));
+
+		if (!hasSearchReplace) {
+			return { hasSearchReplace: false, cleanMarkdown: markdown };
+		}
+
+		const modifiedLines = lines.filter(line => !line.includes('SEARCH/REPLACE'));
+
+		return {
+			hasSearchReplace: true,
 			cleanMarkdown: { ...markdown, value: modifiedLines.join('\n') }
 		};
 	}
@@ -114,7 +143,9 @@ export class ChatMarkdownContentPart extends Disposable implements IChatContentP
 		const element = context.element;
 
 		// Extract URIs before rendering
-		const { uris: extractedUris, cleanMarkdown } = this.extractUriFromMarkdown(markdown.content);
+		const { uris: extractedUris, cleanMarkdown: uriCleanedMarkdown } = this.extractUriFromMarkdown(markdown.content);
+		// Remove SEARCH/REPLACE system messages
+		const { cleanMarkdown } = this.parseOutSRSystemMessage(uriCleanedMarkdown);
 		let currentUriIndex = 0;
 
 		// We release editors in order so that it's more likely that the same editor will be assigned if this element is re-rendered right away, like it often is during progressive rendering
