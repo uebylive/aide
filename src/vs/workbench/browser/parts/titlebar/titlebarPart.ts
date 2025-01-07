@@ -282,6 +282,12 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 	private codestoryAccountMenu: IMenu | undefined;
 	private readonly codestoryAccountMenuDisposables = this._register(new DisposableStore());
 
+	private rageShakeActionToolBar!: WorkbenchToolBar;
+	private readonly rageShakeActionToolBarDisposable = this._register(new DisposableStore());
+	private rageShakeActionToolBarElement!: HTMLElement;
+	private rageShakeMenu: IMenu | undefined;
+	private readonly rageShakeMenuDisposables = this._register(new DisposableStore());
+
 	private readonly hoverDelegate: IHoverDelegate;
 
 	private readonly titleDisposables = this._register(new DisposableStore());
@@ -350,10 +356,11 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 			oldPartOptions.editorActionsLocation !== newPartOptions.editorActionsLocation ||
 			oldPartOptions.showTabs !== newPartOptions.showTabs
 		) {
-			if (hasCustomTitlebar(this.configurationService, this.titleBarStyle) && this.actionToolBar && this.secondaryActionToolBar && this.codestoryAccountActionToolBar) {
+			if (hasCustomTitlebar(this.configurationService, this.titleBarStyle) && this.actionToolBar && this.secondaryActionToolBar && this.codestoryAccountActionToolBar && this.rageShakeActionToolBar) {
 				this.createActionToolBar();
 				this.createsecondaryActionToolBar();
 				this.createCodestoryAccountActionToolBar();
+				this.createRageShakeActionToolBar();
 				this.createActionToolBarMenus({ editorActions: true });
 				this._onDidChange.fire(undefined);
 			}
@@ -374,7 +381,7 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 		}
 
 		// Actions
-		if (hasCustomTitlebar(this.configurationService, this.titleBarStyle) && this.actionToolBar && this.secondaryActionToolBar && this.codestoryAccountActionToolBar) {
+		if (hasCustomTitlebar(this.configurationService, this.titleBarStyle) && this.actionToolBar && this.secondaryActionToolBar && this.codestoryAccountActionToolBar && this.rageShakeActionToolBar) {
 			const affectsLayoutControl = event.affectsConfiguration(LayoutSettings.LAYOUT_ACTIONS);
 			const affectsActivityControl = event.affectsConfiguration(LayoutSettings.ACTIVITY_BAR_LOCATION);
 
@@ -455,11 +462,12 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 		if (hasCustomTitlebar(this.configurationService, this.titleBarStyle)) {
 			this.actionToolBarElement = append(this.leftContent, $('div.action-toolbar-container'));
 			this.secondaryActionToolBarElement = append(this.rightContent, $('div.secondary-action-toolbar-container'));
+			this.rageShakeActionToolBarElement = append(this.rightContent, $('div.rageShake-action-toolbar-container'));
 			this.codestoryAccountActionToolBarElement = append(this.rightContent, $('div.codestory-action-toolbar-container'));
-
 			this.createActionToolBar();
 			this.createsecondaryActionToolBar();
 			this.createCodestoryAccountActionToolBar();
+			this.createRageShakeActionToolBar();
 			this.createActionToolBarMenus();
 		}
 
@@ -661,6 +669,16 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 		}));
 	}
 
+	private createRageShakeActionToolBar() {
+		this.rageShakeActionToolBarDisposable.clear();
+
+		this.rageShakeActionToolBar = this.rageShakeActionToolBarDisposable.add(this.instantiationService.createInstance(WorkbenchToolBar, this.rageShakeActionToolBarElement, {
+			ariaLabel: localize('ariaLabelTitleRageShakeActions', "Rage shake actions"),
+			getKeyBinding: action => this.getKeybinding(action),
+			actionViewItemProvider: (action, options) => this.actionViewItemProvider(action, options),
+		}));
+	}
+
 	private createActionToolBarMenus(update: true | { editorActions?: boolean; layoutActions?: boolean; activityActions?: boolean } = true) {
 		if (update === true) {
 			update = { editorActions: true, layoutActions: true, activityActions: true };
@@ -670,6 +688,7 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 			const actions: IToolbarActions = { primary: [], secondary: [] };
 			const globalActions: IToolbarActions = { primary: [], secondary: [] };
 			const csAccountActions: IToolbarActions = { primary: [], secondary: [] };
+			const rageShakeActions: IToolbarActions = { primary: [], secondary: [] };
 
 			// --- Editor Actions
 			if (this.editorActionsEnabled) {
@@ -703,6 +722,15 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 				);
 			}
 
+			// --- Rage Shake Actions
+			if (this.rageShakeMenu) {
+				fillInActionBarActions(
+					this.rageShakeMenu.getActions(),
+					rageShakeActions,
+					() => true,
+				);
+			}
+
 			// --- Layout Actions
 			if (this.layoutToolbarMenu) {
 				fillInActionBarActions(
@@ -715,6 +743,7 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 			this.actionToolBar.setActions(prepareActions(actions.primary), prepareActions(actions.secondary));
 			this.secondaryActionToolBar.setActions(prepareActions(globalActions.primary), prepareActions(globalActions.secondary));
 			this.codestoryAccountActionToolBar.setActions(prepareActions(csAccountActions.primary), prepareActions(csAccountActions.secondary));
+			this.rageShakeActionToolBar.setActions(prepareActions(rageShakeActions.primary), prepareActions(rageShakeActions.secondary));
 		};
 
 		// Create/Update the menus which should be in the title tool bar
@@ -761,6 +790,10 @@ export class BrowserTitlebarPart extends Part implements ITitlebarPart {
 		this.codestoryAccountMenu = this.menuService.createMenu(MenuId.CodestoryAccountMenu, this.contextKeyService);
 		this.codestoryAccountMenuDisposables.add(this.codestoryAccountMenu);
 		this.codestoryAccountMenuDisposables.add(this.codestoryAccountMenu.onDidChange(() => updateToolBarActions()));
+
+		this.rageShakeMenu = this.menuService.createMenu(MenuId.RageShakeMenu, this.contextKeyService);
+		this.rageShakeMenuDisposables.add(this.rageShakeMenu);
+		this.rageShakeMenuDisposables.add(this.rageShakeMenu.onDidChange(() => updateToolBarActions()));
 
 		updateToolBarActions();
 	}

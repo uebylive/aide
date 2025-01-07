@@ -27,6 +27,7 @@ import './browser/actions/workspaceCommands.js';
 import './browser/actions/quickAccessActions.js';
 import './browser/actions/widgetNavigationCommands.js';
 import './browser/actions/csAccountActions.js';
+import './browser/actions/rageshakeActions.js';
 
 //#endregion
 
@@ -169,6 +170,7 @@ registerSingleton(IDownloadService, DownloadService, InstantiationType.Delayed);
 registerSingleton(IOpenerService, OpenerService, InstantiationType.Delayed);
 registerSingleton(ISVGSpriteService, SvgSpriteService, InstantiationType.Delayed);
 registerSingleton(ICSAccountService, CSAccountService, InstantiationType.Delayed);
+registerSingleton(IRageShakeService, RageShakeService, InstantiationType.Delayed);
 
 //#endregion
 
@@ -414,6 +416,8 @@ import './contrib/share/browser/share.contribution.js';
 import './contrib/scrollLocking/browser/scrollLocking.contribution.js';
 import { CSAccountService } from '../platform/codestoryAccount/browser/csAccount.js';
 import { ICSAccountService } from '../platform/codestoryAccount/common/csAccount.js';
+import { IRageShakeService } from './services/rageShake/common/rageShake.js';
+import { RageShakeService } from './services/rageShake/browser/rageShake.js';
 import { ISVGSpriteService, SvgSpriteService } from './browser/svgSprite.js';
 
 // Inline Completions

@@ -22,6 +22,7 @@ import { IStorageService, StorageScope, StorageTarget } from '../../../../platfo
 import { IWorkspaceContextService } from '../../../../platform/workspace/common/workspace.js';
 import { IWorkbenchAssignmentService } from '../../../services/assignment/common/assignmentService.js';
 import { IExtensionService } from '../../../services/extensions/common/extensions.js';
+import { IRageShakeService } from '../../../services/rageShake/common/rageShake.js';
 import { ChatAgentLocation, IAideAgentAgentService, IChatAgent, IChatAgentCommand, IChatAgentData, IChatAgentRequest, IChatAgentResult } from './aideAgentAgents.js';
 import { CONTEXT_VOTE_UP_ENABLED } from './aideAgentContextKeys.js';
 import { AgentMode, AgentScope, ChatModel, ChatRequestModel, ChatResponseModel, IChatModel, IChatRequestVariableData, IChatResponseModel, IExportableChatData, ISerializableChatData, ISerializableChatDataIn, ISerializableChatsData, updateRanges } from './aideAgentModel.js';
@@ -101,6 +102,7 @@ export class ChatService extends Disposable implements IAideAgentService {
 		@IAideAgentVariablesService private readonly chatVariablesService: IAideAgentVariablesService,
 		@IAideAgentAgentService private readonly chatAgentService: IAideAgentAgentService,
 		@ICSAccountService private readonly csAccountService: ICSAccountService,
+		@IRageShakeService private readonly rageShakeService: IRageShakeService,
 		@IWorkbenchAssignmentService workbenchAssignmentService: IWorkbenchAssignmentService,
 		@IContextKeyService contextKeyService: IContextKeyService,
 	) {
@@ -361,6 +363,7 @@ export class ChatService extends Disposable implements IAideAgentService {
 	private _startSession(someSessionHistory: IExportableChatData | ISerializableChatData | undefined, location: ChatAgentLocation, isPassthrough: boolean, token: CancellationToken): ChatModel {
 		const model = this.instantiationService.createInstance(ChatModel, someSessionHistory, location, isPassthrough);
 		this._sessionModels.set(model.sessionId, model);
+		this.rageShakeService.setActiveSessionId(model.sessionId);
 		this.initializeSession(model, token);
 		return model;
 	}
@@ -422,6 +425,8 @@ export class ChatService extends Disposable implements IAideAgentService {
 
 	getOrRestoreSession(sessionId: string): ChatModel | undefined {
 		this.trace('getOrRestoreSession', `sessionId: ${sessionId}`);
+		// Sets the current active session for rage shake telemetry
+		this.rageShakeService.setActiveSessionId(sessionId);
 		const model = this._sessionModels.get(sessionId);
 		if (model) {
 			return model;
