@@ -18,6 +18,7 @@ declare module 'vscode' {
 
 	export namespace sidecar {
 		export const onDidTriggerSidecarRestart: Event<void>;
+		export function setVersion(version: string): void;
 		export function setRunningStatus(status: SidecarRunningStatus): void;
 		export function setDownloadStatus(status: SidecarDownloadStatus): void;
 	}

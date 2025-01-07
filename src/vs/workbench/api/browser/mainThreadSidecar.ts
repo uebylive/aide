@@ -24,6 +24,10 @@ export class MainThreadSidecar extends Disposable implements MainThreadSidecarSh
 		}));
 	}
 
+	$setSidecarVersion(version: string): void {
+		this._sidecarService.version = version;
+	}
+
 	$setRunningStatus(status: SidecarRunningStatus): void {
 		this._sidecarService.runningStatus = status;
 	}

@@ -66,7 +66,9 @@ async function versionCheck(): Promise<VersionAPIResponse | undefined> {
 	try {
 		const response = await fetch(`${sidecarURL()}/api/version`);
 		if (response.status === 200) {
-			return response.json();
+			const versionData = await response.json() as VersionAPIResponse;
+			vscode.sidecar.setVersion(versionData.package_version ?? 'unknown');
+			return versionData;
 		} else {
 			return undefined;
 		}
@@ -88,7 +90,7 @@ async function checkForUpdates(
 ) {
 	const currentVersionResponse = await versionCheck();
 	if (!currentVersionResponse) {
-		console.log('Current sidecar version is unknown');
+		console.log('Unable to check sidecar version');
 		return;
 	} else if (!currentVersionResponse.package_version) {
 		console.log('Current sidecar version is unknown, fetching the latest');
@@ -163,6 +165,7 @@ export async function setupSidecar(extensionBasePath: string): Promise<vscode.Di
 		const isHealthy = await healthCheck();
 		if (isHealthy) {
 			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Connected);
+			versionCheck();
 		} else {
 			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
 		}
@@ -180,6 +183,7 @@ export async function startSidecarBinary(extensionBasePath: string) {
 	const hc = await healthCheck();
 	if (hc) {
 		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Connected);
+		versionCheck();
 	} else if (!sidecarUseSelfRun()) {
 		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
 
@@ -260,6 +264,8 @@ async function runSideCarBinary(webserverPath: string) {
 	}
 
 	vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Connected);
+	// Trigger version check to send the sidecar version to the editor
+	versionCheck();
 	console.log('Sidecar binary startup completed successfully');
 }
 

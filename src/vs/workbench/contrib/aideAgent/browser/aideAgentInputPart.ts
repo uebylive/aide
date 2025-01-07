@@ -671,7 +671,8 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		const textSpan = dom.$('span');
 		const runningStatus = this.sidecarService.runningStatus;
 		const downloadStatus = this.sidecarService.downloadStatus;
-		const { text, color, updateAvailable } = this.getSidecarStatus(runningStatus, downloadStatus);
+		const version = this.sidecarService.version;
+		const { text, color, updateAvailable, hover } = this.getSidecarStatus(runningStatus, downloadStatus, version);
 		textSpan.textContent = text;
 		this.statusClickable = updateAvailable || runningStatus === SidecarRunningStatus.Unavailable;
 		this._register(dom.addDisposableListener(textSpan, dom.EventType.CLICK, () => {
@@ -682,7 +683,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		const managedHover = this._register(getBaseLayerHoverDelegate().setupManagedHover(
 			getDefaultHoverDelegate('mouse'),
 			statusMessage,
-			text
+			hover
 		));
 
 		const iconSpan = dom.$('span');
@@ -691,13 +692,13 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 		statusMessage.appendChild(textSpan);
 		statusMessage.appendChild(iconSpan);
 
-		this._register(this.sidecarService.onDidChangeStatus(({ runningStatus, downloadStatus }) => {
-			const { text, color, updateAvailable } = this.getSidecarStatus(runningStatus, downloadStatus);
+		this._register(this.sidecarService.onDidChangeStatus(({ version, runningStatus, downloadStatus }) => {
+			const { text, color, updateAvailable, hover } = this.getSidecarStatus(runningStatus, downloadStatus, version);
 			textSpan.textContent = text;
 			const clickable = updateAvailable || runningStatus === SidecarRunningStatus.Unavailable;
 			this.statusClickable = clickable;
 			textSpan.style.cursor = clickable ? 'pointer' : 'default';
-			managedHover.update(clickable ? 'Click to restart the sidecar' : text);
+			managedHover.update(clickable ? 'Click to restart the sidecar' : hover);
 			iconSpan.style.color = color;
 
 			if (runningStatus !== SidecarRunningStatus.Connected) {
@@ -745,14 +746,17 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 
 	private getSidecarStatus(
 		runningStatus: SidecarRunningStatus,
-		downloadStatus: SidecarDownloadStatus
-	): { text: string; color: string; updateAvailable: boolean } {
+		downloadStatus: SidecarDownloadStatus,
+		version: string,
+	): { text: string; color: string; updateAvailable: boolean; hover: string } {
 		let text = '';
+		let hover = '';
 		let color = 'var(--vscode-editorGutter-addedBackground)';
 		let updateAvailable = false;
 
 		if (runningStatus === SidecarRunningStatus.Connected) {
 			text = 'Sidecar connected';
+			hover = `${text} (v${version})`;
 			if (downloadStatus.downloading && downloadStatus.update) {
 				text += ' (downloading update)';
 			} else if (!downloadStatus.downloading && downloadStatus.update) {
@@ -771,7 +775,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			color = 'var(--vscode-editorGutter-modifiedBackground)';
 		}
 
-		return { text, color, updateAvailable };
+		return { text, color, updateAvailable, hover: hover ?? text };
 	}
 
 	private initAttachedContext(container: HTMLElement, isLayout = false) {
