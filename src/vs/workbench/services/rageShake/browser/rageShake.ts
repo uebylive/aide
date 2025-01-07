@@ -17,20 +17,11 @@ import { ILayoutService } from '../../../../platform/layout/browser/layoutServic
 import { IProcessMainService } from '../../../../platform/process/common/process.js';
 import { defaultButtonStyles } from '../../../../platform/theme/browser/defaultStyles.js';
 import { IHostService } from '../../host/browser/host.js';
-import { IRageShakeService } from '../common/rageShake.js';
-import { RAGESHAKE_CARD_VISIBLE } from '../common/rageShakeContextKeys.js';
+import { IRageShakeService, RageShakeView, RageShakeViewType } from '../common/rageShake.js';
+import { RAGESHAKE_CARD_VISIBLE, RAGESHAKE_VIEW } from '../common/rageShakeContextKeys.js';
 import './media/rageShake.css';
 
 const $ = dom.$;
-
-
-enum RageShakeView {
-	Start,
-	Issue,
-	Idea,
-	Other
-}
-
 
 const views: { destination: RageShakeView; label: string; codicon: ThemeIcon }[] = [
 	{ destination: RageShakeView.Issue, label: localize('rageShakeReportIssue', "Report an issue"), codicon: Codicon.warning },
@@ -48,14 +39,16 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 	private backButton: Button;
 	private headerTitleElement: HTMLElement;
 
+	private screenShotContainerElement: HTMLElement | undefined;
 	private screenShotButton: Button | undefined;
+	private clearScreenShotButton: Button | undefined;
 	private screenShotArrayBuffer: ArrayBuffer | undefined;
 
 	private systemInformationButton: Button | undefined;
 	private systemInfo: SystemInfo | undefined;
 	private activeSessionId: string | undefined;
 
-	private currentView: RageShakeView = RageShakeView.Start;
+	private currentView: IContextKey<RageShakeViewType>;
 
 
 	constructor(
@@ -68,6 +61,7 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 		super();
 
 		this.isVisible = RAGESHAKE_CARD_VISIBLE.bindTo(this.contextKeyService);
+		this.currentView = RAGESHAKE_VIEW.bindTo(this.contextKeyService);
 
 		const container = this.layoutService.activeContainer;
 		const card = this.cardElement = dom.append(container, $('.rageShake-card'));
@@ -81,6 +75,12 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 		closeButton.icon = Codicon.close;
 
 		this.bodyElement = card.appendChild($('.rageShake-card-body'));
+
+		if (this.isVisible.get()) {
+			dom.show(card);
+		} else {
+			dom.hide(card);
+		}
 
 		this._register(this.backButton.onDidClick(() => this.goBack()));
 	}
@@ -104,21 +104,59 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 		if (arrayBuffer) {
 			const blob = new Blob([arrayBuffer], { type: 'image/jpeg' });
 			const imageUrl = URL.createObjectURL(blob);
-			this.screenShotButton?.element.appendChild($('img', { src: imageUrl }));
-		}
 
+			if (this.screenShotButton && this.screenShotContainerElement) {
+				this.screenShotButton.label = localize('rageShakeReportIssue.retakeScreenShot', "Retake screenshot");
+				dom.clearNode(this.screenShotButton.element);
+				this.screenShotButton.element.appendChild($('img', { src: imageUrl, 'class': 'rageShake-screenshot-preview' }));
+
+				if (this.clearScreenShotButton) {
+					this.screenShotContainerElement.removeChild(this.clearScreenShotButton.element);
+					this.clearScreenShotButton.dispose();
+					this.clearScreenShotButton = undefined;
+				}
+
+				const clearScreenShotButton = this.clearScreenShotButton = this._register(this.instantiationService.createInstance(Button, this.screenShotContainerElement, {}));
+				clearScreenShotButton.element.classList.add('rageShake-screenshot-clear-button');
+				// Set label for accessibility and get monaco-text button look
+				clearScreenShotButton.label = localize('rageShakeReportIssue.clearScreenShot', "Clear screenshot");
+				// Clear node to style it freely
+				dom.clearNode(clearScreenShotButton.element);
+				clearScreenShotButton.element.appendChild($('span.codicon.codicon-trash', { ariaHidden: true }));
+				this._register(clearScreenShotButton.onDidClick(() => this.screenShotButton && this.clearScreenShot(this.screenShotButton)));
+			}
+		}
+	}
+
+	private clearScreenShot(screenShotButton: Button) {
+		// Set label for accessibility and get monaco-text button look
+		screenShotButton.label = localize('rageShakeReportIssue.takeScreenShot', "Take a screenshot");
+		screenShotButton.element.classList.add('rageShake-screenshot-add-button');
+		// Clear node to style it freely
+		dom.clearNode(screenShotButton.element);
+		screenShotButton.element.appendChild($('span.codicon.codicon-device-camera', { ariaHidden: true }));
+
+		if (this.screenShotContainerElement && this.clearScreenShotButton) {
+			this.screenShotContainerElement.removeChild(this.clearScreenShotButton.element);
+			this.clearScreenShotButton.dispose();
+			this.clearScreenShotButton = undefined;
+		}
 	}
 
 	private async getSystemInformation() {
 		this.systemInfo = await this.processMainService.$getSystemInfo();
+		if (this.systemInformationButton) {
+			this.systemInformationButton.label = localize('rageShakeReportIssue.systemInformationAttached', "System information added");
+		}
+
 	}
 
 	setActiveSessionId(sessionId: string) {
 		this.activeSessionId = sessionId;
 	}
 
-	private navigate(state: RageShakeView) {
-		this.currentView = state;
+	private navigate(state: RageShakeViewType) {
+		this.currentView.set(state);
 		switch (state) {
 			case RageShakeView.Start:
 				this.showStart();
@@ -168,6 +206,7 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 		}
 	}
 
+
 	private showIssue() {
 		this.headerTitleElement.textContent = localize('rageShakeReportIssue', "Report an issue");
 		this.setVisibilityWithoutLayoutShift(true, this.backButton.element);
@@ -175,14 +214,14 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 		const textArea = this.bodyElement.appendChild(document.createElement('textarea'));
 		textArea.placeholder = localize('rageShakeReportIssue.placeholder', "Describe your issue");
 
-		const attachments = this.bodyElement.appendChild($('div.rageShake-issue-attachments'));
-
+		const attachments = this.bodyElement.appendChild($('.rageShake-issue-attachments'));
+		const screenShotContainer = this.screenShotContainerElement = attachments.appendChild($('.rageShake-screenshot-container'));
 		if (this.screenShotButton) {
 			this.screenShotButton.dispose();
 		}
-		const screenshotButton = this.screenShotButton = this._register(this.instantiationService.createInstance(Button, attachments, { secondary: true, ...defaultButtonStyles }));
-		screenshotButton.label = localize('rageShakeReportIssue.takeScreenShot', "Take a screenshot");
-		this._register(screenshotButton.onDidClick(() => this.getScreenShot()));
+		const screenShotButton = this.screenShotButton = this._register(this.instantiationService.createInstance(Button, screenShotContainer, { secondary: true, ...defaultButtonStyles }));
+		this.clearScreenShot(screenShotButton);
+		this._register(screenShotButton.onDidClick(() => this.getScreenShot()));
 
 
 		if (this.systemInformationButton) {
@@ -219,7 +258,7 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 
 	private async show() {
 		dom.show(this.cardElement);
-		this.navigate(this.currentView);
+		this.navigate(this.currentView.get() || RageShakeView.Start);
 	}
 
 	private hide() {

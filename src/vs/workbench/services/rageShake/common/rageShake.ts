@@ -16,6 +16,15 @@ export interface IssueReport extends RageShakeReport {
 	screenShot?: ImageBitmap;
 }
 
+export enum RageShakeView {
+	Start = 'start',
+	Issue = 'issue',
+	Idea = 'idea',
+	Other = 'other'
+}
+
+export type RageShakeViewType = `${RageShakeView}`;
+
 export const IRageShakeService = createDecorator<IRageShakeService>('rageShakeService');
 export interface IRageShakeService {
 	readonly _serviceBrand: undefined;
