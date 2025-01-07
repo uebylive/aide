@@ -94,6 +94,22 @@ export class ChatMarkdownContentPart extends Disposable implements IChatContentP
 		};
 	}
 
+	private parseOutSRSystemMessage(markdown: IMarkdownString): { hasSearchReplace: boolean; cleanMarkdown: IMarkdownString } {
+		const lines = markdown.value.split('\n');
+		const hasSearchReplace = lines.some(line => line.includes('SEARCH/REPLACE'));
+
+		if (!hasSearchReplace) {
+			return { hasSearchReplace: false, cleanMarkdown: markdown };
+		}
+
+		const modifiedLines = lines.filter(line => !line.includes('SEARCH/REPLACE'));
+
+		return {
+			hasSearchReplace: true,
+			cleanMarkdown: { ...markdown, value: modifiedLines.join('\n') }
+		};
+	}
+
 	constructor(
 		private readonly markdown: IChatMarkdownContent,
 		context: IChatContentPartRenderContext,
@@ -114,7 +130,9 @@ export class ChatMarkdownContentPart extends Disposable implements IChatContentP
 		const element = context.element;
 
 		// Extract URIs before rendering
-		const { uris: extractedUris, cleanMarkdown } = this.extractUriFromMarkdown(markdown.content);
+		const { uris: extractedUris, cleanMarkdown: uriCleanedMarkdown } = this.extractUriFromMarkdown(markdown.content);
+		// Remove SEARCH/REPLACE system messages
+		const { cleanMarkdown } = this.parseOutSRSystemMessage(uriCleanedMarkdown);
 		let currentUriIndex = 0;
 
 		// We release editors in order so that it's more likely that the same editor will be assigned if this element is re-rendered right away, like it often is during progressive rendering
