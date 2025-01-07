@@ -167,7 +167,7 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			contextLength: 128000,
 			temperature: 0.2,
 			provider: {
-				type: 'openai-default'
+				type: 'codestory'
 			}
 		},
 		'o1-preview': {
@@ -183,7 +183,7 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			contextLength: 1000000,
 			temperature: 0.2,
 			provider: {
-				type: 'geminipro',
+				type: 'codestory',
 			}
 		},
 		'qwen/qwen-2.5-coder-32b-instruct': {
@@ -199,7 +199,7 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			contextLength: 65536,
 			temperature: 0.2,
 			provider: {
-				type: 'open-router',
+				type: 'codestory',
 			}
 		},
 		'gemini-2.0-flash-exp': {
@@ -217,7 +217,7 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			provider: {
 				type: 'geminipro',
 			}
-		}
+		},
 	},
 	providers: {
 		'codestory': {
