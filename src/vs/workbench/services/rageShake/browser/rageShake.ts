@@ -15,7 +15,6 @@ import { SystemInfo } from '../../../../platform/diagnostics/common/diagnostics.
 import { IInstantiationService } from '../../../../platform/instantiation/common/instantiation.js';
 import { ILayoutService } from '../../../../platform/layout/browser/layoutService.js';
 import { IProcessMainService } from '../../../../platform/process/common/process.js';
-import { IRageShakeLogsService } from '../../../../platform/rageShakeLogs/common/rageShake.js';
 import { defaultButtonStyles } from '../../../../platform/theme/browser/defaultStyles.js';
 import { IHostService } from '../../host/browser/host.js';
 import { IRageShakeService } from '../common/rageShake.js';
@@ -54,7 +53,7 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 
 	private systemInformationButton: Button | undefined;
 	private systemInfo: SystemInfo | undefined;
-	private latestLogsPath: string | undefined;
+	private activeSessionId: string | undefined;
 
 	private currentView: RageShakeView = RageShakeView.Start;
 
@@ -65,7 +64,6 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 		@ILayoutService private readonly layoutService: ILayoutService,
 		@IProcessMainService private readonly processMainService: IProcessMainService,
 		@IHostService private readonly hostService: IHostService,
-		@IRageShakeLogsService private readonly rageShakeLogsService: IRageShakeLogsService
 	) {
 		super();
 
@@ -112,8 +110,11 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 	}
 
 	private async getSystemInformation() {
-		const logsPath = await this.rageShakeLogsService.getLatestLogs();
 		this.systemInfo = await this.processMainService.$getSystemInfo();
+	}
+
+	setActiveSessionId(sessionId: string) {
+		this.activeSessionId = sessionId;
 	}
 
 	private navigate(state: RageShakeView) {

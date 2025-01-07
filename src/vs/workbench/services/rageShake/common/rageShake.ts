@@ -21,4 +21,5 @@ export interface IRageShakeService {
 	readonly _serviceBrand: undefined;
 
 	toggle(): void;
+	setActiveSessionId(sessionId: string): void;
 }

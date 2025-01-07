@@ -120,8 +120,6 @@ import { getCodeDisplayProtocol, getDisplayProtocol } from '../../../base/node/o
 import { RequestService } from '../../../platform/request/electron-utility/requestService.js';
 import { DefaultExtensionsInitializer } from './contrib/defaultExtensionsInitializer.js';
 import { AllowedExtensionsService } from '../../../platform/extensionManagement/common/allowedExtensionsService.js';
-import { IRageShakeLogsService } from '../../../platform/rageShakeLogs/common/rageShake.js';
-import { RageShakeLogsService } from '../../../platform/rageShakeLogs/node/rageShakeLogsService.js';
 
 class SharedProcessMain extends Disposable implements IClientConnectionFilter {
 
@@ -346,7 +344,7 @@ class SharedProcessMain extends Disposable implements IClientConnectionFilter {
 
 		// Diagnostics
 		services.set(IDiagnosticsService, new SyncDescriptor(DiagnosticsService, undefined, false /* proxied to other processes */));
-		services.set(IRageShakeLogsService, new SyncDescriptor(RageShakeLogsService, undefined, false /* proxied to other processes */));
+
 		// Settings Sync
 		services.set(IUserDataSyncAccountService, new SyncDescriptor(UserDataSyncAccountService, undefined, true));
 		services.set(IUserDataSyncLogService, new SyncDescriptor(UserDataSyncLogService, undefined, true));
