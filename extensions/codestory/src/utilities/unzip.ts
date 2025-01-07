@@ -29,29 +29,44 @@ async function extractZipWithYauzl(zipPath: string, destinationDir: string): Pro
 				const entryPath = path.join(destinationDir, entry.fileName);
 				const entryDir = path.dirname(entryPath);
 
-				// Create directory if it doesn't exist
-				if (!fs.existsSync(entryDir)) {
-					fs.mkdirSync(entryDir, { recursive: true });
-				}
-
-				if (/\/$/.test(entry.fileName)) {
-					// Directory entry
-					if (!fs.existsSync(entryPath)) {
-						fs.mkdirSync(entryPath, { recursive: true });
+				try {
+					// Create directory if it doesn't exist
+					if (!fs.existsSync(entryDir)) {
+						fs.mkdirSync(entryDir, { recursive: true });
 					}
-					zipfile.readEntry();
-				} else {
-					// File entry
-					zipfile.openReadStream(entry, (err, readStream) => {
-						if (err) { reject(err); return; }
-						if (!readStream) { reject(new Error('Failed to open read stream')); return; }
 
-						const writeStream = fs.createWriteStream(entryPath);
-						readStream.pipe(writeStream);
-						writeStream.on('finish', () => {
-							zipfile.readEntry();
+					if (/\/$/.test(entry.fileName)) {
+						// Directory entry
+						if (!fs.existsSync(entryPath)) {
+							fs.mkdirSync(entryPath, { recursive: true });
+						}
+						zipfile.readEntry();
+					} else {
+						// File entry
+						zipfile.openReadStream(entry, (err, readStream) => {
+							if (err) { reject(err); return; }
+							if (!readStream) { reject(new Error('Failed to open read stream')); return; }
+
+							const writeStream = fs.createWriteStream(entryPath);
+
+							writeStream.on('error', (error) => {
+								readStream.destroy();
+								reject(error);
+							});
+
+							readStream.on('error', (error) => {
+								writeStream.destroy();
+								reject(error);
+							});
+
+							readStream.pipe(writeStream);
+							writeStream.on('finish', () => {
+								zipfile.readEntry();
+							});
 						});
-					});
+					}
+				} catch (error) {
+					reject(error);
 				}
 			});
 
@@ -61,28 +76,61 @@ async function extractZipWithYauzl(zipPath: string, destinationDir: string): Pro
 }
 
 export async function unzip(source: string, destinationDir: string): Promise<void> {
-	if (source.endsWith('.zip')) {
-		if (process.platform === 'win32') {
-			cp.spawnSync('powershell.exe', [
-				'-NoProfile',
-				'-ExecutionPolicy', 'Bypass',
-				'-NonInteractive',
-				'-NoLogo',
-				'-Command',
-				`Microsoft.PowerShell.Archive\\Expand-Archive -Path "${source}" -DestinationPath "${destinationDir}"`
-			]);
-		} else {
-			if (isUnzipAvailable()) {
-				cp.spawnSync('unzip', ['-o', source, '-d', `${destinationDir}`]);
+	if (!source || !destinationDir) {
+		throw new Error('Source and destination paths are required');
+	}
+
+	if (!fs.existsSync(source)) {
+		throw new Error(`Source file does not exist: ${source}`);
+	}
+
+	try {
+		if (source.endsWith('.zip')) {
+			if (process.platform === 'win32') {
+				const result = cp.spawnSync('powershell.exe', [
+					'-NoProfile',
+					'-ExecutionPolicy', 'Bypass',
+					'-NonInteractive',
+					'-NoLogo',
+					'-Command',
+					`Microsoft.PowerShell.Archive\\Expand-Archive -Path "${source}" -DestinationPath "${destinationDir}"`
+				]);
+
+				if (result.error) {
+					throw result.error;
+				}
+				if (result.status !== 0) {
+					throw new Error(`PowerShell unzip failed with status ${result.status}: ${result.stderr.toString()}`);
+				}
 			} else {
-				await extractZipWithYauzl(source, destinationDir);
+				if (isUnzipAvailable()) {
+					const result = cp.spawnSync('unzip', ['-o', source, '-d', `${destinationDir}`]);
+					if (result.error) {
+						throw result.error;
+					}
+					if (result.status !== 0) {
+						throw new Error(`unzip command failed with status ${result.status}: ${result.stderr.toString()}`);
+					}
+				} else {
+					await extractZipWithYauzl(source, destinationDir);
+				}
+			}
+		} else {
+			// Ensure destination directory exists
+			if (!fs.existsSync(destinationDir)) {
+				fs.mkdirSync(destinationDir, { recursive: true });
+			}
+
+			const result = cp.spawnSync('tar', ['-xzf', source, '-C', destinationDir, '--strip-components', '1']);
+			if (result.error) {
+				throw result.error;
+			}
+			if (result.status !== 0) {
+				throw new Error(`tar extraction failed with status ${result.status}: ${result.stderr.toString()}`);
 			}
 		}
-	} else {
-		// tar does not create extractDir by default
-		if (!fs.existsSync(destinationDir)) {
-			fs.mkdirSync(destinationDir);
-		}
-		cp.spawnSync('tar', ['-xzf', source, '-C', destinationDir, '--strip-components', '1']);
+	} catch (error) {
+		// Add context to the error before rethrowing
+		throw new Error(`Failed to extract ${source} to ${destinationDir}: ${error.message}`);
 	}
 }
