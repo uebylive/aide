@@ -45,17 +45,17 @@ async function getHealthCheckURL(): Promise<string> {
 async function healthCheck(): Promise<boolean> {
 	try {
 		const healthCheckURL = await getHealthCheckURL();
+		console.log('Performing health check at:', healthCheckURL);
 		const response = await fetch(healthCheckURL);
-		if (response.status === 200) {
-			return true;
-		} else {
-			return false;
-		}
+		const isHealthy = response.status === 200;
+		console.log('Health check result:', { status: response.status, healthy: isHealthy });
+		return isHealthy;
 	} catch (e) {
-		console.error(e);
+		console.error('Health check failed with error:', e);
 		return false;
 	}
 }
+
 
 type VersionAPIResponse = {
 	version_hash: string;
@@ -125,22 +125,27 @@ async function fetchSidecarWithProgress(
 	vscode.sidecar.setDownloadStatus({ downloading: true, update: version !== 'latest' });
 	await downloadSidecarZip(zipDestination, version);
 	console.log('Unzipping sidecar binary');
-	unzip(zipDestination, extractedDestination);
+	await unzip(zipDestination, extractedDestination);
 	console.log('Deleting zip file');
 	fs.unlinkSync(zipDestination);
 	vscode.sidecar.setDownloadStatus({ downloading: false, update: version !== 'latest' });
 }
 
 async function retryHealthCheck(maxAttempts: number = 15, intervalMs: number = 1000): Promise<boolean> {
+	console.log(`Starting health check retries (max ${maxAttempts} attempts, ${intervalMs}ms interval)`);
 	for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+		console.log(`Health check attempt ${attempt}/${maxAttempts}`);
 		const isHealthy = await healthCheck();
 		if (isHealthy) {
+			console.log('Health check succeeded on attempt', attempt);
 			return true;
 		}
 		if (attempt < maxAttempts) {
+			console.log(`Waiting ${intervalMs}ms before next attempt...`);
 			await new Promise(resolve => setTimeout(resolve, intervalMs));
 		}
 	}
+	console.error('Health check failed after', maxAttempts, 'attempts');
 	return false;
 }
 
@@ -193,6 +198,7 @@ export async function startSidecarBinary(extensionBasePath: string) {
 }
 
 async function runSideCarBinary(webserverPath: string) {
+	console.log('Starting sidecar binary at path:', webserverPath);
 	try {
 		const process = cp.spawn(webserverPath, [], {
 			stdio: 'pipe',
@@ -200,65 +206,88 @@ async function runSideCarBinary(webserverPath: string) {
 		});
 
 		process.stdout?.on('data', (data) => {
-			console.debug(`Sidecar stdout: ${data}`);
+			console.log(`[Sidecar] ${data.toString().trim()}`);
 		});
 
 		process.stderr?.on('data', (data) => {
-			console.error(`Sidecar stderr: ${data}`);
+			console.error(`[Sidecar Error] ${data.toString().trim()}`);
 		});
 
 		process.on('error', (error) => {
-			console.error('Failed to start sidecar binary:', error);
+			console.error('Sidecar process error:', {
+				name: error.name,
+				message: error.message,
+				stack: error.stack
+			});
 			throw error;
 		});
 
-		// Set up WSL tunnel if needed
+		process.on('exit', (code, signal) => {
+			console.log('Sidecar process exited:', { code, signal });
+		});
+
 		if (await isWSLEnvironment()) {
+			console.log('WSL environment detected, setting up tunnel...');
 			try {
 				wslTunnel = await vscode.workspace.openTunnel({
 					remoteAddress: { port: 42424, host: 'localhost' },
 					localAddressPort: 42424
 				});
-				console.log('WSL tunnel created successfully');
+				console.log('WSL tunnel created:', {
+					localAddress: wslTunnel.localAddress,
+					remoteAddress: wslTunnel.remoteAddress
+				});
 			} catch (error) {
-				console.error('Failed to create WSL tunnel:', error);
+				console.error('WSL tunnel creation failed:', error);
 				throw error;
 			}
 		}
 	} catch (error) {
-		console.error('Failed to start sidecar binary:', error);
+		console.error('Sidecar binary startup failed:', {
+			error,
+			path: webserverPath,
+			exists: fs.existsSync(webserverPath),
+			permissions: fs.statSync(webserverPath).mode
+		});
 		throw new Error('Failed to start sidecar binary. Please check logs for details.');
 	}
 
-	console.log('Checking sidecar health');
+	console.log('Waiting for sidecar to become healthy...');
 	const hc = await retryHealthCheck();
 	if (!hc) {
+		console.error('Sidecar failed to become healthy after startup');
 		throw new Error('Sidecar binary failed to start after multiple attempts');
 	}
 
 	vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Connected);
-	console.log('Sidecar binary started successfully');
+	console.log('Sidecar binary startup completed successfully');
 }
 
 export async function restartSidecarBinary(extensionBasePath: string) {
-	// First kill the running sidecar process
+	console.log('Initiating sidecar binary restart...');
 	try {
 		const url = sidecarURL();
 		const port = parseInt(url.split(':').at(-1) ?? '42424');
+		console.log('Attempting to kill sidecar process on port:', port);
+
 		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Restarting);
 		await killProcessOnPort(port);
+		console.log('Successfully killed process on port:', port);
 
-		// Clean up WSL tunnel if it exists
 		if (wslTunnel) {
+			console.log('Cleaning up WSL tunnel...');
 			await wslTunnel.dispose();
 			wslTunnel = undefined;
+			console.log('WSL tunnel cleaned up');
 		}
 	} catch (error) {
-		console.warn(error);
+		console.warn('Error during sidecar shutdown:', error);
 	}
-	vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
 
-	// Then start a new sidecar process
+	vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
+	console.log('Starting new sidecar process...');
+
 	vscode.sidecar.setDownloadStatus({ downloading: false, update: false });
 	await startSidecarBinary(extensionBasePath);
+	console.log('Sidecar restart completed');
 }
