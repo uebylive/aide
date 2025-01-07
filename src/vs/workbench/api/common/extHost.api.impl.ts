@@ -1606,6 +1606,10 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 
 		// namespace: sidecar
 		const sidecar: typeof vscode.sidecar = {
+			setVersion(version) {
+				checkProposedApiEnabled(extension, 'sidecar');
+				return extHostSidecar.setVersion(version);
+			},
 			setDownloadStatus(status) {
 				checkProposedApiEnabled(extension, 'sidecar');
 				return extHostSidecar.setDownloadStatus(status);

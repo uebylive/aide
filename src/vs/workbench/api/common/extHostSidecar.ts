@@ -20,6 +20,10 @@ export class ExtHostSidecar implements ExtHostSidecarShape {
 		this._proxy = mainContext.getProxy(MainContext.MainThreadSidecar);
 	}
 
+	setVersion(version: string): void {
+		this._proxy.$setSidecarVersion(version);
+	}
+
 	setDownloadStatus(status: vscode.SidecarDownloadStatus): void {
 		this._proxy.$setDownloadStatus(status);
 	}

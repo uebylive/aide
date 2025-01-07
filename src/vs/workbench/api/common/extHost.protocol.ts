@@ -3048,6 +3048,7 @@ export interface ExtHostSidecarShape {
 }
 
 export interface MainThreadSidecarShape extends IDisposable {
+	$setSidecarVersion(version: string): void;
 	$setRunningStatus(status: SidecarRunningStatus): void;
 	$setDownloadStatus(status: SidecarDownloadStatus): void;
 }

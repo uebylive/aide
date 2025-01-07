@@ -13,6 +13,7 @@ export interface ISidecarService {
 	onDidChangeStatus: Event<SidecarStatusUpdateEvent>;
 	onDidRestart: Event<void>;
 
+	version: string;
 	runningStatus: SidecarRunningStatus;
 	downloadStatus: SidecarDownloadStatus;
 	triggerRestart(): void;
@@ -31,6 +32,7 @@ export type SidecarDownloadStatus = {
 };
 
 export type SidecarStatusUpdateEvent = {
+	version: string;
 	runningStatus: SidecarRunningStatus;
 	downloadStatus: SidecarDownloadStatus;
 };
@@ -44,6 +46,16 @@ export class SidecarService extends Disposable implements ISidecarService {
 	private readonly _onDidRestart = this._register(new Emitter<void>());
 	public readonly onDidRestart = this._onDidRestart.event;
 
+	private _version: string;
+	get version(): string {
+		return this._version;
+	}
+
+	set version(v: string) {
+		this._version = v;
+		this.notifyStatusChange();
+	}
+
 	private _runningStatus: SidecarRunningStatus;
 	get runningStatus(): SidecarRunningStatus {
 		return this._runningStatus;
@@ -51,7 +63,7 @@ export class SidecarService extends Disposable implements ISidecarService {
 
 	set runningStatus(status: SidecarRunningStatus) {
 		this._runningStatus = status;
-		this._onDidChangeStatus.fire({ runningStatus: status, downloadStatus: this._downloadStatus });
+		this.notifyStatusChange();
 	}
 
 	private _downloadStatus: SidecarDownloadStatus;
@@ -61,12 +73,17 @@ export class SidecarService extends Disposable implements ISidecarService {
 
 	set downloadStatus(status: SidecarDownloadStatus) {
 		this._downloadStatus = status;
-		this._onDidChangeStatus.fire({ runningStatus: this._runningStatus, downloadStatus: status });
+		this.notifyStatusChange();
+	}
+
+	private notifyStatusChange() {
+		this._onDidChangeStatus.fire({ version: this._version, runningStatus: this._runningStatus, downloadStatus: this._downloadStatus });
 	}
 
 	constructor() {
 		super();
 
+		this._version = 'unknown';
 		this._runningStatus = SidecarRunningStatus.Unavailable;
 		this._downloadStatus = { downloading: false, update: false };
 	}
