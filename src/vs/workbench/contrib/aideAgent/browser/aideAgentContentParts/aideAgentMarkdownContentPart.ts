@@ -57,29 +57,39 @@ export class ChatMarkdownContentPart extends Disposable implements IChatContentP
 	public readonly codeblocks: IChatCodeBlockInfo[] = [];
 	public readonly editPreviewBlocks: IEditPreviewCodeBlockInfo[] = [];
 
-	private extractUriFromMarkdown(markdown: IMarkdownString): { uri: URI | undefined; cleanMarkdown: IMarkdownString } {
+	private extractUriFromMarkdown(markdown: IMarkdownString): { uris: URI[]; cleanMarkdown: IMarkdownString } {
 		const lines = markdown.value.split('\n');
-		let extractedUri: URI | undefined;
+		const extractedUris: URI[] = [];
 
-		// Find URI and filter lines in a single pass
+		// Find URIs and filter lines in a single pass
 		const modifiedLines = lines.filter((line, i) => {
 			const currentLine = line.trim();
 			const nextLine = lines[i + 1]?.trim() || '';
 
-			if (nextLine.startsWith('```') && !extractedUri) {
-				try {
-					extractedUri = URI.parse(currentLine);
-					return false; // Remove the URI line
-				} catch {
-					// Not a valid URI, keep the line
-					return true;
+			// Only process if next line starts a code block
+			if (nextLine.startsWith('```')) {
+				// Check if the current line looks like a file path
+				if (currentLine.startsWith('/') || // Unix-style absolute path
+					/^[a-zA-Z]:[/\\]/.test(currentLine) || // Windows-style absolute path
+					currentLine.startsWith('file://')) { // file:// URI
+					try {
+						// For plain paths, convert to file URI
+						const uriToTry = currentLine.startsWith('file://')
+							? currentLine
+							: `file://${currentLine}`;
+						const uri = URI.parse(uriToTry);
+						extractedUris.push(uri);
+						return false; // Remove the URI line
+					} catch {
+						// Not a valid URI, keep the line
+					}
 				}
 			}
 			return true;
 		});
 
 		return {
-			uri: extractedUri,
+			uris: extractedUris,
 			cleanMarkdown: { ...markdown, value: modifiedLines.join('\n') }
 		};
 	}
@@ -103,14 +113,14 @@ export class ChatMarkdownContentPart extends Disposable implements IChatContentP
 
 		const element = context.element;
 
-		// Extract URI before rendering
-		const { uri: extractedUri, cleanMarkdown } = this.extractUriFromMarkdown(markdown.content);
-		markdown.content = cleanMarkdown;
+		// Extract URIs before rendering
+		const { uris: extractedUris, cleanMarkdown } = this.extractUriFromMarkdown(markdown.content);
+		let currentUriIndex = 0;
 
 		// We release editors in order so that it's more likely that the same editor will be assigned if this element is re-rendered right away, like it often is during progressive rendering
 		const orderedDisposablesList: IDisposable[] = [];
 		let codeBlockIndex = codeBlockStartIndex;
-		const result = this._register(renderer.render(markdown.content, {
+		const result = this._register(renderer.render(cleanMarkdown, {
 			fillInIncompleteTokens,
 			codeBlockRendererSync: (languageId, text, raw) => {
 				if (!isRequestVM(element) && !isResponseVM(element)) {
@@ -140,7 +150,7 @@ export class ChatMarkdownContentPart extends Disposable implements IChatContentP
 					const modified = this.codeBlockModelCollection.getOrCreate(sessionId, element, modifiedIndex).model;
 
 					const ref = this.renderEditPreviewBlock({
-						uri: extractedUri || URI.parse(''), // Use the extracted URI
+						uri: extractedUris[currentUriIndex++] || URI.parse(''), // Use the current URI
 						element,
 						languageId,
 						parentContextKeyService: contextKeyService,
