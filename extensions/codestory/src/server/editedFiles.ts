@@ -101,14 +101,18 @@ export class RecentEditsRetriever implements vscode.Disposable {
 			async ([uri, trackedDocument]) => {
 				const currentContentIfAny = diffFileContent.find((previousContent) => previousContent.fs_file_path === uri);
 				const diff = await this.getDiff(vscode.Uri.parse(uri), currentContentIfAny);
+				let lastUpdatedTimestampMs = 0;
+				if (trackedDocument.changes.length !== 0) {
+					lastUpdatedTimestampMs = Math.max(
+						...trackedDocument.changes.map(c => c.timestamp)
+					);
+				}
 				if (diff) {
 					return {
 						diff: diff.diff,
 						uri: trackedDocument.uri,
 						languageId: trackedDocument.languageId,
-						latestChangeTimestamp: Math.max(
-							...trackedDocument.changes.map(c => c.timestamp)
-						),
+						latestChangeTimestamp: lastUpdatedTimestampMs,
 						current_content: diff.currentContent,
 					};
 				}
