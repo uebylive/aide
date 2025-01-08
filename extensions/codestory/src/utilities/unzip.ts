@@ -8,15 +8,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as yauzl from 'yauzl';
 
-function isUnzipAvailable(): boolean {
-	try {
-		cp.execSync('unzip -v', { stdio: 'ignore' });
-		return true;
-	} catch (e) {
-		return false;
-	}
-}
-
 async function extractZipWithYauzl(zipPath: string, destinationDir: string): Promise<void> {
 	return new Promise((resolve, reject) => {
 		yauzl.open(zipPath, { lazyEntries: true }, (err, zipfile) => {
@@ -82,35 +73,7 @@ export async function unzip(source: string, destinationDir: string): Promise<voi
 
 	try {
 		if (source.endsWith('.zip')) {
-			if (process.platform === 'win32') {
-				const result = cp.spawnSync('powershell.exe', [
-					'-NoProfile',
-					'-ExecutionPolicy', 'Bypass',
-					'-NonInteractive',
-					'-NoLogo',
-					'-Command',
-					`Microsoft.PowerShell.Archive\\Expand-Archive -Force -Path "${source}" -DestinationPath "${destinationDir}"`
-				]);
-
-				if (result.error) {
-					throw result.error;
-				}
-				if (result.status !== 0) {
-					throw new Error(`PowerShell unzip failed with status ${result.status}: ${result.stderr.toString()}`);
-				}
-			} else {
-				if (isUnzipAvailable()) {
-					const result = cp.spawnSync('unzip', ['-o', source, '-d', `${destinationDir}`]);
-					if (result.error) {
-						throw result.error;
-					}
-					if (result.status !== 0) {
-						throw new Error(`unzip command failed with status ${result.status}: ${result.stderr.toString()}`);
-					}
-				} else {
-					await extractZipWithYauzl(source, destinationDir);
-				}
-			}
+			await extractZipWithYauzl(source, destinationDir);
 		} else {
 			// Ensure destination directory exists
 			if (!fs.existsSync(destinationDir)) {
