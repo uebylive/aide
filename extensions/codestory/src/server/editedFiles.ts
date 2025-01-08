@@ -148,10 +148,19 @@ export class RecentEditsRetriever implements vscode.Disposable {
 		}
 
 		const oldContent = previousFileContentIfAny ? previousFileContentIfAny.file_content_latest : trackedDocument.content;
-		const newContent = applyChanges(
+		let newContent = applyChanges(
 			oldContent,
 			trackedDocument.changes.map(c => c.change)
 		);
+		if (previousFileContentIfAny?.read_fresh_from_editor) {
+			console.log('recent_edits_retriever::read_fresh_from_editor');
+			try {
+				const currentTextDocument = await vscode.workspace.openTextDocument(uri);
+				newContent = currentTextDocument.getText();
+			} catch (exception) {
+				console.error(exception);
+			}
+		}
 		console.log('newContent');
 		console.log(newContent);
 

@@ -1135,6 +1135,7 @@ export type SidecarRecentEditsRetrieverResponse = {
 export type SidecarRecentEditsFilePreviousContent = {
 	fs_file_path: string;
 	file_content_latest: string;
+	read_fresh_from_editor: boolean;
 };
 
 export type SidecarUndoPlanStep = {
