@@ -13,7 +13,7 @@ export interface RageShakeReport {
 
 export interface IssueReport extends RageShakeReport {
 	systemInfo?: SystemInfo;
-	screenShot?: ImageBitmap;
+	screenShot?: ArrayBuffer;
 }
 
 export enum RageShakeView {

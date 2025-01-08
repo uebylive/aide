@@ -178,39 +178,46 @@ export class RageShakeService extends Disposable implements IRageShakeService {
 	}
 
 	private async sendFeedback() {
-		const formData = new FormData();
 		const currentView = this.currentView.get();
 
-		const dataBlob = new Blob([JSON.stringify({
+		// Create the base data object
+		const data = {
 			systemInfo: this.systemInfo,
 			type: currentView,
 			message: currentView && this.messageMap.get(currentView) || undefined,
 			sessionId: this.activeSessionId,
-		})], { type: 'application/json' });
-		formData.append('data', dataBlob, 'data.json');
+		};
+
+		// Convert screenshot to base64 if it exists
+		let screenshotBase64: string | undefined;
+		if (this.screenShotArrayBuffer) {
+			const array = new Uint8Array(this.screenShotArrayBuffer);
+			const binary = array.reduce((str, byte) => str + String.fromCharCode(byte), '');
+			screenshotBase64 = btoa(binary);
+		}
 
 		this.messageMap.clear();
 
-		if (this.screenShotArrayBuffer) {
-			const imageBlob = new Blob([this.screenShotArrayBuffer], { type: 'image/jpeg' });
-			formData.append('screenshot', imageBlob, 'screenshot.jpg');
-		}
+		const headers: HeadersInit = {
+			'Content-Type': 'application/json',
+		};
 
-		const headers: HeadersInit = {};
 		const session = await this.csAuthenticationService.getSession();
-
 		if (session) {
 			headers.Authorization = `Bearer ${session.accessToken}`;
 		}
 
 		const isDevelopment = !this.environmentService.isBuilt || this.environmentService.isExtensionDevelopment;
+		const urlBase = isDevelopment ? 'https://staging-api.codestory.ai' : 'https://api.codestory.ai';
 
-		const urlBase = isDevelopment ? 'https://api.codestory.ai' : 'https://staging-api.codestory.ai';
-
+		// Send the request with JSON payload
 		fetch(`${urlBase}/v1/debug/rage-shake`, {
 			method: 'POST',
-			body: formData,
-			headers
+			headers,
+			body: JSON.stringify({
+				data,
+				screenshot: screenshotBase64
+			})
 		});
 	}
 
