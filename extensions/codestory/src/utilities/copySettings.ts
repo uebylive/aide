@@ -6,7 +6,7 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
-import { commands, env, ProgressLocation, Uri, window } from 'vscode';
+import { env, ProgressLocation, window } from 'vscode';
 import { Logger } from 'winston';
 
 const cwd = process.env['VSCODE_CWD'] || process.cwd();
@@ -28,6 +28,7 @@ interface ExtensionMetadata {
 interface ExtensionInstallResult {
 	success: boolean;
 	message: string;
+	isOnOpenVSX: boolean;
 }
 
 const MAX_RETRIES = 3;
@@ -50,47 +51,6 @@ async function retry<T>(
 		}
 	}
 	throw new Error(lastError?.message || 'Operation failed after multiple retries');
-}
-
-interface OpenVSXResponse {
-	downloads: {
-		universal?: string;
-		linux?: {
-			x64?: string;
-			arm64?: string;
-		};
-		darwin?: {
-			x64?: string;
-			arm64?: string;
-		};
-		win32?: {
-			x64?: string;
-			arm64?: string;
-			ia32?: string;
-		};
-	};
-	files: {
-		download: string;
-	};
-}
-
-function getPlatformInfo() {
-	const platform = os.platform();
-	const arch = os.arch();
-	return { platform, arch };
-}
-
-// Helper function to download files
-async function downloadFileToFolder(url: string, destFolder: string, filename: string): Promise<string> {
-	const response = await fetch(url);
-	if (!response.ok) {
-		throw new Error(`Failed to download from ${url}: ${response.statusText}`);
-	}
-
-	const destPath = path.join(destFolder, filename);
-	const buffer = Buffer.from(await response.arrayBuffer());
-	fs.writeFileSync(destPath, buffer);
-	return destPath;
 }
 
 type EditorConfig = {
@@ -417,8 +377,12 @@ export const copySettingsWithProgress = async (
 
 			const totalExtensions = allDirs.length;
 			let installedCount = 0;
+			let nonOpenVSXCount = 0;
 
-			progress.report({ message: `Installing extensions (0/${totalExtensions})...`, increment: 10 });
+			progress.report({
+				message: `Copying ${totalExtensions === 1 ? 'extension' : 'extensions'} (0/${totalExtensions})...`,
+				increment: 10
+			});
 
 			const results: { extension: string; result: ExtensionInstallResult }[] = [];
 			let successCount = 0;
@@ -436,11 +400,17 @@ export const copySettingsWithProgress = async (
 				}
 
 				progress.report({
-					message: `Installing extension ${extensionInfo.namespace}.${extensionInfo.name} (${++installedCount}/${totalExtensions})`,
+					message: `Copying extension ${extensionInfo.namespace}.${extensionInfo.name} (${++installedCount}/${totalExtensions})`,
 					increment: (50 / totalExtensions)
 				});
 
-				const result = await installExtensionFromOpenVSX(extensionInfo, destExtDir, logger);
+				const result = await installExtensionFromOpenVSX(
+					extensionInfo,
+					destExtDir,
+					sourceEditorPaths.extensionsDir,
+					logger
+				);
+
 				results.push({
 					extension: `${extensionInfo.namespace}.${extensionInfo.name}`,
 					result
@@ -448,30 +418,24 @@ export const copySettingsWithProgress = async (
 
 				if (result.success) {
 					successCount++;
+					if (!result.isOnOpenVSX) {
+						nonOpenVSXCount++;
+					}
 				}
 			}
 
 			// Show summary after all extensions are processed
-			const failedCount = results.length - successCount;
-			if (failedCount > 0) {
-				const failedExtensions = results
-					.filter(r => !r.result.success)
-					.map(r => `${r.extension}: ${r.result.message}`)
-					.join('\n');
+			if (successCount > 0) {
+				const extensionWord = successCount === 1 ? 'extension' : 'extensions';
+				const message = nonOpenVSXCount > 0
+					? `Successfully migrated ${successCount} ${extensionWord}. ` +
+					`${nonOpenVSXCount} ${nonOpenVSXCount === 1 ? 'extension is' : 'extensions are'} ` +
+					`not available on OpenVSX and won't receive updates.`
+					: `Successfully migrated ${successCount} ${extensionWord}.`;
 
-				void window.showWarningMessage(
-					`Completed with ${failedCount} failed extensions. Check output for details.`,
-					'Show Details'
-				).then(selection => {
-					if (selection === 'Show Details') {
-						// Create and show output channel with details
-						const channel = window.createOutputChannel('Extension Import Results');
-						channel.appendLine('Failed Extensions:');
-						channel.appendLine(failedExtensions);
-						channel.show();
-					}
-				});
+				void window.showInformationMessage(message);
 			}
+
 
 			// Show completion message
 			void window.withProgress({
@@ -500,96 +464,50 @@ export const copySettingsWithProgress = async (
 async function installExtensionFromOpenVSX(
 	extensionInfo: ExtensionMetadata,
 	destDir: string,
+	sourceDir: string,
 	logger: Logger
 ): Promise<ExtensionInstallResult> {
 	const { namespace, name } = extensionInfo;
-	let vsixPath: string | undefined;
-	let installAttempted = false;
 
 	try {
-		// Fetch extension metadata from OpenVSX with retry
+		// First, copy the extension directory
+		const sourcePath = path.join(sourceDir, `${namespace}.${name}-${extensionInfo.version}`);
+		const destPath = path.join(destDir, `${namespace}.${name}-${extensionInfo.version}`);
+
+		// Ensure the destination directory exists
+		ensureDir(path.dirname(destPath));
+
+		// Copy the extension directory
+		fs.cpSync(sourcePath, destPath, { recursive: true });
+
+		// Check if extension exists on OpenVSX (just for update status)
 		const response = await retry(async () => {
 			const resp = await fetch(`https://open-vsx.org/api/${namespace}/${name}/latest`);
 			if (resp.status === 429) {
 				throw new Error('Rate limit exceeded');
 			}
-			if (!resp.ok) {
-				if (resp.status === 404) {
-					return { notFound: true, response: resp };
-				}
-				throw new Error(`HTTP ${resp.status}: ${resp.statusText}`);
-			}
-			return { notFound: false, response: resp };
+			return { notFound: resp.status === 404, response: resp };
 		});
 
-		if (response.notFound) {
-			logger.warn(`Extension ${namespace}.${name} not found on OpenVSX, skipping...`);
-			return {
-				success: false,
-				message: `Extension ${namespace}.${name} not available on OpenVSX`
-			};
-		}
+		const isOnOpenVSX = !response.notFound;
 
-		const metadata: OpenVSXResponse = await response.response.json();
-		const { platform, arch } = getPlatformInfo();
-
-		// Determine the best download URL based on platform and architecture
-		let downloadUrl: string | undefined;
-
-		// First try platform-specific build
-		if (metadata.downloads[platform as keyof typeof metadata.downloads]) {
-			const platformDownloads = metadata.downloads[platform as keyof typeof metadata.downloads] as Record<string, string>;
-			downloadUrl = platformDownloads[arch];
-		}
-
-		// Fallback to universal build if platform-specific not found
-		if (!downloadUrl) {
-			downloadUrl = metadata.downloads.universal || metadata.files?.download;
-		}
-
-		if (!downloadUrl) {
-			return {
-				success: false,
-				message: `No compatible version found for ${namespace}.${name} (${platform}-${arch})`
-			};
-		}
-
-		// Download and install the extension with retry
-		const tempFilename = `${namespace}.${name}.vsix`;
-		vsixPath = await retry(() => downloadFileToFolder(downloadUrl!, destDir, tempFilename));
-
-		installAttempted = true;
-		await commands.executeCommand(
-			'workbench.extensions.command.installFromVSIX',
-			Uri.file(vsixPath)
-		);
-
-		logger.info(`Successfully installed ${namespace}.${name} from OpenVSX (${platform}-${arch})`);
+		logger.info(`Successfully copied ${namespace}.${name} (Available on OpenVSX: ${isOnOpenVSX})`);
 
 		return {
 			success: true,
-			message: `Successfully installed ${namespace}.${name}`
+			message: `Successfully copied ${namespace}.${name}`,
+			isOnOpenVSX
 		};
 
 	} catch (error) {
 		const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-		logger.error(`Failed to install ${namespace}.${name}: ${errorMessage}`);
+		logger.error(`Failed to copy ${namespace}.${name}: ${errorMessage}`);
 
 		return {
 			success: false,
-			message: installAttempted ?
-				`Failed to install ${namespace}.${name}: Installation error` :
-				`Failed to download ${namespace}.${name}: ${errorMessage}`
+			message: `Failed to copy ${namespace}.${name}: ${errorMessage}`,
+			isOnOpenVSX: false
 		};
-	} finally {
-		// Cleanup temporary file
-		if (vsixPath && fs.existsSync(vsixPath)) {
-			try {
-				fs.unlinkSync(vsixPath);
-			} catch (error) {
-				logger.warn(`Failed to cleanup temporary file ${vsixPath}`, error);
-			}
-		}
 	}
 }
 
