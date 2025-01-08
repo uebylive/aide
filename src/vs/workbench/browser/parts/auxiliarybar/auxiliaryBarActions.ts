@@ -85,6 +85,10 @@ registerAction2(class extends Action2 {
 			category: Categories.View,
 			precondition: AuxiliaryBarVisibleContext,
 			f1: true,
+			keybinding: {
+				weight: KeybindingWeight.WorkbenchContrib,
+				primary: KeyMod.CtrlCmd | KeyCode.KeyL
+			},
 		});
 	}
 	run(accessor: ServicesAccessor) {
