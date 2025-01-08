@@ -370,6 +370,12 @@ export const copySettingsWithProgress = async (
 			const sourceEditorPaths = getSourceEditorPaths(variant);
 			const destEditorPaths = getDestinationEditorPaths(product);
 
+			// Check if source directories exist before proceeding
+			if (!fs.existsSync(sourceEditorPaths.configDir) || !fs.existsSync(sourceEditorPaths.extensionsDir)) {
+				logger.info(`Source directories don't exist for ${editorConfig.displayName}, skipping migration`);
+				return; // Exit silently without showing any error
+			}
+
 			progress.report({ message: 'Preparing directories...', increment: 10 });
 
 			const destConfigDir = destEditorPaths.configDir;
@@ -477,6 +483,13 @@ export const copySettingsWithProgress = async (
 				await new Promise(resolve => setTimeout(resolve, 3000));
 			});
 		} catch (error) {
+			// Log the error but don't show it to the user if it's a file system error
+			if (error instanceof Error && error.message.includes('ENOENT')) {
+				logger.error('Error during import process (source not found)', error);
+				return; // Exit silently for file not found errors
+			}
+
+			// For other types of errors, show the notification
 			window.showErrorMessage('Error during import process');
 			logger.error('Error during import process', error);
 			throw error;
