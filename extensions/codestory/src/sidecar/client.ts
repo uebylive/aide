@@ -19,6 +19,7 @@ import { getUserId } from '../utilities/uniqueId';
 import { detectDefaultShell } from './default-shell';
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
 import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, PlanResponse, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
+import { sidecarUsesAgentReasoning } from '../utilities/agentConfiguration';
 
 export enum CompletionStopReason {
 	/**
@@ -1062,7 +1063,6 @@ export class SideCarClient {
 			return textDocument.uri.fsPath;
 		});
 		// log here for debugging
-		console.log(vscode.window.visibleTextEditors);
 		const openFiles = vscode.window.visibleTextEditors.filter((textDocument) => {
 			return textDocument.document.uri.scheme === 'file';
 		}).map((textDocument) => {
@@ -1074,6 +1074,7 @@ export class SideCarClient {
 		} else {
 			baseUrl.pathname = '/api/agentic/agent_session_plan';
 		}
+		const sidecarAgentUsesReasoning = sidecarUsesAgentReasoning();
 		const url = baseUrl.toString();
 		const body = {
 			session_id: sessionId,
@@ -1091,6 +1092,7 @@ export class SideCarClient {
 			all_files: allFiles,
 			open_files: openFiles,
 			shell: currentShell,
+			reasoning: sidecarAgentUsesReasoning,
 		};
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
@@ -1323,6 +1325,7 @@ export class SideCarClient {
 			return textDocument.document.uri.fsPath;
 		});
 		const currentShell = detectDefaultShell();
+		const sidecarAgentUsesReasoning = sidecarUsesAgentReasoning();
 		baseUrl.pathname = '/api/agentic/agent_session_edit_anchored';
 		const url = baseUrl.toString();
 		const body = {
@@ -1341,6 +1344,7 @@ export class SideCarClient {
 			all_files: allFiles,
 			open_files: openFiles,
 			shell: currentShell,
+			reasoning: sidecarAgentUsesReasoning,
 		};
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
@@ -1432,15 +1436,20 @@ export class SideCarClient {
 		workosAccessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
-		const allFiles = vscode.workspace.textDocuments.map((textDocument) => {
+		const allFiles = vscode.workspace.textDocuments.filter((textDocument) => {
+			return textDocument.uri.scheme === 'file';
+		}).map((textDocument) => {
 			return textDocument.uri.fsPath;
 		});
-		const openFiles = vscode.window.visibleTextEditors.map((textDocument) => {
+		const openFiles = vscode.window.visibleTextEditors.filter((textDocument) => {
+			return textDocument.document.uri.scheme === 'file';
+		}).map((textDocument) => {
 			return textDocument.document.uri.fsPath;
 		});
 		const currentShell = detectDefaultShell();
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), workosAccessToken);
 		const userContext = await convertVSCodeVariableToSidecarHackingForPlan(variables, query);
+		const sidecarAgentUsesReasoning = sidecarUsesAgentReasoning();
 		baseUrl.pathname = '/api/agentic/agent_session_chat';
 		const url = baseUrl.toString();
 		const body = {
@@ -1459,6 +1468,7 @@ export class SideCarClient {
 			all_files: allFiles,
 			open_files: openFiles,
 			shell: currentShell,
+			reasoning: sidecarAgentUsesReasoning,
 		};
 
 		// consider using headers
