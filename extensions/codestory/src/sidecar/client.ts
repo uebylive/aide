@@ -20,6 +20,7 @@ import { detectDefaultShell } from './default-shell';
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
 import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, PlanResponse, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
 import { sidecarUsesAgentReasoning } from '../utilities/agentConfiguration';
+import { readAideRulesContent } from '../utilities/aideRules';
 
 export enum CompletionStopReason {
 	/**
@@ -1075,6 +1076,7 @@ export class SideCarClient {
 			baseUrl.pathname = '/api/agentic/agent_session_plan';
 		}
 		const sidecarAgentUsesReasoning = sidecarUsesAgentReasoning();
+		const aideRulesContent = await readAideRulesContent();
 		const url = baseUrl.toString();
 		const body = {
 			session_id: sessionId,
@@ -1092,6 +1094,7 @@ export class SideCarClient {
 			all_files: allFiles,
 			open_files: openFiles,
 			shell: currentShell,
+			aide_rules: aideRulesContent,
 			reasoning: sidecarAgentUsesReasoning,
 		};
 
@@ -1327,6 +1330,7 @@ export class SideCarClient {
 		const currentShell = detectDefaultShell();
 		const sidecarAgentUsesReasoning = sidecarUsesAgentReasoning();
 		baseUrl.pathname = '/api/agentic/agent_session_edit_anchored';
+		const aideRulesContent = await readAideRulesContent();
 		const url = baseUrl.toString();
 		const body = {
 			session_id: sessionId,
@@ -1344,6 +1348,7 @@ export class SideCarClient {
 			all_files: allFiles,
 			open_files: openFiles,
 			shell: currentShell,
+			aide_rules: aideRulesContent,
 			reasoning: sidecarAgentUsesReasoning,
 		};
 
@@ -1451,6 +1456,7 @@ export class SideCarClient {
 		const userContext = await convertVSCodeVariableToSidecarHackingForPlan(variables, query);
 		const sidecarAgentUsesReasoning = sidecarUsesAgentReasoning();
 		baseUrl.pathname = '/api/agentic/agent_session_chat';
+		const aideRulesContent = await readAideRulesContent();
 		const url = baseUrl.toString();
 		const body = {
 			session_id: sessionId,
@@ -1468,6 +1474,7 @@ export class SideCarClient {
 			all_files: allFiles,
 			open_files: openFiles,
 			shell: currentShell,
+			aide_rules: aideRulesContent,
 			reasoning: sidecarAgentUsesReasoning,
 		};
 
