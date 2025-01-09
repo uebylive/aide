@@ -54,10 +54,10 @@ export function registerNewChatActions() {
 				precondition: CONTEXT_CHAT_ENABLED,
 				f1: true,
 				keybinding: {
-					weight: KeybindingWeight.WorkbenchContrib,
-					primary: KeyMod.CtrlCmd | KeyCode.KeyL,
+					weight: KeybindingWeight.WorkbenchContrib + 1,
+					primary: KeyMod.CtrlCmd | KeyCode.KeyN,
 					mac: {
-						primary: KeyMod.WinCtrl | KeyCode.KeyL
+						primary: KeyMod.WinCtrl | KeyCode.KeyN
 					},
 					when: CONTEXT_IN_CHAT_SESSION
 				},
