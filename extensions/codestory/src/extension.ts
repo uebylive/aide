@@ -298,7 +298,10 @@ export async function activate(context: vscode.ExtensionContext) {
 		if (url) {
 			try {
 				const parsedUrl = new URL(url);
-				if (reactDevtoolsManager.status === 'server-connected') {
+				if (
+					reactDevtoolsManager.status === 'server-connected'
+					|| reactDevtoolsManager.status === 'devtools-connected'
+				) {
 					const proxyedPort = await reactDevtoolsManager.proxy(Number(parsedUrl.port));
 					const proxyedUrl = new URL(parsedUrl);
 					proxyedUrl.port = proxyedPort.toString();

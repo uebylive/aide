@@ -26,6 +26,13 @@ export class ReactDevtoolsManager {
 		return this._insepectedElement;
 	}
 
+	private _proxyListenPort: number | undefined;
+
+	get proxyListenPort() {
+		return this._proxyListenPort;
+	}
+
+	private _cleanupProxy: (() => void) | undefined;
 	private _Devtools: Devtools;
 
 	constructor() {
@@ -42,7 +49,14 @@ export class ReactDevtoolsManager {
 	}
 
 	private onDidDisconnect() {
-		console.log('disconnected');
+		this._cleanupProxy?.();
+		this._cleanupProxy = undefined;
+		this._proxyListenPort = undefined;
+		if (this._status === DevtoolsStatus.DevtoolsConnected) {
+			// @g-danna take a look at this again
+			this.updateStatus('Devtools disconnected', DevtoolsStatus.ServerConnected);
+		}
+
 	}
 
 	private updateInspectedElement(payload: InspectedElementPayload) {
@@ -53,11 +67,17 @@ export class ReactDevtoolsManager {
 		}
 	}
 
-	proxy(port: number, reactDevtoolsPort = 8097) {
-		if (this.status !== 'server-connected') {
-			throw new Error('Devtools server is not connected, cannot proxy');
+	async proxy(port: number, reactDevtoolsPort = 8097) {
+		if (this._proxyListenPort) {
+			return this._proxyListenPort;
 		}
-		return proxy(port, reactDevtoolsPort);
+		if (this.status !== 'server-connected') {
+			throw new Error('Devtools server is not connected, cannot initialize proxy');
+		}
+		const { listenPort, cleanup } = await proxy(port, reactDevtoolsPort);
+		this._proxyListenPort = listenPort;
+		this._cleanupProxy = cleanup;
+		return this._proxyListenPort;
 	}
 
 	startInspectingHost() {

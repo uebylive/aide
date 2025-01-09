@@ -133,12 +133,17 @@ function startInterceptingDocument(
 	});
 }
 
-export function proxy(port: number, reactDevtoolsPort = 8097) {
+type ProxyResult = {
+	listenPort: number;
+	cleanup: () => void;
+};
+
+export function proxy(port: number, reactDevtoolsPort = 8097): Promise<ProxyResult> {
 	const maxAttempts = 10;
 	let attempt = 0;
 	let listenPort = 8000;
 
-	function tryListen(resolve: (port: number) => void, reject: (reason?: any) => void) {
+	function tryListen(resolve: (result: ProxyResult) => void, reject: (reason?: any) => void) {
 		// Create a new proxy and server on each attempt
 		const proxy = httpProxy.createProxyServer({
 			target: `http://localhost:${port}`,
@@ -160,11 +165,14 @@ export function proxy(port: number, reactDevtoolsPort = 8097) {
 			}
 		});
 
+
 		// Handle server "listening" event
 		server.once('listening', () => {
-			console.log(`Proxy server listening on port ${listenPort}`);
 			startInterceptingDocument(proxy, reactDevtoolsPort);
-			resolve(listenPort);
+			resolve({
+				listenPort,
+				cleanup: cleanup.bind(null, proxy, server)
+			});
 		});
 
 		// Handle server "error" event (e.g., port in use)
