@@ -3187,10 +3187,12 @@ export namespace SidecarRunningState {
 				return SidecarRunningStatus.Unavailable;
 			case types.SidecarRunningStatus.Starting:
 				return SidecarRunningStatus.Starting;
-			case types.SidecarRunningStatus.Connected:
-				return SidecarRunningStatus.Connected;
 			case types.SidecarRunningStatus.Restarting:
 				return SidecarRunningStatus.Restarting;
+			case types.SidecarRunningStatus.Connecting:
+				return SidecarRunningStatus.Connecting;
+			case types.SidecarRunningStatus.Connected:
+				return SidecarRunningStatus.Connected;
 			default:
 				return SidecarRunningStatus.Unavailable;
 		}

@@ -771,7 +771,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 			text = 'Sidecar not running';
 			color = 'var(--vscode-editorGutter-deletedBackground)';
 		} else {
-			text = `${SidecarRunningStatus[runningStatus]} Sidecar`;
+			text = `${SidecarRunningStatus[runningStatus]}${runningStatus === SidecarRunningStatus.Connecting ? ' to' : ''} sidecar`;
 			color = 'var(--vscode-editorGutter-modifiedBackground)';
 		}
 

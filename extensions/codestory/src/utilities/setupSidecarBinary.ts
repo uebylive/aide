@@ -86,7 +86,7 @@ type UpdateAPIResponse = {
 
 async function checkForUpdates(
 	zipDestination: string,
-	extractedDestination: string
+	extractedDestination: string,
 ) {
 	const currentVersionResponse = await versionCheck();
 	if (!currentVersionResponse) {
@@ -134,45 +134,24 @@ async function fetchSidecarWithProgress(
 			throw new Error(`Failed to download sidecar binary: ${error.message}`);
 		}
 
-		console.log('Unzipping sidecar binary from ' + zipDestination + ' to ' + extractedDestination);
-		try {
-			await unzip(zipDestination, extractedDestination);
-		} catch (error) {
-			console.error('Failed to extract sidecar binary:', error);
-			// Clean up the zip file if it exists
-			if (fs.existsSync(zipDestination)) {
-				try {
-					fs.unlinkSync(zipDestination);
-				} catch (cleanupError) {
-					console.warn('Failed to clean up zip file after extraction error:', cleanupError);
-				}
-			}
-			throw new Error(`Failed to extract sidecar binary: ${error.message}`);
-		}
-
-		console.log('Deleting zip file from ' + zipDestination);
-		try {
-			fs.unlinkSync(zipDestination);
-		} catch (error) {
-			console.warn('Failed to delete zip file:', error);
-			// Non-fatal error, continue execution
-		}
+		await unzipSidecarArchive(zipDestination, extractedDestination);
 
 		vscode.sidecar.setDownloadStatus({ downloading: false, update: version !== 'latest' });
 	} catch (error) {
 		vscode.sidecar.setDownloadStatus({ downloading: false, update: version !== 'latest' });
-		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
 		throw error; // Re-throw to be handled by caller
 	}
 }
 
 async function retryHealthCheck(maxAttempts: number = 15, intervalMs: number = 1000): Promise<boolean> {
 	console.log(`Starting health check retries (max ${maxAttempts} attempts, ${intervalMs}ms interval)`);
+	vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Connecting);
 	for (let attempt = 1; attempt <= maxAttempts; attempt++) {
 		console.log(`Health check attempt ${attempt}/${maxAttempts}`);
 		const isHealthy = await healthCheck();
 		if (isHealthy) {
 			console.log('Health check succeeded on attempt', attempt);
+			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Connected);
 			return true;
 		}
 		if (attempt < maxAttempts) {
@@ -181,6 +160,7 @@ async function retryHealthCheck(maxAttempts: number = 15, intervalMs: number = 1
 		}
 	}
 	console.error('Health check failed after', maxAttempts, 'attempts');
+	vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
 	return false;
 }
 
@@ -213,6 +193,7 @@ export async function startSidecarBinary(extensionBasePath: string) {
 	const extractedDestination = path.join(extensionBasePath, 'sidecar_bin');
 	const webserverPath = path.join(extractedDestination, 'target', 'release', os.platform() === 'win32' ? 'webserver.exe' : 'webserver');
 
+	vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Connecting);
 	const hc = await healthCheck();
 	if (hc) {
 		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Connected);
@@ -315,6 +296,31 @@ async function runSideCarBinary(webserverPath: string) {
 	console.log('Sidecar binary startup completed successfully');
 }
 
+async function unzipSidecarArchive(zipDestination: string, extractedDestination: string) {
+	// Early return if zip file doesn't exist
+	if (!fs.existsSync(zipDestination)) {
+		console.log('No sidecar update file found at: ' + zipDestination);
+		return;
+	}
+
+	console.log('Unzipping sidecar binary from ' + zipDestination + ' to ' + extractedDestination);
+	try {
+		await unzip(zipDestination, extractedDestination);
+
+		// Only delete the zip file after successful extraction
+		console.log('Deleting zip file from ' + zipDestination);
+		try {
+			fs.unlinkSync(zipDestination);
+		} catch (error) {
+			console.warn('Failed to delete zip file:', error);
+			// Non-fatal error, continue execution
+		}
+	} catch (error) {
+		console.error('Failed to extract sidecar binary:', error);
+		throw new Error(`Failed to extract sidecar binary: ${error.message}`);
+	}
+}
+
 export async function restartSidecarBinary(extensionBasePath: string) {
 	console.log('Initiating sidecar binary restart...');
 	try {
@@ -338,6 +344,10 @@ export async function restartSidecarBinary(extensionBasePath: string) {
 
 	vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
 	console.log('Starting new sidecar process...');
+
+	const zipDestination = path.join(extensionBasePath, 'sidecar_zip.zip');
+	const extractedDestination = path.join(extensionBasePath, 'sidecar_bin');
+	await unzipSidecarArchive(zipDestination, extractedDestination);
 
 	vscode.sidecar.setDownloadStatus({ downloading: false, update: false });
 	await startSidecarBinary(extensionBasePath);
