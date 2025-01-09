@@ -55,6 +55,7 @@ import { IRevealOptions, ITreeItem, IViewBadge } from '../../common/views.js';
 import { ChatAgentLocation as AideAgentLocation } from '../../contrib/aideAgent/common/aideAgentAgents.js';
 import { IChatProgressResponseContent as IAideAgentProgressResponseContent } from '../../contrib/aideAgent/common/aideAgentModel.js';
 import { IAideAgentPlanStep, IAideAgentProgressStage, IChatCodeEdit, IChatEndResponse } from '../../contrib/aideAgent/common/aideAgentService.js';
+import { DevtoolsStatus } from '../../contrib/aideAgent/common/devtoolsService.js';
 import { SidecarDownloadStatus, SidecarRunningStatus } from '../../contrib/aideAgent/common/sidecarService.js';
 import { CallHierarchyItem } from '../../contrib/callHierarchy/common/callHierarchy.js';
 import { ChatAgentLocation, IChatAgentMetadata, IChatAgentRequest, IChatAgentResult, IChatWelcomeMessageContent } from '../../contrib/chat/common/chatAgents.js';
@@ -3053,6 +3054,17 @@ export interface MainThreadSidecarShape extends IDisposable {
 	$setDownloadStatus(status: SidecarDownloadStatus): void;
 }
 
+export interface ExtHostDevtoolsShape {
+	$stopInspectingHost(): void;
+	$startInspectingHost(): void;
+}
+
+export interface MainThreadDevtoolsShape {
+	$setLatestPayload(payload: any): void;
+	$setStatus(status: DevtoolsStatus): void;
+	$setIsInspecting(isInspecting: boolean): void;
+}
+
 // --- proxy identifiers
 
 export const MainContext = {
@@ -3134,6 +3146,7 @@ export const MainContext = {
 	MainThreadModelSelection: createProxyIdentifier<MainThreadModelSelectionShape>('MainThreadModelSelection'),
 	MainThreadCSEvents: createProxyIdentifier<MainThreadCSEventsShape>('MainThreadCSEvents'),
 	MainThreadSidecar: createProxyIdentifier<MainThreadSidecarShape>('MainThreadSidecar'),
+	MainThreadDevtools: createProxyIdentifier<MainThreadDevtoolsShape>('MainThreadDevtools'),
 };
 
 export const ExtHostContext = {
@@ -3212,4 +3225,5 @@ export const ExtHostContext = {
 	ExtHostModelSelection: createProxyIdentifier<ExtHostModelSelectionShape>('ExtHostModelSelection'),
 	ExtHostCSEvents: createProxyIdentifier<ExtHostCSEventsShape>('ExtHostCSEvents'),
 	ExtHostSidecar: createProxyIdentifier<ExtHostSidecarShape>('ExtHostSidecar'),
+	ExtHostDevtools: createProxyIdentifier<ExtHostDevtoolsShape>('ExtHostDevtools'),
 };

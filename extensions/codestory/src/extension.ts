@@ -266,6 +266,18 @@ export async function activate(context: vscode.ExtensionContext) {
 	// Contains bindings to react devtools headless frontend
 	const reactDevtoolsManager = new ReactDevtoolsManager();
 
+	reactDevtoolsManager.onStatusChange((status) => {
+		vscode.devtools.setStatus(status);
+	});
+
+	vscode.devtools.onDidTriggerInspectingHostStart(() => {
+		reactDevtoolsManager.startInspectingHost();
+	});
+
+	vscode.devtools.onDidTriggerInspectingHostStop(() => {
+		reactDevtoolsManager.stopInspectingHost();
+	});
+
 	const simpleBrowserManager = new SimpleBrowserManager(context.extensionUri);
 	context.subscriptions.push(simpleBrowserManager);
 	// Open simple browser command

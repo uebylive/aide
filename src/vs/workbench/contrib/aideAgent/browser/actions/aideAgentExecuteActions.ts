@@ -14,6 +14,8 @@ import { KeybindingWeight } from '../../../../../platform/keybinding/common/keyb
 import { CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_MODE, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_INPUT } from '../../common/aideAgentContextKeys.js';
 import { AgentMode } from '../../common/aideAgentModel.js';
 import { IAideAgentService } from '../../common/aideAgentService.js';
+import { DevtoolsStatus, IDevtoolsService } from '../../common/devtoolsService.js';
+import { CONTEXT_DEVTOOLS_STATUS, CONTEXT_IS_INSPECTING_HOST } from '../../common/devtoolsServiceContextKeys.js';
 import { IAideAgentWidgetService, IChatWidget } from '../aideAgent.js';
 import { CHAT_CATEGORY } from './aideAgentActions.js';
 
@@ -111,6 +113,48 @@ function registerPlanningToggleMenu() {
 	});
 }
 
+class ToggleInspectingHost extends Action2 {
+	static readonly ID = 'workbench.action.aideAgent.toggleInspectingHost';
+
+	constructor() {
+		super({
+			id: ToggleInspectingHost.ID,
+			title: localize2('interactive.toggleInspectingHost.label', "Toggle inspecting with devtools"),
+			f1: false,
+			category: CHAT_CATEGORY,
+			icon: Codicon.inspect,
+			keybinding: {
+				when: ContextKeyExpr.equals(CONTEXT_DEVTOOLS_STATUS.key, DevtoolsStatus.DevtoolsConnected),
+				primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyC,
+				weight: IsDevelopmentContext ? KeybindingWeight.WorkbenchContrib + 51 : KeybindingWeight.WorkbenchContrib
+			}
+		});
+	}
+
+	run(accessor: ServicesAccessor, ...args: any[]) {
+		const devtoolsService = accessor.get(IDevtoolsService);
+		devtoolsService.startInspectingHost();
+	}
+}
+
+function registerToggleInspectinHost() {
+	MenuRegistry.appendMenuItem(MenuId.AideAgentInput, {
+		group: 'navigation',
+		order: 2,
+		when: ContextKeyExpr.equals(CONTEXT_DEVTOOLS_STATUS.key, DevtoolsStatus.DevtoolsConnected),
+		command: {
+			id: ToggleInspectingHost.ID,
+			title: localize2('interactive.startInspectingHost.label', "Start inspecting with devtools"),
+			icon: Codicon.inspect,
+			toggled: {
+				condition: ContextKeyExpr.equals(CONTEXT_IS_INSPECTING_HOST.key, true),
+				icon: Codicon.close,
+				title: localize2('interactive.stopInspectingHost.label', "Stop inspecting with devtools").value,
+			}
+		},
+	});
+}
+
 export class ToggleEditModeAction extends Action2 {
 	static readonly ID = 'workbench.action.aideAgent.toggleEditMode';
 
@@ -196,5 +240,7 @@ export function registerChatExecuteActions() {
 	registerAction2(CancelAction);
 	registerAction2(TogglePlanningAction);
 	registerAction2(ToggleEditModeAction);
+	registerAction2(ToggleInspectingHost);
 	registerPlanningToggleMenu();
+	registerToggleInspectinHost();
 }

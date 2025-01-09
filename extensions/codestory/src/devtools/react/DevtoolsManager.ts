@@ -16,7 +16,7 @@ export class ReactDevtoolsManager {
 	private _onInspectedElementChange = new vscode.EventEmitter<InspectedElementPayload>();
 	onInspectedElementChange = this._onInspectedElementChange.event;
 
-	private _status: DevtoolsStatus = 'idle';
+	private _status: DevtoolsStatus = DevtoolsStatus.Idle;
 	get status() {
 		return this._status;
 	}
@@ -37,7 +37,6 @@ export class ReactDevtoolsManager {
 
 	private updateStatus(_message: string, status: DevtoolsStatus) {
 		this._status = status;
-		console.log('Update from devtools ', status);
 		this._onStatusChange.fire(status);
 	}
 

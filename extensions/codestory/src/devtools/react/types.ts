@@ -3,7 +3,13 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-export type DevtoolsStatus = 'server-connected' | 'devtools-connected' | 'error' | 'idle';
+export enum DevtoolsStatus {
+	ServerConnected = 'server-connected',
+	DevtoolsConnected = 'devtools-connected',
+	Error = 'error',
+	Idle = 'idle'
+}
+
 
 export type InspectedElementPayload =
 	| InspectElementError

@@ -116,6 +116,7 @@ import { ExtHostCodeMapper } from './extHostCodeMapper.js';
 import { IExtHostCSAuthentication } from './extHostCSAuthentication.js';
 import { ExtHostCSEvents } from './extHostCSEvents.js';
 import { ExtHostSidecar } from './extHostSidecar.js';
+import { ExtHostDevtools } from './extHostDevtools.js';
 
 export interface IExtensionRegistries {
 	mine: ExtensionDescriptionRegistry;
@@ -234,6 +235,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 	const extHostModelSelection = rpcProtocol.set(ExtHostContext.ExtHostModelSelection, new ExtHostModelSelection(rpcProtocol));
 	const extHostCSEvents = rpcProtocol.set(ExtHostContext.ExtHostCSEvents, new ExtHostCSEvents(rpcProtocol));
 	const extHostSidecar = rpcProtocol.set(ExtHostContext.ExtHostSidecar, new ExtHostSidecar(rpcProtocol));
+	const extHostDevtools = rpcProtocol.set(ExtHostContext.ExtHostDevtools, new ExtHostDevtools(rpcProtocol));
 	const extHostEmbeddings = rpcProtocol.set(ExtHostContext.ExtHostEmbeddings, new ExtHostEmbeddings(rpcProtocol));
 
 	// Check that no named customers are missing
@@ -1624,6 +1626,27 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			},
 		};
 
+		// namespace: devtools
+		const devtools: typeof vscode.devtools = {
+			setStatus(status) {
+				checkProposedApiEnabled(extension, 'devtools');
+				return extHostDevtools.setStatus(status);
+			},
+			setLatestPayload(payload) {
+				checkProposedApiEnabled(extension, 'devtools');
+				return extHostDevtools.setLatestPayload(payload);
+			},
+			onDidTriggerInspectingHostStart: function (listener, thisArgs?, disposables?) {
+				checkProposedApiEnabled(extension, 'devtools');
+				return _asExtensionEvent(extHostDevtools.onDidTriggerInspectingHostStart)(listener, thisArgs, disposables);
+			},
+			onDidTriggerInspectingHostStop: function (listener, thisArgs?, disposables?) {
+				checkProposedApiEnabled(extension, 'devtools');
+				return _asExtensionEvent(extHostDevtools.onDidTriggerInspectingHostStop)(listener, thisArgs, disposables);
+			},
+		};
+
+
 		// eslint-disable-next-line local/code-no-dangerous-type-assertions
 		return <typeof vscode>{
 			version: initData.version,
@@ -1647,6 +1670,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			notebooks,
 			scm,
 			sidecar,
+			devtools,
 			speech,
 			tasks,
 			tests,
@@ -1693,6 +1717,7 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 			DebugConsoleMode: extHostTypes.DebugConsoleMode,
 			DebugVisualization: extHostTypes.DebugVisualization,
 			DecorationRangeBehavior: extHostTypes.DecorationRangeBehavior,
+			DevtoolsStatus: extHostTypes.DevtoolsStatus,
 			Diagnostic: extHostTypes.Diagnostic,
 			DiagnosticRelatedInformation: extHostTypes.DiagnosticRelatedInformation,
 			DiagnosticSeverity: extHostTypes.DiagnosticSeverity,
