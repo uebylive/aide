@@ -32,12 +32,17 @@ export class ReactDevtoolsManager {
 		this._Devtools = Devtools
 			.setStatusListener(this.updateStatus.bind(this))
 			.setDataCallback(this.updateInspectedElement.bind(this))
+			.setDisconnectedCallback(this.onDidDisconnect.bind(this))
 			.startServer(8097, 'localhost');
 	}
 
 	private updateStatus(_message: string, status: DevtoolsStatus) {
 		this._status = status;
 		this._onStatusChange.fire(status);
+	}
+
+	private onDidDisconnect() {
+		console.log('disconnected');
 	}
 
 	private updateInspectedElement(payload: InspectedElementPayload) {
