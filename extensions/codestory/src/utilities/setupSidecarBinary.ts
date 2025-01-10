@@ -86,7 +86,7 @@ type UpdateAPIResponse = {
 
 async function checkForUpdates(
 	zipDestination: string,
-	extractedDestination: string,
+	extractedDestination: string
 ) {
 	const currentVersionResponse = await versionCheck();
 	if (!currentVersionResponse) {
@@ -134,11 +134,34 @@ async function fetchSidecarWithProgress(
 			throw new Error(`Failed to download sidecar binary: ${error.message}`);
 		}
 
-		await unzipSidecarArchive(zipDestination, extractedDestination);
+		console.log('Unzipping sidecar binary from ' + zipDestination + ' to ' + extractedDestination);
+		try {
+			await unzip(zipDestination, extractedDestination);
+		} catch (error) {
+			console.error('Failed to extract sidecar binary:', error);
+			// Clean up the zip file if it exists
+			if (fs.existsSync(zipDestination)) {
+				try {
+					fs.unlinkSync(zipDestination);
+				} catch (cleanupError) {
+					console.warn('Failed to clean up zip file after extraction error:', cleanupError);
+				}
+			}
+			throw new Error(`Failed to extract sidecar binary: ${error.message}`);
+		}
+
+		console.log('Deleting zip file from ' + zipDestination);
+		try {
+			fs.unlinkSync(zipDestination);
+		} catch (error) {
+			console.warn('Failed to delete zip file:', error);
+			// Non-fatal error, continue execution
+		}
 
 		vscode.sidecar.setDownloadStatus({ downloading: false, update: version !== 'latest' });
 	} catch (error) {
 		vscode.sidecar.setDownloadStatus({ downloading: false, update: version !== 'latest' });
+		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
 		throw error; // Re-throw to be handled by caller
 	}
 }
@@ -151,7 +174,6 @@ async function retryHealthCheck(maxAttempts: number = 15, intervalMs: number = 1
 		const isHealthy = await healthCheck();
 		if (isHealthy) {
 			console.log('Health check succeeded on attempt', attempt);
-			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Connected);
 			return true;
 		}
 		if (attempt < maxAttempts) {
@@ -160,7 +182,6 @@ async function retryHealthCheck(maxAttempts: number = 15, intervalMs: number = 1
 		}
 	}
 	console.error('Health check failed after', maxAttempts, 'attempts');
-	vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
 	return false;
 }
 
@@ -168,6 +189,8 @@ export async function setupSidecar(extensionBasePath: string): Promise<vscode.Di
 	const zipDestination = path.join(extensionBasePath, 'sidecar_zip.zip');
 	const extractedDestination = path.join(extensionBasePath, 'sidecar_bin');
 
+	// Set initial state to Starting
+	vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Starting);
 	await startSidecarBinary(extensionBasePath);
 
 	// Asynchronously check for updates
@@ -180,7 +203,13 @@ export async function setupSidecar(extensionBasePath: string): Promise<vscode.Di
 			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Connected);
 			versionCheck();
 		} else {
-			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
+			// Set to Connecting first to indicate we're trying to reconnect
+			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Connecting);
+			// If health check fails again, then set to Unavailable
+			const retrySuccessful = await retryHealthCheck(3, 1000);
+			if (!retrySuccessful) {
+				vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
+			}
 		}
 	}, 5000);
 
@@ -193,21 +222,19 @@ export async function startSidecarBinary(extensionBasePath: string) {
 	const extractedDestination = path.join(extensionBasePath, 'sidecar_bin');
 	const webserverPath = path.join(extractedDestination, 'target', 'release', os.platform() === 'win32' ? 'webserver.exe' : 'webserver');
 
-	vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Connecting);
 	const hc = await healthCheck();
 	if (hc) {
 		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Connected);
 		versionCheck();
 	} else if (!sidecarUseSelfRun()) {
-		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
-
 		if (!fs.existsSync(webserverPath)) {
+			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Starting);
 			try {
-				// Fetch the latest sidecar binary
 				await fetchSidecarWithProgress(zipDestination, extractedDestination);
 			} catch (error) {
 				console.error('Failed to set up sidecar binary:', error);
 				vscode.window.showErrorMessage(`Failed to set up sidecar: ${error.message}`);
+				vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
 				return;
 			}
 		}
@@ -222,6 +249,7 @@ export async function startSidecarBinary(extensionBasePath: string) {
 			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
 			return;
 		}
+
 	} else {
 		// Use self-running sidecar
 		return;
@@ -250,11 +278,13 @@ async function runSideCarBinary(webserverPath: string) {
 				message: error.message,
 				stack: error.stack
 			});
+			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
 			throw error;
 		});
 
 		process.on('exit', (code, signal) => {
 			console.log('Sidecar process exited:', { code, signal });
+			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
 		});
 
 		if (await isWSLEnvironment()) {
@@ -284,9 +314,11 @@ async function runSideCarBinary(webserverPath: string) {
 	}
 
 	console.log('Waiting for sidecar to become healthy...');
+	vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Connecting);
 	const hc = await retryHealthCheck();
 	if (!hc) {
 		console.error('Sidecar failed to become healthy after startup');
+		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
 		throw new Error('Sidecar binary failed to start after multiple attempts');
 	}
 
@@ -294,31 +326,6 @@ async function runSideCarBinary(webserverPath: string) {
 	// Trigger version check to send the sidecar version to the editor
 	versionCheck();
 	console.log('Sidecar binary startup completed successfully');
-}
-
-async function unzipSidecarArchive(zipDestination: string, extractedDestination: string) {
-	// Early return if zip file doesn't exist
-	if (!fs.existsSync(zipDestination)) {
-		console.log('No sidecar update file found at: ' + zipDestination);
-		return;
-	}
-
-	console.log('Unzipping sidecar binary from ' + zipDestination + ' to ' + extractedDestination);
-	try {
-		await unzip(zipDestination, extractedDestination);
-
-		// Only delete the zip file after successful extraction
-		console.log('Deleting zip file from ' + zipDestination);
-		try {
-			fs.unlinkSync(zipDestination);
-		} catch (error) {
-			console.warn('Failed to delete zip file:', error);
-			// Non-fatal error, continue execution
-		}
-	} catch (error) {
-		console.error('Failed to extract sidecar binary:', error);
-		throw new Error(`Failed to extract sidecar binary: ${error.message}`);
-	}
 }
 
 export async function restartSidecarBinary(extensionBasePath: string) {
@@ -340,14 +347,12 @@ export async function restartSidecarBinary(extensionBasePath: string) {
 		}
 	} catch (error) {
 		console.warn('Error during sidecar shutdown:', error);
+		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
+		return;
 	}
 
-	vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
+	vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Starting);
 	console.log('Starting new sidecar process...');
-
-	const zipDestination = path.join(extensionBasePath, 'sidecar_zip.zip');
-	const extractedDestination = path.join(extensionBasePath, 'sidecar_bin');
-	await unzipSidecarArchive(zipDestination, extractedDestination);
 
 	vscode.sidecar.setDownloadStatus({ downloading: false, update: false });
 	await startSidecarBinary(extensionBasePath);
