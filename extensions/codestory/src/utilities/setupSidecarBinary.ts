@@ -164,6 +164,7 @@ async function unzipSidecarArchive(
 		if (fs.existsSync(webserverPath)) {
 			try {
 				if (process.platform !== 'win32') {
+					console.log('Updating permissions for the webserver binary');
 					// For Unix-like systems (Linux and macOS)
 					fs.chmodSync(webserverPath, 0o755);
 				} else {
@@ -336,12 +337,13 @@ export async function restartSidecarBinary(extensionBasePath: string) {
 }
 
 export async function setupSidecar(extensionBasePath: string): Promise<vscode.Disposable> {
-	const { zipDestination, webserverPath } = getPaths(extensionBasePath);
+	const { zipDestination, extractedDestination, webserverPath } = getPaths(extensionBasePath);
 
 	if (!fs.existsSync(webserverPath)) {
 		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Starting);
 		try {
 			await fetchSidecarWithProgress(zipDestination);
+			await unzipSidecarArchive(zipDestination, extractedDestination, webserverPath);
 		} catch (error) {
 			console.error('Failed to set up sidecar binary:', error);
 			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
