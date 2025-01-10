@@ -44,6 +44,7 @@ async function isWSLEnvironment(): Promise<boolean> {
 }
 
 let wslTunnel: vscode.Tunnel | undefined;
+let isRestarting: boolean = false;
 
 async function getHealthCheckURL(): Promise<string> {
 	if (await isWSLEnvironment() && wslTunnel) {
@@ -320,6 +321,7 @@ async function killSidecar() {
 }
 
 export async function restartSidecarBinary(extensionBasePath: string) {
+	isRestarting = true;  // Set flag before restart
 	const { zipDestination, extractedDestination, webserverPath } = getPaths(extensionBasePath);
 
 	console.log('Initiating sidecar binary restart...');
@@ -334,6 +336,7 @@ export async function restartSidecarBinary(extensionBasePath: string) {
 	vscode.sidecar.setDownloadStatus({ downloading: false, update: false });
 	await startSidecarBinary(webserverPath);
 	console.log('Sidecar restart completed');
+	isRestarting = false;  // Reset flag after restart
 }
 
 export async function setupSidecar(extensionBasePath: string): Promise<vscode.Disposable> {
@@ -361,6 +364,12 @@ export async function setupSidecar(extensionBasePath: string): Promise<vscode.Di
 
 	// Set up recurring health check every 5 seconds to recover sidecar
 	const healthCheckInterval = setInterval(async () => {
+		// Skip health check if we're in the middle of a restart
+		if (isRestarting) {
+			console.log('Skipping health check during restart...');
+			return;
+		}
+
 		const isHealthy = await healthCheck();
 		if (isHealthy) {
 			versionCheck();
