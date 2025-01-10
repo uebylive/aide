@@ -81,8 +81,10 @@ export async function killProcessOnPort(port: number, method: string = 'tcp') {
 		const killCommand = `lsof -i ${method === 'udp' ? 'udp' : 'tcp'}:${port} | grep ${method === 'udp' ? 'UDP' : 'LISTEN'} | awk '{print $2}' | xargs kill -9`;
 		logDebug(`Executing kill command: ${killCommand}`);
 
-		return exec(killCommand).then(result => {
+		return exec(killCommand).then(async result => {
 			logDebug('Successfully killed processes', result);
+			logDebug('Waiting for 1s to ensure process cleanup');
+			await sleep(1000);
 			return result;
 		}).catch(error => {
 			logDebug('Error killing processes', error);
