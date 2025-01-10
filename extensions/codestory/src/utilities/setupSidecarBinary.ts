@@ -16,6 +16,19 @@ import { unzip } from './unzip';
 
 const updateBaseURL = `https://aide-updates.codestory.ai/api/update/sidecar`;
 
+function getPaths(extensionBasePath: string) {
+	const zipDestination = path.join(extensionBasePath, 'sidecar_zip.zip');
+	const extractedDestination = path.join(extensionBasePath, 'sidecar_bin');
+	const webserverPath = path.join(extractedDestination, 'target', 'release', os.platform() === 'win32' ? 'webserver.exe' : 'webserver');
+
+	return { zipDestination, extractedDestination, webserverPath };
+}
+
+function getSidecarPort(): number {
+	const url = sidecarURL();
+	return parseInt(url.split(':').at(-1) ?? '42424');
+}
+
 // Add function to detect WSL environment
 async function isWSLEnvironment(): Promise<boolean> {
 	if (os.platform() !== 'win32') {
@@ -45,10 +58,9 @@ async function getHealthCheckURL(): Promise<string> {
 async function healthCheck(): Promise<boolean> {
 	try {
 		const healthCheckURL = await getHealthCheckURL();
-		// console.log('Performing health check at:', healthCheckURL);
 		const response = await fetch(healthCheckURL);
 		const isHealthy = response.status === 200;
-		// console.log('Health check result:', { status: response.status, healthy: isHealthy });
+		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Connected);
 		return isHealthy;
 	} catch (e) {
 		console.error('Health check failed with error:', e);
@@ -56,10 +68,9 @@ async function healthCheck(): Promise<boolean> {
 	}
 }
 
-
 type VersionAPIResponse = {
 	version_hash: string;
-	package_version?: string; // Optional for backward compatibility
+	package_version?: string; // Optional for backward compatibility with older versions of sidecar that didn't have this
 };
 
 async function versionCheck(): Promise<VersionAPIResponse | undefined> {
@@ -84,18 +95,34 @@ type UpdateAPIResponse = {
 	timestamp: string;
 };
 
-async function checkForUpdates(
+async function fetchSidecarWithProgress(
 	zipDestination: string,
-	extractedDestination: string
+	version: string = 'latest'
 ) {
+	try {
+		console.log('Downloading sidecar binary, version: ' + version);
+		vscode.sidecar.setDownloadStatus({ downloading: true, update: version !== 'latest' });
+		try {
+			await downloadSidecarZip(zipDestination, version);
+		} catch (error) {
+			console.error('Failed to download sidecar binary:', error);
+			throw new Error(`Failed to download sidecar binary: ${error.message}`);
+		}
+		vscode.sidecar.setDownloadStatus({ downloading: false, update: version !== 'latest' });
+	} catch (error) {
+		vscode.sidecar.setDownloadStatus({ downloading: false, update: version !== 'latest' });
+		throw error; // Re-throw to be handled by caller
+	}
+}
+
+async function checkForUpdates(zipDestination: string) {
 	const currentVersionResponse = await versionCheck();
 	if (!currentVersionResponse) {
 		console.log('Unable to check sidecar version');
 		return;
 	} else if (!currentVersionResponse.package_version) {
-		console.log('Current sidecar version is unknown, fetching the latest');
-		// At the time of shipping new version, this will be undefined. In this case, fetch the latest.
-		await fetchSidecarWithProgress(zipDestination, extractedDestination);
+		console.log('Current sidecar version is unknown. Likely an old version, fetching the latest');
+		await fetchSidecarWithProgress(zipDestination);
 		return;
 	}
 
@@ -107,7 +134,7 @@ async function checkForUpdates(
 		const data = await response.json() as UpdateAPIResponse;
 		if (gt(data.package_version, currentVersionResponse.package_version)) {
 			console.log(`New sidecar version available: ${data.package_version}`);
-			await fetchSidecarWithProgress(zipDestination, extractedDestination, data.package_version);
+			await fetchSidecarWithProgress(zipDestination, data.package_version);
 		} else {
 			console.log(`Current sidecar version is up to date: ${currentVersionResponse.package_version}`);
 			return;
@@ -118,38 +145,18 @@ async function checkForUpdates(
 	}
 }
 
-async function fetchSidecarWithProgress(
-	zipDestination: string,
-	extractedDestination: string,
-	version: string = 'latest'
-) {
+async function unzipSidecarArchive(zipDestination: string, extractedDestination: string) {
+	// Early return if zip file doesn't exist
+	if (!fs.existsSync(zipDestination)) {
+		console.log('No sidecar binary zip found at: ' + zipDestination);
+		return;
+	}
+
+	console.log('Unzipping sidecar binary from ' + zipDestination + ' to ' + extractedDestination);
 	try {
-		console.log('Downloading sidecar binary, version: ' + version);
-		vscode.sidecar.setDownloadStatus({ downloading: true, update: version !== 'latest' });
+		await unzip(zipDestination, extractedDestination);
 
-		try {
-			await downloadSidecarZip(zipDestination, version);
-		} catch (error) {
-			console.error('Failed to download sidecar binary:', error);
-			throw new Error(`Failed to download sidecar binary: ${error.message}`);
-		}
-
-		console.log('Unzipping sidecar binary from ' + zipDestination + ' to ' + extractedDestination);
-		try {
-			await unzip(zipDestination, extractedDestination);
-		} catch (error) {
-			console.error('Failed to extract sidecar binary:', error);
-			// Clean up the zip file if it exists
-			if (fs.existsSync(zipDestination)) {
-				try {
-					fs.unlinkSync(zipDestination);
-				} catch (cleanupError) {
-					console.warn('Failed to clean up zip file after extraction error:', cleanupError);
-				}
-			}
-			throw new Error(`Failed to extract sidecar binary: ${error.message}`);
-		}
-
+		// Only delete the zip file after successful extraction
 		console.log('Deleting zip file from ' + zipDestination);
 		try {
 			fs.unlinkSync(zipDestination);
@@ -157,12 +164,9 @@ async function fetchSidecarWithProgress(
 			console.warn('Failed to delete zip file:', error);
 			// Non-fatal error, continue execution
 		}
-
-		vscode.sidecar.setDownloadStatus({ downloading: false, update: version !== 'latest' });
 	} catch (error) {
-		vscode.sidecar.setDownloadStatus({ downloading: false, update: version !== 'latest' });
-		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
-		throw error; // Re-throw to be handled by caller
+		console.error('Failed to extract sidecar binary:', error);
+		throw new Error(`Failed to extract sidecar binary: ${error.message}`);
 	}
 }
 
@@ -185,78 +189,7 @@ async function retryHealthCheck(maxAttempts: number = 15, intervalMs: number = 1
 	return false;
 }
 
-export async function setupSidecar(extensionBasePath: string): Promise<vscode.Disposable> {
-	const zipDestination = path.join(extensionBasePath, 'sidecar_zip.zip');
-	const extractedDestination = path.join(extensionBasePath, 'sidecar_bin');
-
-	// Set initial state to Starting
-	vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Starting);
-	await startSidecarBinary(extensionBasePath);
-
-	// Asynchronously check for updates
-	checkForUpdates(zipDestination, extractedDestination);
-
-	// Set up recurring health check every 5 seconds
-	const healthCheckInterval = setInterval(async () => {
-		const isHealthy = await healthCheck();
-		if (isHealthy) {
-			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Connected);
-			versionCheck();
-		} else {
-			// Set to Connecting first to indicate we're trying to reconnect
-			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Connecting);
-			// If health check fails again, then set to Unavailable
-			const retrySuccessful = await retryHealthCheck(3, 1000);
-			if (!retrySuccessful) {
-				vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
-			}
-		}
-	}, 5000);
-
-	// Clean up interval when extension is deactivated
-	return vscode.Disposable.from({ dispose: () => clearInterval(healthCheckInterval) });
-}
-
-export async function startSidecarBinary(extensionBasePath: string) {
-	const zipDestination = path.join(extensionBasePath, 'sidecar_zip.zip');
-	const extractedDestination = path.join(extensionBasePath, 'sidecar_bin');
-	const webserverPath = path.join(extractedDestination, 'target', 'release', os.platform() === 'win32' ? 'webserver.exe' : 'webserver');
-
-	const hc = await healthCheck();
-	if (hc) {
-		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Connected);
-		versionCheck();
-	} else if (!sidecarUseSelfRun()) {
-		if (!fs.existsSync(webserverPath)) {
-			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Starting);
-			try {
-				await fetchSidecarWithProgress(zipDestination, extractedDestination);
-			} catch (error) {
-				console.error('Failed to set up sidecar binary:', error);
-				vscode.window.showErrorMessage(`Failed to set up sidecar: ${error.message}`);
-				vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
-				return;
-			}
-		}
-
-		console.log('Running sidecar binary');
-		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Starting);
-		try {
-			await runSideCarBinary(webserverPath);
-		} catch (error) {
-			console.error('Failed to run sidecar binary:', error);
-			vscode.window.showErrorMessage(`Failed to start sidecar: ${error.message}`);
-			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
-			return;
-		}
-
-	} else {
-		// Use self-running sidecar
-		return;
-	}
-}
-
-async function runSideCarBinary(webserverPath: string) {
+async function bringSidecarUp(webserverPath: string) {
 	console.log('Starting sidecar binary at path:', webserverPath);
 	try {
 		const process = cp.spawn(webserverPath, [], {
@@ -290,9 +223,10 @@ async function runSideCarBinary(webserverPath: string) {
 		if (await isWSLEnvironment()) {
 			console.log('WSL environment detected, setting up tunnel...');
 			try {
+				const port = getSidecarPort();
 				wslTunnel = await vscode.workspace.openTunnel({
-					remoteAddress: { port: 42424, host: 'localhost' },
-					localAddressPort: 42424
+					remoteAddress: { port, host: 'localhost' },
+					localAddressPort: port
 				});
 				console.log('WSL tunnel created:', {
 					localAddress: wslTunnel.localAddress,
@@ -323,18 +257,31 @@ async function runSideCarBinary(webserverPath: string) {
 	}
 
 	vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Connected);
-	// Trigger version check to send the sidecar version to the editor
-	versionCheck();
 	console.log('Sidecar binary startup completed successfully');
 }
 
-export async function restartSidecarBinary(extensionBasePath: string) {
-	console.log('Initiating sidecar binary restart...');
-	try {
-		const url = sidecarURL();
-		const port = parseInt(url.split(':').at(-1) ?? '42424');
-		console.log('Attempting to kill sidecar process on port:', port);
+export async function startSidecarBinary(webserverPath: string) {
+	if (!sidecarUseSelfRun()) {
+		console.log('Running sidecar binary');
+		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Starting);
+		try {
+			await bringSidecarUp(webserverPath);
+		} catch (error) {
+			console.error('Failed to run sidecar binary:', error);
+			vscode.window.showErrorMessage(`Failed to start sidecar: ${error.message}`);
+			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
+			return;
+		}
+	}
 
+	// Trigger version check to send the sidecar version to the editor
+	versionCheck();
+}
+
+async function killSidecar() {
+	const port = getSidecarPort();
+	try {
+		console.log('Attempting to kill sidecar process on port:', port);
 		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Restarting);
 		await killProcessOnPort(port);
 		console.log('Successfully killed process on port:', port);
@@ -350,11 +297,97 @@ export async function restartSidecarBinary(extensionBasePath: string) {
 		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
 		return;
 	}
+}
+
+export async function restartSidecarBinary(extensionBasePath: string) {
+	const { zipDestination, extractedDestination, webserverPath } = getPaths(extensionBasePath);
+
+	console.log('Initiating sidecar binary restart...');
+	await killSidecar();
 
 	vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Starting);
 	console.log('Starting new sidecar process...');
 
+	// If restarting with an available update, then unzip the update file
+	await unzipSidecarArchive(zipDestination, extractedDestination);
+
 	vscode.sidecar.setDownloadStatus({ downloading: false, update: false });
-	await startSidecarBinary(extensionBasePath);
+	await startSidecarBinary(webserverPath);
 	console.log('Sidecar restart completed');
+}
+
+export async function setupSidecar(extensionBasePath: string): Promise<vscode.Disposable> {
+	const { zipDestination, webserverPath } = getPaths(extensionBasePath);
+
+	if (!fs.existsSync(webserverPath)) {
+		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Starting);
+		try {
+			await fetchSidecarWithProgress(zipDestination);
+		} catch (error) {
+			console.error('Failed to set up sidecar binary:', error);
+			vscode.window.showErrorMessage(`Failed to set up sidecar: ${error.message}`);
+			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
+			throw error;
+		}
+	}
+
+	const hc = await healthCheck();
+	if (!hc) {
+		await startSidecarBinary(webserverPath);
+	}
+
+	// Asynchronously check for updates
+	checkForUpdates(zipDestination);
+
+	// Set up recurring health check every 5 seconds to recover sidecar
+	const healthCheckInterval = setInterval(async () => {
+		const isHealthy = await healthCheck();
+		if (isHealthy) {
+			versionCheck();
+		} else {
+			console.log('Health check failed, attempting recovery...');
+			// Set to Connecting first to indicate we're trying to reconnect
+			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Connecting);
+
+			// First try: Attempt to restart using existing binary
+			try {
+				console.log('Attempting to restart sidecar with existing binary...');
+				await restartSidecarBinary(extensionBasePath);
+				const recoveryCheck = await retryHealthCheck(3, 1000);
+				if (recoveryCheck) {
+					console.log('Successfully recovered sidecar using existing binary');
+					return;
+				}
+			} catch (error) {
+				console.log('Failed to restart with existing binary:', error);
+			}
+
+			// Second try: Binary might be missing, try fresh download and start
+			try {
+				console.log('Attempting fresh download and start...');
+				// Kill any existing process first
+				await killSidecar();
+
+				// Fresh download and start
+				await fetchSidecarWithProgress(zipDestination);
+				await startSidecarBinary(webserverPath);
+
+				const freshStartCheck = await retryHealthCheck(3, 1000);
+				if (freshStartCheck) {
+					console.log('Successfully recovered sidecar with fresh download');
+					return;
+				}
+			} catch (error) {
+				console.error('Failed to recover sidecar after fresh download:', error);
+			}
+
+			// If we get here, all recovery attempts failed
+			console.error('All recovery attempts failed');
+			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
+			vscode.window.showErrorMessage('Failed to recover sidecar after multiple attempts. Please try restarting VS Code.');
+		}
+	}, 5000);
+
+	// Clean up interval when extension is deactivated
+	return vscode.Disposable.from({ dispose: () => clearInterval(healthCheckInterval) });
 }

@@ -8,6 +8,8 @@ import { promisify } from 'util';
 
 const exec = promisify(cp.exec);
 
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 function logDebug(message: string, ...args: any[]) {
 	console.log(`[killPort] ${message}`, ...args);
 }
@@ -43,15 +45,16 @@ export async function killProcessOnPort(port: number, method: string = 'tcp') {
 			logDebug(`Found process IDs:`, processIds);
 
 			if (processIds.length === 0) {
-				const error = new Error(`No process found running on port ${port}`);
-				logDebug('No matching processes found', error);
-				return Promise.reject(error);
+				logDebug(`No process found running on port ${port} - considering this a success`);
+				return Promise.resolve({ stdout: '', stderr: '' });
 			}
 
 			const killCommand = `TaskKill /F /PID ${processIds.join(' /PID ')}`;
 			logDebug(`Executing kill command: ${killCommand}`);
-			return exec(killCommand).then(result => {
+			return exec(killCommand).then(async result => {
 				logDebug('Successfully killed processes', result);
+				logDebug('Waiting for 1s to ensure process cleanup');
+				await sleep(1000);
 				return result;
 			}).catch(error => {
 				logDebug('Error killing processes', error);
@@ -71,9 +74,8 @@ export async function killProcessOnPort(port: number, method: string = 'tcp') {
 		const { stdout: lsofOutput } = await exec(lsofCommand);
 
 		if (!lsofOutput.trim()) {
-			const error = new Error(`No process found running on port ${port}`);
-			logDebug('No process found in lsof output', error);
-			return Promise.reject(error);
+			logDebug(`No process found running on port ${port} - considering this a success`);
+			return Promise.resolve({ stdout: '', stderr: '' });
 		}
 
 		const killCommand = `lsof -i ${method === 'udp' ? 'udp' : 'tcp'}:${port} | grep ${method === 'udp' ? 'UDP' : 'LISTEN'} | awk '{print $2}' | xargs kill -9`;
@@ -87,7 +89,13 @@ export async function killProcessOnPort(port: number, method: string = 'tcp') {
 			throw error;
 		});
 	} catch (error) {
+		// If the error is from lsof not finding any process, treat it as success
+		if (error.message.includes('No process found')) {
+			logDebug(`No process found running on port ${port} - considering this a success`);
+			return Promise.resolve({ stdout: '', stderr: '' });
+		}
+
 		logDebug('Error in Unix process killing', error);
-		return Promise.reject(new Error(`No process found running on port ${port}`));
+		throw error;
 	}
 }
