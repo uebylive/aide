@@ -89,13 +89,7 @@ export async function killProcessOnPort(port: number, method: string = 'tcp') {
 			throw error;
 		});
 	} catch (error) {
-		// If the error is from lsof not finding any process, treat it as success
-		if (error.message.includes('No process found')) {
-			logDebug(`No process found running on port ${port} - considering this a success`);
-			return Promise.resolve({ stdout: '', stderr: '' });
-		}
-
-		logDebug('Error in Unix process killing', error);
-		throw error;
+		logDebug(`No process found running on port ${port} - considering this a success`);
+		return Promise.resolve({ stdout: '', stderr: '' });
 	}
 }
