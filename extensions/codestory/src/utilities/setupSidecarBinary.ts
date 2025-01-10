@@ -145,7 +145,11 @@ async function checkForUpdates(zipDestination: string) {
 	}
 }
 
-async function unzipSidecarArchive(zipDestination: string, extractedDestination: string) {
+async function unzipSidecarArchive(
+	zipDestination: string,
+	extractedDestination: string,
+	webserverPath: string,
+) {
 	// Early return if zip file doesn't exist
 	if (!fs.existsSync(zipDestination)) {
 		console.log('No sidecar binary zip found at: ' + zipDestination);
@@ -155,6 +159,22 @@ async function unzipSidecarArchive(zipDestination: string, extractedDestination:
 	console.log('Unzipping sidecar binary from ' + zipDestination + ' to ' + extractedDestination);
 	try {
 		await unzip(zipDestination, extractedDestination);
+
+		// Set executable permissions for the binary
+		if (fs.existsSync(webserverPath)) {
+			try {
+				if (process.platform !== 'win32') {
+					// For Unix-like systems (Linux and macOS)
+					fs.chmodSync(webserverPath, 0o755);
+				} else {
+					// On Windows, files are executable by default if they have the .exe extension
+					// No additional permissions needed
+				}
+			} catch (error) {
+				console.warn('Failed to set executable permissions:', error);
+				// Don't fail the extraction if chmod fails
+			}
+		}
 
 		// Only delete the zip file after successful extraction
 		console.log('Deleting zip file from ' + zipDestination);
@@ -308,7 +328,7 @@ export async function restartSidecarBinary(extensionBasePath: string) {
 	console.log('Starting new sidecar process...');
 
 	// If restarting with an available update, then unzip the update file
-	await unzipSidecarArchive(zipDestination, extractedDestination);
+	await unzipSidecarArchive(zipDestination, extractedDestination, webserverPath);
 
 	vscode.sidecar.setDownloadStatus({ downloading: false, update: false });
 	await startSidecarBinary(webserverPath);
