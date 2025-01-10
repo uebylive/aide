@@ -268,7 +268,6 @@ export async function startSidecarBinary(webserverPath: string) {
 			await bringSidecarUp(webserverPath);
 		} catch (error) {
 			console.error('Failed to run sidecar binary:', error);
-			vscode.window.showErrorMessage(`Failed to start sidecar: ${error.message}`);
 			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
 			return;
 		}
@@ -325,7 +324,6 @@ export async function setupSidecar(extensionBasePath: string): Promise<vscode.Di
 			await fetchSidecarWithProgress(zipDestination);
 		} catch (error) {
 			console.error('Failed to set up sidecar binary:', error);
-			vscode.window.showErrorMessage(`Failed to set up sidecar: ${error.message}`);
 			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
 			throw error;
 		}
@@ -384,7 +382,7 @@ export async function setupSidecar(extensionBasePath: string): Promise<vscode.Di
 			// If we get here, all recovery attempts failed
 			console.error('All recovery attempts failed');
 			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
-			vscode.window.showErrorMessage('Failed to recover sidecar after multiple attempts. Please try restarting VS Code.');
+			vscode.window.showErrorMessage('Failed to recover sidecar after multiple attempts. Please try restarting Aide.');
 		}
 	}, 5000);
 
