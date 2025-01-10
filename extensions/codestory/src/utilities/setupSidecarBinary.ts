@@ -168,6 +168,7 @@ async function fetchSidecarWithProgress(
 
 async function retryHealthCheck(maxAttempts: number = 15, intervalMs: number = 1000): Promise<boolean> {
 	console.log(`Starting health check retries (max ${maxAttempts} attempts, ${intervalMs}ms interval)`);
+	vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Connecting);
 	for (let attempt = 1; attempt <= maxAttempts; attempt++) {
 		console.log(`Health check attempt ${attempt}/${maxAttempts}`);
 		const isHealthy = await healthCheck();
@@ -188,6 +189,8 @@ export async function setupSidecar(extensionBasePath: string): Promise<vscode.Di
 	const zipDestination = path.join(extensionBasePath, 'sidecar_zip.zip');
 	const extractedDestination = path.join(extensionBasePath, 'sidecar_bin');
 
+	// Set initial state to Starting
+	vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Starting);
 	await startSidecarBinary(extensionBasePath);
 
 	// Asynchronously check for updates
@@ -200,7 +203,13 @@ export async function setupSidecar(extensionBasePath: string): Promise<vscode.Di
 			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Connected);
 			versionCheck();
 		} else {
-			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
+			// Set to Connecting first to indicate we're trying to reconnect
+			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Connecting);
+			// If health check fails again, then set to Unavailable
+			const retrySuccessful = await retryHealthCheck(3, 1000);
+			if (!retrySuccessful) {
+				vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
+			}
 		}
 	}, 5000);
 
@@ -218,15 +227,14 @@ export async function startSidecarBinary(extensionBasePath: string) {
 		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Connected);
 		versionCheck();
 	} else if (!sidecarUseSelfRun()) {
-		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
-
 		if (!fs.existsSync(webserverPath)) {
+			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Starting);
 			try {
-				// Fetch the latest sidecar binary
 				await fetchSidecarWithProgress(zipDestination, extractedDestination);
 			} catch (error) {
 				console.error('Failed to set up sidecar binary:', error);
 				vscode.window.showErrorMessage(`Failed to set up sidecar: ${error.message}`);
+				vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
 				return;
 			}
 		}
@@ -241,6 +249,7 @@ export async function startSidecarBinary(extensionBasePath: string) {
 			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
 			return;
 		}
+
 	} else {
 		// Use self-running sidecar
 		return;
@@ -269,11 +278,13 @@ async function runSideCarBinary(webserverPath: string) {
 				message: error.message,
 				stack: error.stack
 			});
+			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
 			throw error;
 		});
 
 		process.on('exit', (code, signal) => {
 			console.log('Sidecar process exited:', { code, signal });
+			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
 		});
 
 		if (await isWSLEnvironment()) {
@@ -303,9 +314,11 @@ async function runSideCarBinary(webserverPath: string) {
 	}
 
 	console.log('Waiting for sidecar to become healthy...');
+	vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Connecting);
 	const hc = await retryHealthCheck();
 	if (!hc) {
 		console.error('Sidecar failed to become healthy after startup');
+		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
 		throw new Error('Sidecar binary failed to start after multiple attempts');
 	}
 
@@ -334,9 +347,11 @@ export async function restartSidecarBinary(extensionBasePath: string) {
 		}
 	} catch (error) {
 		console.warn('Error during sidecar shutdown:', error);
+		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
+		return;
 	}
 
-	vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
+	vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Starting);
 	console.log('Starting new sidecar process...');
 
 	vscode.sidecar.setDownloadStatus({ downloading: false, update: false });

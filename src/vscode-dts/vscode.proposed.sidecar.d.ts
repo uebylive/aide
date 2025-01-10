@@ -8,7 +8,8 @@ declare module 'vscode' {
 		Unavailable = 0,
 		Starting = 1,
 		Restarting = 2,
-		Connected = 3,
+		Connecting = 3,
+		Connected = 4,
 	}
 
 	export type SidecarDownloadStatus = {
