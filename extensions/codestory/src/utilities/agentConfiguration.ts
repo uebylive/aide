@@ -11,6 +11,6 @@ import * as vscode from 'vscode';
  */
 export const sidecarUsesAgentReasoning = (): boolean => {
 	const aideConfiguration = vscode.workspace.getConfiguration('aide');
-	const agentUseReasoning = aideConfiguration.get('sidecarUseSelfRun');
+	const agentUseReasoning = aideConfiguration.get('enableAgentReasoning');
 	return !!agentUseReasoning;
 };
