@@ -64,7 +64,7 @@ import './contrib/aideAgentContextAttachments.js';
 import './contrib/aideAgentInputCompletions.js';
 import './contrib/aideAgentInputEditorContrib.js';
 import { IDevtoolsService } from '../common/devtoolsService.js';
-import { DevtoolsService } from '../common/devtoolsServiceImpl.js';
+import { DevtoolsService } from './devtoolsServiceImpl.js';
 
 // Register configuration
 const configurationRegistry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration);

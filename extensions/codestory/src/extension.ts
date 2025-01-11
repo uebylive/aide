@@ -274,6 +274,10 @@ export async function activate(context: vscode.ExtensionContext) {
 		vscode.devtools.setIsInspectingHost(isInspecting);
 	});
 
+	reactDevtoolsManager.onInspectedElementChange((payload) => {
+		vscode.devtools.setLatestPayload(payload);
+	});
+
 	vscode.devtools.onDidTriggerInspectingHostStart(() => {
 		reactDevtoolsManager.startInspectingHost();
 	});

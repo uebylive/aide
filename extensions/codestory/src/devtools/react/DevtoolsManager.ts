@@ -69,7 +69,6 @@ export class ReactDevtoolsManager {
 	private updateInspectedElement(payload: InspectedElementPayload) {
 		this._insepectedElement = payload;
 		if (payload.type !== 'no-change') {
-			console.log('inspected element', payload);
 			this._onInspectedElementChange.fire(payload);
 		}
 	}

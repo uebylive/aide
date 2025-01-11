@@ -37,6 +37,7 @@ import { ChatAgentLocation, IAideAgentAgentNameService, IAideAgentAgentService, 
 import { ChatRequestAgentPart, ChatRequestAgentSubcommandPart, ChatRequestTextPart, ChatRequestToolPart, ChatRequestVariablePart, chatAgentLeader, chatSubcommandLeader, chatVariableLeader } from '../../common/aideAgentParserTypes.js';
 import { IAideAgentSlashCommandService } from '../../common/aideAgentSlashCommands.js';
 import { IAideAgentVariablesService, IDynamicVariable } from '../../common/aideAgentVariables.js';
+import { IDevtoolsService } from '../../common/devtoolsService.js';
 import { IAideAgentLMToolsService } from '../../common/languageModelToolsService.js';
 import { ExecuteChatAction } from '../actions/aideAgentExecuteActions.js';
 import { IAideAgentWidgetService, IChatWidget } from '../aideAgent.js';
@@ -46,6 +47,7 @@ import { ChatDynamicVariableModel } from './aideAgentDynamicVariables.js';
 
 const builtinStaticCompletions = 'builtinStaticCompletions';
 const builtinFileProvider = 'builtinFileProvider';
+const devtoolsFileProvider = 'devtoolsFileProvider';
 const builtinCodeProvider = 'builtinCodeProvider';
 type builtinSecondaryProvider = 'builtinFileProvider' | 'builtinCodeProvider';
 
@@ -330,7 +332,7 @@ class ReferenceArgument {
 	) { }
 }
 
-class BuiltinStaticCompletions extends Disposable {
+export class BuiltinStaticCompletions extends Disposable {
 	public static readonly addReferenceCommand = '_addReferenceCmd';
 	public static readonly VariableNameDef = new RegExp(`${chatVariableLeader}\\w*`, 'g'); // MUST be using `g`-flag
 
@@ -558,6 +560,72 @@ class BuiltInFileProvider extends Disposable {
 	}
 }
 Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(BuiltInFileProvider, LifecyclePhase.Eventually);
+
+class DevtoolsFileProvider extends Disposable {
+
+	constructor(
+		@IAideAgentWidgetService private readonly chatWidgetService: IAideAgentWidgetService,
+		@IDevtoolsService private readonly devtoolsService: IDevtoolsService,
+		@ILabelService private readonly labelService: ILabelService,
+		@ILanguageFeaturesService private readonly languageFeaturesService: ILanguageFeaturesService,
+	) {
+		super();
+
+		this._register(this.languageFeaturesService.completionProvider.register({ scheme: ChatInputPart.INPUT_SCHEME, hasAccessToAllModels: true }, {
+			_debugDisplayName: devtoolsFileProvider,
+			provideCompletionItems: async (model: ITextModel, position: Position, context: CompletionContext, token: CancellationToken) => {
+				const widget = this.chatWidgetService.getWidgetByInputUri(model.uri);
+				if (!widget || !widget.supportsFileReferences) {
+					return null;
+				}
+
+				const range = computeCompletionRanges(model, position, BuiltinStaticCompletions.VariableNameDef, true);
+				if (!range) {
+					return null;
+				}
+
+				const result: CompletionList = { suggestions: [] };
+
+				const uri = this.devtoolsService.latestResource;
+				if (uri) {
+					const fileEntry = await this.addReactComponentFileEntry(uri, widget, result, range, token);
+					result.suggestions.push(fileEntry);
+					result.incomplete = false;
+					return result;
+				} else {
+					return null;
+				}
+
+			}
+		}));
+	}
+
+	private async addReactComponentFileEntry(resource: URI, widget: IChatWidget, result: CompletionList, info: { insert: Range; replace: Range; varWord: IWordAtPosition | null }, token: CancellationToken) {
+
+		const basename = this.labelService.getUriBasenameLabel(resource);
+		const insertText = `${chatVariableLeader}${basename}`;
+		return {
+			label: { label: basename, description: this.labelService.getUriLabel(resource, { relative: true }) },
+			filterText: `${chatVariableLeader}${basename}`,
+			insertText,
+			range: info,
+			kind: CompletionItemKind.File,
+			sortText: '{', // after `z`
+			command: {
+				id: AddFileCompletionEntryAction.ID,
+				title: '',
+				arguments: [{
+					widget,
+					resource,
+					replace: { startLineNumber: info.replace.startLineNumber, startColumn: info.replace.startColumn, endLineNumber: info.replace.endLineNumber, endColumn: info.replace.startColumn + insertText.length }
+				} satisfies AddFileCompletionEntryContext]
+			}
+		};
+
+	}
+}
+
+Registry.as<IWorkbenchContributionsRegistry>(WorkbenchExtensions.Workbench).registerWorkbenchContribution(DevtoolsFileProvider, LifecyclePhase.Eventually);
 
 interface AddFileCompletionEntryContext {
 	widget: IChatWidget;
