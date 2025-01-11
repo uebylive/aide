@@ -21,6 +21,14 @@ export class TerminalRegistry {
 		const terminal = vscode.window.createTerminal({
 			cwd,
 			name: 'Sidecar',
+			// set common variables here which stop beautiful rendering in the terminal
+			// and force CI like behavior from the tools
+			// this can be disasterous but very useful to have
+			env: {
+				'CI': 'true',
+				'NO_COLOR': '1',
+				'PROGRESS_BAR_DISABLED': '1',
+			},
 			iconPath: new vscode.ThemeIcon('octoface'),
 		});
 		const newInfo: TerminalInfo = {
