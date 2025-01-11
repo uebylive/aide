@@ -99,8 +99,9 @@ export class RecentEditsRetriever implements vscode.Disposable {
 		const diffs: DiffAcrossDocuments[] = [];
 		const diffPromises = Array.from(this.trackedDocuments.entries()).map(
 			async ([uri, trackedDocument]) => {
-				const currentContentIfAny = diffFileContent.find((previousContent) => previousContent.fs_file_path === uri);
-				const diff = await this.getDiff(vscode.Uri.parse(uri), currentContentIfAny);
+				const currentContentIfAny = diffFileContent.find((previousContent) => previousContent.fs_file_path === uri)?.file_content_latest;
+				const updatedContentIfAny = diffFileContent.find((previousContent) => previousContent.fs_file_path === uri)?.file_content_updated;
+				const diff = await this.getDiff(vscode.Uri.parse(uri), currentContentIfAny, updatedContentIfAny);
 				let lastUpdatedTimestampMs = 0;
 				if (trackedDocument.changes.length !== 0) {
 					lastUpdatedTimestampMs = Math.max(
@@ -138,7 +139,7 @@ export class RecentEditsRetriever implements vscode.Disposable {
 		return true;
 	}
 
-	public async getDiff(uri: vscode.Uri, previousFileContentIfAny: SidecarRecentEditsFilePreviousContent | undefined): Promise<{
+	public async getDiff(uri: vscode.Uri, previousFileContentIfAny: string | undefined | null, updatedFileContentIfAny: string | undefined | null): Promise<{
 		diff: string | null;
 		currentContent: string | null;
 	} | null> {
@@ -147,13 +148,17 @@ export class RecentEditsRetriever implements vscode.Disposable {
 			return null;
 		}
 
-		const oldContent = previousFileContentIfAny ? previousFileContentIfAny.file_content_latest : trackedDocument.content;
-		let newContent = applyChanges(
-			oldContent,
-			trackedDocument.changes.map(c => c.change)
-		);
-		if (previousFileContentIfAny?.read_fresh_from_editor) {
+		const oldContent = previousFileContentIfAny ? previousFileContentIfAny : trackedDocument.content;
+
+		// first we assign newContent a value, which will get overriden in the if/else branch
+		let newContent = applyChanges(oldContent, trackedDocument.changes.map((c) => c.change));
+
+		// if the sidecar already sends this information, then generate the git diff for it
+		if (updatedFileContentIfAny !== undefined && updatedFileContentIfAny !== null) {
+			newContent = updatedFileContentIfAny;
+		} else {
 			console.log('recent_edits_retriever::read_fresh_from_editor');
+			// read from the editor and set it over here
 			try {
 				const currentTextDocument = await vscode.workspace.openTextDocument(uri);
 				newContent = currentTextDocument.getText();
