@@ -1632,6 +1632,10 @@ export function createApiFactoryAndRegisterActors(accessor: ServicesAccessor): I
 				checkProposedApiEnabled(extension, 'devtools');
 				return extHostDevtools.setStatus(status);
 			},
+			setIsInspectingHost(isInspecting) {
+				checkProposedApiEnabled(extension, 'devtools');
+				return extHostDevtools.setIsInspecting(isInspecting);
+			},
 			setLatestPayload(payload) {
 				checkProposedApiEnabled(extension, 'devtools');
 				return extHostDevtools.setLatestPayload(payload);

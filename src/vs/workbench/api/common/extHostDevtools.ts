@@ -28,6 +28,10 @@ export class ExtHostDevtools implements ExtHostDevtoolsShape {
 		this._proxy.$setStatus(state);
 	}
 
+	setIsInspecting(isInspecting: boolean): void {
+		this._proxy.$setIsInspecting(isInspecting);
+	}
+
 	setLatestPayload(payload: any) {
 		this._proxy.$setLatestPayload(payload);
 	}

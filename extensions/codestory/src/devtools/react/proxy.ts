@@ -138,7 +138,7 @@ type ProxyResult = {
 	cleanup: () => void;
 };
 
-export function proxy(port: number, reactDevtoolsPort = 8097): Promise<ProxyResult> {
+export function proxy(port: number, reactDevtoolsPort: number): Promise<ProxyResult> {
 	const maxAttempts = 10;
 	let attempt = 0;
 	let listenPort = 8000;

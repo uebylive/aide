@@ -13,7 +13,7 @@ export enum DevtoolsStatus {
 
 export type InspectedElementPayload =
 	| InspectElementError
-	| InspectElementFullData
+	| InspectElementParsedFullData
 	| InspectElementHydratedPath
 	| InspectElementNoChange
 	| InspectElementNotFound;
@@ -27,12 +27,38 @@ export type InspectElementError = {
 	stack?: string;
 };
 
-export type InspectElementFullData = {
+export type InspectElementParsedFullData = {
 	id: number;
 	responseID: number;
 	type: 'full-data';
 	value: InspectedElement;
+	parsedSource?: {
+		source: ParsedSourceData;
+		line: number;
+		column: number;
+	};
 };
+
+export type ParsedSourceURLData = {
+	type: 'URL';
+	url: string;
+	relativePath: string;
+};
+
+export type ParsedSourceAbsoluteData = {
+	type: 'absolute';
+	path: string;
+};
+
+export type ParsedSourceRelativeData = {
+	type: 'relative';
+	path: string;
+};
+
+export type ParsedSourceData =
+	| ParsedSourceAbsoluteData
+	| ParsedSourceRelativeData
+	| ParsedSourceURLData;
 
 export type InspectElementHydratedPath = {
 	id: number;

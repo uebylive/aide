@@ -16,6 +16,9 @@ export class ReactDevtoolsManager {
 	private _onInspectedElementChange = new vscode.EventEmitter<InspectedElementPayload>();
 	onInspectedElementChange = this._onInspectedElementChange.event;
 
+	private _onInspectHostChange = new vscode.EventEmitter<boolean>();
+	onInspectHostChange = this._onInspectHostChange.event;
+
 	private _status: DevtoolsStatus = DevtoolsStatus.Idle;
 	get status() {
 		return this._status;
@@ -40,12 +43,17 @@ export class ReactDevtoolsManager {
 			.setStatusListener(this.updateStatus.bind(this))
 			.setDataCallback(this.updateInspectedElement.bind(this))
 			.setDisconnectedCallback(this.onDidDisconnect.bind(this))
+			.setInspectionCallback(this.updateInspectHost.bind(this))
 			.startServer(8097, 'localhost');
 	}
 
 	private updateStatus(_message: string, status: DevtoolsStatus) {
 		this._status = status;
 		this._onStatusChange.fire(status);
+	}
+
+	private updateInspectHost(isInspecting: boolean) {
+		this._onInspectHostChange.fire(isInspecting);
 	}
 
 	private onDidDisconnect() {
@@ -56,7 +64,6 @@ export class ReactDevtoolsManager {
 			// @g-danna take a look at this again
 			this.updateStatus('Devtools disconnected', DevtoolsStatus.ServerConnected);
 		}
-
 	}
 
 	private updateInspectedElement(payload: InspectedElementPayload) {
@@ -67,20 +74,22 @@ export class ReactDevtoolsManager {
 		}
 	}
 
-	async proxy(port: number, reactDevtoolsPort = 8097) {
+	async proxy(port: number) {
 		if (this._proxyListenPort) {
 			return this._proxyListenPort;
 		}
 		if (this.status !== 'server-connected') {
 			throw new Error('Devtools server is not connected, cannot initialize proxy');
 		}
-		const { listenPort, cleanup } = await proxy(port, reactDevtoolsPort);
+		const { listenPort, cleanup } = await proxy(port, this._Devtools.currentPort);
 		this._proxyListenPort = listenPort;
 		this._cleanupProxy = cleanup;
 		return this._proxyListenPort;
 	}
 
 	startInspectingHost() {
+		// Have to call this manually because React devtools don't call this
+		this._onInspectHostChange.fire(true);
 		this._Devtools.startInspectingHost();
 	}
 

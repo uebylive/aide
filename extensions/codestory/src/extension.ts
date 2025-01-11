@@ -270,6 +270,10 @@ export async function activate(context: vscode.ExtensionContext) {
 		vscode.devtools.setStatus(status);
 	});
 
+	reactDevtoolsManager.onInspectHostChange((isInspecting) => {
+		vscode.devtools.setIsInspectingHost(isInspecting);
+	});
+
 	vscode.devtools.onDidTriggerInspectingHostStart(() => {
 		reactDevtoolsManager.startInspectingHost();
 	});

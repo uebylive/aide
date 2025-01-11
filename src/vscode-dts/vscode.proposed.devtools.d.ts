@@ -13,6 +13,7 @@ declare module 'vscode' {
 
 	export namespace devtools {
 		export function setStatus(status: DevtoolsStatus): void;
+		export function setIsInspectingHost(isInspecting: boolean): void;
 		export function setLatestPayload(payload: any): void;
 		export const onDidTriggerInspectingHostStart: Event<void>;
 		export const onDidTriggerInspectingHostStop: Event<void>;
