@@ -1766,7 +1766,7 @@ export async function convertVSCodeVariableToSidecarHackingForPlan(
 				content: attachedFile.getText(range),
 				language: attachedFile.languageId,
 			});
-		} else if (variable.name === 'Pasted Image') {
+		} else if (variable.id === 'vscode.image' || variable.name === 'Pasted Image') {
 			const value = variable.value as { mimeType: string; data: () => Promise<Uint8Array> };
 			const imageData = await value.data();
 			// Convert Uint8Array to base64
@@ -1927,7 +1927,7 @@ async function convertVSCodeVariableToSidecar(
 				content: attachedFile.getText(range),
 				language: attachedFile.languageId,
 			});
-		} else if (variable.name === 'Pasted Image') {
+		} else if (variable.id === 'vscode.image' || variable.name === 'Pasted Image') {
 			const value = variable.value as { mimeType: string; data: () => Promise<Uint8Array> };
 			const imageData = await value.data();
 			// Convert Uint8Array to base64
