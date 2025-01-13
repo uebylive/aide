@@ -9,7 +9,7 @@ import { Socket } from 'node:net';
 import { parse, parseFragment, defaultTreeAdapter, serialize } from 'parse5';
 import * as zlib from 'zlib';
 
-const pageRegex = /^\.?\/([^.]*$|[^.]+\.html)$/;
+// const pageRegex = /^\.?\/([^.]*$|[^.]+\.html)$/;
 const makeScript = (location: string) => `<script src="${location}"></script>`;
 
 // Cleanup function to remove all listeners and close
@@ -45,7 +45,7 @@ function startInterceptingDocument(
 	reactDevtoolsPort: number
 ) {
 	// Intercept the response
-	proxy.on('proxyRes', (proxyRes, req, res) => {
+	proxy.on('proxyRes', (proxyRes, _req, res) => {
 		const bodyChunks: Uint8Array[] = [];
 
 		proxyRes.on('data', (chunk) => {
@@ -55,10 +55,9 @@ function startInterceptingDocument(
 		proxyRes.on('end', () => {
 			const contentType = proxyRes.headers['content-type'] || '';
 			const isHtml = contentType.toLowerCase().includes('text/html');
-			const isPage = req.url && req.url.match(pageRegex);
 
 			// No HTML or doesn't look like a page to inject -> just pipe
-			if (!isHtml || !isPage) {
+			if (!isHtml) {
 				const buffer = Buffer.concat(bodyChunks);
 				res.writeHead(proxyRes.statusCode || 200, proxyRes.headers);
 				res.end(buffer);

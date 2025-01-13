@@ -18,9 +18,12 @@ import { IWorkspaceContextService } from '../../../../platform/workspace/common/
 import { joinPath } from '../../../../base/common/resources.js';
 import { URI } from '../../../../base/common/uri.js';
 import { IEnvironmentService } from '../../../../platform/environment/common/environment.js';
-import { SuggestController } from '../../../../editor/contrib/suggest/browser/suggestController.js';
-import { ILanguageFeaturesService } from '../../../../editor/common/services/languageFeatures.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
+import { ChatDynamicVariableModel } from './contrib/aideAgentDynamicVariables.js';
+import { IDynamicVariable } from '../common/aideAgentVariables.js';
+import { localize } from '../../../../nls.js';
+import { INotificationService, Severity } from '../../../../platform/notification/common/notification.js';
+import { IOpenerService } from '../../../../platform/opener/common/opener.js';
 
 export class DevtoolsService extends Disposable implements IDevtoolsService {
 	declare _serviceBrand: undefined;
@@ -89,9 +92,11 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 		@IFileService private readonly fileService: IFileService,
 		@IWorkspaceContextService private readonly workspaceContextService: IWorkspaceContextService,
 		@IEnvironmentService private readonly environmentService: IEnvironmentService,
-		@ILanguageFeaturesService private readonly languageFeatureService: ILanguageFeaturesService,
-		@IConfigurationService private readonly configurationService: IConfigurationService
+		@IConfigurationService private readonly configurationService: IConfigurationService,
+		@INotificationService private readonly notificationService: INotificationService,
+		@IOpenerService private readonly openerService: IOpenerService,
 	) {
+
 		super();
 		this._status = CONTEXT_DEVTOOLS_STATUS.bindTo(contextKeyService);
 		this._isInspecting = CONTEXT_IS_INSPECTING_HOST.bindTo(contextKeyService);
@@ -131,23 +136,57 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 		if (!aideView) {
 			return;
 		}
-		const suggestController = aideView.widget.inputEditor.getContribution<SuggestController>('editor.contrib.suggestController');
-		if (!suggestController) {
+		const dynamicVariablesModel = aideView.widget.getContrib<ChatDynamicVariableModel>(ChatDynamicVariableModel.ID);
+
+		if (!dynamicVariablesModel) {
 			return;
 		}
+
+		const input = aideView.widget.inputEditor;
+		const inputModel = input.getModel();
 		const reference = await this.getValidReference(payload);
 
-		if (reference) {
-			//const widget = aideView.widget;
-			//const selection = widget.inputEditor.getSelection();
-			this._latestResource = reference.uri;
+		if (reference && inputModel) {
+			const file = await this.fileService.stat(reference.uri);
+			const displayName = `@${file.name}:${reference.range.startLineNumber}-${reference.range.endLineNumber}`;
+			const inputModelFullRange = inputModel.getFullModelRange();
+			// By default, append to the end of the model
+			let replaceRange = {
+				startColumn: inputModelFullRange.endColumn,
+				endColumn: inputModelFullRange.endColumn,
+				startLineNumber: inputModelFullRange.endLineNumber,
+				endLineNumber: inputModelFullRange.endLineNumber,
+			};
 
-			const completionProviders = this.languageFeatureService.completionProvider.getForAllLanguages();
-			const completionProvider = completionProviders.find(provider => provider._debugDisplayName === 'devtoolsFileProvider');
-			if (!completionProvider) {
-				return;
+			const selection = input.getSelection();
+			// If there is a selection, use that
+			if (selection) {
+				replaceRange = {
+					startColumn: selection.startColumn,
+					endColumn: selection.endColumn,
+					startLineNumber: selection.startLineNumber,
+					endLineNumber: selection.endLineNumber
+				};
 			}
-			suggestController.triggerSuggest(new Set([completionProvider]));
+			const isLeading = replaceRange.startColumn === 1;
+			// Add leading space if we are not at the very beginning of the text model
+			const output = isLeading ? displayName : ' ' + displayName;
+
+			const success = input.executeEdits('addReactComponentSource', [{ range: replaceRange, text: output }]);
+			if (success) {
+				const variable: IDynamicVariable = {
+					id: 'vscode.file',
+					range: {
+						...replaceRange,
+						// Include the actual length of the variable
+						startColumn: replaceRange.startColumn + (isLeading ? 0 : 1),
+						endColumn: replaceRange.endColumn + displayName.length + (isLeading ? 0 : 1),
+					},
+					data: { uri: reference.uri, range: reference.range }
+				};
+				dynamicVariablesModel.addReference(variable);
+				input.focus();
+			}
 		}
 	}
 
@@ -165,6 +204,7 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 				}
 
 				if (!reference) {
+					this.notifyProjectNotSupported();
 					console.error(`Cannot find file on system: ${JSON.stringify(payload)}`);
 					return null;
 				}
@@ -178,13 +218,31 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 					}
 				};
 			} else {
-				console.error(`The project output must have a source path in order to work`);
+				this.notifyProjectNotSupported();
 				return null;
 			}
 		} catch (err) {
-			console.log(err);
+			this.notifyProjectNotSupported();
 			return null;
 		}
+	}
+
+	private notifyProjectNotSupported() {
+		this.notificationService.prompt(
+			Severity.Info,
+			localize('aide.devtools.unsupportedProject', 'Your project doesn\'t seem to support React devtooling. You need to client render and have source maps enabled.'),
+			[
+				{
+					label: localize('aide.devtools.openDocumentation', 'Open documentation'),
+					run: () => {
+						// Construct the external URI to open
+						const externalUri = URI.parse('https://docs.aide.dev/features/react-devtools/#how-to-use');
+						// Use the opener service to open it in the user's browser
+						this.openerService.open(externalUri).catch(console.error);
+					}
+				}
+			]
+		);
 	}
 
 	private async resolveRelativeReference(relativePath: string): Promise<URI | null> {
