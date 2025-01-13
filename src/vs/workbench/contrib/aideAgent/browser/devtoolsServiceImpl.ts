@@ -9,7 +9,7 @@ import { IContextKey, IContextKeyService } from '../../../../platform/contextkey
 import { ChatViewId } from './aideAgent.js';
 
 import { DevtoolsStatus, IDevtoolsService, ParsedSource } from '../common/devtoolsService.js';
-import { CONTEXT_DEVTOOLS_STATUS, CONTEXT_IS_INSPECTING_HOST } from '../common/devtoolsServiceContextKeys.js';
+import { CONTEXT_DEVTOOLS_STATUS, CONTEXT_IS_DEVTOOLS_FEATURE_ENABLED, CONTEXT_IS_INSPECTING_HOST } from '../common/devtoolsServiceContextKeys.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { ChatViewPane } from './aideAgentViewPane.js';
 import { Location } from '../../../../editor/common/languages.js';
@@ -20,6 +20,7 @@ import { URI } from '../../../../base/common/uri.js';
 import { IEnvironmentService } from '../../../../platform/environment/common/environment.js';
 import { SuggestController } from '../../../../editor/contrib/suggest/browser/suggestController.js';
 import { ILanguageFeaturesService } from '../../../../editor/common/services/languageFeatures.js';
+import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 
 export class DevtoolsService extends Disposable implements IDevtoolsService {
 	declare _serviceBrand: undefined;
@@ -32,6 +33,8 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 
 	private readonly _onDidTriggerInspectingHostStop = this._register(new Emitter<void>());
 	public readonly onDidTriggerInspectingHostStop = this._onDidTriggerInspectingHostStop.event;
+
+	private _isFeatureEnabled: IContextKey<boolean>;
 
 	private _status: IContextKey<DevtoolsStatus>;
 	get status(): DevtoolsStatus {
@@ -86,12 +89,34 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 		@IFileService private readonly fileService: IFileService,
 		@IWorkspaceContextService private readonly workspaceContextService: IWorkspaceContextService,
 		@IEnvironmentService private readonly environmentService: IEnvironmentService,
-		@ILanguageFeaturesService private readonly languageFeatureService: ILanguageFeaturesService
+		@ILanguageFeaturesService private readonly languageFeatureService: ILanguageFeaturesService,
+		@IConfigurationService private readonly configurationService: IConfigurationService
 	) {
 		super();
 		this._status = CONTEXT_DEVTOOLS_STATUS.bindTo(contextKeyService);
 		this._isInspecting = CONTEXT_IS_INSPECTING_HOST.bindTo(contextKeyService);
+		this._isFeatureEnabled = CONTEXT_IS_DEVTOOLS_FEATURE_ENABLED.bindTo(contextKeyService);
+
+		// Check current state of your config at startup:
+		this.updateConfig();
+
+		// Subscribe to config changes:
+		this._register(
+			this.configurationService.onDidChangeConfiguration(e => {
+				if (e.affectsConfiguration('aide')) {
+					this.updateConfig();
+				}
+			})
+		);
 	}
+
+
+	private updateConfig(): void {
+		// Read the configuration value:
+		const isEnabled = !!this.configurationService.getValue<boolean>('aide.enableInspectWithDevtools');
+		this._isFeatureEnabled.set(isEnabled);
+	}
+
 
 	private notifyStatusChange() {
 		const isDevelopment = !this.environmentService.isBuilt || this.environmentService.isExtensionDevelopment;

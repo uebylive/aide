@@ -268,6 +268,18 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	reactDevtoolsManager.onStatusChange((status) => {
 		vscode.devtools.setStatus(status);
+		if (status === 'devtools-connected') {
+			postHogClient?.capture({
+				distinctId: getUniqueId(),
+				event: 'devtools.activated_devtools',
+				properties: {
+					product: 'aide',
+					email,
+					repoName,
+					repoHash,
+				}
+			});
+		}
 	});
 
 	reactDevtoolsManager.onInspectHostChange((isInspecting) => {
@@ -284,42 +296,75 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	vscode.devtools.onDidTriggerInspectingHostStop(() => {
 		reactDevtoolsManager.stopInspectingHost();
+		const { inspectedElement } = reactDevtoolsManager;
+		if (inspectedElement) {
+			try {
+				postHogClient?.capture({
+					distinctId: getUniqueId(),
+					event: 'devtools.inspectedElement',
+					properties: {
+						product: 'aide',
+						inspectedElement: JSON.stringify(inspectedElement),
+						email,
+						repoName,
+						repoHash,
+					}
+				});
+			} catch (err) {
+				if (context.extensionMode === vscode.ExtensionMode.Development) {
+					console.error(err);
+				}
+			}
+		}
 	});
 
-	const simpleBrowserManager = new SimpleBrowserManager(context.extensionUri);
+
+	async function openUrl(url: string) {
+		try {
+			const parsedUrl = new URL(url);
+			if (
+				reactDevtoolsManager.status === 'server-connected'
+				|| reactDevtoolsManager.status === 'devtools-connected'
+			) {
+				const proxyedPort = await reactDevtoolsManager.proxy(Number(parsedUrl.port));
+				const proxyedUrl = new URL(parsedUrl);
+				proxyedUrl.port = proxyedPort.toString();
+				console.log('proxy', proxyedUrl.href, { originalUrl: url });
+				simpleBrowserManager.show(proxyedUrl.href, { originalUrl: url });
+			} else {
+				console.error('Devtools are not ready');
+			}
+		} catch (err) {
+			vscode.window.showErrorMessage('The URL you provided is not valid');
+		}
+	}
+
+	const simpleBrowserManager = new SimpleBrowserManager(context.extensionUri, ({ originalUrl, url }) => {
+		setTimeout(() => {
+			const parsedOriginal = new URL(originalUrl);
+			const parsed = new URL(url);
+			parsedOriginal.pathname = parsed.pathname;
+			parsedOriginal.search = parsed.search;
+			parsedOriginal.hash = parsed.hash;
+			openUrl(parsedOriginal.href);
+		}, 600); // Avoid race condition on disconnect callback
+	});
 	context.subscriptions.push(simpleBrowserManager);
 	// Open simple browser command
-	context.subscriptions.push(vscode.commands.registerCommand(showBrowserCommand, async (url?: string) => {
+	context.subscriptions.push(vscode.commands.registerCommand(showBrowserCommand, async (providedUrl?: string) => {
 
 		const prefilledUrl = 'http://localhost:3000';
 		const portPosition = findPortPosition(prefilledUrl);
 
-		if (!url) {
-			url = await vscode.window.showInputBox({
-				placeHolder: vscode.l10n.t("https://localhost:3000"),
-				value: prefilledUrl,
-				valueSelection: portPosition ? [portPosition.start, portPosition.end] : undefined,
-				prompt: vscode.l10n.t("Insert the url of your dev server")
-			});
-		}
+		const url = providedUrl || (await vscode.window.showInputBox({
+			placeHolder: vscode.l10n.t("https://localhost:3000"),
+			value: prefilledUrl,
+			valueSelection: portPosition ? [portPosition.start, portPosition.end] : undefined,
+			prompt: vscode.l10n.t("Insert the url of your dev server")
+		}));
 
 		if (url) {
-			try {
-				const parsedUrl = new URL(url);
-				if (
-					reactDevtoolsManager.status === 'server-connected'
-					|| reactDevtoolsManager.status === 'devtools-connected'
-				) {
-					const proxyedPort = await reactDevtoolsManager.proxy(Number(parsedUrl.port));
-					const proxyedUrl = new URL(parsedUrl);
-					proxyedUrl.port = proxyedPort.toString();
-					simpleBrowserManager.show(proxyedUrl.href);
-				} else {
-					console.error('Devtools are not ready');
-				}
-			} catch (err) {
-				vscode.window.showErrorMessage('The URL you provided is not valid');
-			}
+			openUrl(url);
 		}
 	}));
 }
