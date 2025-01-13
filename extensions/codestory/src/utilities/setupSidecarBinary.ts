@@ -283,16 +283,14 @@ async function bringSidecarUp(webserverPath: string) {
 }
 
 export async function startSidecarBinary(webserverPath: string) {
-	if (!sidecarUseSelfRun()) {
-		console.log('Running sidecar binary');
-		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Starting);
-		try {
-			await bringSidecarUp(webserverPath);
-		} catch (error) {
-			console.error('Failed to run sidecar binary:', error);
-			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
-			return;
-		}
+	console.log('Running sidecar binary');
+	vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Starting);
+	try {
+		await bringSidecarUp(webserverPath);
+	} catch (error) {
+		console.error('Failed to run sidecar binary:', error);
+		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
+		return;
 	}
 
 	// Trigger version check to send the sidecar version to the editor
@@ -342,6 +340,31 @@ export async function restartSidecarBinary(extensionBasePath: string) {
 export async function setupSidecar(extensionBasePath: string): Promise<vscode.Disposable> {
 	const { zipDestination, extractedDestination, webserverPath } = getPaths(extensionBasePath);
 
+	// If user is self-managing sidecar, only do health checks
+	if (sidecarUseSelfRun()) {
+		console.log('User is self-managing sidecar binary, skipping automated setup');
+		const hc = await healthCheck();
+		if (!hc) {
+			console.log('Sidecar health check failed');
+			vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
+			vscode.window.showWarningMessage('Sidecar is not running. Please start the sidecar binary manually as configured.');
+		}
+
+		// Set up recurring health check every 5 seconds
+		const healthCheckInterval = setInterval(async () => {
+			const isHealthy = await healthCheck();
+			if (!isHealthy) {
+				console.log('Sidecar health check failed');
+				vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Unavailable);
+			} else {
+				versionCheck();
+			}
+		}, 5000);
+
+		return vscode.Disposable.from({ dispose: () => clearInterval(healthCheckInterval) });
+	}
+
+	// Regular automated setup flow
 	if (!fs.existsSync(webserverPath)) {
 		vscode.sidecar.setRunningStatus(vscode.SidecarRunningStatus.Starting);
 		try {
