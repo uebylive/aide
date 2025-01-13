@@ -20,6 +20,8 @@ function getSettings() {
 
 const settings = getSettings();
 
+console.log(settings);
+
 const browserIframe = document.querySelector('iframe#browser') as HTMLIFrameElement;
 
 const rootNodeId = 'root';
@@ -89,12 +91,12 @@ onceDocumentLoaded(() => {
 		navigateTo(input.value);
 	});
 
-	navigateTo(settings.url);
-	input.value = settings.displayUrl || settings.url;
+	navigateTo(settings.url, true);
+	input.value = settings.originalUrl;
 
 	toggleFocusLockIndicatorEnabled(settings.focusLockIndicatorEnabled);
 
-	function navigateTo(rawUrl: string): void {
+	function navigateTo(rawUrl: string, isIntitialization = false): void {
 		try {
 			const url = new URL(rawUrl);
 			// Try to bust the cache for the iframe
@@ -106,7 +108,15 @@ onceDocumentLoaded(() => {
 			browserIframe.src = rawUrl;
 		}
 
-		vscode.setState({ url: rawUrl, displayUrl: settings.displayUrl });
+		const payload = { url: rawUrl, originalUrl: settings.originalUrl };
+		if (isIntitialization) {
+			vscode.setState(payload);
+		} else {
+			vscode.postMessage({
+				type: 'updateUrl',
+				data: payload
+			});
+		}
 	}
 });
 

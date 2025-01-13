@@ -4931,6 +4931,14 @@ export enum SidecarRunningStatus {
 	Connecting = 3,
 	Connected = 4,
 }
+
+export enum DevtoolsStatus {
+	ServerConnected = 'server-connected',
+	DevtoolsConnected = 'devtools-connected',
+	Error = 'error',
+	Idle = 'idle'
+}
+
 //#endregion
 
 //#region ai

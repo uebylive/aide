@@ -4,16 +4,22 @@
  *--------------------------------------------------------------------------------------------*/
 
 import * as vscode from 'vscode';
-import { ShowOptions, SimpleBrowserView } from './simpleBrowserView';
+import { ShowOptions, SimpleBrowserView, UrlChangePayload } from './simpleBrowserView';
+
+
 
 export class SimpleBrowserManager {
 
 	private _activeView?: SimpleBrowserView;
 
+	private _onUrlChange: (payload: UrlChangePayload) => void;
+
 	constructor(
 		private readonly extensionUri: vscode.Uri,
+		onUrlChangeCallback: ((payload: UrlChangePayload) => void),
 	) {
 		//initialize();
+		this._onUrlChange = onUrlChangeCallback;
 	}
 
 	dispose() {
@@ -28,14 +34,16 @@ export class SimpleBrowserManager {
 		} else {
 			const view = SimpleBrowserView.create(this.extensionUri, url, options);
 			this.registerWebviewListeners(view);
-
 			this._activeView = view;
 		}
+		this._activeView.onUrlChange((payload) => {
+			this._onUrlChange(payload);
+		});
 	}
 
 	public restore(panel: vscode.WebviewPanel, state: any): void {
 		const url = state?.url ?? '';
-		const view = SimpleBrowserView.restore(this.extensionUri, url, panel, state.displayUrl);
+		const view = SimpleBrowserView.restore(this.extensionUri, url, panel, state.originalUrl);
 		this.registerWebviewListeners(view);
 		this._activeView ??= view;
 	}

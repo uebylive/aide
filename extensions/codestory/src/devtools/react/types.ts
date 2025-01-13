@@ -3,11 +3,17 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-export type DevtoolsStatus = 'server-connected' | 'devtools-connected' | 'error' | 'idle';
+export enum DevtoolsStatus {
+	ServerConnected = 'server-connected',
+	DevtoolsConnected = 'devtools-connected',
+	Error = 'error',
+	Idle = 'idle'
+}
+
 
 export type InspectedElementPayload =
 	| InspectElementError
-	| InspectElementFullData
+	| InspectElementParsedFullData
 	| InspectElementHydratedPath
 	| InspectElementNoChange
 	| InspectElementNotFound;
@@ -21,12 +27,38 @@ export type InspectElementError = {
 	stack?: string;
 };
 
-export type InspectElementFullData = {
+export type InspectElementParsedFullData = {
 	id: number;
 	responseID: number;
 	type: 'full-data';
 	value: InspectedElement;
+	parsedSource?: {
+		source: ParsedSourceData;
+		line: number;
+		column: number;
+	};
 };
+
+export type ParsedSourceURLData = {
+	type: 'URL';
+	url: string;
+	relativePath: string;
+};
+
+export type ParsedSourceAbsoluteData = {
+	type: 'absolute';
+	path: string;
+};
+
+export type ParsedSourceRelativeData = {
+	type: 'relative';
+	path: string;
+};
+
+export type ParsedSourceData =
+	| ParsedSourceAbsoluteData
+	| ParsedSourceRelativeData
+	| ParsedSourceURLData;
 
 export type InspectElementHydratedPath = {
 	id: number;

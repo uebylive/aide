@@ -27,6 +27,7 @@
     "mappedEditsProvider",
     "modelSelection",
     "sidecar",
+    "devtools",
     "terminalSelection",
     "tunnels"
   ],

@@ -323,14 +323,14 @@ class AssignSelectedAgentAction extends Action2 {
 registerAction2(AssignSelectedAgentAction);
 
 
-class ReferenceArgument {
+export class ReferenceArgument {
 	constructor(
 		readonly widget: IChatWidget,
 		readonly variable: IDynamicVariable
 	) { }
 }
 
-class BuiltinStaticCompletions extends Disposable {
+export class BuiltinStaticCompletions extends Disposable {
 	public static readonly addReferenceCommand = '_addReferenceCmd';
 	public static readonly VariableNameDef = new RegExp(`${chatVariableLeader}\\w*`, 'g'); // MUST be using `g`-flag
 

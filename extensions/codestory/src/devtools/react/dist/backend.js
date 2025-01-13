@@ -47,9 +47,6 @@ function getPrimitiveStackCache() {
       Dispatcher.useContext({
         _currentValue: null
       });
-      "function" === typeof Dispatcher.unstable_useContextWithBailout && Dispatcher.unstable_useContextWithBailout({
-        _currentValue: null
-      }, null);
       Dispatcher.useState(null);
       Dispatcher.useReducer(function (s) {
         return s;
@@ -76,16 +73,17 @@ function getPrimitiveStackCache() {
       Dispatcher.useMemo(function () {
         return null;
       });
-      "function" === typeof Dispatcher.useMemoCache && Dispatcher.useMemoCache(0);
-      "function" === typeof Dispatcher.useOptimistic && Dispatcher.useOptimistic(null, function (s) {
+      Dispatcher.useOptimistic(null, function (s) {
         return s;
       });
-      "function" === typeof Dispatcher.useFormState && Dispatcher.useFormState(function (s) {
+      Dispatcher.useFormState(function (s) {
         return s;
       }, null);
-      "function" === typeof Dispatcher.useActionState && Dispatcher.useActionState(function (s) {
+      Dispatcher.useActionState(function (s) {
         return s;
       }, null);
+      Dispatcher.useHostTransitionStatus();
+      "function" === typeof Dispatcher.useMemoCache && Dispatcher.useMemoCache(0);
 
       if ("function" === typeof Dispatcher.use) {
         Dispatcher.use({
@@ -106,7 +104,6 @@ function getPrimitiveStackCache() {
       }
 
       Dispatcher.useId();
-      "function" === typeof Dispatcher.useHostTransitionStatus && Dispatcher.useHostTransitionStatus();
     } finally {
       var readHookLog = hookLog;
       hookLog = [];
@@ -219,18 +216,6 @@ var SuspenseException = Error("Suspense Exception: This is not a real error! It'
       value: value,
       debugInfo: null,
       dispatcherHookName: "Context"
-    });
-    return value;
-  },
-  unstable_useContextWithBailout: function unstable_useContextWithBailout(context) {
-    var value = readContext(context);
-    hookLog.push({
-      displayName: context.displayName || null,
-      primitive: "ContextWithBailout",
-      stackError: Error(),
-      value: value,
-      debugInfo: null,
-      dispatcherHookName: "ContextWithBailout"
     });
     return value;
   },
@@ -819,9 +804,9 @@ var REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element"),
     REACT_SUSPENSE_LIST_TYPE = Symbol.for("react.suspense_list"),
     REACT_MEMO_TYPE = Symbol.for("react.memo"),
     REACT_LAZY_TYPE = Symbol.for("react.lazy"),
-    REACT_DEBUG_TRACING_MODE_TYPE = Symbol.for("react.debug_trace_mode"),
     REACT_OFFSCREEN_TYPE = Symbol.for("react.offscreen"),
     REACT_POSTPONE_TYPE = Symbol.for("react.postpone"),
+    REACT_VIEW_TRANSITION_TYPE = Symbol.for("react.view_transition"),
     MAYBE_ITERATOR_SYMBOL = Symbol.iterator;
 
 function getIteratorFn(maybeIterable) {
@@ -1206,8 +1191,8 @@ exports.startTransition = function (scope) {
 };
 
 exports.unstable_Activity = REACT_OFFSCREEN_TYPE;
-exports.unstable_DebugTracingMode = REACT_DEBUG_TRACING_MODE_TYPE;
 exports.unstable_SuspenseList = REACT_SUSPENSE_LIST_TYPE;
+exports.unstable_ViewTransition = REACT_VIEW_TRANSITION_TYPE;
 
 exports.unstable_getCacheForType = function (resourceType) {
   var dispatcher = ReactSharedInternals.A;
@@ -1292,7 +1277,7 @@ exports.useTransition = function () {
   return ReactSharedInternals.H.useTransition();
 };
 
-exports.version = "19.0.0-experimental-55b1ed4e-20241216";
+exports.version = "19.1.0-experimental-9a7f920d-20250113";
 
 /***/ }),
 
@@ -4019,13 +4004,14 @@ var lru_cache_default = /*#__PURE__*/__webpack_require__.n(lru_cache);
 //
 // Flags that can likely be deleted or landed without consequences
 // -----------------------------------------------------------------------------
-var enableComponentStackLocations = true; // -----------------------------------------------------------------------------
+// None
+// -----------------------------------------------------------------------------
 // Killswitch
 //
 // Flags that exist solely to turn off a change in case it causes a regression
 // when it rolls out to prod. We should remove these as soon as possible.
 // -----------------------------------------------------------------------------
-// -----------------------------------------------------------------------------
+var enableHydrationLaneScheduling = true; // -----------------------------------------------------------------------------
 // Land or remove (moderate effort)
 //
 // Flags that can be probably deleted or landed, but might require extra effort
@@ -4033,13 +4019,9 @@ var enableComponentStackLocations = true; // -----------------------------------
 // -----------------------------------------------------------------------------
 // TODO: Finish rolling out in www
 
-var favorSafetyOverHydrationPerf = true;
-var enableAsyncActions = true; // Need to remove didTimeout argument from Scheduler before landing
+var favorSafetyOverHydrationPerf = true; // Need to remove didTimeout argument from Scheduler before landing
 
-var disableSchedulerTimeoutInWorkLoop = false; // This will break some internal tests at Meta so we need to gate this until
-// those can be fixed.
-
-var enableDeferRootSchedulingToMicrotask = true; // TODO: Land at Meta before removing.
+var disableSchedulerTimeoutInWorkLoop = false; // TODO: Land at Meta before removing.
 
 var disableDefaultPropsExceptForClasses = true; // -----------------------------------------------------------------------------
 // Slated for removal in the future (significant effort)
@@ -4068,15 +4050,18 @@ var enableLegacyFBSupport = false; // ------------------------------------------
 // These are features that we're either actively exploring or are reasonably
 // likely to include in an upcoming release.
 // -----------------------------------------------------------------------------
+// Yield to the browser event loop and not just the scheduler event loop before passive effects.
+// Fix gated tests that fail with this flag enabled before turning it back on.
 
-var enableCache = true;
+var enableYieldingBeforePassive = false; // Experiment to intentionally yield less to block high framerate animations.
+
+var enableThrottledScheduling = false;
 var enableLegacyCache = (/* unused pure expression or super */ null && (true));
-var enableBinaryFlight = true;
-var enableFlightReadableStream = true;
 var enableAsyncIterableChildren = (/* unused pure expression or super */ null && (true));
 var enableTaint = (/* unused pure expression or super */ null && (true));
 var enablePostpone = (/* unused pure expression or super */ null && (true));
 var enableHalt = (/* unused pure expression or super */ null && (true));
+var enableViewTransition = (/* unused pure expression or super */ null && (true));
 /**
  * Switches the Fabric API from doing layout in commit work instead of complete work.
  */
@@ -4087,20 +4072,12 @@ var enableFabricCompleteRootInCommitPhase = false;
  */
 
 var enableObjectFiber = false;
-var enableTransitionTracing = false;
-var enableLazyContextPropagation = true; // Expose unstable useContext for performance testing
-
-var enableContextProfiling = false; // FB-only usage. The new API has different semantics.
+var enableTransitionTracing = false; // FB-only usage. The new API has different semantics.
 
 var enableLegacyHidden = false; // Enables unstable_avoidThisFallback feature in Fiber
 
-var enableSuspenseAvoidThisFallback = false; // Enables unstable_avoidThisFallback feature in Fizz
-
-var enableSuspenseAvoidThisFallbackFizz = false;
-var enableCPUSuspense = (/* unused pure expression or super */ null && (true)); // Enables useMemoCache hook, intended as a compilation target for
-// auto-memoization.
-
-var enableUseMemoCacheHook = true; // Test this at Meta before enabling.
+var enableSuspenseAvoidThisFallback = false;
+var enableCPUSuspense = (/* unused pure expression or super */ null && (true)); // Test this at Meta before enabling.
 
 var enableNoCloningMemoCache = false;
 var enableUseEffectEventHook = (/* unused pure expression or super */ null && (true)); // Test in www before enabling in open source.
@@ -4110,7 +4087,6 @@ var enableUseEffectEventHook = (/* unused pure expression or super */ null && (t
 var enableFizzExternalRuntime = (/* unused pure expression or super */ null && (true));
 var alwaysThrottleRetries = true;
 var passChildrenWhenCloningPersistedNodes = false;
-var enableServerComponentLogs = true;
 /**
  * Enables a new Fiber flag used in persisted mode to reduce the number
  * of cloned host components.
@@ -4164,19 +4140,7 @@ var disableLegacyContext = true;
  * Removes legacy style context just from function components.
  */
 
-var disableLegacyContextForFunctionComponents = true; // Not ready to break experimental yet.
-// Modern <StrictMode /> behaviour aligns more with what components
-// components will encounter in production, especially when used With <Offscreen />.
-// TODO: clean up legacy <StrictMode /> once tests pass WWW.
-
-var useModernStrictMode = true; // Not ready to break experimental yet.
-// Remove IE and MsApp specific workarounds for innerHTML
-
-var disableIEWorkarounds = true; // Filter certain DOM attributes (e.g. src, href) if their values are empty
-// strings. This prevents e.g. <img src=""> from making an unnecessary HTTP
-// request for certain browsers.
-
-var enableFilterEmptyStringAttributesDOM = true; // Enable the moveBefore() alternative to insertBefore(). This preserves states of moves.
+var disableLegacyContextForFunctionComponents = true; // Enable the moveBefore() alternative to insertBefore(). This preserves states of moves.
 
 var enableMoveBefore = false; // Disabled caching behavior of `react/cache` in client runtimes.
 
@@ -4212,10 +4176,7 @@ var disableInputAttributeSyncing = false; // Disables children for <textarea> el
 var disableTextareaChildren = false; // -----------------------------------------------------------------------------
 // Debugging and DevTools
 // -----------------------------------------------------------------------------
-// Helps identify side effects in render-phase lifecycle hooks and setState
-// reducers by double invoking them in StrictLegacyMode.
-
-var debugRenderPhaseSideEffectsForStrictMode = (/* unused pure expression or super */ null && (false)); // Gather advanced timing metrics for Profiler subtrees.
+// Gather advanced timing metrics for Profiler subtrees.
 
 var enableProfilerTimer = (/* unused pure expression or super */ null && (false)); // Adds performance.measure() marks using Chrome extensions to allow formatted
 // Component rendering tracks to show up in the Performance tab.
@@ -4229,17 +4190,11 @@ var enableSchedulingProfiler = !enableComponentPerformanceTrack && false; // Rec
 
 var enableProfilerCommitHooks = (/* unused pure expression or super */ null && (false)); // Phase param passed to onRender callback differentiates between an "update" and a "cascading-update".
 
-var enableProfilerNestedUpdatePhase = (/* unused pure expression or super */ null && (false)); // Adds verbose console logging for e.g. state updates, suspense, and work loop
-// stuff. Intended to enable React core members to more easily debug scheduling
-// issues in DEV builds.
-
-var enableDebugTracing = false;
+var enableProfilerNestedUpdatePhase = (/* unused pure expression or super */ null && (false));
 var enableAsyncDebugInfo = (/* unused pure expression or super */ null && (true)); // Track which Fiber(s) schedule render work.
 
 var enableUpdaterTracking = (/* unused pure expression or super */ null && (false)); // Internal only.
 
-var enableGetInspectorDataForInstanceInProduction = false;
-var consoleManagedByDevToolsDuringStrictMode = true;
 var enableDO_NOT_USE_disableStrictPassiveEffect = false;
 ;// CONCATENATED MODULE: ../shared/ReactSymbols.js
 function ReactSymbols_typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { ReactSymbols_typeof = function _typeof(obj) { return typeof obj; }; } else { ReactSymbols_typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return ReactSymbols_typeof(obj); }
@@ -4273,12 +4228,12 @@ var REACT_SUSPENSE_LIST_TYPE = Symbol.for('react.suspense_list');
 var REACT_MEMO_TYPE = Symbol.for('react.memo');
 var REACT_LAZY_TYPE = Symbol.for('react.lazy');
 var REACT_SCOPE_TYPE = Symbol.for('react.scope');
-var REACT_DEBUG_TRACING_MODE_TYPE = Symbol.for('react.debug_trace_mode');
 var REACT_OFFSCREEN_TYPE = Symbol.for('react.offscreen');
 var REACT_LEGACY_HIDDEN_TYPE = Symbol.for('react.legacy_hidden');
 var REACT_TRACING_MARKER_TYPE = Symbol.for('react.tracing_marker');
 var REACT_MEMO_CACHE_SENTINEL = Symbol.for('react.memo_cache_sentinel');
 var REACT_POSTPONE_TYPE = Symbol.for('react.postpone');
+var REACT_VIEW_TRANSITION_TYPE = Symbol.for('react.view_transition');
 var MAYBE_ITERATOR_SYMBOL = Symbol.iterator;
 var FAUX_ITERATOR_SYMBOL = '@@iterator';
 function getIteratorFn(maybeIterable) {
@@ -4331,7 +4286,8 @@ var ElementTypeRoot = 11;
 var ElementTypeSuspense = 12;
 var ElementTypeSuspenseList = 13;
 var ElementTypeTracingMarker = 14;
-var types_ElementTypeVirtual = 15; // Different types of elements displayed in the Elements tree.
+var types_ElementTypeVirtual = 15;
+var ElementTypeViewTransition = 16; // Different types of elements displayed in the Elements tree.
 // These types may be used to visually distinguish types,
 // or to enable/disable certain functionality.
 
@@ -4931,6 +4887,7 @@ function typeOfWithLegacyElementSymbol(object) {
           case REACT_STRICT_MODE_TYPE:
           case REACT_SUSPENSE_TYPE:
           case REACT_SUSPENSE_LIST_TYPE:
+          case REACT_VIEW_TRANSITION_TYPE:
             return type;
 
           default:
@@ -5010,6 +4967,9 @@ function getDisplayNameForReactElement(element) {
 
     case REACT_SUSPENSE_LIST_TYPE:
       return 'SuspenseList';
+
+    case REACT_VIEW_TRANSITION_TYPE:
+      return 'ViewTransition';
 
     case REACT_TRACING_MARKER_TYPE:
       return 'TracingMarker';
@@ -6128,6 +6088,18 @@ function formatDurationToMicrosecondsGranularity(duration) {
   return Math.round(duration * 1000) / 1000;
 }
 ;// CONCATENATED MODULE: ../react-devtools-shared/src/backend/views/utils.js
+function views_utils_slicedToArray(arr, i) { return views_utils_arrayWithHoles(arr) || views_utils_iterableToArrayLimit(arr, i) || views_utils_unsupportedIterableToArray(arr, i) || views_utils_nonIterableRest(); }
+
+function views_utils_nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+
+function views_utils_unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return views_utils_arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return views_utils_arrayLikeToArray(o, minLen); }
+
+function views_utils_arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+
+function views_utils_iterableToArrayLimit(arr, i) { if (typeof Symbol === "undefined" || !(Symbol.iterator in Object(arr))) return; var _arr = []; var _n = true; var _d = false; var _e = undefined; try { for (var _i = arr[Symbol.iterator](), _s; !(_n = (_s = _i.next()).done); _n = true) { _arr.push(_s.value); if (i && _arr.length === i) break; } } catch (err) { _d = true; _e = err; } finally { try { if (!_n && _i["return"] != null) _i["return"](); } finally { if (_d) throw _e; } } return _arr; }
+
+function views_utils_arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+
 /**
  * Copyright (c) Meta Platforms, Inc. and affiliates.
  *
@@ -6238,6 +6210,33 @@ function getElementDimensions(domElement) {
     paddingRight: parseInt(calculatedStyle.paddingRight, 10),
     paddingTop: parseInt(calculatedStyle.paddingTop, 10),
     paddingBottom: parseInt(calculatedStyle.paddingBottom, 10)
+  };
+}
+function extractHOCNames(displayName) {
+  if (!displayName) return {
+    baseComponentName: '',
+    hocNames: []
+  };
+  var hocRegex = /([A-Z][a-zA-Z0-9]*?)\((.*)\)/g;
+  var hocNames = [];
+  var baseComponentName = displayName;
+  var match;
+
+  while ((match = hocRegex.exec(baseComponentName)) != null) {
+    if (Array.isArray(match)) {
+      var _match = match,
+          _match2 = views_utils_slicedToArray(_match, 3),
+          hocName = _match2[1],
+          inner = _match2[2];
+
+      hocNames.push(hocName);
+      baseComponentName = inner;
+    }
+  }
+
+  return {
+    baseComponentName: baseComponentName,
+    hocNames: hocNames
   };
 }
 ;// CONCATENATED MODULE: ../react-devtools-shared/src/backend/views/Highlighter/Overlay.js
@@ -6780,6 +6779,18 @@ function setupHighlighter(bridge, agent) {
   }
 }
 ;// CONCATENATED MODULE: ../react-devtools-shared/src/backend/views/TraceUpdates/canvas.js
+function canvas_toConsumableArray(arr) { return canvas_arrayWithoutHoles(arr) || canvas_iterableToArray(arr) || canvas_unsupportedIterableToArray(arr) || canvas_nonIterableSpread(); }
+
+function canvas_nonIterableSpread() { throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+
+function canvas_unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return canvas_arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return canvas_arrayLikeToArray(o, minLen); }
+
+function canvas_iterableToArray(iter) { if (typeof Symbol !== "undefined" && Symbol.iterator in Object(iter)) return Array.from(iter); }
+
+function canvas_arrayWithoutHoles(arr) { if (Array.isArray(arr)) return canvas_arrayLikeToArray(arr); }
+
+function canvas_arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
+
 /**
  * Copyright (c) Meta Platforms, Inc. and affiliates.
  *
@@ -6788,21 +6799,24 @@ function setupHighlighter(bridge, agent) {
  *
  * 
  */
-
-var OUTLINE_COLOR = '#f0f0f0'; // Note these colors are in sync with DevTools Profiler chart colors.
+ // Note these colors are in sync with DevTools Profiler chart colors.
 
 var COLORS = ['#37afa9', '#63b19e', '#80b393', '#97b488', '#abb67d', '#beb771', '#cfb965', '#dfba57', '#efbb49', '#febc38'];
 var canvas = null;
 
 function drawNative(nodeToData, agent) {
   var nodesToDraw = [];
-  iterateNodes(nodeToData, function (_, color, node) {
+  iterateNodes(nodeToData, function (_ref) {
+    var color = _ref.color,
+        node = _ref.node;
     nodesToDraw.push({
       node: node,
       color: color
     });
   });
   agent.emit('drawTraceUpdates', nodesToDraw);
+  var mergedNodes = groupAndSortNodes(nodeToData);
+  agent.emit('drawGroupedTraceUpdatesWithNames', mergedNodes);
 }
 
 function drawWeb(nodeToData) {
@@ -6810,16 +6824,73 @@ function drawWeb(nodeToData) {
     initialize();
   }
 
+  var dpr = window.devicePixelRatio || 1;
   var canvasFlow = canvas;
-  canvasFlow.width = window.innerWidth;
-  canvasFlow.height = window.innerHeight;
+  canvasFlow.width = window.innerWidth * dpr;
+  canvasFlow.height = window.innerHeight * dpr;
+  canvasFlow.style.width = "".concat(window.innerWidth, "px");
+  canvasFlow.style.height = "".concat(window.innerHeight, "px");
   var context = canvasFlow.getContext('2d');
-  context.clearRect(0, 0, canvasFlow.width, canvasFlow.height);
-  iterateNodes(nodeToData, function (rect, color) {
-    if (rect !== null) {
-      drawBorder(context, rect, color);
-    }
+  context.scale(dpr, dpr);
+  context.clearRect(0, 0, canvasFlow.width / dpr, canvasFlow.height / dpr);
+  var mergedNodes = groupAndSortNodes(nodeToData);
+  mergedNodes.forEach(function (group) {
+    drawGroupBorders(context, group);
+    drawGroupLabel(context, group);
   });
+}
+
+function groupAndSortNodes(nodeToData) {
+  var positionGroups = new Map();
+  iterateNodes(nodeToData, function (_ref2) {
+    var _positionGroups$get;
+
+    var rect = _ref2.rect,
+        color = _ref2.color,
+        displayName = _ref2.displayName,
+        count = _ref2.count;
+    if (!rect) return;
+    var key = "".concat(rect.left, ",").concat(rect.top);
+    if (!positionGroups.has(key)) positionGroups.set(key, []);
+    (_positionGroups$get = positionGroups.get(key)) === null || _positionGroups$get === void 0 ? void 0 : _positionGroups$get.push({
+      rect: rect,
+      color: color,
+      displayName: displayName,
+      count: count
+    });
+  });
+  return Array.from(positionGroups.values()).sort(function (groupA, groupB) {
+    var maxCountA = Math.max.apply(Math, canvas_toConsumableArray(groupA.map(function (item) {
+      return item.count;
+    })));
+    var maxCountB = Math.max.apply(Math, canvas_toConsumableArray(groupB.map(function (item) {
+      return item.count;
+    })));
+    return maxCountA - maxCountB;
+  });
+}
+
+function drawGroupBorders(context, group) {
+  group.forEach(function (_ref3) {
+    var color = _ref3.color,
+        rect = _ref3.rect;
+    context.beginPath();
+    context.strokeStyle = color;
+    context.rect(rect.left, rect.top, rect.width - 1, rect.height - 1);
+    context.stroke();
+  });
+}
+
+function drawGroupLabel(context, group) {
+  var mergedName = group.map(function (_ref4) {
+    var displayName = _ref4.displayName,
+        count = _ref4.count;
+    return displayName ? "".concat(displayName).concat(count > 1 ? " x".concat(count) : '') : '';
+  }).filter(Boolean).join(', ');
+
+  if (mergedName) {
+    drawLabel(context, group[0].rect, mergedName, group[0].color);
+  }
 }
 
 function draw(nodeToData, agent) {
@@ -6827,34 +6898,38 @@ function draw(nodeToData, agent) {
 }
 
 function iterateNodes(nodeToData, execute) {
-  nodeToData.forEach(function (_ref, node) {
-    var count = _ref.count,
-        rect = _ref.rect;
-    var colorIndex = Math.min(COLORS.length - 1, count - 1);
+  nodeToData.forEach(function (data, node) {
+    var colorIndex = Math.min(COLORS.length - 1, data.count - 1);
     var color = COLORS[colorIndex];
-    execute(rect, color, node);
+    execute({
+      color: color,
+      node: node,
+      count: data.count,
+      displayName: data.displayName,
+      expirationTime: data.expirationTime,
+      lastMeasuredAt: data.lastMeasuredAt,
+      rect: data.rect
+    });
   });
 }
 
-function drawBorder(context, rect, color) {
-  var height = rect.height,
-      left = rect.left,
-      top = rect.top,
-      width = rect.width; // outline
-
-  context.lineWidth = 1;
-  context.strokeStyle = OUTLINE_COLOR;
-  context.strokeRect(left - 1, top - 1, width + 2, height + 2); // inset
-
-  context.lineWidth = 1;
-  context.strokeStyle = OUTLINE_COLOR;
-  context.strokeRect(left + 1, top + 1, width - 1, height - 1);
-  context.strokeStyle = color;
-  context.setLineDash([0]); // border
-
-  context.lineWidth = 1;
-  context.strokeRect(left, top, width - 1, height - 1);
-  context.setLineDash([0]);
+function drawLabel(context, rect, text, color) {
+  var left = rect.left,
+      top = rect.top;
+  context.font = '10px monospace';
+  context.textBaseline = 'middle';
+  context.textAlign = 'center';
+  var padding = 2;
+  var textHeight = 14;
+  var metrics = context.measureText(text);
+  var backgroundWidth = metrics.width + padding * 2;
+  var backgroundHeight = textHeight;
+  var labelX = left;
+  var labelY = top - backgroundHeight;
+  context.fillStyle = color;
+  context.fillRect(labelX, labelY, backgroundWidth, backgroundHeight);
+  context.fillStyle = '#000000';
+  context.fillText(text, labelX + backgroundWidth / 2, labelY + backgroundHeight / 2);
 }
 
 function destroyNative(agent) {
@@ -6901,7 +6976,9 @@ var DISPLAY_DURATION = 250; // What's the longest we are willing to show the ove
 
 var MAX_DISPLAY_DURATION = 3000; // How long should a rect be considered valid for?
 
-var REMEASUREMENT_AFTER_DURATION = 250; // Some environments (e.g. React Native / Hermes) don't support the performance API yet.
+var REMEASUREMENT_AFTER_DURATION = 250; // Markers for different types of HOCs
+
+var HOC_MARKERS = new Map([['Forget', '✨'], ['Memo', '🧠']]); // Some environments (e.g. React Native / Hermes) don't support the performance API yet.
 
 var getCurrentTime = // $FlowFixMe[method-unbinding]
 (typeof performance === "undefined" ? "undefined" : TraceUpdates_typeof(performance)) === 'object' && typeof performance.now === 'function' ? function () {
@@ -6939,10 +7016,7 @@ function toggleEnabled(value) {
 }
 
 function traceUpdates(nodes) {
-  if (!isEnabled) {
-    return;
-  }
-
+  if (!isEnabled) return;
   nodes.forEach(function (node) {
     var data = nodeToData.get(node);
     var now = getCurrentTime();
@@ -6954,11 +7028,26 @@ function traceUpdates(nodes) {
       rect = measureNode(node);
     }
 
+    var displayName = agent.getComponentNameForHostInstance(node);
+
+    if (displayName) {
+      var _extractHOCNames = extractHOCNames(displayName),
+          baseComponentName = _extractHOCNames.baseComponentName,
+          hocNames = _extractHOCNames.hocNames;
+
+      var markers = hocNames.map(function (hoc) {
+        return HOC_MARKERS.get(hoc) || '';
+      }).join('');
+      var enhancedDisplayName = markers ? "".concat(markers).concat(baseComponentName) : baseComponentName;
+      displayName = enhancedDisplayName;
+    }
+
     nodeToData.set(node, {
       count: data != null ? data.count + 1 : 1,
       expirationTime: data != null ? Math.min(now + MAX_DISPLAY_DURATION, data.expirationTime + DISPLAY_DURATION) : now + DISPLAY_DURATION,
       lastMeasuredAt: lastMeasuredAt,
-      rect: rect
+      rect: rect,
+      displayName: displayName
     });
   });
 
@@ -7465,7 +7554,7 @@ var Agent = /*#__PURE__*/function (_EventEmitter) {
     });
 
     agent_defineProperty(agent_assertThisInitialized(_this), "getBackendVersion", function () {
-      var version = "6.0.1-55b1ed4e15";
+      var version = "6.0.1-9a7f920dcf";
 
       if (version) {
         _this._bridge.send('backendVersion', version);
@@ -9021,7 +9110,8 @@ function describeFiber(workTagMap, workInProgress, currentDispatcherRef) {
       IndeterminateComponent = workTagMap.IndeterminateComponent,
       SimpleMemoComponent = workTagMap.SimpleMemoComponent,
       ForwardRef = workTagMap.ForwardRef,
-      ClassComponent = workTagMap.ClassComponent;
+      ClassComponent = workTagMap.ClassComponent,
+      ViewTransitionComponent = workTagMap.ViewTransitionComponent;
 
   switch (workInProgress.tag) {
     case HostHoistable:
@@ -9038,6 +9128,9 @@ function describeFiber(workTagMap, workInProgress, currentDispatcherRef) {
 
     case SuspenseListComponent:
       return describeBuiltInComponentFrame('SuspenseList');
+
+    case ViewTransitionComponent:
+      return describeBuiltInComponentFrame('ViewTransition');
 
     case FunctionComponent:
     case IndeterminateComponent:
@@ -9114,7 +9207,8 @@ function getOwnerStackByFiberInDev(workTagMap, workInProgress, currentDispatcher
       HostText = workTagMap.HostText,
       HostComponent = workTagMap.HostComponent,
       SuspenseComponent = workTagMap.SuspenseComponent,
-      SuspenseListComponent = workTagMap.SuspenseListComponent;
+      SuspenseListComponent = workTagMap.SuspenseListComponent,
+      ViewTransitionComponent = workTagMap.ViewTransitionComponent;
 
   try {
     var info = '';
@@ -9143,6 +9237,10 @@ function getOwnerStackByFiberInDev(workTagMap, workInProgress, currentDispatcher
 
       case SuspenseListComponent:
         info += describeBuiltInComponentFrame('SuspenseList');
+        break;
+
+      case ViewTransitionComponent:
+        info += describeBuiltInComponentFrame('ViewTransition');
         break;
     }
 
@@ -10755,7 +10853,9 @@ function getInternalReactConstants(version) {
       // want to fork again so we're adding it here instead
       YieldComponent: -1,
       // Removed
-      Throw: 29
+      Throw: 29,
+      ViewTransitionComponent: 30 // Experimental
+
     };
   } else if (gte(version, '17.0.0-alpha')) {
     ReactTypeOfWork = {
@@ -10802,7 +10902,9 @@ function getInternalReactConstants(version) {
       // Doesn't exist yet
       YieldComponent: -1,
       // Removed
-      Throw: -1 // Doesn't exist yet
+      Throw: -1,
+      // Doesn't exist yet
+      ViewTransitionComponent: -1 // Doesn't exist yet
 
     };
   } else if (gte(version, '16.6.0-beta.0')) {
@@ -10850,7 +10952,9 @@ function getInternalReactConstants(version) {
       // Doesn't exist yet
       YieldComponent: -1,
       // Removed
-      Throw: -1 // Doesn't exist yet
+      Throw: -1,
+      // Doesn't exist yet
+      ViewTransitionComponent: -1 // Doesn't exist yet
 
     };
   } else if (gte(version, '16.4.3-alpha')) {
@@ -10902,7 +11006,9 @@ function getInternalReactConstants(version) {
       // Doesn't exist yet
       YieldComponent: -1,
       // Removed
-      Throw: -1 // Doesn't exist yet
+      Throw: -1,
+      // Doesn't exist yet
+      ViewTransitionComponent: -1 // Doesn't exist yet
 
     };
   } else {
@@ -10951,7 +11057,9 @@ function getInternalReactConstants(version) {
       TracingMarkerComponent: -1,
       // Doesn't exist yet
       YieldComponent: 9,
-      Throw: -1 // Doesn't exist yet
+      Throw: -1,
+      // Doesn't exist yet
+      ViewTransitionComponent: -1 // Doesn't exist yet
 
     };
   } // **********************************************************
@@ -10990,7 +11098,8 @@ function getInternalReactConstants(version) {
       SuspenseComponent = _ReactTypeOfWork.SuspenseComponent,
       SuspenseListComponent = _ReactTypeOfWork.SuspenseListComponent,
       TracingMarkerComponent = _ReactTypeOfWork.TracingMarkerComponent,
-      Throw = _ReactTypeOfWork.Throw;
+      Throw = _ReactTypeOfWork.Throw,
+      ViewTransitionComponent = _ReactTypeOfWork.ViewTransitionComponent;
 
   function resolveFiberType(type) {
     var typeSymbol = getTypeSymbol(type);
@@ -11103,6 +11212,9 @@ function getInternalReactConstants(version) {
 
       case TracingMarkerComponent:
         return 'TracingMarker';
+
+      case ViewTransitionComponent:
+        return 'ViewTransition';
 
       case Throw:
         // This should really never be visible.
@@ -11315,7 +11427,8 @@ function renderer_attach(hook, rendererID, renderer, global, shouldStartProfilin
       SuspenseComponent = ReactTypeOfWork.SuspenseComponent,
       SuspenseListComponent = ReactTypeOfWork.SuspenseListComponent,
       TracingMarkerComponent = ReactTypeOfWork.TracingMarkerComponent,
-      Throw = ReactTypeOfWork.Throw;
+      Throw = ReactTypeOfWork.Throw,
+      ViewTransitionComponent = ReactTypeOfWork.ViewTransitionComponent;
   var ImmediatePriority = ReactPriorityLevels.ImmediatePriority,
       UserBlockingPriority = ReactPriorityLevels.UserBlockingPriority,
       NormalPriority = ReactPriorityLevels.NormalPriority,
@@ -11978,6 +12091,9 @@ function renderer_attach(hook, rendererID, renderer, global, shouldStartProfilin
 
       case TracingMarkerComponent:
         return ElementTypeTracingMarker;
+
+      case ViewTransitionComponent:
+        return ElementTypeViewTransition;
 
       default:
         var typeSymbol = getTypeSymbol(type);
@@ -17669,6 +17785,7 @@ function installHook(target, maybeSettingsOrSettingsPromise) {
     checkDCE: checkDCE,
     onCommitFiberUnmount: onCommitFiberUnmount,
     onCommitFiberRoot: onCommitFiberRoot,
+    // React v18.0+
     onPostCommitFiberRoot: onPostCommitFiberRoot,
     setStrictMode: setStrictMode,
     // Schedule Profiler runtime helpers.

@@ -16,7 +16,10 @@ export class ReactDevtoolsManager {
 	private _onInspectedElementChange = new vscode.EventEmitter<InspectedElementPayload>();
 	onInspectedElementChange = this._onInspectedElementChange.event;
 
-	private _status: DevtoolsStatus = 'idle';
+	private _onInspectHostChange = new vscode.EventEmitter<boolean>();
+	onInspectHostChange = this._onInspectHostChange.event;
+
+	private _status: DevtoolsStatus = DevtoolsStatus.Idle;
 	get status() {
 		return this._status;
 	}
@@ -26,37 +29,66 @@ export class ReactDevtoolsManager {
 		return this._insepectedElement;
 	}
 
+	private _proxyListenPort: number | undefined;
+
+	get proxyListenPort() {
+		return this._proxyListenPort;
+	}
+
+	private _cleanupProxy: (() => void) | undefined;
 	private _Devtools: Devtools;
 
 	constructor() {
 		this._Devtools = Devtools
 			.setStatusListener(this.updateStatus.bind(this))
 			.setDataCallback(this.updateInspectedElement.bind(this))
+			.setDisconnectedCallback(this.onDidDisconnect.bind(this))
+			.setInspectionCallback(this.updateInspectHost.bind(this))
 			.startServer(8097, 'localhost');
 	}
 
 	private updateStatus(_message: string, status: DevtoolsStatus) {
 		this._status = status;
-		console.log('Update from devtools ', status);
 		this._onStatusChange.fire(status);
+	}
+
+	private updateInspectHost(isInspecting: boolean) {
+		this._onInspectHostChange.fire(isInspecting);
+	}
+
+	private onDidDisconnect() {
+		this._cleanupProxy?.();
+		this._cleanupProxy = undefined;
+		this._proxyListenPort = undefined;
+		if (this._status === DevtoolsStatus.DevtoolsConnected) {
+			// @g-danna take a look at this again
+			this.updateStatus('Devtools disconnected', DevtoolsStatus.ServerConnected);
+		}
 	}
 
 	private updateInspectedElement(payload: InspectedElementPayload) {
 		this._insepectedElement = payload;
 		if (payload.type !== 'no-change') {
-			console.log('inspected element', payload);
 			this._onInspectedElementChange.fire(payload);
 		}
 	}
 
-	proxy(port: number, reactDevtoolsPort = 8097) {
-		if (this.status !== 'server-connected') {
-			throw new Error('Devtools server is not connected, cannot proxy');
+	async proxy(port: number) {
+		if (this._proxyListenPort) {
+			return this._proxyListenPort;
 		}
-		return proxy(port, reactDevtoolsPort);
+		if (this.status !== 'server-connected') {
+			throw new Error('Devtools server is not connected, cannot initialize proxy');
+		}
+		const { listenPort, cleanup } = await proxy(port, this._Devtools.currentPort);
+		this._proxyListenPort = listenPort;
+		this._cleanupProxy = cleanup;
+		return this._proxyListenPort;
 	}
 
 	startInspectingHost() {
+		// Have to call this manually because React devtools don't call this
+		this._onInspectHostChange.fire(true);
 		this._Devtools.startInspectingHost();
 	}
 

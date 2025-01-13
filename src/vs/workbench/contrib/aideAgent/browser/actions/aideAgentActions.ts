@@ -27,6 +27,7 @@ import { AgentMode } from '../../common/aideAgentModel.js';
 import { IAideAgentService, IChatDetail } from '../../common/aideAgentService.js';
 import { IChatRequestViewModel, IChatResponseViewModel, isRequestVM } from '../../common/aideAgentViewModel.js';
 import { IAideAgentWidgetHistoryService } from '../../common/aideAgentWidgetHistoryService.js';
+import { CONTEXT_IS_DEVTOOLS_FEATURE_ENABLED } from '../../common/devtoolsServiceContextKeys.js';
 import { ChatViewId, IAideAgentWidgetService, showChatView } from '../aideAgent.js';
 import { IChatEditorOptions } from '../aideAgentEditor.js';
 import { ChatEditorInput } from '../aideAgentEditorInput.js';
@@ -268,12 +269,12 @@ class OpenSimpleBrowserAction extends Action2 {
 		super({
 			id: 'workbench.action.aideAgent.openSimpleBrowser',
 			title: localize2('interactiveSession.openSimpleBrowser.label', "Open browser to inspect devtools"),
-			precondition: CONTEXT_CHAT_ENABLED,
+			precondition: ContextKeyExpr.and(CONTEXT_IS_DEVTOOLS_FEATURE_ENABLED, CONTEXT_CHAT_ENABLED),
 			category: CHAT_CATEGORY,
 			icon: Codicon.browser,
 			menu: {
 				id: MenuId.ViewTitle,
-				when: ContextKeyExpr.equals('view', ChatViewId),
+				when: ContextKeyExpr.and(CONTEXT_IS_DEVTOOLS_FEATURE_ENABLED, ContextKeyExpr.equals('view', ChatViewId)),
 				group: 'navigation',
 				order: 3
 			}

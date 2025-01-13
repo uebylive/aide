@@ -63,6 +63,8 @@ import { AideAgentCodeBlockContextProviderService } from './codeBlockContextProv
 import './contrib/aideAgentContextAttachments.js';
 import './contrib/aideAgentInputCompletions.js';
 import './contrib/aideAgentInputEditorContrib.js';
+import { IDevtoolsService } from '../common/devtoolsService.js';
+import { DevtoolsService } from './devtoolsServiceImpl.js';
 
 // Register configuration
 const configurationRegistry = Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration);
@@ -295,3 +297,4 @@ registerSingleton(IAideAgentCodeMapperService, CodeMapperService, InstantiationT
 registerSingleton(IAideAgentFloatingWidgetService, AideAgentFloatingWidgetService, InstantiationType.Delayed);
 registerSingleton(IAideAgentCodeEditingService, AideAgentCodeEditingService, InstantiationType.Delayed);
 registerSingleton(ISidecarService, SidecarService, InstantiationType.Delayed);
+registerSingleton(IDevtoolsService, DevtoolsService, InstantiationType.Delayed);

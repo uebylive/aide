@@ -62,6 +62,7 @@ import { IChatResponseTextPart, IChatResponsePromptTsxPart } from '../../contrib
 import { LanguageModelTextPart, LanguageModelPromptTsxPart } from './extHostTypes.js';
 import { MarshalledId } from '../../../base/common/marshallingIds.js';
 import { IChatRequestDraft } from '../../contrib/chat/common/chatEditingService.js';
+import { DevtoolsStatus } from '../../contrib/aideAgent/common/devtoolsService.js';
 
 export namespace Command {
 
@@ -3197,6 +3198,25 @@ export namespace SidecarRunningState {
 				return SidecarRunningStatus.Unavailable;
 		}
 	}
+}
+
+export namespace DevtoolsState {
+	export function from(status: types.DevtoolsStatus): DevtoolsStatus {
+		switch (status) {
+			case types.DevtoolsStatus.Idle:
+				return DevtoolsStatus.Idle;
+			case types.DevtoolsStatus.ServerConnected:
+				return DevtoolsStatus.ServerConnected;
+			case types.DevtoolsStatus.DevtoolsConnected:
+				return DevtoolsStatus.DevtoolsConnected;
+			default:
+				return DevtoolsStatus.Error;
+		}
+	}
+}
+
+export namespace ReactDevtoolsPayload {
+
 }
 
 export namespace TerminalQuickFix {
