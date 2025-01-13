@@ -239,6 +239,7 @@ export async function provideInteractiveEditorResponse(
 		userContext: {
 			variables: [],
 			file_content_map: [],
+			images: [],
 			terminal_selection: undefined,
 			folder_paths: [],
 			is_plan_generation: false,
