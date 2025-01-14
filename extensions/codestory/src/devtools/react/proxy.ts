@@ -5,7 +5,6 @@
 
 import * as http from 'http';
 import httpProxy from 'http-proxy';
-import { Socket } from 'node:net';
 import { parse, parseFragment, defaultTreeAdapter, serialize } from 'parse5';
 import * as zlib from 'zlib';
 
@@ -156,14 +155,32 @@ export function proxy(port: number, reactDevtoolsPort: number): Promise<ProxyRes
 		);
 
 		// Handle proxy errors
-		proxy.on('error', (err: Error, _req: http.IncomingMessage, res: Socket | http.ServerResponse<http.IncomingMessage>) => {
-			console.error('Proxy error:', err);
+		proxy.on('error', (err: any, req, res) => {
+			// Distinguish "target isn't up" from deeper proxy/server errors,
+			// so we don't permanently break the local proxy server.
+			const message = String(err.code || '');
+			const isTargetNotUp =
+				message.includes('ECONNREFUSED') ||
+				message.includes('ENOTFOUND') ||
+				message.includes('ECONNRESET');
+
 			if (res instanceof http.ServerResponse) {
-				res.writeHead(500, { 'Content-Type': 'text/plain' });
-				res.end('An error occurred while processing the proxy request.');
+				if (isTargetNotUp) {
+					// Return a 503 or 502 to indicate the upstream service is unavailable
+					console.warn(`Proxy could not reach target http://localhost:${port} - ${err.message}`);
+					res.writeHead(503, { 'Content-Type': 'text/plain' });
+					res.end(`Upstream server on port ${port} is not available. Please start it and try again.`);
+				} else {
+					console.error('Proxy error:', err);
+					res.writeHead(500, { 'Content-Type': 'text/plain' });
+					res.end('An unexpected error occurred while processing the proxy request.');
+				}
+			} else {
+				// If we have only a raw socket, just destroy it to avoid hanging.
+				console.error('Proxy socket error:', err);
+				req.socket?.destroy(err);
 			}
 		});
-
 
 		// Handle server "listening" event
 		server.once('listening', () => {

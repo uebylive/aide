@@ -3060,7 +3060,7 @@ export interface ExtHostDevtoolsShape {
 }
 
 export interface MainThreadDevtoolsShape {
-	$setLatestPayload(payload: any): void;
+	$setLatestPayload(payload: Dto<languages.Location> | null): void;
 	$setStatus(status: DevtoolsStatus): void;
 	$setIsInspecting(isInspecting: boolean): void;
 }

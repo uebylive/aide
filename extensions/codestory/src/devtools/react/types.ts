@@ -27,16 +27,19 @@ export type InspectElementError = {
 	stack?: string;
 };
 
+export type ParsedSource = {
+	symbolicated: boolean;
+	source: ParsedSourceData;
+	line: number;
+	column: number;
+};
+
 export type InspectElementParsedFullData = {
 	id: number;
 	responseID: number;
 	type: 'full-data';
-	value: InspectedElement;
-	parsedSource?: {
-		source: ParsedSourceData;
-		line: number;
-		column: number;
-	};
+	value: InspectedElement & { parsedSource?: ParsedSource };
+
 };
 
 export type ParsedSourceURLData = {

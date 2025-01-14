@@ -7554,7 +7554,7 @@ var Agent = /*#__PURE__*/function (_EventEmitter) {
     });
 
     agent_defineProperty(agent_assertThisInitialized(_this), "getBackendVersion", function () {
-      var version = "6.0.1-b163a71a52";
+      var version = "6.0.1-38aa1511db";
 
       if (version) {
         _this._bridge.send('backendVersion', version);

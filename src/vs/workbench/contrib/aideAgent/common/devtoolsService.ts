@@ -5,6 +5,7 @@
 
 import { Event } from '../../../../base/common/event.js';
 import { URI } from '../../../../base/common/uri.js';
+import { Location } from '../../../../editor/common/languages.js';
 import { createDecorator } from '../../../../platform/instantiation/common/instantiation.js';
 
 export const IDevtoolsService = createDecorator<IDevtoolsService>('IDevtoolsService');
@@ -16,7 +17,7 @@ export interface IDevtoolsService {
 	onDidTriggerInspectingHostStart: Event<void>;
 	onDidTriggerInspectingHostStop: Event<void>;
 	isInspecting: boolean;
-	latestPayload: any;
+	latestPayload: Location | null;
 	latestResource: URI | undefined;
 }
 

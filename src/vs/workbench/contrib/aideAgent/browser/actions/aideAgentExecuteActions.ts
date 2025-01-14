@@ -124,7 +124,7 @@ class ToggleInspectingHost extends Action2 {
 			category: CHAT_CATEGORY,
 			icon: Codicon.inspect,
 			keybinding: {
-				when: ContextKeyExpr.equals(CONTEXT_DEVTOOLS_STATUS.key, DevtoolsStatus.DevtoolsConnected),
+				when: ContextKeyExpr.and(ContextKeyExpr.equals(CONTEXT_CHAT_MODE.key, 'Agentic'), ContextKeyExpr.equals(CONTEXT_DEVTOOLS_STATUS.key, DevtoolsStatus.DevtoolsConnected)),
 				primary: KeyMod.CtrlCmd | KeyMod.Shift | KeyCode.KeyC,
 				weight: IsDevelopmentContext ? KeybindingWeight.WorkbenchContrib + 51 : KeybindingWeight.WorkbenchContrib
 			}
@@ -141,7 +141,7 @@ function registerToggleInspectinHost() {
 	MenuRegistry.appendMenuItem(MenuId.AideAgentInput, {
 		group: 'navigation',
 		order: 2,
-		when: ContextKeyExpr.equals(CONTEXT_DEVTOOLS_STATUS.key, DevtoolsStatus.DevtoolsConnected),
+		when: ContextKeyExpr.and(ContextKeyExpr.equals(CONTEXT_CHAT_MODE.key, 'Agentic'), ContextKeyExpr.equals(CONTEXT_DEVTOOLS_STATUS.key, DevtoolsStatus.DevtoolsConnected)),
 		command: {
 			id: ToggleInspectingHost.ID,
 			title: localize2('interactive.startInspectingHost.label', "Start inspecting with devtools"),
