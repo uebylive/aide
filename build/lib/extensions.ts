@@ -528,6 +528,7 @@ const extensionsPath = path.join(root, 'extensions');
 
 // Additional projects to run esbuild on. These typically build code for webviews
 const esbuildMediaScripts = [
+	'codestory/esbuild-preview.js',
 	'markdown-language-features/esbuild-notebook.js',
 	'markdown-language-features/esbuild-preview.js',
 	'markdown-math/esbuild.js',
@@ -608,7 +609,10 @@ async function esbuildExtensions(taskName: string, isWatch: boolean, scripts: { 
 		}
 	}
 
+	fancyLog(`Hey`);
+
 	const tasks = scripts.map(({ script, outputRoot }) => {
+
 		return new Promise<void>((resolve, reject) => {
 			const args = [script];
 			if (isWatch) {

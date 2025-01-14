@@ -3,7 +3,8 @@
 	"compilerOptions": {
 		"outDir": "./out",
 		"esModuleInterop": true,
-		"lib": ["ES2022", "DOM"]
+		"lib": ["ES2022", "DOM"],
+		"types": []
 	},
 	"include": [
 		"src/**/*",
@@ -29,6 +30,7 @@
 		"../../src/vscode-dts/vscode.proposed.sidecar.d.ts",
 		"../../src/vscode-dts/vscode.proposed.devtools.d.ts",
 		"../../src/vscode-dts/vscode.proposed.terminalSelection.d.ts",
-		"../../src/vscode-dts/vscode.proposed.tunnels.d.ts"
+		"../../src/vscode-dts/vscode.proposed.tunnels.d.ts",
+		"../../src/vscode-dts/vscode.proposed.externalUriOpener.d.ts",
 	]
 }

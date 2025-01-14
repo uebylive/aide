@@ -4,10 +4,6 @@ node_modules
 .vscode-test/
 *.vsix
 
-# Ignore built files
-media/*.js
-media/codicon.css
-media/codicon.ttf
 
 # MacOS
 ## General

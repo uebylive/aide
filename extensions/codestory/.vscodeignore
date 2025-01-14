@@ -10,3 +10,4 @@ yarn.lock
 build/**
 schemas/devContainer.codespaces.schema.json
 schemas/devContainer.vscode.schema.json
+esbuild-preview.js
