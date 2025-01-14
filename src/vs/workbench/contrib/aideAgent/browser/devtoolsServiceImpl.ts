@@ -192,6 +192,7 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 
 	private async getValidReference(payload: any): Promise<Location | null> {
 		try {
+			console.log(payload);
 			if ('parsedSource' in payload.value) {
 				const { source, column, line } = payload.value.parsedSource as unknown as ParsedSource;
 				let reference: URI | null = null;
