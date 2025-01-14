@@ -8,8 +8,6 @@ const path = require('path');
 const srcDir = path.join(__dirname, 'preview-src');
 const outDir = path.join(__dirname, 'media');
 
-console.log('SIMPLE BROWSER esbuild preview');
-
 require('../esbuild-webview-common').run({
 	entryPoints: {
 		'index': path.join(srcDir, 'index.ts'),
