@@ -8,14 +8,12 @@ import { Disposable } from '../../../../base/common/lifecycle.js';
 import { IContextKey, IContextKeyService } from '../../../../platform/contextkey/common/contextkey.js';
 import { ChatViewId } from './aideAgent.js';
 
-import { DevtoolsStatus, IDevtoolsService, ParsedSource } from '../common/devtoolsService.js';
+import { DevtoolsStatus, IDevtoolsService } from '../common/devtoolsService.js';
 import { CONTEXT_DEVTOOLS_STATUS, CONTEXT_IS_DEVTOOLS_FEATURE_ENABLED, CONTEXT_IS_INSPECTING_HOST } from '../common/devtoolsServiceContextKeys.js';
 import { IViewsService } from '../../../services/views/common/viewsService.js';
 import { ChatViewPane } from './aideAgentViewPane.js';
 import { Location } from '../../../../editor/common/languages.js';
 import { IFileService } from '../../../../platform/files/common/files.js';
-import { IWorkspaceContextService } from '../../../../platform/workspace/common/workspace.js';
-import { joinPath } from '../../../../base/common/resources.js';
 import { URI } from '../../../../base/common/uri.js';
 import { IEnvironmentService } from '../../../../platform/environment/common/environment.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
@@ -54,12 +52,12 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 		this.notifyStatusChange();
 	}
 
-	private _latestPayload: any;
+	private _latestPayload: Location | null = null;
 	get latestPayload() {
 		return this._latestPayload;
 	}
 
-	set latestPayload(payload: any) {
+	set latestPayload(payload: Location | null) {
 		this._latestPayload = payload;
 	}
 
@@ -90,7 +88,6 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 		@IContextKeyService contextKeyService: IContextKeyService,
 		@IViewsService private readonly viewsService: IViewsService,
 		@IFileService private readonly fileService: IFileService,
-		@IWorkspaceContextService private readonly workspaceContextService: IWorkspaceContextService,
 		@IEnvironmentService private readonly environmentService: IEnvironmentService,
 		@IConfigurationService private readonly configurationService: IConfigurationService,
 		@INotificationService private readonly notificationService: INotificationService,
@@ -131,7 +128,7 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 		this._onDidChangeStatus.fire(this.status);
 	}
 
-	private async addReference(payload: any) {
+	private async addReference(payload: Location | null) {
 		const aideView = this.viewsService.getViewWithId<ChatViewPane>(ChatViewId);
 		if (!aideView) {
 			return;
@@ -144,11 +141,16 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 
 		const input = aideView.widget.inputEditor;
 		const inputModel = input.getModel();
-		const reference = await this.getValidReference(payload);
 
-		if (reference && inputModel) {
-			const file = await this.fileService.stat(reference.uri);
-			const displayName = `@${file.name}:${reference.range.startLineNumber}-${reference.range.endLineNumber}`;
+		if (!inputModel) {
+			return;
+		}
+
+		if (payload === null) {
+			this.notifyProjectNotSupported();
+		} else {
+			const file = await this.fileService.stat(payload.uri);
+			const displayName = `@${file.name}:${payload.range.startLineNumber}-${payload.range.endLineNumber}`;
 			const inputModelFullRange = inputModel.getFullModelRange();
 			// By default, append to the end of the model
 			let replaceRange = {
@@ -182,49 +184,11 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 						startColumn: replaceRange.startColumn + (isLeading ? 0 : 1),
 						endColumn: replaceRange.endColumn + displayName.length + (isLeading ? 0 : 1),
 					},
-					data: { uri: reference.uri, range: reference.range }
+					data: { uri: payload.uri, range: payload.range }
 				};
 				dynamicVariablesModel.addReference(variable);
 				input.focus();
 			}
-		}
-	}
-
-	private async getValidReference(payload: any): Promise<Location | null> {
-		try {
-			console.log(payload);
-			if ('parsedSource' in payload.value) {
-				const { source, column, line } = payload.value.parsedSource as unknown as ParsedSource;
-				let reference: URI | null = null;
-				if (source.type === 'URL') {
-					reference = await this.resolveRelativeReference(source.relativePath);
-				} else if (source.type === 'relative') {
-					reference = await this.resolveRelativeReference(source.path);
-				} else if (source.type === 'absolute') {
-					reference = URI.parse(source.path);
-				}
-
-				if (!reference) {
-					this.notifyProjectNotSupported();
-					console.error(`Cannot find file on system: ${JSON.stringify(payload)}`);
-					return null;
-				}
-				return {
-					uri: reference,
-					range: {
-						startColumn: column,
-						endColumn: 9999999,
-						startLineNumber: line,
-						endLineNumber: line,
-					}
-				};
-			} else {
-				this.notifyProjectNotSupported();
-				return null;
-			}
-		} catch (err) {
-			this.notifyProjectNotSupported();
-			return null;
 		}
 	}
 
@@ -244,21 +208,6 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 				}
 			]
 		);
-	}
-
-	private async resolveRelativeReference(relativePath: string): Promise<URI | null> {
-		const workspace = this.workspaceContextService.getWorkspace();
-		if (!workspace) {
-			throw Error('A workspace needs to be open in order to parse relative references.');
-		}
-		for (const workspaceFolder of workspace.folders) {
-			const absolutePath = joinPath(workspaceFolder.uri, relativePath);
-			const doesFileExist = await this.fileService.exists(absolutePath);
-			if (doesFileExist) {
-				return absolutePath;
-			}
-		}
-		return null;
 	}
 
 	startInspectingHost(): void {

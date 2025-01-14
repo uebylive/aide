@@ -7,13 +7,15 @@ import * as vscode from 'vscode';
 // @ts-expect-error external
 import Devtools from './dist/standalone.js';
 import { proxy } from './proxy';
-import { DevtoolsStatus, InspectedElementPayload } from './types';
+import { DevtoolsStatus, InspectedElementPayload, InspectElementParsedFullData } from './types';
+import { findTsxNodeAtLine } from '../../languages/tsxCodeSymbols.js';
+import { join } from 'node:path';
 
 export class ReactDevtoolsManager {
 	private _onStatusChange = new vscode.EventEmitter<DevtoolsStatus>();
 	onStatusChange = this._onStatusChange.event;
 
-	private _onInspectedElementChange = new vscode.EventEmitter<InspectedElementPayload>();
+	private _onInspectedElementChange = new vscode.EventEmitter<vscode.Location | null>();
 	onInspectedElementChange = this._onInspectedElementChange.event;
 
 	private _onInspectHostChange = new vscode.EventEmitter<boolean>();
@@ -66,12 +68,80 @@ export class ReactDevtoolsManager {
 		}
 	}
 
-	private updateInspectedElement(payload: InspectedElementPayload) {
+	private async updateInspectedElement(payload: InspectedElementPayload) {
 		this._insepectedElement = payload;
-		if (payload.type !== 'no-change') {
-			this._onInspectedElementChange.fire(payload);
+		if (payload.type === 'full-data') {
+			const reference = await this.getValidReference(payload);
+			this._onInspectedElementChange.fire(reference);
 		}
 	}
+
+	private async getValidReference(payload: InspectElementParsedFullData): Promise<vscode.Location | null> {
+		try {
+			const { parsedSource } = payload.value;
+			if (parsedSource) {
+				const { source, column, line } = parsedSource;
+				let reference: vscode.Uri | null = null;
+				if (source.type === 'URL') {
+					reference = await this.resolveRelativeReference(source.relativePath);
+				} else if (source.type === 'relative') {
+					reference = await this.resolveRelativeReference(source.path);
+				} else if (source.type === 'absolute') {
+					reference = vscode.Uri.parse(source.path);
+				}
+
+				if (!reference) {
+					console.error(`Cannot find file on system: ${JSON.stringify(payload)}`);
+					return null;
+				}
+
+				const doc = await vscode.workspace.openTextDocument(reference);
+
+				const fullRange = doc.validateRange(
+					new vscode.Range(0, 0, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER)
+				);
+
+				let range = fullRange;
+
+				if (parsedSource.symbolicated) {
+					const fileArrayBuffer = await vscode.workspace.fs.readFile(reference);
+					const fileString = fileArrayBuffer.toString().replace(/\\n/g, '\n');
+					const fullRange = await findTsxNodeAtLine(fileString, line);
+					const endLine = fullRange ? fullRange.endLine : line;
+
+					range = new vscode.Range(
+						new vscode.Position(line, column),
+						new vscode.Position(endLine, 9999999),
+					);
+				}
+				return new vscode.Location(
+					reference,
+					range
+				);
+			} else {
+				return null;
+			}
+		} catch (err) {
+			return null;
+		}
+	}
+
+	private async resolveRelativeReference(relativePath: string): Promise<vscode.Uri | null> {
+		if (!vscode.workspace.workspaceFolders) {
+			throw Error('A workspace needs to be open in order to parse relative references.');
+		}
+		for (const workspaceFolder of vscode.workspace.workspaceFolders) {
+			const absolutePath = join(workspaceFolder.uri.fsPath, relativePath);
+			const uri = vscode.Uri.file(absolutePath);
+			const doesFileExist = await vscode.workspace.fs.stat(uri);
+			if (doesFileExist) {
+				return uri;
+			}
+		}
+		return null;
+	}
+
+
 
 	async proxy(port: number) {
 		if (this._proxyListenPort) {

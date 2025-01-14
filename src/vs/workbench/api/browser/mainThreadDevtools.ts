@@ -4,9 +4,12 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { Disposable } from '../../../base/common/lifecycle.js';
+import { revive } from '../../../base/common/marshalling.js';
+import { Location } from '../../../editor/common/languages.js';
 import { IDevtoolsService, DevtoolsStatus } from '../../contrib/aideAgent/common/devtoolsService.js';
 
 import { extHostNamedCustomer, IExtHostContext } from '../../services/extensions/common/extHostCustomers.js';
+import { Dto } from '../../services/extensions/common/proxyIdentifier.js';
 import { ExtHostContext, ExtHostDevtoolsShape, MainContext, MainThreadDevtoolsShape } from '../common/extHost.protocol.js';
 
 @extHostNamedCustomer(MainContext.MainThreadDevtools)
@@ -29,8 +32,9 @@ export class MainThreadDevtools extends Disposable implements MainThreadDevtools
 		}));
 	}
 
-	$setLatestPayload(payload: any): void {
-		this._devtoolsService.latestPayload = payload;
+	$setLatestPayload(payload: Dto<Location> | null): void {
+		const location = revive(payload) as Location;
+		this._devtoolsService.latestPayload = location;
 	}
 
 	$setStatus(status: DevtoolsStatus) {
