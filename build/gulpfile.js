@@ -13,7 +13,7 @@ const util = require('./lib/util');
 const task = require('./lib/task');
 const { transpileClientSWC, transpileTask, compileTask, watchTask, compileApiProposalNamesTask, watchApiProposalNamesTask } = require('./lib/compilation');
 const { monacoTypecheckTask/* , monacoTypecheckWatchTask */ } = require('./gulpfile.editor');
-const { compileExtensionsTask, watchExtensionsTask, compileExtensionMediaTask } = require('./gulpfile.extensions');
+const { compileExtensionsTask, watchExtensionsTask, watchExtensionMedia, compileExtensionMediaTask } = require('./gulpfile.extensions');
 
 // API proposal names
 gulp.task(compileApiProposalNamesTask);
@@ -38,7 +38,7 @@ gulp.task(watchClientTask);
 const _compileTask = task.define('compile', task.parallel(monacoTypecheckTask, compileClientTask, compileExtensionsTask, compileExtensionMediaTask));
 gulp.task(_compileTask);
 
-gulp.task(task.define('watch', task.parallel(/* monacoTypecheckWatchTask, */ watchClientTask, watchExtensionsTask)));
+gulp.task(task.define('watch', task.parallel(/* monacoTypecheckWatchTask, */ watchClientTask, watchExtensionsTask, watchExtensionMedia)));
 
 // Default
 gulp.task('default', _compileTask);

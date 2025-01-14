@@ -134,6 +134,7 @@ module.exports.indentationFilter = [
 	'!extensions/ipynb/notebook-out/**',
 	'!extensions/notebook-renderers/renderer-out/*.js',
 	'!extensions/simple-browser/media/*.js',
+	'!extensions/codestory/media/*.js',
 ];
 
 module.exports.copyrightFilter = [
@@ -170,6 +171,7 @@ module.exports.copyrightFilter = [
 	'!extensions/markdown-math/notebook-out/**',
 	'!extensions/ipynb/notebook-out/**',
 	'!extensions/simple-browser/media/codicon.css',
+	'!extensions/codestory/media/codicon.css',
 	'!extensions/typescript-language-features/node-maintainer/**',
 	'!extensions/html-language-features/server/src/modes/typescript/*',
 	'!extensions/*/server/bin/*',

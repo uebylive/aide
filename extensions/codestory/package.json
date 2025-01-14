@@ -118,6 +118,11 @@
           "default": false,
           "description": "If the sidecar-binary is being run on its own, we can set this to true allowing for rapid proto-typing"
         },
+        "aide.enableInspectWithDevtools": {
+          "type": "boolean",
+          "default": false,
+          "description": "Opt-in for this experimental feature that allows you to point and click on your React component to inspect them"
+        },
         "aide.inlineCompletion.triggerMode": {
           "type": "string",
           "default": "automatic",
@@ -146,6 +151,7 @@
     "watch": "npm run build-preview && gulp watch-extension:codestory",
     "vscode:prepublish": "npm run compile && npm run build-preview",
     "build-preview": "node ./esbuild-preview",
+    "build-ext": "node ../../node_modules/gulp/bin/gulp.js --gulpfile ../../build/gulpfile.extensions.js compile-extension:codestory ./tsconfig.json",
     "compile-web": "npx webpack-cli --config extension-browser.webpack.config --mode none",
     "watch-web": "npx webpack-cli --config extension-browser.webpack.config --mode none --watch --info-verbosity verbose"
   },
