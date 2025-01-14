@@ -222,6 +222,8 @@ class TriggerImageContextProvider extends Action2 {
 					const imageContext: IChatRequestVariableEntry = {
 						id: 'vscode.image',
 						name: file.name,
+						isImage: true,
+						isDynamic: true,
 						value: {
 							mimeType: file.type,
 							data: async () => data

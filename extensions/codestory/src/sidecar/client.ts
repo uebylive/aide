@@ -1673,6 +1673,10 @@ export class SideCarClient {
 	}
 }
 
+export function isAideAgentImageAttachmentValue(obj: any): obj is vscode.AideAgentImageAttachmentValue {
+	return 'mimeType' in obj && 'data' in obj;
+}
+
 /**
  * This is a copy of the function below we are using this to use the chat window as a plan generation cli
  */
@@ -1766,8 +1770,8 @@ export async function convertVSCodeVariableToSidecarHackingForPlan(
 				content: attachedFile.getText(range),
 				language: attachedFile.languageId,
 			});
-		} else if (variable.id === 'vscode.image' || variable.name === 'Pasted Image') {
-			const value = variable.value as { mimeType: string; data: () => Promise<Uint8Array> };
+		} else if (isAideAgentImageAttachmentValue(variable.value)) {
+			const value = variable.value;
 			const imageData = await value.data();
 			// Convert Uint8Array to base64
 			const base64Data = Buffer.from(imageData).toString('base64');
@@ -1927,8 +1931,8 @@ async function convertVSCodeVariableToSidecar(
 				content: attachedFile.getText(range),
 				language: attachedFile.languageId,
 			});
-		} else if (variable.id === 'vscode.image' || variable.name === 'Pasted Image') {
-			const value = variable.value as { mimeType: string; data: () => Promise<Uint8Array> };
+		} else if (isAideAgentImageAttachmentValue(variable.value)) {
+			const value = variable.value;
 			const imageData = await value.data();
 			// Convert Uint8Array to base64
 			const base64Data = Buffer.from(imageData).toString('base64');
