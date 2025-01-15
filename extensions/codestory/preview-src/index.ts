@@ -20,8 +20,6 @@ function getSettings() {
 
 const settings = getSettings();
 
-console.log(settings);
-
 const browserIframe = document.querySelector('iframe#browser') as HTMLIFrameElement;
 
 const rootNodeId = 'root';
@@ -109,14 +107,16 @@ onceDocumentLoaded(() => {
 		}
 
 		const payload = { url: rawUrl, originalUrl: settings.originalUrl };
-		if (isIntitialization) {
-			vscode.setState(payload);
-		} else {
+
+		if (!isIntitialization) {
+			// We are not initializing, send a message to change the URL and kick off
+			// related lifecycle events
 			vscode.postMessage({
 				type: 'updateUrl',
 				data: payload
 			});
 		}
+		vscode.setState(payload);
 	}
 });
 

@@ -37,6 +37,12 @@ export class ReactDevtoolsManager {
 		return this._proxyListenPort;
 	}
 
+
+	private _disconnectedPromise: DeferredPromise | null = null;
+	get disconnectedPromise() {
+		return this._disconnectedPromise;
+	}
+
 	private _cleanupProxy: (() => void) | undefined;
 	private _Devtools: Devtools;
 
@@ -51,6 +57,9 @@ export class ReactDevtoolsManager {
 
 	private updateStatus(_message: string, status: DevtoolsStatus) {
 		this._status = status;
+		if (status === DevtoolsStatus.ServerConnected) {
+			this._disconnectedPromise = new DeferredPromise();
+		}
 		this._onStatusChange.fire(status);
 	}
 
@@ -59,6 +68,10 @@ export class ReactDevtoolsManager {
 	}
 
 	private onDidDisconnect() {
+		if (!this._disconnectedPromise) {
+			this._disconnectedPromise = new DeferredPromise();
+		}
+		this._disconnectedPromise.resolve();
 		this._cleanupProxy?.();
 		this._cleanupProxy = undefined;
 		this._proxyListenPort = undefined;
@@ -166,3 +179,18 @@ export class ReactDevtoolsManager {
 		this._Devtools.stopInspectingHost();
 	}
 }
+
+
+class DeferredPromise {
+	promise: Promise<any>;
+	resolve!: (...args: any) => void;
+	reject!: (reason: any) => void;
+
+	constructor() {
+		this.promise = new Promise((resolve, reject) => {
+			this.resolve = resolve;
+			this.reject = reject;
+		});
+	}
+}
+

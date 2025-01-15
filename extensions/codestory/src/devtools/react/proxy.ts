@@ -155,7 +155,7 @@ export function proxy(port: number, reactDevtoolsPort: number): Promise<ProxyRes
 		);
 
 		// Handle proxy errors
-		proxy.on('error', (err: any, req, res) => {
+		proxy.on('error', (err: NodeJS.ErrnoException, req, res) => {
 			// Distinguish "target isn't up" from deeper proxy/server errors,
 			// so we don't permanently break the local proxy server.
 			const message = String(err.code || '');

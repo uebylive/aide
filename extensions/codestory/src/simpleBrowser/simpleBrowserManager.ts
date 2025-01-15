@@ -6,7 +6,10 @@
 import * as vscode from 'vscode';
 import { ShowOptions, SimpleBrowserView, UrlChangePayload } from './simpleBrowserView';
 
-
+type WebViewState = {
+	url: string;
+	originalUrl: string;
+};
 
 export class SimpleBrowserManager {
 
@@ -41,9 +44,8 @@ export class SimpleBrowserManager {
 		});
 	}
 
-	public restore(panel: vscode.WebviewPanel, state: any): void {
-		const url = state?.url ?? '';
-		const view = SimpleBrowserView.restore(this.extensionUri, url, panel, state.originalUrl);
+	public restore(panel: vscode.WebviewPanel, state: WebViewState): void {
+		const view = SimpleBrowserView.restore(this.extensionUri, state.url, panel, state.originalUrl);
 		this.registerWebviewListeners(view);
 		this._activeView ??= view;
 	}
