@@ -15,7 +15,7 @@ import { KeybindingWeight } from '../../../../../platform/keybinding/common/keyb
 import { IMarker } from '../../../../../platform/markers/common/markers.js';
 import { IViewsService } from '../../../../services/views/common/viewsService.js';
 import { ChatAgentLocation } from '../../common/aideAgentAgents.js';
-import { CONTEXT_CHAT_ENABLED, CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_MODE, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_INPUT } from '../../common/aideAgentContextKeys.js';
+import { CONTEXT_CHAT_ENABLED, CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_MODE, CONTEXT_CHAT_REQUEST_IN_PROGRESS } from '../../common/aideAgentContextKeys.js';
 import { AgentMode, AgentScope, IChatRequestVariableEntry } from '../../common/aideAgentModel.js';
 import { IAideAgentService } from '../../common/aideAgentService.js';
 import { DevtoolsStatus, IDevtoolsService } from '../../common/devtoolsService.js';
@@ -49,7 +49,7 @@ export class ExecuteChatAction extends Action2 {
 			icon: Codicon.send,
 			precondition: ContextKeyExpr.and(CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_REQUEST_IN_PROGRESS.negate()),
 			keybinding: {
-				when: CONTEXT_IN_CHAT_INPUT,
+				when: CONTEXT_CHAT_INPUT_HAS_FOCUS,
 				primary: KeyCode.Enter,
 				weight: KeybindingWeight.EditorContrib
 			},
@@ -92,7 +92,7 @@ class TogglePlanningAction extends Action2 {
 			category: CHAT_CATEGORY,
 			icon: Codicon.compass,
 			keybinding: {
-				when: CONTEXT_IN_CHAT_INPUT,
+				when: CONTEXT_CHAT_INPUT_HAS_FOCUS,
 				primary: KeyMod.CtrlCmd | KeyCode.KeyR,
 				weight: IsDevelopmentContext ? KeybindingWeight.WorkbenchContrib + 51 : KeybindingWeight.WorkbenchContrib
 			}
@@ -172,9 +172,9 @@ export class ToggleEditModeAction extends Action2 {
 			title: localize2('interactive.toggleEditMode.label', "Toggle edit mode"),
 			f1: false,
 			category: CHAT_CATEGORY,
-			precondition: ContextKeyExpr.and(CONTEXT_IN_CHAT_INPUT, CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET.negate()),
+			precondition: ContextKeyExpr.and(CONTEXT_CHAT_INPUT_HAS_FOCUS, CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET.negate()),
 			keybinding: {
-				when: CONTEXT_IN_CHAT_INPUT,
+				when: CONTEXT_CHAT_INPUT_HAS_FOCUS,
 				primary: KeyMod.CtrlCmd | KeyCode.Period,
 				weight: KeybindingWeight.WorkbenchContrib
 			}
@@ -219,7 +219,7 @@ export class CancelAction extends Action2 {
 				group: 'navigation',
 			},
 			keybinding: {
-				when: CONTEXT_IN_CHAT_INPUT,
+				when: CONTEXT_CHAT_INPUT_HAS_FOCUS,
 				weight: KeybindingWeight.WorkbenchContrib,
 				primary: KeyMod.CtrlCmd | KeyCode.Escape,
 				win: { primary: KeyMod.Alt | KeyCode.Backspace },
