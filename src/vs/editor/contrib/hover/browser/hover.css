@@ -72,3 +72,11 @@
 .monaco-editor .monaco-hover code {
 	background-color: var(--vscode-textCodeBlock-background);
 }
+
+.monaco-editor .monaco-hover .hover-row .fix-with-aide {
+	padding: 8px;
+}
+
+.monaco-editor .monaco-hover .hover-row .fix-with-aide .monaco-button {
+	padding: 4px 8px 4px 4px;
+}
