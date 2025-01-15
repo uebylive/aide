@@ -770,7 +770,7 @@ export class ChatInputPart extends Disposable implements IHistoryNavigationWidge
 
 		const attachmentInitPromises: Promise<void>[] = [];
 		for (const [index, attachment] of attachments) {
-			const widget = dom.append(container, $('.chat-attached-context-attachment.show-file-icons'));
+			const widget = dom.append(container, $('.aideagent-attached-context-attachment.show-file-icons'));
 			const label = this._contextResourceLabels.create(widget, { supportIcons: true, hoverDelegate, hoverTargetOverride: widget });
 
 			let ariaLabel: string | undefined;

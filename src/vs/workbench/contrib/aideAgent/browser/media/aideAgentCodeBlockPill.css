@@ -20,7 +20,7 @@
 	text-wrap: wrap;
 }
 
-.interactive-item-container .value .rendered-markdown .aideagent-codeblock-pill-widget {
+.aideagent-item-container .value .rendered-markdown .aideagent-codeblock-pill-widget {
 	color: inherit;
 }
 
