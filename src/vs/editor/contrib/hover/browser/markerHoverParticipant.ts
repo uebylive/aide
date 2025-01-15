@@ -26,6 +26,10 @@ import { ITextEditorOptions } from '../../../../platform/editor/common/editor.js
 import { IMarker, IMarkerData, MarkerSeverity } from '../../../../platform/markers/common/markers.js';
 import { IOpenerService } from '../../../../platform/opener/common/opener.js';
 import { Progress } from '../../../../platform/progress/common/progress.js';
+import { defaultButtonStyles } from '../../../../platform/theme/browser/defaultStyles.js';
+import { Button, IButtonOptions } from '../../../../base/browser/ui/button/button.js';
+import { Codicon } from '../../../../base/common/codicons.js';
+import { ICommandService } from '../../../../platform/commands/common/commands.js';
 
 const $ = dom.$;
 
@@ -63,6 +67,7 @@ export class MarkerHoverParticipant implements IEditorHoverParticipant<MarkerHov
 		@IMarkerDecorationsService private readonly _markerDecorationsService: IMarkerDecorationsService,
 		@IOpenerService private readonly _openerService: IOpenerService,
 		@ILanguageFeaturesService private readonly _languageFeaturesService: ILanguageFeaturesService,
+		@ICommandService private readonly _commandService: ICommandService,
 	) { }
 
 	public computeSync(anchor: HoverAnchor, lineDecorations: IModelDecoration[]): MarkerHover[] {
@@ -102,7 +107,15 @@ export class MarkerHoverParticipant implements IEditorHoverParticipant<MarkerHov
 			renderedHoverParts.push(renderedMarkerHover);
 		});
 		const markerHoverForStatusbar = hoverParts.length === 1 ? hoverParts[0] : hoverParts.sort((a, b) => MarkerSeverity.compare(a.marker.severity, b.marker.severity))[0];
-		this.renderMarkerStatusbar(context, markerHoverForStatusbar, disposables);
+
+		// Entry for 'Fix with Aide'
+		if (markerHoverForStatusbar.marker.severity === MarkerSeverity.Error || markerHoverForStatusbar.marker.severity === MarkerSeverity.Warning || markerHoverForStatusbar.marker.severity === MarkerSeverity.Info) {
+			const fixWithAideMarkerHover = this._renderFixWithAide(markerHoverForStatusbar);
+			context.fragment.appendChild(fixWithAideMarkerHover.hoverElement);
+			renderedHoverParts.push(fixWithAideMarkerHover);
+			this.renderMarkerStatusbar(context, markerHoverForStatusbar, disposables);
+		}
+
 		return new RenderedHoverParts(renderedHoverParts);
 	}
 
@@ -175,6 +188,30 @@ export class MarkerHoverParticipant implements IEditorHoverParticipant<MarkerHov
 				this._editor.applyFontInfo(messageElement);
 			}
 		}
+
+		const renderedHoverPart: IRenderedHoverPart<MarkerHover> = {
+			hoverPart: markerHover,
+			hoverElement,
+			dispose: () => disposables.dispose()
+		};
+		return renderedHoverPart;
+	}
+
+	private _renderFixWithAide(markerHover: MarkerHover): IRenderedHoverPart<MarkerHover> {
+		const disposables: DisposableStore = new DisposableStore();
+
+		const hoverElement = $('div.hover-row');
+		const markerElement = dom.append(hoverElement, $('div.marker.hover-contents.fix-with-aide'));
+		const title = nls.localize('aideAgent.fix', "Explain and fix with Aide");
+		const opts: IButtonOptions = { ...defaultButtonStyles, title, supportIcons: true };
+		const fixWithAideButton = disposables.add(new Button(markerElement, opts));
+		fixWithAideButton.label = `$(${Codicon.lightbulbAutofix.id}) ${title}`;
+		disposables.add(fixWithAideButton.onDidClick(() => {
+			const executionContext = {
+				inputValue: 'Explain what this problem is and help me fix it'
+			};
+			this._commandService.executeCommand('workbench.action.aideAgent.executeChat', executionContext);
+		}));
 
 		const renderedHoverPart: IRenderedHoverPart<MarkerHover> = {
 			hoverPart: markerHover,
