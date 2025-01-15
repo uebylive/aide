@@ -207,10 +207,7 @@ export class MarkerHoverParticipant implements IEditorHoverParticipant<MarkerHov
 		const fixWithAideButton = disposables.add(new Button(markerElement, opts));
 		fixWithAideButton.label = `$(${Codicon.lightbulbAutofix.id}) ${title}`;
 		disposables.add(fixWithAideButton.onDidClick(() => {
-			const executionContext = {
-				inputValue: 'Explain what this problem is and help me fix it'
-			};
-			this._commandService.executeCommand('workbench.action.aideAgent.executeChat', executionContext);
+			this._commandService.executeCommand('workbench.action.aideAgent.quickfix', { marker: markerHover.marker });
 		}));
 
 		const renderedHoverPart: IRenderedHoverPart<MarkerHover> = {

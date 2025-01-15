@@ -5,18 +5,22 @@
 
 import { Codicon } from '../../../../../base/common/codicons.js';
 import { KeyCode, KeyMod } from '../../../../../base/common/keyCodes.js';
+import { basename } from '../../../../../base/common/resources.js';
 import { ServicesAccessor } from '../../../../../editor/browser/editorExtensions.js';
 import { localize2 } from '../../../../../nls.js';
 import { Action2, MenuId, MenuRegistry, registerAction2 } from '../../../../../platform/actions/common/actions.js';
 import { ContextKeyExpr } from '../../../../../platform/contextkey/common/contextkey.js';
 import { IsDevelopmentContext } from '../../../../../platform/contextkey/common/contextkeys.js';
 import { KeybindingWeight } from '../../../../../platform/keybinding/common/keybindingsRegistry.js';
-import { CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_MODE, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_INPUT } from '../../common/aideAgentContextKeys.js';
-import { AgentMode } from '../../common/aideAgentModel.js';
+import { IMarker } from '../../../../../platform/markers/common/markers.js';
+import { IViewsService } from '../../../../services/views/common/viewsService.js';
+import { ChatAgentLocation } from '../../common/aideAgentAgents.js';
+import { CONTEXT_CHAT_ENABLED, CONTEXT_CHAT_IN_PASSTHROUGH_WIDGET, CONTEXT_CHAT_INPUT_HAS_TEXT, CONTEXT_CHAT_MODE, CONTEXT_CHAT_REQUEST_IN_PROGRESS, CONTEXT_IN_CHAT_INPUT } from '../../common/aideAgentContextKeys.js';
+import { AgentMode, AgentScope, IChatRequestVariableEntry } from '../../common/aideAgentModel.js';
 import { IAideAgentService } from '../../common/aideAgentService.js';
 import { DevtoolsStatus, IDevtoolsService } from '../../common/devtoolsService.js';
 import { CONTEXT_DEVTOOLS_STATUS, CONTEXT_IS_INSPECTING_HOST } from '../../common/devtoolsServiceContextKeys.js';
-import { IAideAgentWidgetService, IChatWidget } from '../aideAgent.js';
+import { IAideAgentWidgetService, IChatWidget, showChatView } from '../aideAgent.js';
 import { CHAT_CATEGORY } from './aideAgentActions.js';
 
 export interface IVoiceChatExecuteActionContext {
@@ -27,6 +31,10 @@ export interface IChatExecuteActionContext {
 	widget?: IChatWidget;
 	inputValue?: string;
 	voice?: IVoiceChatExecuteActionContext;
+}
+
+export interface IChatQuickFixActionContext {
+	marker: IMarker;
 }
 
 export class ExecuteChatAction extends Action2 {
@@ -235,12 +243,67 @@ export class CancelAction extends Action2 {
 	}
 }
 
+export class AideQuickFixAction extends Action2 {
+	static readonly ID = 'workbench.action.aideAgent.quickfix';
+
+	constructor() {
+		super({
+			id: AideQuickFixAction.ID,
+			title: localize2('interactive.executeQuickfix.label', "Quick fix with assistant"),
+			f1: false,
+			category: CHAT_CATEGORY,
+			icon: Codicon.send,
+			precondition: CONTEXT_CHAT_ENABLED,
+		});
+	}
+
+	async run(accessor: ServicesAccessor, ...args: any[]) {
+		const chatService = accessor.get(IAideAgentService);
+		const viewsService = accessor.get(IViewsService);
+
+		const context: IChatQuickFixActionContext | undefined = args[0];
+		const marker = context?.marker;
+		if (!marker) {
+			return;
+		}
+
+		const widget = await showChatView(viewsService);
+		const vm = widget?.viewModel;
+		if (!widget || !vm) {
+			return;
+		}
+
+		const { resource, message, startLineNumber, startColumn, endLineNumber, endColumn } = marker;
+		const ctx: IChatRequestVariableEntry = {
+			id: 'vscode.code',
+			name: basename(resource),
+			value: {
+				uri: resource,
+				range: { startLineNumber, startColumn, endLineNumber, endColumn }
+			}
+		};
+
+		await chatService.sendRequest(
+			vm.sessionId,
+			`Explain what this problem is and help me fix it: ${message}`,
+			{
+				agentMode: AgentMode.Edit,
+				agentScope: AgentScope.Selection,
+				userSelectedModelId: widget.input.currentLanguageModel,
+				location: ChatAgentLocation.Panel,
+				attachedContext: [ctx]
+			}
+		);
+	}
+}
+
 export function registerChatExecuteActions() {
 	registerAction2(ExecuteChatAction);
 	registerAction2(CancelAction);
 	registerAction2(TogglePlanningAction);
 	registerAction2(ToggleEditModeAction);
 	registerAction2(ToggleInspectingHost);
+	registerAction2(AideQuickFixAction);
 	registerPlanningToggleMenu();
 	registerToggleInspectinHost();
 }
