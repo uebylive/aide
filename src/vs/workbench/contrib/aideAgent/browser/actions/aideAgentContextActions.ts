@@ -23,6 +23,7 @@ import { ChatAgentLocation } from '../../common/aideAgentAgents.js';
 import { IChatRequestVariableEntry } from '../../common/aideAgentModel.js';
 import { IAideAgentVariablesService } from '../../common/aideAgentVariables.js';
 import { IAideAgentWidgetService, IChatWidget } from '../aideAgent.js';
+import { imageToHash } from '../aideAgentPasteProviders.js';
 import { CHAT_CATEGORY } from './aideAgentActions.js';
 
 export function registerChatContextActions() {
@@ -217,17 +218,17 @@ class TriggerImageContextProvider extends Action2 {
 					// Read file as ArrayBuffer
 					const arrayBuffer = await file.arrayBuffer();
 					const data = new Uint8Array(arrayBuffer);
+					const imageHash = await imageToHash(data);
 
 					// Create image context
 					const imageContext: IChatRequestVariableEntry = {
-						id: 'vscode.image',
+						value: data,
+						id: imageHash,
 						name: file.name,
 						isImage: true,
+						icon: Codicon.fileMedia,
 						isDynamic: true,
-						value: {
-							mimeType: file.type,
-							data: async () => data
-						}
+						mimeType: file.type
 					};
 					widget.input.attachmentModel.addContext(imageContext);
 				}
