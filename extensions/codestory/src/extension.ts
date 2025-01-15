@@ -338,19 +338,22 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 	}
 
-	async function onUrlChange(payload: { originalUrl: string; url: string }) {
+	const simpleBrowserManager = new SimpleBrowserManager(context.extensionUri);
+
+	context.subscriptions.push(simpleBrowserManager.onUrlChange(async ({ originalUrl, url }) => {
 		// avoid race condition on disconnect callback
 		await Promise.resolve(reactDevtoolsManager.disconnectedPromise?.promise);
-		const parsedOriginal = new URL(payload.originalUrl);
-		const parsed = new URL(payload.url);
+		const parsedOriginal = new URL(originalUrl || url);
+		const parsed = new URL(url);
 		parsedOriginal.pathname = parsed.pathname;
 		parsedOriginal.search = parsed.search;
 		parsedOriginal.hash = parsed.hash;
 		openUrl(parsedOriginal.href);
-	}
+	}));
 
-	const simpleBrowserManager = new SimpleBrowserManager(context.extensionUri, onUrlChange);
 	context.subscriptions.push(simpleBrowserManager);
+
+
 	// Open simple browser command
 	context.subscriptions.push(vscode.commands.registerCommand(showBrowserCommand, async (providedUrl?: string) => {
 

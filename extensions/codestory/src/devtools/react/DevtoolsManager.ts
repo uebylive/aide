@@ -158,7 +158,7 @@ export class ReactDevtoolsManager {
 
 	async proxy(port: number) {
 		if (this._proxyListenPort) {
-			return this._proxyListenPort;
+			this.onDidDisconnect();
 		}
 		if (this.status !== 'server-connected') {
 			throw new Error('Devtools server is not connected, cannot initialize proxy');
