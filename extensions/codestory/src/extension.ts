@@ -324,7 +324,6 @@ export async function activate(context: vscode.ExtensionContext) {
 				const proxyedPort = await reactDevtoolsManager.proxy(Number(parsedUrl.port));
 				const proxyedUrl = new URL(parsedUrl);
 				proxyedUrl.port = proxyedPort.toString();
-				console.log('proxy', proxyedUrl.href, { originalUrl: url });
 				simpleBrowserManager.show(proxyedUrl.href, { originalUrl: url });
 			} else {
 				console.error('Devtools are not ready');
@@ -334,17 +333,22 @@ export async function activate(context: vscode.ExtensionContext) {
 		}
 	}
 
-	const simpleBrowserManager = new SimpleBrowserManager(context.extensionUri, ({ originalUrl, url }) => {
-		setTimeout(() => {
-			const parsedOriginal = new URL(originalUrl);
-			const parsed = new URL(url);
-			parsedOriginal.pathname = parsed.pathname;
-			parsedOriginal.search = parsed.search;
-			parsedOriginal.hash = parsed.hash;
-			openUrl(parsedOriginal.href);
-		}, 600); // Avoid race condition on disconnect callback
-	});
+	const simpleBrowserManager = new SimpleBrowserManager(context.extensionUri);
+
+	context.subscriptions.push(simpleBrowserManager.onUrlChange(async ({ originalUrl, url }) => {
+		// avoid race condition on disconnect callback
+		await Promise.resolve(reactDevtoolsManager.disconnectedPromise?.promise);
+		const parsedOriginal = new URL(originalUrl || url);
+		const parsed = new URL(url);
+		parsedOriginal.pathname = parsed.pathname;
+		parsedOriginal.search = parsed.search;
+		parsedOriginal.hash = parsed.hash;
+		openUrl(parsedOriginal.href);
+	}));
+
 	context.subscriptions.push(simpleBrowserManager);
+
+
 	// Open simple browser command
 	context.subscriptions.push(vscode.commands.registerCommand(showBrowserCommand, async (providedUrl?: string) => {
 

@@ -6,6 +6,7 @@ import { onceDocumentLoaded } from './events';
 
 const vscode = acquireVsCodeApi();
 
+// TODO(@g-danna) Add shared types
 function getSettings() {
 	const element = document.getElementById('simple-browser-settings');
 	if (element) {
@@ -19,8 +20,6 @@ function getSettings() {
 }
 
 const settings = getSettings();
-
-console.log(settings);
 
 const browserIframe = document.querySelector('iframe#browser') as HTMLIFrameElement;
 
@@ -57,7 +56,19 @@ onceDocumentLoaded(() => {
 	}, 50);
 
 	browserIframe.addEventListener('load', () => {
-		// Noop
+		window.addEventListener('message', (event) => {
+			if (event.isTrusted && event.data.type === 'location-change') {
+				const newLocation = new URL(event.data.location);
+				const previousUrl = new URL(settings.url);
+				const originalUrl = new URL(settings.originalUrl);
+				if (newLocation.host === previousUrl.host) {
+					originalUrl.pathname = newLocation.pathname;
+					originalUrl.search = newLocation.search;
+					originalUrl.hash = newLocation.hash;
+					input.value = originalUrl.href;
+				}
+			}
+		});
 	});
 
 	input.addEventListener('change', (e) => {
@@ -109,14 +120,16 @@ onceDocumentLoaded(() => {
 		}
 
 		const payload = { url: rawUrl, originalUrl: settings.originalUrl };
-		if (isIntitialization) {
-			vscode.setState(payload);
-		} else {
+
+		if (!isIntitialization) {
+			// We are not initializing, send a message to change the URL and kick off
+			// related lifecycle events
 			vscode.postMessage({
 				type: 'updateUrl',
 				data: payload
 			});
 		}
+		vscode.setState(payload);
 	}
 });
 

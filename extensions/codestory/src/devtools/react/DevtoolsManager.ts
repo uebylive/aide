@@ -37,6 +37,12 @@ export class ReactDevtoolsManager {
 		return this._proxyListenPort;
 	}
 
+
+	private _disconnectedPromise: DeferredPromise | null = null;
+	get disconnectedPromise() {
+		return this._disconnectedPromise;
+	}
+
 	private _cleanupProxy: (() => void) | undefined;
 	private _Devtools: Devtools;
 
@@ -51,6 +57,9 @@ export class ReactDevtoolsManager {
 
 	private updateStatus(_message: string, status: DevtoolsStatus) {
 		this._status = status;
+		if (status === DevtoolsStatus.ServerConnected) {
+			this._disconnectedPromise = new DeferredPromise();
+		}
 		this._onStatusChange.fire(status);
 	}
 
@@ -58,10 +67,17 @@ export class ReactDevtoolsManager {
 		this._onInspectHostChange.fire(isInspecting);
 	}
 
-	private onDidDisconnect() {
+	cleanupProxy() {
+		if (!this._disconnectedPromise) {
+			this._disconnectedPromise = new DeferredPromise();
+		}
+		this._disconnectedPromise.resolve();
 		this._cleanupProxy?.();
 		this._cleanupProxy = undefined;
 		this._proxyListenPort = undefined;
+	}
+
+	private onDidDisconnect() {
 		if (this._status === DevtoolsStatus.DevtoolsConnected) {
 			// @g-danna take a look at this again
 			this.updateStatus('Devtools disconnected', DevtoolsStatus.ServerConnected);
@@ -145,7 +161,7 @@ export class ReactDevtoolsManager {
 
 	async proxy(port: number) {
 		if (this._proxyListenPort) {
-			return this._proxyListenPort;
+			this.cleanupProxy();
 		}
 		if (this.status !== 'server-connected') {
 			throw new Error('Devtools server is not connected, cannot initialize proxy');
@@ -166,3 +182,18 @@ export class ReactDevtoolsManager {
 		this._Devtools.stopInspectingHost();
 	}
 }
+
+
+class DeferredPromise {
+	promise: Promise<any>;
+	resolve!: (...args: any) => void;
+	reject!: (reason: any) => void;
+
+	constructor() {
+		this.promise = new Promise((resolve, reject) => {
+			this.resolve = resolve;
+			this.reject = reject;
+		});
+	}
+}
+

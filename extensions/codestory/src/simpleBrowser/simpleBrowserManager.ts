@@ -6,21 +6,21 @@
 import * as vscode from 'vscode';
 import { ShowOptions, SimpleBrowserView, UrlChangePayload } from './simpleBrowserView';
 
-
+type WebViewState = {
+	url: string;
+	originalUrl: string;
+};
 
 export class SimpleBrowserManager {
 
 	private _activeView?: SimpleBrowserView;
 
-	private _onUrlChange: (payload: UrlChangePayload) => void;
+	private _onUrlChange = new vscode.EventEmitter<UrlChangePayload>();
+	onUrlChange = this._onUrlChange.event;
 
 	constructor(
 		private readonly extensionUri: vscode.Uri,
-		onUrlChangeCallback: ((payload: UrlChangePayload) => void),
-	) {
-		//initialize();
-		this._onUrlChange = onUrlChangeCallback;
-	}
+	) { }
 
 	dispose() {
 		this._activeView?.dispose();
@@ -37,13 +37,12 @@ export class SimpleBrowserManager {
 			this._activeView = view;
 		}
 		this._activeView.onUrlChange((payload) => {
-			this._onUrlChange(payload);
+			this._onUrlChange.fire(payload);
 		});
 	}
 
-	public restore(panel: vscode.WebviewPanel, state: any): void {
-		const url = state?.url ?? '';
-		const view = SimpleBrowserView.restore(this.extensionUri, url, panel, state.originalUrl);
+	public restore(panel: vscode.WebviewPanel, state: WebViewState): void {
+		const view = SimpleBrowserView.restore(this.extensionUri, state.url, panel, state.originalUrl);
 		this.registerWebviewListeners(view);
 		this._activeView ??= view;
 	}

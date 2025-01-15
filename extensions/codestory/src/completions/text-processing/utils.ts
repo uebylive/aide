@@ -124,7 +124,7 @@ export function getHeadAndTail(s: string): PrefixComponents {
 	// line of code:
 	//
 	//     // Write some code
-	//     █
+	//
 	//
 	if (headAndTail.tail.rearSpace.includes('\n')) {
 		headAndTail.tail.trimmed += '\n';

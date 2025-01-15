@@ -207,7 +207,7 @@ export class DevtoolsService extends Disposable implements IDevtoolsService {
 					label: localize('aide.devtools.openDocumentation', 'Open documentation'),
 					run: () => {
 						// Construct the external URI to open
-						const externalUri = URI.parse('https://docs.aide.dev/features/react-devtools/#how-to-use');
+						const externalUri = URI.parse('https://docs.aide.dev/experimental/react-devtools/#how-to-use');
 						// Use the opener service to open it in the user's browser
 						this.openerService.open(externalUri).catch(console.error);
 					}

@@ -27,7 +27,7 @@ const protocols = ['http', 'https'];
 
 export type UrlChangePayload = {
 	url: string;
-	originalUrl: string;
+	originalUrl?: string;
 };
 
 
