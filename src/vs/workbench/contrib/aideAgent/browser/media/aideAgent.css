@@ -810,12 +810,17 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	cursor: default;
 }
 
-.interactive-session .interactive-input-part.compact .aideagent-attached-context {
+/* .interactive-session .interactive-input-part.compact .aideagent-attached-context { */
+.interactive-session .interactive-input-part .aideagent-attached-context {
 	padding-top: 8px;
 	padding-bottom: 0px;
 	display: flex;
 	gap: 4px;
 	flex-wrap: wrap;
+}
+
+.interactive-session .interactive-input-part .aideagent-attached-context .aideagent-attached-context-attachment .monaco-button.codicon.codicon-close {
+	margin-left: auto;
 }
 
 .interactive-session .aideagent-item-container.aideagent-request .aideagent-attached-context {
@@ -883,6 +888,17 @@ have to be updated for changes to the rules above, or to support more deeply nes
 
 .interactive-session .aideagent-attached-context .aideagent-attachments-list .monaco-list .monaco-list-row {
 	border-radius: 2px;
+}
+
+.interactive-session .aideagent-attached-context .aideagent-attachments-list .monaco-list .monaco-list-row .monaco-icon-label .label-name .monaco-highlighted-label {
+	display: flex;
+	align-items: center;
+}
+
+.interactive-session .aideagent-attached-context .aideagent-attachments-list .monaco-list .monaco-list-row .monaco-icon-label .label-name .monaco-highlighted-label .codicon {
+	font-size: 13px;
+	padding-left: 3px;
+	padding-right: 2px;
 }
 
 .interactive-session-followups {
