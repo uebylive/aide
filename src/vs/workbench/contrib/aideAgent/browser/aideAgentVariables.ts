@@ -26,7 +26,6 @@ import { IChatContentReference, IChatSendRequestOptions } from '../common/aideAg
 import { IAideAgentVariablesService, IChatRequestVariableValue, IChatVariableData, IChatVariableResolver, IChatVariableResolverProgress, IDynamicVariable } from '../common/aideAgentVariables.js';
 import { IAideAgentLMToolsService } from '../common/languageModelToolsService.js';
 import { IAideAgentWidgetService, showChatView } from './aideAgent.js';
-import { ChatContextAttachments } from './contrib/aideAgentContextAttachments.js';
 import { ChatDynamicVariableModel } from './contrib/aideAgentDynamicVariables.js';
 
 interface IChatData {
@@ -177,6 +176,12 @@ export class ChatVariablesService implements IAideAgentVariablesService {
 			});
 		}
 
+		if (options?.attachedContext) {
+			for (const context of options.attachedContext) {
+				resolvedAttachedContext.push(context);
+			}
+		}
+
 		// Make array not sparse
 		resolvedVariables = coalesce<IChatRequestVariableEntry>(resolvedVariables);
 
@@ -260,7 +265,7 @@ export class ChatVariablesService implements IAideAgentVariablesService {
 		if (key === 'file' && typeof value !== 'string') {
 			const uri = URI.isUri(value) ? value : value.uri;
 			const range = 'range' in value ? value.range : undefined;
-			widget.getContrib<ChatContextAttachments>(ChatContextAttachments.ID)?.setContext(false, { value, id: uri.toString() + (range?.toString() ?? ''), name: basename(uri.path), isFile: true, isDynamic: true });
+			widget.attachmentModel.addFile(uri, range);
 			return;
 		}
 
@@ -269,6 +274,6 @@ export class ChatVariablesService implements IAideAgentVariablesService {
 			return;
 		}
 
-		widget.getContrib<ChatContextAttachments>(ChatContextAttachments.ID)?.setContext(false, { ...resolved.data, value });
+		widget.attachmentModel.addContext({ ...resolved.data, value });
 	}
 }

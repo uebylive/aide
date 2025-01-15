@@ -80,9 +80,9 @@ class OpenChatGlobalAction extends Action2 {
 			category: CHAT_CATEGORY,
 			keybinding: {
 				weight: KeybindingWeight.WorkbenchContrib,
-				primary: KeyMod.CtrlCmd | KeyMod.Alt | KeyCode.KeyI,
+				primary: KeyMod.CtrlCmd | KeyCode.KeyL,
 				mac: {
-					primary: KeyMod.CtrlCmd | KeyMod.WinCtrl | KeyCode.KeyI
+					primary: KeyMod.CtrlCmd | KeyCode.KeyL
 				}
 			}
 		});

@@ -40,6 +40,7 @@ import { ChatViewModel, IChatResponseViewModel, isRequestVM, isResponseVM } from
 import { CodeBlockModelCollection } from '../common/codeBlockModelCollection.js';
 import { ChatTreeItem, IAideAgentAccessibilityService, IAideAgentWidgetService, IChatCodeBlockInfo, IChatFileTreeInfo, IChatListItemRendererOptions, IChatWidget, IChatWidgetViewContext, IChatWidgetViewOptions, showChatView } from './aideAgent.js';
 import { ChatAccessibilityProvider } from './aideAgentAccessibilityProvider.js';
+import { AideAgentAttachmentModel } from './aideAgentAttachmentModel.js';
 import { AideAgentEditPreviewWidget } from './aideAgentEditPreviewWidget.js';
 import { ChatInputPart } from './aideAgentInputPart.js';
 import { ChatListDelegate, ChatListItemRenderer, IChatRendererDelegate } from './aideAgentListRenderer.js';
@@ -346,6 +347,10 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 	get contentHeight(): number {
 		return this.inputPart.contentHeight + this.tree.contentHeight;
+	}
+
+	get attachmentModel(): AideAgentAttachmentModel {
+		return this.inputPart.attachmentModel;
 	}
 
 	get mode(): AgentMode {
@@ -935,8 +940,6 @@ export class ChatWidget extends Disposable implements IChatWidget {
 				const errorMessage = localize('editModelConfiguration.modelConfigError', "There is an issue with your \`modelSelection.json\`: \"{0}\"", configValidation.error || 'Invalid configuration');
 				this.notificationService.warn(errorMessage);
 			} else {
-				// scope here is dicated by how the command is run, not on the internal state
-				// of the inputPart which was based on a selector before
 				const result = await this.chatService.sendRequest(this.viewModel.sessionId, input, {
 					agentMode,
 					agentScope,
@@ -944,7 +947,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 					location: this.location,
 					locationData: this._location.resolveData?.(),
 					parserContext: { selectedAgent: this._lastSelectedAgent },
-					attachedContext: [...this.inputPart.attachedContext.values()]
+					attachedContext: [...this.inputPart.attachmentModel.attachments]
 				});
 
 				if (result) {
@@ -1002,10 +1005,6 @@ export class ChatWidget extends Disposable implements IChatWidget {
 				this.inputPart.setMode(AgentMode.Edit);
 				break;
 		}
-	}
-
-	setContext(overwrite: boolean, ...contentReferences: IChatRequestVariableEntry[]) {
-		this.inputPart.attachContext(overwrite, ...contentReferences);
 	}
 
 	getCodeBlockInfosForResponse(response: IChatResponseViewModel): IChatCodeBlockInfo[] {

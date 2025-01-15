@@ -192,6 +192,10 @@
 	background-color: var(--vscode-inputOption-activeBackground);
 }
 
+.aideagent-item-container.interactive-response.chat-most-recent-response {
+	min-height: var(--chat-current-response-min-height);
+}
+
 .aideagent-item-container .value {
 	width: 100%;
 }
@@ -247,14 +251,8 @@
 .interactive-list {
 	overflow: hidden;
 	position: relative;
+	/* For the scroll down button */
 }
-
-/*
-.aideagent-request {
-	border-bottom: 1px solid var(--vscode-chat-requestBorder);
-	border-top: 1px solid var(--vscode-chat-requestBorder);
-}
-*/
 
 .hc-black .aideagent-request,
 .hc-light .aideagent-request {
@@ -751,36 +749,41 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	gap: 2px;
 }
 
-.interactive-session .aideagent-attached-context .aideagent-attachments-list .monaco-list {
-	border: none;
-	border-radius: 4px;
-	width: auto;
-}
-
-.interactive-session .aideagent-attached-context.aideagent-attachments-list-collapsed .aideagent-attachments-list {
-	display: none;
-}
-
-.interactive-session .aideagent-attached-context .aideagent-attachments-list .monaco-list .monaco-list-row {
-	border-radius: 2px;
-}
-
 .interactive-session .aideagent-attached-context .aideagent-attached-context-attachment {
 	display: flex;
 	gap: 4px;
-}
-
-.interactive-session .aideagent-attached-context .aideagent-attached-context-attachment .monaco-button:hover {
-	cursor: pointer;
+	overflow: hidden;
+	font-size: 11px;
+	padding: 0 4px 0 2px;
+	border: 1px solid var(--vscode-chat-requestBorder, var(--vscode-input-background, transparent));
+	border-radius: 4px;
+	height: 18px;
+	max-width: 100%;
 }
 
 .interactive-session .aideagent-attached-context .aideagent-attached-context-attachment .monaco-button {
 	display: flex;
 	align-items: center;
+	margin-top: -2px;
+	margin-right: -4px;
+	padding-right: 4px;
+	padding-left: 2px;
+	height: calc(100% + 4px);
+	outline-offset: -4px;
+}
+
+.interactive-session .aideagent-attached-context .aideagent-attached-context-attachment .monaco-button:hover {
+	cursor: pointer;
+	background: var(--vscode-toolbar-hoverBackground);
 }
 
 .interactive-session .aideagent-attached-context .aideagent-attached-context-attachment .monaco-icon-label-container {
 	display: flex;
+
+	.monaco-icon-suffix-container {
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
 }
 
 .interactive-session .aideagent-attached-context .aideagent-attached-context-attachment .monaco-icon-label-container .monaco-highlighted-label {
@@ -796,36 +799,106 @@ have to be updated for changes to the rules above, or to support more deeply nes
 
 .interactive-session .aideagent-attached-context .aideagent-attached-context-attachment .monaco-icon-label .codicon {
 	padding-left: 4px;
+	font-size: 100% !important;
 }
 
 .interactive-session .aideagent-attached-context {
-	padding: 0 0 8px 0;
+	padding: 4px 0 4px 0;
+	display: flex;
+	gap: 4px;
+	flex-wrap: wrap;
+	cursor: default;
+}
+
+/* .interactive-session .interactive-input-part.compact .aideagent-attached-context { */
+.interactive-session .interactive-input-part .aideagent-attached-context {
+	padding-top: 8px;
+	padding-bottom: 0px;
 	display: flex;
 	gap: 4px;
 	flex-wrap: wrap;
 }
 
-.interactive-session .interactive-input-part.compact .aideagent-attached-context {
-	padding-top: 8px;
-	display: flex;
-	gap: 4px;
-	flex-wrap: wrap;
+.interactive-session .interactive-input-part .aideagent-attached-context .aideagent-attached-context-attachment .monaco-button.codicon.codicon-close {
+	margin-left: auto;
 }
 
 .interactive-session .aideagent-item-container.aideagent-request .aideagent-attached-context {
 	margin-top: -8px;
 }
 
-.interactive-session .aideagent-attached-context .aideagent-attached-context-attachment {
-	padding: 2px;
-	border: 1px solid var(--vscode-chat-requestBorder, var(--vscode-input-background, transparent));
+.interactive-session .aideagent-item-container.interactive-item-compact.aideagent-request .aideagent-attached-context {
+	margin-top: -4px;
+}
+
+.interactive-session .aideagent-item-container.editing-session.aideagent-request .aideagent-attached-context {
+	margin-top: 0px;
+}
+
+.interactive-session .aideagent-attached-context .aideagent-attached-context-attachment.implicit {
+	display: flex;
+	gap: 4px;
+}
+
+.interactive-session .aideagent-attached-context .aideagent-attached-context-attachment.implicit .chat-implicit-hint {
+	opacity: 0.7;
+	font-size: .9em;
+}
+
+.interactive-session .aideagent-attached-context .aideagent-attached-context-attachment.implicit.disabled .chat-implicit-hint {
+	font-style: italic;
+}
+
+.interactive-session .aideagent-attached-context .aideagent-attached-context-attachment.implicit.disabled {
+	border-style: dashed;
+}
+
+.interactive-session .aideagent-attached-context .aideagent-attached-context-attachment.implicit.disabled:focus {
+	outline: none;
+	border-color: var(--vscode-focusBorder);
+}
+
+.interactive-session .aideagent-attached-context .aideagent-attached-context-attachment.implicit.disabled .monaco-icon-label .label-name {
+	text-decoration: line-through;
+	font-style: italic;
+	opacity: 0.8;
+}
+
+.interactive-session .aideagent-attached-context .aideagent-attached-context-attachment .monaco-icon-label::before {
+	padding: 0 2px 0 0;
+}
+
+.interactive-session .aideagent-attached-context .aideagent-attached-context-attachment .monaco-icon-label.predefined-file-icon::before {
+	padding: 0 0 0 2px;
+}
+
+.interactive-session .aideagent-attached-context .aideagent-attachments-list .monaco-list {
+	border: none;
 	border-radius: 4px;
-	height: 18px;
-	max-width: 100%;
+	width: auto;
 }
 
 .interactive-session .aideagent-item-container.aideagent-request .aideagent-attached-context .aideagent-attached-context-attachment {
 	padding-right: 6px;
+}
+
+.interactive-session .aideagent-attached-context.aideagent-attachments-list-collapsed .aideagent-attachments-list {
+	display: none;
+}
+
+.interactive-session .aideagent-attached-context .aideagent-attachments-list .monaco-list .monaco-list-row {
+	border-radius: 2px;
+}
+
+.interactive-session .aideagent-attached-context .aideagent-attachments-list .monaco-list .monaco-list-row .monaco-icon-label .label-name .monaco-highlighted-label {
+	display: flex;
+	align-items: center;
+}
+
+.interactive-session .aideagent-attached-context .aideagent-attachments-list .monaco-list .monaco-list-row .monaco-icon-label .label-name .monaco-highlighted-label .codicon {
+	font-size: 13px;
+	padding-left: 3px;
+	padding-right: 2px;
 }
 
 .interactive-session-followups {
@@ -860,6 +933,7 @@ have to be updated for changes to the rules above, or to support more deeply nes
 
 	/* clamp to max 3 lines */
 	display: -webkit-box;
+	line-clamp: 3;
 	-webkit-line-clamp: 3;
 	-webkit-box-orient: vertical;
 	overflow: hidden;
@@ -895,8 +969,14 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	margin: 0 3px;
 }
 
+.quick-input-widget .interactive-session .interactive-input-part .aideagent-input-toolbars .monaco-toolbar,
+.quick-input-widget .interactive-session .interactive-input-part .aideagent-input-toolbars .actions-container {
+	height: initial;
+}
+
 .quick-input-widget .interactive-session .interactive-input-part .aideagent-input-toolbars {
 	margin-bottom: 1px;
+	align-items: flex-end;
 }
 
 .quick-input-widget .interactive-session .chat-input-container {
@@ -1110,6 +1190,44 @@ have to be updated for changes to the rules above, or to support more deeply nes
 	border: none;
 	padding: 0;
 	color: var(--vscode-textLink-foreground);
+}
+
+.chat-attached-context-hover .chat-attached-context-image {
+	height: auto;
+	max-height: 512px;
+	max-width: 512px;
+	width: 100%;
+	display: block;
+}
+
+.aideagent-attached-context-attachment .chat-attached-context-pill {
+	font-size: 12px;
+	display: inline-flex;
+	align-items: center;
+	padding: 2px 0 2px 0px;
+	border-radius: 2px;
+	margin-right: 1px;
+	user-select: none;
+	outline: none;
+	border: none;
+}
+
+.aideagent-attached-context-attachment .attachment-additional-info {
+	opacity: 0.7;
+	font-size: .9em;
+}
+
+.aideagent-attached-context-attachment .chat-attached-context-pill-image {
+	width: 14px;
+	height: 14px;
+	border-radius: 2px;
+}
+
+.aideagent-attached-context-attachment .chat-attached-context-custom-text {
+	vertical-align: middle;
+	user-select: none;
+	outline: none;
+	border: none;
 }
 
 .aideagent-item-container .aideagent-attachment-icons {

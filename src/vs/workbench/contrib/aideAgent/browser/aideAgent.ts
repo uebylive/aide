@@ -20,6 +20,7 @@ import { IParsedChatRequest } from '../common/aideAgentParserTypes.js';
 import { CHAT_PROVIDER_ID } from '../common/aideAgentParticipantContribTypes.js';
 import { IAideAgentPlanStepViewModel } from '../common/aideAgentPlanViewModel.js';
 import { IChatRequestViewModel, IChatResponseViewModel, IChatViewModel } from '../common/aideAgentViewModel.js';
+import { AideAgentAttachmentModel } from './aideAgentAttachmentModel.js';
 import { ChatInputPart } from './aideAgentInputPart.js';
 import { ChatViewPane } from './aideAgentViewPane.js';
 import { IChatViewState, IChatWidgetContrib } from './aideAgentWidget.js';
@@ -149,6 +150,7 @@ export interface IChatWidget {
 	lastSelectedAgent: IChatAgentData | undefined;
 	readonly scopedContextKeyService: IContextKeyService;
 	readonly input: ChatInputPart;
+	readonly attachmentModel: AideAgentAttachmentModel;
 	readonly mode: AgentMode;
 
 	getContrib<T extends IChatWidgetContrib>(id: string): T | undefined;
@@ -169,7 +171,6 @@ export interface IChatWidget {
 	getCodeBlockInfosForResponse(response: IChatResponseViewModel): IChatCodeBlockInfo[];
 	getFileTreeInfosForResponse(response: IChatResponseViewModel): IChatFileTreeInfo[];
 	getLastFocusedFileTreeForResponse(response: IChatResponseViewModel): IChatFileTreeInfo | undefined;
-	setContext(overwrite: boolean, ...context: IChatRequestVariableEntry[]): void;
 	clear(): void;
 	getViewState(): IChatViewState;
 	transferQueryState(mode: AgentMode, scope: AgentScope): void;

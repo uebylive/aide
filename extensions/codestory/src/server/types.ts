@@ -13,9 +13,16 @@ type SidecarFileContent = {
 	language: string;
 };
 
+export type SidecarImageContent = {
+	type: string;
+	media_type: string;
+	data: string;
+};
+
 export type UserContext = {
 	variables: SidecarVariableTypes[];
 	file_content_map: SidecarFileContent[];
+	images: SidecarImageContent[];
 	terminal_selection: string | undefined;
 	folder_paths: string[];
 	is_plan_generation: boolean;
@@ -1135,6 +1142,9 @@ export type SidecarRecentEditsRetrieverResponse = {
 export type SidecarRecentEditsFilePreviousContent = {
 	fs_file_path: string;
 	file_content_latest: string;
+	// if this gets sent over from the sidecar, we use this instead of using
+	// the editor
+	file_content_updated: string | null;
 };
 
 export type SidecarUndoPlanStep = {

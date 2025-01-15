@@ -9,7 +9,7 @@ import { sidecarTypeDefinitionsWithNode } from '../completions/helpers/vscodeApi
 import { LoggingService } from '../completions/logger';
 import { StreamCompletionResponse, StreamCompletionResponseUpdates } from '../completions/providers/fetch-and-process-completions';
 import { CompletionRequest, CompletionResponse } from '../inlineCompletion/sidecarCompletion';
-import { CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, SidecarContextEvent, UserContext } from '../server/types';
+import { CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, SidecarContextEvent, SidecarImageContent, UserContext } from '../server/types';
 import { SelectionDataForExplain } from '../utilities/getSelectionContext';
 import { AidePlanTimer } from '../utilities/planTimer';
 import { sidecarURL } from '../utilities/sidecarUrl';
@@ -19,6 +19,8 @@ import { getUserId } from '../utilities/uniqueId';
 import { detectDefaultShell } from './default-shell';
 import { callServerEventStreamingBufferedGET, callServerEventStreamingBufferedPOST } from './ssestream';
 import { ConversationMessage, EditFileResponse, getSideCarModelConfiguration, IdentifierNodeType, InEditorRequest, InEditorTreeSitterDocumentationQuery, InEditorTreeSitterDocumentationReply, InLineAgentMessage, PlanResponse, RepoStatus, SemanticSearchResponse, SidecarVariableType, SidecarVariableTypes, SnippetInformation, SyncUpdate, TextDocument } from './types';
+import { sidecarUsesAgentReasoning } from '../utilities/agentConfiguration';
+import { readAideRulesContent } from '../utilities/aideRules';
 
 export enum CompletionStopReason {
 	/**
@@ -1062,7 +1064,6 @@ export class SideCarClient {
 			return textDocument.uri.fsPath;
 		});
 		// log here for debugging
-		console.log(vscode.window.visibleTextEditors);
 		const openFiles = vscode.window.visibleTextEditors.filter((textDocument) => {
 			return textDocument.document.uri.scheme === 'file';
 		}).map((textDocument) => {
@@ -1074,6 +1075,8 @@ export class SideCarClient {
 		} else {
 			baseUrl.pathname = '/api/agentic/agent_session_plan';
 		}
+		const sidecarAgentUsesReasoning = sidecarUsesAgentReasoning();
+		const aideRulesContent = await readAideRulesContent();
 		const url = baseUrl.toString();
 		const body = {
 			session_id: sessionId,
@@ -1091,6 +1094,8 @@ export class SideCarClient {
 			all_files: allFiles,
 			open_files: openFiles,
 			shell: currentShell,
+			aide_rules: aideRulesContent,
+			reasoning: sidecarAgentUsesReasoning,
 		};
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
@@ -1323,7 +1328,9 @@ export class SideCarClient {
 			return textDocument.document.uri.fsPath;
 		});
 		const currentShell = detectDefaultShell();
+		const sidecarAgentUsesReasoning = sidecarUsesAgentReasoning();
 		baseUrl.pathname = '/api/agentic/agent_session_edit_anchored';
+		const aideRulesContent = await readAideRulesContent();
 		const url = baseUrl.toString();
 		const body = {
 			session_id: sessionId,
@@ -1341,6 +1348,8 @@ export class SideCarClient {
 			all_files: allFiles,
 			open_files: openFiles,
 			shell: currentShell,
+			aide_rules: aideRulesContent,
+			reasoning: sidecarAgentUsesReasoning,
 		};
 
 		const asyncIterableResponse = callServerEventStreamingBufferedPOST(url, body);
@@ -1432,16 +1441,22 @@ export class SideCarClient {
 		workosAccessToken: string,
 	): AsyncIterableIterator<SideCarAgentEvent> {
 		const baseUrl = new URL(this._url);
-		const allFiles = vscode.workspace.textDocuments.map((textDocument) => {
+		const allFiles = vscode.workspace.textDocuments.filter((textDocument) => {
+			return textDocument.uri.scheme === 'file';
+		}).map((textDocument) => {
 			return textDocument.uri.fsPath;
 		});
-		const openFiles = vscode.window.visibleTextEditors.map((textDocument) => {
+		const openFiles = vscode.window.visibleTextEditors.filter((textDocument) => {
+			return textDocument.document.uri.scheme === 'file';
+		}).map((textDocument) => {
 			return textDocument.document.uri.fsPath;
 		});
 		const currentShell = detectDefaultShell();
 		const sideCarModelConfiguration = await getSideCarModelConfiguration(await vscode.modelSelection.getConfiguration(), workosAccessToken);
 		const userContext = await convertVSCodeVariableToSidecarHackingForPlan(variables, query);
+		const sidecarAgentUsesReasoning = sidecarUsesAgentReasoning();
 		baseUrl.pathname = '/api/agentic/agent_session_chat';
+		const aideRulesContent = await readAideRulesContent();
 		const url = baseUrl.toString();
 		const body = {
 			session_id: sessionId,
@@ -1459,6 +1474,8 @@ export class SideCarClient {
 			all_files: allFiles,
 			open_files: openFiles,
 			shell: currentShell,
+			aide_rules: aideRulesContent,
+			reasoning: sidecarAgentUsesReasoning,
 		};
 
 		// consider using headers
@@ -1656,6 +1673,10 @@ export class SideCarClient {
 	}
 }
 
+export function isAideAgentImageAttachmentValue(obj: any): obj is vscode.AideAgentImageAttachmentValue {
+	return 'mimeType' in obj && 'data' in obj;
+}
+
 /**
  * This is a copy of the function below we are using this to use the chat window as a plan generation cli
  */
@@ -1666,6 +1687,7 @@ export async function convertVSCodeVariableToSidecarHackingForPlan(
 	const resolvedFileCache: Map<string, [string, string]> = new Map();
 
 	const sidecarVariables: SidecarVariableTypes[] = [];
+	const sidecarImages: SidecarImageContent[] = [];
 	const fileCache: Map<string, vscode.TextDocument> = new Map();
 
 	async function resolveFile(uri: vscode.Uri) {
@@ -1748,6 +1770,16 @@ export async function convertVSCodeVariableToSidecarHackingForPlan(
 				content: attachedFile.getText(range),
 				language: attachedFile.languageId,
 			});
+		} else if (isAideAgentImageAttachmentValue(variable.value)) {
+			const value = variable.value;
+			const imageData = await value.data();
+			// Convert Uint8Array to base64
+			const base64Data = Buffer.from(imageData).toString('base64');
+			sidecarImages.push({
+				type: 'base64',
+				media_type: value.mimeType,
+				data: base64Data,
+			});
 		}
 	}
 
@@ -1816,6 +1848,7 @@ export async function convertVSCodeVariableToSidecarHackingForPlan(
 				language: fileContent[1],
 			};
 		}),
+		images: sidecarImages,
 		terminal_selection: undefined,
 		folder_paths: folders,
 		is_plan_generation: isPlanGeneration,
@@ -1832,6 +1865,7 @@ async function convertVSCodeVariableToSidecar(
 	const resolvedFileCache: Map<string, [string, string]> = new Map();
 
 	const sidecarVariables: SidecarVariableTypes[] = [];
+	const sidecarImages: SidecarImageContent[] = [];
 	const fileCache: Map<string, vscode.TextDocument> = new Map();
 
 	async function resolveFile(uri: vscode.Uri) {
@@ -1897,6 +1931,16 @@ async function convertVSCodeVariableToSidecar(
 				content: attachedFile.getText(range),
 				language: attachedFile.languageId,
 			});
+		} else if (isAideAgentImageAttachmentValue(variable.value)) {
+			const value = variable.value;
+			const imageData = await value.data();
+			// Convert Uint8Array to base64
+			const base64Data = Buffer.from(imageData).toString('base64');
+			sidecarImages.push({
+				type: 'base64',
+				media_type: value.mimeType,
+				data: base64Data,
+			});
 		}
 	}
 
@@ -1932,6 +1976,7 @@ async function convertVSCodeVariableToSidecar(
 				language: fileContent[1],
 			};
 		}),
+		images: sidecarImages,
 		terminal_selection: terminalSelection,
 		folder_paths: folders,
 		is_plan_generation: isPlanGeneration,
@@ -2035,6 +2080,7 @@ async function newConvertVSCodeVariableToSidecar(
 	return {
 		variables: sidecarVariables,
 		file_content_map: [],
+		images: [],
 		terminal_selection: undefined,
 		folder_paths: [],
 		is_plan_generation: false,

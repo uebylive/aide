@@ -501,10 +501,11 @@ class ModelActionsColumnRenderer implements ITableRenderer<IModelItemEntry, IMod
 	}
 
 	private createEditAction(modelSelectionItemEntry: IModelItemEntry): IAction {
-		return <IAction>{
+		return {
 			class: ThemeIcon.asClassName(settingsEditIcon),
 			enabled: true,
 			id: 'editModelSelection',
+			label: localize('editModel', "Edit Model"),
 			tooltip: localize('editModel', "Edit Model"),
 			run: () => this.modelSelectionEditor.editModel(modelSelectionItemEntry)
 		};
@@ -631,7 +632,11 @@ class ModelConfigurationColumnRenderer implements ITableRenderer<IModelItemEntry
 						.forEach(providerConfigKey => {
 							const providerConfigValue = modelItem.providerConfig[providerConfigKey as keyof ModelProviderConfig];
 							DOM.append(configItem, $('span.provider-config-key', undefined, `${humanReadableModelConfigKey[providerConfigKey]}: `));
-							DOM.append(configItem, $(`span.provider-config-value${(providerConfigValue ?? '').length > 0 ? '' : '.incomplete'}`, undefined, `${(providerConfigValue ?? '').length > 0 ? providerConfigValue : 'Not set'}`));
+							if ((providerConfigValue ?? '').length === 0) {
+								DOM.append(configItem, $('span.provider-config-value.incomplete', undefined, 'Not set'));
+							} else {
+								DOM.append(configItem, $('span.provider-config-value', undefined, '**********'));
+							}
 						});
 				} else {
 					DOM.append(configItem, $('span.provider-config-key', undefined, `${humanReadableModelConfigKey[key]}: `));
@@ -702,10 +707,11 @@ class ProviderActionsColumnRenderer implements ITableRenderer<IProviderItemEntry
 	}
 
 	private createEditAction(providerSelectionItemEntry: IProviderItemEntry): IAction {
-		return <IAction>{
+		return {
 			class: ThemeIcon.asClassName(settingsEditIcon),
 			enabled: true,
 			id: 'editProviderSelection',
+			label: localize('editProvider', "Edit Provider"),
 			tooltip: localize('editProvider', "Edit Provider"),
 			run: () => this.modelSelectionEditor.editProvider(providerSelectionItemEntry)
 		};
@@ -788,7 +794,7 @@ class ProviderConfigColumnRenderer implements ITableRenderer<IProviderItemEntry,
 			configKeys.forEach(key => {
 				const configItem = DOM.append(templateData.providerConfigContainer, $('.provider-config-item'));
 				DOM.append(configItem, $('span.provider-config-key', undefined, `${humanReadableProviderConfigKey[key]}: `));
-				DOM.append(configItem, $('span.provider-config-value', undefined, `${providerItem[key as keyof typeof providerItem]}`));
+				DOM.append(configItem, $('span.provider-config-value', undefined, '**********'));
 			});
 		} else {
 			const configItem = DOM.append(templateData.providerConfigContainer, $('.provider-config-item'));

@@ -14,7 +14,6 @@ import { aideCommands } from './inlineCompletion/commands';
 import { startupStatusBar } from './inlineCompletion/statusBar';
 import logger from './logger';
 import postHogClient from './posthog/client';
-import { AideQuickFix } from './quickActions/fix';
 import { RecentEditsRetriever } from './server/editedFiles';
 import { RepoRef, RepoRefBackend, SideCarClient } from './sidecar/client';
 import { getSideCarModelConfiguration } from './sidecar/types';
@@ -176,10 +175,6 @@ export async function activate(context: vscode.ExtensionContext) {
 	// Gets access to all the events the editor is throwing our way
 	const csEventHandler = new CSEventHandler(context);
 	context.subscriptions.push(csEventHandler);
-
-	// Register the quick action providers
-	const aideQuickFix = new AideQuickFix();
-	vscode.languages.registerCodeActionsProvider('*', aideQuickFix);
 
 	// add the recent edits retriver to the subscriptions
 	// so we can grab the recent edits very quickly

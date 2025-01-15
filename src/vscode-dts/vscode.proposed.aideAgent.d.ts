@@ -33,6 +33,11 @@ declare module 'vscode' {
 		};
 	}
 
+	export interface AideAgentImageAttachmentValue {
+		mimeType: string;
+		data: () => Thenable<Uint8Array>;
+	}
+
 	// This is a cool looking type, but TypeScript currently doesn't enforce it. But it helps understand
 	// the intent for us to use it correctly.
 	export type AideAgentPromptReference =

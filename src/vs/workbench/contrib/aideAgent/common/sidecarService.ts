@@ -23,6 +23,7 @@ export enum SidecarRunningStatus {
 	Unavailable = 'Unavailable',
 	Starting = 'Starting',
 	Restarting = 'Restarting',
+	Connecting = 'Connecting',
 	Connected = 'Connected',
 }
 

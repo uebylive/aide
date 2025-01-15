@@ -159,7 +159,7 @@ export const defaultModelSelectionSettings: IModelSelectionSettings = {
 			contextLength: 128000,
 			temperature: 0.2,
 			provider: {
-				type: 'openai-default'
+				type: 'codestory'
 			}
 		},
 		'o1-mini': {
