@@ -3080,7 +3080,7 @@ export namespace AideAgentPromptReference {
 					range: variable.range && [variable.range.start, variable.range.endExclusive],
 					value: isUriComponents(value) ? URI.revive(value) :
 						value && typeof value === 'object' && 'uri' in value && 'range' in value && isUriComponents(value.uri) ?
-							Location.to(revive(value)) : value,
+							Location.to(revive(value)) : variable.isImage ? new types.ChatReferenceBinaryData(variable.mimeType ?? 'image/png', () => Promise.resolve(new Uint8Array(Object.values(value)))) : value,
 					modelDescription: variable.modelDescription
 				};
 		}

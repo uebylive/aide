@@ -7,6 +7,7 @@ import { MarkdownString, isMarkdownString } from '../../../../base/common/htmlCo
 import { Disposable } from '../../../../base/common/lifecycle.js';
 import { Schemas } from '../../../../base/common/network.js';
 import { isMacintosh } from '../../../../base/common/platform.js';
+import { registerEditorFeature } from '../../../../editor/common/editorFeatures.js';
 import * as nls from '../../../../nls.js';
 import { AccessibleViewRegistry } from '../../../../platform/accessibility/browser/accessibleViewRegistry.js';
 import { ICommandService } from '../../../../platform/commands/common/commands.js';
@@ -46,6 +47,7 @@ import { registerChatDeveloperActions } from './actions/aideAgentDeveloperAction
 import { ExecuteChatAction, registerChatExecuteActions } from './actions/aideAgentExecuteActions.js';
 import { registerChatFileTreeActions } from './actions/aideAgentFileTreeActions.js';
 import { registerAideAgentFloatingWidgetActions } from './actions/aideAgentFloatingWidgetActions.js';
+import { ChatGettingStartedContribution } from './actions/aideAgentGettingStarted.js';
 import { registerChatTitleActions } from './actions/aideAgentTitleActions.js';
 import { IAideAgentAccessibilityService, IAideAgentCodeBlockContextProviderService, IAideAgentWidgetService } from './aideAgent.js';
 import { AideAgentAccessibilityService } from './aideAgentAccessibilityService.js';
@@ -53,14 +55,13 @@ import { AideAgentCodeEditingService } from './aideAgentCodeEditingService.js';
 import { ChatEditor, IChatEditorOptions } from './aideAgentEditor.js';
 import { ChatEditorInput, ChatEditorInputSerializer } from './aideAgentEditorInput.js';
 import { AideAgentFloatingWidgetService, IAideAgentFloatingWidgetService } from './aideAgentFloatingWidgetService.js';
-import { ChatGettingStartedContribution } from './actions/aideAgentGettingStarted.js';
 import { agentSlashCommandToMarkdown, agentToMarkdown } from './aideAgentMarkdownDecorationsRenderer.js';
 import { ChatCompatibilityNotifier, ChatExtensionPointHandler } from './aideAgentParticipantContributions.js';
+import { ChatPasteProvidersFeature } from './aideAgentPasteProviders.js';
 import { ChatResponseAccessibleView } from './aideAgentResponseAccessibleView.js';
 import { ChatVariablesService } from './aideAgentVariables.js';
 import { ChatWidgetService } from './aideAgentWidget.js';
 import { AideAgentCodeBlockContextProviderService } from './codeBlockContextProviderService.js';
-import './contrib/aideAgentContextAttachments.js';
 import './contrib/aideAgentInputCompletions.js';
 import './contrib/aideAgentInputEditorContrib.js';
 import { IDevtoolsService } from '../common/devtoolsService.js';
@@ -280,6 +281,8 @@ registerChatContextActions();
 registerChatDeveloperActions();
 registerAideAgentFloatingWidgetActions();
 registerCodeEditActions();
+
+registerEditorFeature(ChatPasteProvidersFeature);
 
 registerSingleton(IAideAgentService, ChatService, InstantiationType.Delayed);
 registerSingleton(IAideAgentWidgetService, ChatWidgetService, InstantiationType.Delayed);

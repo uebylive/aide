@@ -13,9 +13,16 @@ type SidecarFileContent = {
 	language: string;
 };
 
+export type SidecarImageContent = {
+	type: string;
+	media_type: string;
+	data: string;
+};
+
 export type UserContext = {
 	variables: SidecarVariableTypes[];
 	file_content_map: SidecarFileContent[];
+	images: SidecarImageContent[];
 	terminal_selection: string | undefined;
 	folder_paths: string[];
 	is_plan_generation: boolean;

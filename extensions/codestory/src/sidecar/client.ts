@@ -9,7 +9,7 @@ import { sidecarTypeDefinitionsWithNode } from '../completions/helpers/vscodeApi
 import { LoggingService } from '../completions/logger';
 import { StreamCompletionResponse, StreamCompletionResponseUpdates } from '../completions/providers/fetch-and-process-completions';
 import { CompletionRequest, CompletionResponse } from '../inlineCompletion/sidecarCompletion';
-import { CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, SidecarContextEvent, UserContext } from '../server/types';
+import { CodeEditAgentBody, ProbeAgentBody, SideCarAgentEvent, SidecarContextEvent, SidecarImageContent, UserContext } from '../server/types';
 import { SelectionDataForExplain } from '../utilities/getSelectionContext';
 import { AidePlanTimer } from '../utilities/planTimer';
 import { sidecarURL } from '../utilities/sidecarUrl';
@@ -1673,6 +1673,10 @@ export class SideCarClient {
 	}
 }
 
+export function isAideAgentImageAttachmentValue(obj: any): obj is vscode.AideAgentImageAttachmentValue {
+	return 'mimeType' in obj && 'data' in obj;
+}
+
 /**
  * This is a copy of the function below we are using this to use the chat window as a plan generation cli
  */
@@ -1683,6 +1687,7 @@ export async function convertVSCodeVariableToSidecarHackingForPlan(
 	const resolvedFileCache: Map<string, [string, string]> = new Map();
 
 	const sidecarVariables: SidecarVariableTypes[] = [];
+	const sidecarImages: SidecarImageContent[] = [];
 	const fileCache: Map<string, vscode.TextDocument> = new Map();
 
 	async function resolveFile(uri: vscode.Uri) {
@@ -1765,6 +1770,16 @@ export async function convertVSCodeVariableToSidecarHackingForPlan(
 				content: attachedFile.getText(range),
 				language: attachedFile.languageId,
 			});
+		} else if (isAideAgentImageAttachmentValue(variable.value)) {
+			const value = variable.value;
+			const imageData = await value.data();
+			// Convert Uint8Array to base64
+			const base64Data = Buffer.from(imageData).toString('base64');
+			sidecarImages.push({
+				type: 'base64',
+				media_type: value.mimeType,
+				data: base64Data,
+			});
 		}
 	}
 
@@ -1833,6 +1848,7 @@ export async function convertVSCodeVariableToSidecarHackingForPlan(
 				language: fileContent[1],
 			};
 		}),
+		images: sidecarImages,
 		terminal_selection: undefined,
 		folder_paths: folders,
 		is_plan_generation: isPlanGeneration,
@@ -1849,6 +1865,7 @@ async function convertVSCodeVariableToSidecar(
 	const resolvedFileCache: Map<string, [string, string]> = new Map();
 
 	const sidecarVariables: SidecarVariableTypes[] = [];
+	const sidecarImages: SidecarImageContent[] = [];
 	const fileCache: Map<string, vscode.TextDocument> = new Map();
 
 	async function resolveFile(uri: vscode.Uri) {
@@ -1914,6 +1931,16 @@ async function convertVSCodeVariableToSidecar(
 				content: attachedFile.getText(range),
 				language: attachedFile.languageId,
 			});
+		} else if (isAideAgentImageAttachmentValue(variable.value)) {
+			const value = variable.value;
+			const imageData = await value.data();
+			// Convert Uint8Array to base64
+			const base64Data = Buffer.from(imageData).toString('base64');
+			sidecarImages.push({
+				type: 'base64',
+				media_type: value.mimeType,
+				data: base64Data,
+			});
 		}
 	}
 
@@ -1949,6 +1976,7 @@ async function convertVSCodeVariableToSidecar(
 				language: fileContent[1],
 			};
 		}),
+		images: sidecarImages,
 		terminal_selection: terminalSelection,
 		folder_paths: folders,
 		is_plan_generation: isPlanGeneration,
@@ -2052,6 +2080,7 @@ async function newConvertVSCodeVariableToSidecar(
 	return {
 		variables: sidecarVariables,
 		file_content_map: [],
+		images: [],
 		terminal_selection: undefined,
 		folder_paths: [],
 		is_plan_generation: false,
