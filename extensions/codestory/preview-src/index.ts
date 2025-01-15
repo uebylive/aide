@@ -6,6 +6,7 @@ import { onceDocumentLoaded } from './events';
 
 const vscode = acquireVsCodeApi();
 
+// TODO(@g-danna) Add shared types
 function getSettings() {
 	const element = document.getElementById('simple-browser-settings');
 	if (element) {
@@ -55,7 +56,19 @@ onceDocumentLoaded(() => {
 	}, 50);
 
 	browserIframe.addEventListener('load', () => {
-		// Noop
+		window.addEventListener('message', (event) => {
+			if (event.isTrusted && event.data.type === 'location-change') {
+				const newLocation = new URL(event.data.location);
+				const previousUrl = new URL(settings.url);
+				const originalUrl = new URL(settings.originalUrl);
+				if (newLocation.host === previousUrl.host) {
+					originalUrl.pathname = newLocation.pathname;
+					originalUrl.search = newLocation.search;
+					originalUrl.hash = newLocation.hash;
+					input.value = originalUrl.href;
+				}
+			}
+		});
 	});
 
 	input.addEventListener('change', (e) => {

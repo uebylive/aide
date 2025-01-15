@@ -1277,7 +1277,7 @@ exports.useTransition = function () {
   return ReactSharedInternals.H.useTransition();
 };
 
-exports.version = "19.1.0-experimental-e3fc16a3-20250113";
+exports.version = "19.1.0-experimental-38aa1511-20250114";
 
 /***/ }),
 
@@ -7554,7 +7554,7 @@ var Agent = /*#__PURE__*/function (_EventEmitter) {
     });
 
     agent_defineProperty(agent_assertThisInitialized(_this), "getBackendVersion", function () {
-      var version = "6.0.1-38aa1511db";
+      var version = "6.0.1-b0928f08db";
 
       if (version) {
         _this._bridge.send('backendVersion', version);

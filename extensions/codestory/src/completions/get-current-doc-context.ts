@@ -186,7 +186,7 @@ export function getDerivedDocContext(params: GetDerivedDocContextParams, logger:
  * NOTE: This will always move the position to the _end_ of the line that the text was inserted at,
  *       regardless of whether the text was inserted before the sameLineSuffix.
  *
- *       When inserting `2` into: `f(1, █);`, the document context will look like this `f(1, 2);█`
+ *       When inserting `2` into: `f(1, );`, the document context will look like this `f(1, 2);`
  */
 interface InsertIntoDocContextParams {
 	docContext: DocumentContext;

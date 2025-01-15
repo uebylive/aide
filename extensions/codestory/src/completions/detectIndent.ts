@@ -1,4 +1,7 @@
-// Detect either spaces or tabs but not both to properly handle tabs for indentation and spaces for alignment
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
 const INDENT_REGEX = /^(?:( )+|\t+)/;
 
 const INDENT_TYPE_SPACE = 'space';
